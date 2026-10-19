@@ -1059,6 +1059,13 @@ fn card(app: &mut FilmcraftApp, ui: &mut egui::Ui, r: Rect, id: ItemId, pre: &st
         ui.painter().text(pr.center(), Align2::CENTER_CENTER, "P", Tokens::ui(10.0), Color32::WHITE);
         app.auto.add(&format!("{pre}.item.{}.proxy", id.0), pr, "Proxy attached");
     }
+    // a proxy being made: its progress along the bottom of the thumbnail
+    if let Some(f) = redrob_film_engine::proxies::proxy_progress(&app.session, id) {
+        let bar = Rect::from_min_max(pos2(th.min.x + 4.0, th.max.y - 8.0), pos2(th.max.x - 4.0, th.max.y - 4.0));
+        ui.painter().rect_filled(bar, 2.0, Color32::from_black_alpha(160));
+        ui.painter().rect_filled(Rect::from_min_size(bar.min, vec2(bar.width() * f, bar.height())), 2.0, t.accent);
+        app.auto.add(&format!("{pre}.item.{}.proxyProgress", id.0), bar, &format!("{}%", (f * 100.0).round()));
+    }
     let f = font(app);
     let ty = th.max.y + 11.0;
     let mut dw = 0.0;

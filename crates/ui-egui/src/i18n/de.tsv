@@ -1050,3 +1050,13 @@
 	Tool	Werkzeug
 	Show Menu Bar	Menüleiste einblenden
 	Show Status Bar	Statusleiste einblenden
+# Kdenlive parity p03: scopes options and Audio Spectrum
+	Audio Spectrum	Audiospektrum
+# Kdenlive parity p03: timeline preview
+	Timeline Preview	Zeitleistenvorschau
+	Start Preview Render	Vorschau-Rendern starten
+	Stop Preview Render	Vorschau-Rendern stoppen
+	Add Preview Zone	Vorschauzone hinzufügen
+	Remove Preview Zone	Vorschauzone entfernen
+	Remove All Preview Zones	Alle Vorschauzonen entfernen
+	Automatic Preview	Automatische Vorschau

@@ -955,6 +955,8 @@ pub struct SequenceSettingsDraft {
     /// rate), and the preset picked or the name to save the settings under.
     pub preset_filter: String,
     pub preset_name: String,
+    /// Video Previews ▸ Codec (`previews::PREVIEW_CODECS`).
+    pub preview_codec: String,
 }
 
 impl Default for SequenceSettingsDraft {
@@ -979,6 +981,7 @@ impl Default for SequenceSettingsDraft {
             auto_tone_map: true,
             preset_filter: String::new(),
             preset_name: String::new(),
+            preview_codec: "ProRes 422".into(),
         }
     }
 }

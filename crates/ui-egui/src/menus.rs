@@ -704,6 +704,7 @@ pub fn menu_items(app: &FilmcraftApp) -> Vec<MenuItem> {
             "window.showStatusBar" => it.checked = Some(app.ui.show_status_bar),
             // Tool ▸ <tool>: the current tool is checked
             id if id.starts_with("tool.") => it.checked = Some(Tool::from_name(&id["tool.".len()..]) == Some(app.ui.tool)),
+            "sequence.autoPreview" => it.checked = Some(app.session.active_sequence().is_some_and(|q| q.auto_preview)),
             _ => {}
         }
         if it.id.starts_with("view.") {

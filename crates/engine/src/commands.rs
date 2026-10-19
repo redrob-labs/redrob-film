@@ -115,6 +115,13 @@ fn has_previews(s: &Session) -> std::result::Result<(), String> {
     has_seq(s)?;
     if s.previews.count() == 0 { Err("there are no render files".into()) } else { Ok(()) }
 }
+fn has_preview_zones(s: &Session) -> std::result::Result<(), String> {
+    let seq = s.active_sequence().ok_or("no sequence is open")?;
+    if seq.preview_zones.is_empty() { Err("the sequence has no preview zones".into()) } else { Ok(()) }
+}
+fn preview_rendering(s: &Session) -> std::result::Result<(), String> {
+    if crate::previews::rendering(s) { Ok(()) } else { Err("no preview is rendering".into()) }
+}
 pub(crate) fn has_project_selection(s: &Session) -> std::result::Result<(), String> {
     if s.state.project_selection.is_empty() { Err("select an item in the Project panel".into()) } else { Ok(()) }
 }
@@ -1184,6 +1191,14 @@ fn build() -> Vec<CommandSpec> {
                     Value::Null
                 }
             };
+            // Preferences ▸ Media ▸ Proxy Clips: camera proxies and automatic proxies
+            let proxies = match crate::proxies::auto_proxies(s, &item_ids) {
+                Ok(v) => v,
+                Err(e) => {
+                    errors.push(format!("proxies: {e}"));
+                    Value::Null
+                }
+            };
             let mut out = if !ingest.is_null() {
                 json!({"items": ids, "sequences": sequences, "documents": reports, "errors": errors, "ingest": ingest})
             } else if reports.is_empty() {
@@ -1193,6 +1208,9 @@ fn build() -> Vec<CommandSpec> {
             };
             if !image_sequences.is_empty() {
                 out["imageSequences"] = json!(image_sequences);
+            }
+            if !proxies.is_null() {
+                out["proxies"] = proxies;
             }
             // Newly imported files may resolve paths the project already listed as offline
             // (issue #110): rebuild s.offline.missing so the "Media missing" badge clears, and drop
@@ -1935,7 +1953,7 @@ fn build() -> Vec<CommandSpec> {
             "Sequence Settings…",
             ["Sequence"],
             None,
-            r#"{"width":u32?,"height":u32?,"fps":f64?,"name":str?,"sampleRate":u32?,"mix":"Stereo|Mono|5.1|Adaptive"?,"dropFrame":bool?,"maxRenderQuality":bool?,"workingSpace":"rec709"|"rec2100-pq"|"rec2100-hlg"?,"wideGamut":bool?,"autoToneMap":bool?,"scaleMotion":bool=false}"#,
+            r#"{"width":u32?,"height":u32?,"fps":f64?,"name":str?,"sampleRate":u32?,"mix":"Stereo|Mono|5.1|Adaptive"?,"dropFrame":bool?,"maxRenderQuality":bool?,"workingSpace":"rec709"|"rec2100-pq"|"rec2100-hlg"?,"wideGamut":bool?,"autoToneMap":bool?,"previewCodec":"ProRes 422 HQ|ProRes 422|ProRes 422 LT|ProRes 422 Proxy"?,"scaleMotion":bool=false}"#,
             has_seq,
             |s, p| {
                 const CMD: &str = "sequence.settings";
@@ -1950,6 +1968,16 @@ fn build() -> Vec<CommandSpec> {
                     None => None,
                 };
                 let drop_frame = bool_p(p, "dropFrame");
+                let preview_codec = match str_p(p, "previewCodec") {
+                    Some(c) => Some(
+                        crate::previews::PREVIEW_CODECS
+                            .iter()
+                            .find(|x| x.0.eq_ignore_ascii_case(c))
+                            .map(|x| x.0.to_string())
+                            .ok_or_else(|| bad(CMD, format!("unknown preview codec `{c}`")))?,
+                    ),
+                    None => None,
+                };
                 let rate = fps.or_else(|| s.active_sequence().map(|q| q.settings.frame_rate)).unwrap_or(FrameRate::FPS_23_976);
                 if drop_frame == Some(true) && !rate.supports_drop_frame() {
                     return Err(bad(CMD, format!("drop-frame timecode needs a 29.97, 59.94 or 119.88 fps timebase, not {rate}")));
@@ -1982,6 +2010,9 @@ fn build() -> Vec<CommandSpec> {
                     }
                     if let Some(v) = bool_p(&p, "maxRenderQuality") {
                         q.settings.max_render_quality = v;
+                    }
+                    if let Some(c) = &preview_codec {
+                        q.settings.preview_codec = c.clone();
                     }
                     let c = &mut q.settings.color;
                     if let Some(w) = working {
@@ -2016,6 +2047,41 @@ fn build() -> Vec<CommandSpec> {
             crate::previews::delete(s, true)
         }),
         query!("sequence.renderBar", "Render Bar", "{}", |s, _| crate::previews::bar_json(s)),
+        // Kdenlive Timeline Preview: preview zones rendered in one pass, Automatic Preview, Stop
+        cmd!("sequence.startPreviewRender", "Start Preview Render", ["Sequence", "Timeline Preview"], None, r#"{"wait":bool=false}"#, has_seq, |s, p| {
+            crate::previews::render(s, crate::previews::RenderMode::Zones, p)
+        }),
+        cmd!("sequence.stopPreviewRender", "Stop Preview Render", ["Sequence", "Timeline Preview"], None, "{}", preview_rendering, |s, _| crate::previews::stop(s)),
+        cmd!(
+            "sequence.addPreviewZone",
+            "Add Preview Zone",
+            ["Sequence", "Timeline Preview"],
+            None,
+            r#"{"start":f64?,"end":f64?}"#,
+            has_seq,
+            crate::previews::add_preview_zone
+        ),
+        cmd!(
+            "sequence.removePreviewZone",
+            "Remove Preview Zone",
+            ["Sequence", "Timeline Preview"],
+            None,
+            r#"{"start":f64?,"end":f64?}"#,
+            has_preview_zones,
+            crate::previews::remove_preview_zone
+        ),
+        cmd!("sequence.removeAllPreviewZones", "Remove All Preview Zones", ["Sequence", "Timeline Preview"], None, "{}", has_preview_zones, |s, _| {
+            crate::previews::remove_all_preview_zones(s)
+        }),
+        cmd!(
+            "sequence.autoPreview",
+            "Automatic Preview",
+            ["Sequence", "Timeline Preview"],
+            None,
+            r#"{"enabled":bool?}"#,
+            has_seq,
+            crate::previews::set_auto_preview
+        ),
         cmd!("sequence.matchFrame", "Match Frame", ["Sequence"], Some("F"), "{}", has_seq, |s, _| {
             let t = s.playhead();
             let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;

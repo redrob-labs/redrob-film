@@ -113,3 +113,67 @@ pub fn vectorscope(v: &Vectorscope, col: [f32; 3], gain: f32, colorize: bool) ->
     }
     (n, n, out)
 }
+
+/// A colour plane for Export Background of the vectorscope.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Plane {
+    /// Hue as the angle (red at the vectorscope's red angle), saturation as the radius, at
+    /// HSL lightness ½.
+    Rgb,
+    /// The analogue U (horizontal) / V (vertical) plane at Y' = ½.
+    Yuv,
+    /// The digital Cb (horizontal) / Cr (vertical) plane at Y' = ½.
+    YCbCr,
+}
+
+impl Plane {
+    pub const ALL: [Plane; 3] = [Plane::Rgb, Plane::Yuv, Plane::YCbCr];
+    pub fn name(self) -> &'static str {
+        match self {
+            Plane::Rgb => "rgb",
+            Plane::Yuv => "yuv",
+            Plane::YCbCr => "ycbcr",
+        }
+    }
+    pub fn label(self) -> &'static str {
+        match self {
+            Plane::Rgb => "RGB",
+            Plane::Yuv => "YUV",
+            Plane::YCbCr => "YCbCr",
+        }
+    }
+}
+
+/// A `size`² straight-alpha RGBA8 image of a colour plane spanning ±`extent` (as the
+/// vectorscope draws it: +Cb / +U right, +Cr / +V up). Colours outside the RGB gamut are clipped.
+pub fn background(plane: Plane, m: redrob_film_color::Matrix, size: usize, extent: f32) -> (usize, usize, Vec<u8>) {
+    let n = size.max(2);
+    let (kr, kb) = m.kr_kb();
+    let red = crate::red_angle(m);
+    let mut out = vec![0u8; n * n * 4];
+    for y in 0..n {
+        for x in 0..n {
+            let px = (x as f32 / (n - 1) as f32 - 0.5) * 2.0 * extent;
+            let py = (0.5 - y as f32 / (n - 1) as f32) * 2.0 * extent;
+            let rgb = match plane {
+                Plane::YCbCr => redrob_film_color::ycbcr_to_rgb(0.5, px, py, m),
+                Plane::Yuv => {
+                    let cb = px / (crate::U_SCALE * 2.0 * (1.0 - kb));
+                    let cr = py / (crate::V_SCALE * 2.0 * (1.0 - kr));
+                    redrob_film_color::ycbcr_to_rgb(0.5, cb, cr, m)
+                }
+                Plane::Rgb => {
+                    let hue = (crate::angle_deg(px, py) - red).rem_euclid(360.0) / 360.0;
+                    let sat = ((px * px + py * py).sqrt() / 0.5).min(1.0);
+                    redrob_film_color::hsl_to_rgb(hue, sat, 0.5)
+                }
+            };
+            let o = (y * n + x) * 4;
+            for (d, v) in out[o..o + 3].iter_mut().zip(rgb) {
+                *d = (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+            }
+            out[o + 3] = 255;
+        }
+    }
+    (n, n, out)
+}

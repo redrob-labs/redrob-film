@@ -22,6 +22,12 @@
 //!
 //! Playback asks [`PreviewStore::frame`] first: when the frame lies in a segment with a preview, the
 //! decoded preview frame replaces the live render.
+//!
+//! Timeline Preview (Kdenlive): a sequence keeps preview zones (`Sequence::preview_zones`, saved in
+//! the project); Start Preview Render renders every zone in one pass ([`RenderMode::Zones`]), Stop
+//! Preview Render cancels, and with Automatic Preview ([`auto_render`]) the zones are rendered again
+//! once the timeline has been left unedited for a moment. The preview files' ProRes flavour follows
+//! Sequence Settings ▸ Video Previews ▸ Codec ([`PREVIEW_CODECS`]).
 
 use redrob_film_audio_dsp::channels::{Layout, Mixdown};
 use redrob_film_render::audio::to_layout;
@@ -68,6 +74,61 @@ pub enum RenderMode {
     InToOut,
     /// Segments showing a selected clip.
     Selection,
+    /// Every frame of the sequence's preview zones (In/Out when it has none): Start Preview Render.
+    Zones,
+}
+
+/// Sequence ▸ Preview Codec choices (label, ProRes flavour; "" = HQ).
+pub const PREVIEW_CODECS: &[(&str, &str)] = &[("ProRes 422 HQ", "hq"), ("ProRes 422", "standard"), ("ProRes 422 LT", "lt"), ("ProRes 422 Proxy", "proxy")];
+
+/// The ProRes flavour of a sequence's preview codec label (unknown labels: HQ).
+pub fn preview_prores(label: &str) -> &'static str {
+    PREVIEW_CODECS.iter().find(|c| c.0.eq_ignore_ascii_case(label)).map_or("hq", |c| c.1)
+}
+
+/// Whether a job is a preview render (Stop Preview Render cancels these).
+pub fn is_preview_job(label: &str) -> bool {
+    label.starts_with(PREVIEW_JOB) || label == AUDIO_PREVIEW_JOB
+}
+const PREVIEW_JOB: &str = "Rendering preview";
+const AUDIO_PREVIEW_JOB: &str = "Rendering audio previews";
+
+/// Add `r` to sorted, non-overlapping zones (touching or overlapping zones merge).
+pub fn add_zone(zones: &mut Vec<TimeRange>, r: TimeRange) {
+    if r.duration.0 <= 0 {
+        return;
+    }
+    let (mut a, mut b) = (r.start, r.end());
+    zones.retain(|z| {
+        if z.end() < a || b < z.start {
+            true
+        } else {
+            a = a.min(z.start);
+            b = b.max(z.end());
+            false
+        }
+    });
+    zones.push(TimeRange::from_bounds(a, b));
+    zones.sort_by_key(|z| z.start);
+}
+
+/// Take `r` out of the zones (a zone straddling it is split).
+pub fn remove_zone(zones: &mut Vec<TimeRange>, r: TimeRange) {
+    let (a, b) = (r.start, r.end());
+    let mut out = Vec::with_capacity(zones.len() + 1);
+    for z in zones.drain(..) {
+        if z.end() <= a || b <= z.start {
+            out.push(z);
+            continue;
+        }
+        if z.start < a {
+            out.push(TimeRange::from_bounds(z.start, a));
+        }
+        if b < z.end() {
+            out.push(TimeRange::from_bounds(b, z.end()));
+        }
+    }
+    *zones = out;
 }
 
 type Memo = (Arc<Project>, ItemId, Arc<Vec<Segment>>);
@@ -89,6 +150,8 @@ pub struct PreviewStore {
     audio: Mutex<Vec<(String, Arc<Vec<f32>>)>>,
     memo: Mutex<Vec<Memo>>,
     audio_memo: Mutex<Vec<AudioMemo>>,
+    /// Automatic Preview: (project revision last seen, when it was first seen, rendered for it).
+    auto: Mutex<Option<(u64, web_time::Instant, bool)>>,
     /// Bumped whenever the set of preview files changes.
     pub generation: AtomicU64,
     /// Live mixer state shared with playback: held controls, meters, newest project snapshot.
@@ -603,25 +666,39 @@ struct Todo {
 /// gets a partial preview), and every mode renders only frames that have no preview yet.
 pub fn render(s: &mut Session, mode: RenderMode, p: &Value) -> Result<Value> {
     let (seq, range) = in_out(s)?;
-    let rate = s.project.sequence(seq).ok_or(EngineError::NoSequence)?.settings.frame_rate;
+    let q = s.project.sequence(seq).ok_or(EngineError::NoSequence)?;
+    let rate = q.settings.frame_rate;
+    let prores = preview_prores(&q.settings.preview_codec);
+    // Start Preview Render: every preview zone in one pass (In/Out when there are none)
+    let ranges: Vec<TimeRange> = if mode == RenderMode::Zones && !q.preview_zones.is_empty() { q.preview_zones.clone() } else { vec![range] };
+    let quiet = p.get("quiet").and_then(Value::as_bool).unwrap_or(false);
     let store = s.previews.clone();
     let dir = store.dir().ok_or_else(|| EngineError::Other("render previews are not available here (no preview folder)".into()))?;
     let segs = store.segments(&s.project, seq);
     let selection: HashSet<_> = s.state.selection.iter().copied().collect();
     let mut todo: Vec<Todo> = Vec::new();
     for g in segs.iter() {
-        let (a, b) = match mode {
-            RenderMode::EffectsInToOut if g.need == Need::None => continue,
-            RenderMode::EffectsInToOut | RenderMode::InToOut => rel_range(g, rate, &range),
-            RenderMode::Selection if g.clips.iter().any(|c| selection.contains(c)) => (0, g.frames.max(0)),
-            RenderMode::Selection => continue,
-        };
-        for (off, end) in gaps(&store.coverage(g), a, b) {
-            todo.push(Todo { seg: g.clone(), off, len: end - off });
+        for range in &ranges {
+            let (a, b) = match mode {
+                RenderMode::EffectsInToOut if g.need == Need::None => continue,
+                RenderMode::EffectsInToOut | RenderMode::InToOut | RenderMode::Zones => rel_range(g, rate, range),
+                RenderMode::Selection if g.clips.iter().any(|c| selection.contains(c)) => (0, g.frames.max(0)),
+                RenderMode::Selection => continue,
+            };
+            for (off, end) in gaps(&store.coverage(g), a, b) {
+                if end > off && !todo.iter().any(|t| t.seg.hash == g.hash && t.off < end && off < t.off + t.len) {
+                    todo.push(Todo { seg: g.clone(), off, len: end - off });
+                }
+            }
+            if mode == RenderMode::Selection {
+                break;
+            }
         }
     }
     if todo.is_empty() {
-        s.toast("Nothing to render: previews are up to date");
+        if !quiet {
+            s.toast("Nothing to render: previews are up to date");
+        }
         return Ok(json!({"job": null, "segments": 0}));
     }
     std::fs::create_dir_all(&dir).map_err(|e| EngineError::Other(format!("preview folder {}: {e}", dir.display())))?;
@@ -629,7 +706,7 @@ pub fn render(s: &mut Session, mode: RenderMode, p: &Value) -> Result<Value> {
     let id = s.jobs.len() as u64 + 1;
     let job = crate::Job {
         id,
-        label: format!("Rendering {} preview segment{}", todo.len(), if todo.len() == 1 { "" } else { "s" }),
+        label: format!("{PREVIEW_JOB}: {} segment{}", todo.len(), if todo.len() == 1 { "" } else { "s" }),
         progress: Default::default(),
         result: Default::default(),
     };
@@ -667,6 +744,8 @@ pub fn render(s: &mut Session, mode: RenderMode, p: &Value) -> Result<Value> {
                 part_of_batch: true,
                 // previews stand in for the monitor picture: display-referred SDR
                 sdr: true,
+                // Sequence Settings ▸ Video Previews ▸ Codec
+                prores_profile: prores.to_string(),
                 ..Default::default()
             };
             match redrob_film_export::export(&project, seq, &settings, &provider, &prog) {
@@ -737,7 +816,7 @@ pub fn render_audio(s: &mut Session, p: &Value) -> Result<Value> {
     std::fs::create_dir_all(&dir).map_err(|e| EngineError::Other(format!("preview folder {}: {e}", dir.display())))?;
     let total: i64 = todo.iter().map(|g| g.samples).sum();
     let id = s.jobs.len() as u64 + 1;
-    let job = crate::Job { id, label: "Rendering audio previews".into(), progress: Default::default(), result: Default::default() };
+    let job = crate::Job { id, label: AUDIO_PREVIEW_JOB.into(), progress: Default::default(), result: Default::default() };
     job.progress.total.store(total.max(1) as u64, Ordering::Relaxed);
     let project = s.project.clone();
     let provider = s.media.full_res_provider(project.clone(), s.services.clone());
@@ -872,6 +951,160 @@ pub fn delete(s: &mut Session, in_to_out: bool) -> Result<Value> {
     };
     s.toast(format!("Deleted {n} render file{}", if n == 1 { "" } else { "s" }));
     Ok(json!({"deleted": n}))
+}
+
+/// Delete the preview files holding frames of `range` in sequence `seq`. Returns how many.
+fn delete_range(s: &Session, seq: ItemId, range: &TimeRange) -> usize {
+    let Some(rate) = s.project.sequence(seq).map(|q| q.settings.frame_rate) else { return 0 };
+    let names: Vec<String> = s
+        .previews
+        .segments(&s.project, seq)
+        .iter()
+        .flat_map(|g| {
+            let (a, b) = rel_range(g, rate, range);
+            s.previews.parts_in(g, a, b)
+        })
+        .collect();
+    s.previews.delete_files(&names)
+}
+
+/// A `{start, end}` (seconds) range from the request, else In/Out.
+fn range_p(s: &Session, p: &Value) -> Result<(ItemId, TimeRange)> {
+    let (seq, range) = in_out(s)?;
+    match (p.get("start").and_then(Value::as_f64), p.get("end").and_then(Value::as_f64)) {
+        (Some(a), Some(b)) if a.is_finite() && b.is_finite() && b > a && a >= 0.0 => {
+            Ok((seq, TimeRange::from_bounds(Tick::from_seconds_f64(a), Tick::from_seconds_f64(b))))
+        }
+        (None, None) => Ok((seq, range)),
+        _ => Err(EngineError::Other("need `start` < `end` (seconds), or neither for In to Out".into())),
+    }
+}
+
+fn zones_json(s: &Session, seq: ItemId) -> Value {
+    let Some(q) = s.project.sequence(seq) else { return Value::Null };
+    json!({
+        "zones": q.preview_zones.iter().map(|z| json!({"start": z.start.seconds(), "end": z.end().seconds()})).collect::<Vec<_>>(),
+        "autoPreview": q.auto_preview,
+    })
+}
+
+/// Sequence ▸ Timeline Preview ▸ Add Preview Zone: In to Out (or `{start, end}`) becomes a preview
+/// zone. With Automatic Preview the new zone starts rendering.
+pub fn add_preview_zone(s: &mut Session, p: &Value) -> Result<Value> {
+    let (seq, range) = range_p(s, p)?;
+    if range.duration.0 <= 0 {
+        return Err(EngineError::Other("the zone is empty: set In and Out first".into()));
+    }
+    s.edit("Add Preview Zone", |proj, _| {
+        let q = proj.sequence_mut(seq).ok_or(EngineError::NoSequence)?;
+        add_zone(&mut q.preview_zones, range);
+        Ok(())
+    })?;
+    if s.project.sequence(seq).is_some_and(|q| q.auto_preview) {
+        let _ = render(s, RenderMode::Zones, &json!({"quiet": true}));
+    }
+    Ok(zones_json(s, seq))
+}
+
+/// Remove Preview Zone: take In to Out (or `{start, end}`) out of the zones and delete its previews.
+pub fn remove_preview_zone(s: &mut Session, p: &Value) -> Result<Value> {
+    let (seq, range) = range_p(s, p)?;
+    s.edit("Remove Preview Zone", |proj, _| {
+        let q = proj.sequence_mut(seq).ok_or(EngineError::NoSequence)?;
+        remove_zone(&mut q.preview_zones, range);
+        Ok(())
+    })?;
+    let n = delete_range(s, seq, &range);
+    let mut v = zones_json(s, seq);
+    v["deleted"] = json!(n);
+    Ok(v)
+}
+
+/// Remove All Preview Zones (and their previews).
+pub fn remove_all_preview_zones(s: &mut Session) -> Result<Value> {
+    let seq = s.state.active_sequence.ok_or(EngineError::NoSequence)?;
+    let zones = s.project.sequence(seq).map(|q| q.preview_zones.clone()).unwrap_or_default();
+    s.edit("Remove All Preview Zones", |proj, _| {
+        proj.sequence_mut(seq).ok_or(EngineError::NoSequence)?.preview_zones.clear();
+        Ok(())
+    })?;
+    let n: usize = zones.iter().map(|z| delete_range(s, seq, z)).sum();
+    let mut v = zones_json(s, seq);
+    v["deleted"] = json!(n);
+    Ok(v)
+}
+
+/// Automatic Preview on or off (`{enabled?}` toggles). Turning it on renders the zones.
+pub fn set_auto_preview(s: &mut Session, p: &Value) -> Result<Value> {
+    let seq = s.state.active_sequence.ok_or(EngineError::NoSequence)?;
+    let cur = s.project.sequence(seq).is_some_and(|q| q.auto_preview);
+    let on = p.get("enabled").and_then(Value::as_bool).unwrap_or(!cur);
+    if on != cur {
+        s.edit(if on { "Automatic Preview On" } else { "Automatic Preview Off" }, |proj, _| {
+            proj.sequence_mut(seq).ok_or(EngineError::NoSequence)?.auto_preview = on;
+            Ok(())
+        })?;
+    }
+    if on {
+        let _ = render(s, RenderMode::Zones, &json!({"quiet": true}));
+    }
+    Ok(zones_json(s, seq))
+}
+
+/// Stop Preview Render: cancel every running preview render job.
+pub fn stop(s: &mut Session) -> Result<Value> {
+    let mut n = 0;
+    for j in s.jobs.iter().filter(|j| is_preview_job(&j.label) && !j.progress.finished.load(Ordering::Relaxed)) {
+        j.progress.cancel.store(true, Ordering::Relaxed);
+        n += 1;
+    }
+    Ok(json!({"cancelled": n}))
+}
+
+/// Whether a preview render is running (Stop Preview Render's enabled state).
+pub fn rendering(s: &Session) -> bool {
+    s.jobs.iter().any(|j| is_preview_job(&j.label) && !j.progress.finished.load(Ordering::Relaxed))
+}
+
+/// How long the timeline must stay unedited before Automatic Preview renders the zones again.
+const AUTO_SETTLE_SECS: f64 = 1.5;
+
+/// Automatic Preview (called from `Session::poll_persistence`): once the sequence has gone
+/// [`AUTO_SETTLE_SECS`] without an edit, render what its preview zones lack.
+pub fn auto_render(s: &mut Session) {
+    if cfg!(target_arch = "wasm32") {
+        return;
+    }
+    let Some(seq) = s.state.active_sequence else { return };
+    if !s.project.sequence(seq).is_some_and(|q| q.auto_preview && !q.preview_zones.is_empty()) || s.previews.dir().is_none() {
+        return;
+    }
+    let rev = s.revision;
+    let now = web_time::Instant::now();
+    {
+        let mut st = s.previews.auto.lock().unwrap_or_else(|e| e.into_inner());
+        match &mut *st {
+            Some((r, _, done)) if *r == rev && *done => return,
+            Some((r, t, _)) if *r == rev => {
+                if now.duration_since(*t).as_secs_f64() < AUTO_SETTLE_SECS {
+                    return;
+                }
+            }
+            slot => {
+                *slot = Some((rev, now, false));
+                return;
+            }
+        }
+        if rendering(s) {
+            return;
+        }
+        if let Some(x) = st.as_mut() {
+            x.2 = true;
+        }
+    }
+    if let Err(e) = render(s, RenderMode::Zones, &json!({"quiet": true})) {
+        s.log.push(crate::panels::Level::Warning, "previews", format!("automatic preview: {e}"));
+    }
 }
 
 /// The render bar of the active sequence as JSON (for agents and tests).

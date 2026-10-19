@@ -74,7 +74,9 @@ pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<
         })),
         "media.createProxies" => Some(enabled(app, id).map(|_| {
             let items = app.session.state.project_selection.iter().map(|i| i.0).collect();
-            app.ui.create_proxies = Some(ProxyDraft { items, preset: redrob_film_engine::proxies::DEFAULT_PROXY_PRESET.into(), destination: String::new() });
+            let chosen = &app.session.prefs.media.proxy_profile;
+            let preset = if chosen.is_empty() { redrob_film_engine::proxies::DEFAULT_PROXY_PRESET.to_string() } else { chosen.clone() };
+            app.ui.create_proxies = Some(ProxyDraft { items, preset, destination: String::new() });
             json!({"dialog": "createProxies"})
         })),
         "media.attachProxies" | "media.reconnectFullRes" => {
@@ -477,6 +479,15 @@ fn create_proxies(app: &mut FilmcraftApp, ctx: &egui::Context) {
                     d.preset = p.id.into();
                 }
             }
+            // Preferences ▸ Media ▸ Proxy Clips ▸ Manage Proxy Profiles
+            for p in app.session.prefs.media.proxy_profiles.clone() {
+                let id = format!("custom:{}", p.name);
+                let r = ui.radio(d.preset == id, p.name.as_str());
+                push(&mut elems, format!("proxies.preset.{id}"), &r, p.name.as_str());
+                if r.clicked() {
+                    d.preset = id;
+                }
+            }
             ui.add_space(4.0);
             ui.label(RichText::new(tl!("Destination")).strong());
             ui.horizontal(|ui| {
@@ -504,7 +515,13 @@ fn create_proxies(app: &mut FilmcraftApp, ctx: &egui::Context) {
         d.destination = f;
     }
     if ok {
-        let p = json!({"items": d.items, "preset": d.preset, "destination": if d.destination.is_empty() { Value::Null } else { json!(d.destination) }});
+        let mut p = json!({"items": d.items, "destination": if d.destination.is_empty() { Value::Null } else { json!(d.destination) }});
+        // the Preferences profile (and its alpha profile for clips with alpha) unless another is picked
+        let pref = &app.session.prefs.media.proxy_profile;
+        let pref = if pref.is_empty() { redrob_film_engine::proxies::DEFAULT_PROXY_PRESET } else { pref.as_str() };
+        if d.preset != pref {
+            p["preset"] = json!(d.preset);
+        }
         match app.session.execute("media.createProxies", p) {
             Ok(v) => app.ui.status = tlf!("Creating {n} proxy file(s)…", n = v["outputs"].as_array().map_or(0, Vec::len)),
             Err(e) => app.ui.status = e.to_string(),

@@ -1582,6 +1582,46 @@ pub fn fit_tracks(app: &mut FilmcraftApp) -> Value {
     json!({"videoTrackHeight": tv.video_track_h, "audioTrackHeight": tv.audio_track_h})
 }
 
+/// The timeline toolbar's Timeline Preview menu (Kdenlive): the Sequence ▸ Timeline Preview
+/// commands plus the render-files ones.
+fn preview_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
+    ui.set_min_width(220.0);
+    let auto = app.session.active_sequence().is_some_and(|q| q.auto_preview);
+    let items: [(&str, &str); 8] = [
+        ("sequence.startPreviewRender", tl!("Start Preview Render")),
+        ("sequence.stopPreviewRender", tl!("Stop Preview Render")),
+        ("sequence.addPreviewZone", tl!("Add Preview Zone")),
+        ("sequence.removePreviewZone", tl!("Remove Preview Zone")),
+        ("sequence.removeAllPreviewZones", tl!("Remove All Preview Zones")),
+        ("sequence.autoPreview", tl!("Automatic Preview")),
+        ("sequence.deleteRenderFilesInToOut", tl!("Delete Render Files In to Out")),
+        ("sequence.deleteRenderFiles", tl!("Delete Render Files")),
+    ];
+    let mut run = None;
+    for (i, (id, label)) in items.into_iter().enumerate() {
+        if i == 2 || i == 5 || i == 6 {
+            ui.separator();
+        }
+        let enabled = app.session.is_enabled(id);
+        let r = if id == "sequence.autoPreview" {
+            let mut on = auto;
+            ui.add_enabled(enabled, egui::Checkbox::new(&mut on, label))
+        } else {
+            ui.add_enabled(enabled, egui::Button::new(label))
+        };
+        app.auto.add(&format!("timeline.preview.{}", id.trim_start_matches("sequence.")), r.rect, label);
+        if r.clicked() {
+            run = Some(id);
+        }
+    }
+    if let Some(id) = run {
+        if let Err(e) = app.session.execute(id, json!({})) {
+            app.ui.status = e.to_string();
+        }
+        ui.close();
+    }
+}
+
 fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequence, layout: &Layout, t: &Tokens, seq_id: ItemId) {
     let p = ui.painter().clone();
     let rate = seq.settings.frame_rate;
@@ -1610,7 +1650,8 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
     let mut x = rect.min.x + 12.0;
     let y = rect.min.y + 26.0;
     let mixer_shown = app.ui.dock.is_visible(crate::dock::PanelKind::AudioTrackMixer);
-    let toggles: [(Icon, &str, bool, bool, &str); 7] = [
+    let auto_preview = seq.auto_preview;
+    let toggles: [(Icon, &str, bool, bool, &str); 8] = [
         (Icon::Nest, "nest", !app.session.state.sequences_as_clips, true, tl!("Insert and overwrite sequences as nests or individual clips")),
         (Icon::Magnet, "snap", app.session.state.snapping, true, tl!("Snap in Timeline (S)")),
         (Icon::Link, "linked", app.session.state.linked_selection, true, tl!("Linked Selection")),
@@ -1619,8 +1660,10 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
         (Icon::Wrench, "settings", false, false, tl!("Timeline Display Settings")),
         // Kdenlive: the timeline toolbar's audio mixer button shows / hides the Audio Track Mixer
         (Icon::Speaker, "mixer", mixer_shown, true, tl!("Show/Hide the Audio Track Mixer")),
+        // Kdenlive: the Timeline Preview menu (lit while Automatic Preview is on)
+        (Icon::Film, "preview", auto_preview, true, tl!("Timeline Preview")),
     ];
-    // seven buttons share the track-header width (30 pt each when it is wide enough)
+    // the buttons share the track-header width (30 pt each when it is wide enough)
     let step = ((hw - 16.0) / toggles.len() as f32).clamp(22.0, 30.0);
     for (icon, key, on, toggle, tip) in toggles {
         let r = Rect::from_min_size(pos2(x, y), vec2(step - 2.0, 28.0));
@@ -1648,6 +1691,9 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
                 }
                 _ => Ok(Value::Null),
             };
+        }
+        if key == "preview" {
+            egui::Popup::menu(&resp).show(|ui| preview_menu(app, ui));
         }
         if key == "settings" {
             egui::Popup::menu(&resp).show(|ui| {
@@ -1870,6 +1916,15 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
                 ui.label(what);
             });
         }
+    }
+    // preview zones (Sequence ▸ Timeline Preview): a thin band just above the render bar
+    for (i, z) in seq.preview_zones.iter().enumerate() {
+        let r = Rect::from_min_max(pos2(layout.x_of(z.start), rb.min.y - 3.0), pos2(layout.x_of(z.end()), rb.min.y - 1.0)).intersect(ruler);
+        if r.width() <= 0.0 {
+            continue;
+        }
+        clip.rect_filled(r, 0.0, Color32::from_rgba_unmultiplied(0x6a, 0x9c, 0xff, 200));
+        app.auto.add(&format!("timeline.previewZone.{i}"), r.expand2(vec2(0.0, 2.0)), tl!("Preview zone"));
     }
     // markers: 8 × 12 pt pentagons in the marker colour, on the top row
     for m in &seq.markers {

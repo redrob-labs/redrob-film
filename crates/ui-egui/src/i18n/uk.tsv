@@ -1023,3 +1023,13 @@
 	Tool	Інструмент
 	Show Menu Bar	Показати рядок меню
 	Show Status Bar	Показати рядок стану
+# Kdenlive parity p03: scopes options and Audio Spectrum
+	Audio Spectrum	Спектр звуку
+# Kdenlive parity p03: timeline preview
+	Timeline Preview	Попередній перегляд таймлайну
+	Start Preview Render	Почати рендер попереднього перегляду
+	Stop Preview Render	Зупинити рендер попереднього перегляду
+	Add Preview Zone	Додати зону попереднього перегляду
+	Remove Preview Zone	Видалити зону попереднього перегляду
+	Remove All Preview Zones	Видалити всі зони попереднього перегляду
+	Automatic Preview	Автоматичний попередній перегляд

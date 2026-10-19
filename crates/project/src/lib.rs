@@ -1066,6 +1066,13 @@ pub struct Sequence {
     /// Effects). Older files have none (serde default: both as before).
     #[serde(default, skip_serializing_if = "TimelineOptions::is_default")]
     pub timeline_options: TimelineOptions,
+    /// Timeline preview zones (Sequence ▸ Add Preview Zone): ranges Start Preview Render renders
+    /// in one pass, kept sorted and without overlaps. Older files have none.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub preview_zones: Vec<TimeRange>,
+    /// Automatic Preview: the zones are rendered again by themselves after edits.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub auto_preview: bool,
 }
 
 /// Sequence-wide render switches set from the Timeline.
@@ -1648,6 +1655,8 @@ impl Project {
             merged: None,
             split: SplitMarks::default(),
             timeline_options: TimelineOptions::default(),
+            preview_zones: Vec::new(),
+            auto_preview: false,
         };
         for i in 0..v {
             let id = TrackId(self.alloc_id());

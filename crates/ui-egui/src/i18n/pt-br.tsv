@@ -1023,3 +1023,13 @@
 	Tool	Ferramenta
 	Show Menu Bar	Mostrar barra de menus
 	Show Status Bar	Mostrar barra de status
+# Kdenlive parity p03: scopes options and Audio Spectrum
+	Audio Spectrum	Espectro de áudio
+# Kdenlive parity p03: timeline preview
+	Timeline Preview	Pré-visualização da linha do tempo
+	Start Preview Render	Iniciar renderização de pré-visualização
+	Stop Preview Render	Parar renderização de pré-visualização
+	Add Preview Zone	Adicionar zona de pré-visualização
+	Remove Preview Zone	Remover zona de pré-visualização
+	Remove All Preview Zones	Remover todas as zonas de pré-visualização
+	Automatic Preview	Pré-visualização automática

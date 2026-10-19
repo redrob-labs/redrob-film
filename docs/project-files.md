@@ -321,12 +321,26 @@ badge (`project.item.<id>.proxy`).
 | `media.reconnectFullRes {item, path}` | Reconnect Full Resolution Media… | link the full-resolution file of a clip that has a proxy |
 | `media.toggleProxies {enabled?}` | View ▸ Toggle Proxies, monitor button | Preferences ▸ Media ▸ `media.enableProxies` |
 | `media.proxyPresets` | | |
+| `media.proxyProfiles` | Preferences ▸ Media ▸ Proxy Clips | built-in presets, custom profiles, the chosen ones, the allowed parameters |
+| `media.saveProxyProfile {name, params, previous?}` / `media.deleteProxyProfile {name}` | Manage Proxy Profiles | parameters outside the allowed list are refused, naming them |
 
 The presets use our own encoders:
 
 - `prores_proxy_quarter` (default), `prores_proxy_half`, `prores_lt_half`: ProRes 422 Proxy or LT
   in MOV with PCM audio;
-- `h264_quarter`, `h264_half`: H.264 + AAC in MP4.
+- `h264_quarter`, `h264_half`: H.264 + AAC in MP4;
+- `prores_4444_quarter` (default for clips with alpha), `prores_4444_half`: ProRes 4444 with alpha.
+
+Custom profiles (`custom:<name>`) are `key=value` lists: `codec=prores|h264`,
+`profile=proxy|lt|standard|hq|4444`, `width=<px>`, `scale=<0.05–1>`, `quality=<1–100>`,
+`bitrate=<kbit/s>`, `alpha=0|1`, `audio=0|1`.
+
+Preferences ▸ Media ▸ Proxy Clips (with Enable proxies on) also makes proxies on import: of
+videos wider than `media.proxyAutoVideoWidth` (`media.proxyAutoVideo`) and of stills wider than
+`media.proxyAutoImageWidth` (`media.proxyAutoImage`, a PNG `media.proxyImageWidth` pixels wide),
+and attaches the files cameras record beside their clips (`media.proxyExternal`: GoPro `.LRV`,
+DJI `.LRF`, Sony `SUB/…S03.MP4`). `media.proxyVideoWidth` (0 = the profile's size) sets the width
+of video proxies.
 
 Proxies go to `<media folder>/Proxies/<name>_Proxy.<ext>`, or to the chosen folder. Job progress is
 in `jobs.list`. `Session::poll_persistence`, which the app calls every frame, attaches finished
