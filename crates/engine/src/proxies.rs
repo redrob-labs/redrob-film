@@ -398,6 +398,7 @@ pub fn start_media_job(s: &mut Session, label: String, work: Vec<(ItemId, String
     let id = s.jobs.iter().map(|j| j.id).max().unwrap_or(0) + 1;
     let job = crate::Job { id, label, progress: Default::default(), result: Default::default() };
     job.progress.total.store(total, std::sync::atomic::Ordering::Relaxed);
+    s.job_items.insert(id, tasks.iter().map(|t| t.0).collect());
     let outputs: Arc<Mutex<Vec<(ItemId, String)>>> = Arc::default();
     let (prog, res, outs) = (job.progress.clone(), job.result.clone(), outputs.clone());
     // Settings ▸ Media ▸ Proxy and transcode jobs at once: clips transcoded side by side

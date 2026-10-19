@@ -49,6 +49,7 @@ mod file_filters;
 #[cfg(any(target_os = "windows", test))]
 mod graphics;
 mod handoff;
+mod jog_shuttle;
 mod logging;
 #[cfg(target_os = "macos")]
 mod native_menu;
@@ -325,6 +326,8 @@ fn main() -> eframe::Result {
             // The Redrob Code app bridge (app_bridge.rs): the shared daemon's agent drives this
             // window too, through the same channel; the bridge is optional (no daemon, no bridge).
             let (rx, bridge_tx) = app_bridge::relay(rx);
+            // Settings ▸ Playback ▸ Jog Shuttle: the device's buttons, jog and ring run commands
+            jog_shuttle::start(bridge_tx.clone(), cc.egui_ctx.clone());
             let bridge = app_bridge::start(bridge_tx, cc.egui_ctx.clone());
             // The shell sits on the channel first (its own `mode.*` commands, the catalogue, a
             // `ui.*` refusal while Effects is on screen) and forwards the rest to the Edit editor.

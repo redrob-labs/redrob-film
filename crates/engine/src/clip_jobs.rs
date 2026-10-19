@@ -134,6 +134,7 @@ fn start_render(s: &mut Session, label: String, tasks: Vec<(ItemId, Arc<Project>
     }
     let id = s.jobs.iter().map(|j| j.id).max().unwrap_or(0) + 1;
     let job = crate::Job { id, label, progress: Default::default(), result: Default::default() };
+    s.job_items.insert(id, tasks.iter().map(|t| t.0).collect());
     let outputs: Arc<Mutex<Vec<(ItemId, String)>>> = Arc::default();
     let (prog, res, outs) = (job.progress.clone(), job.result.clone(), outputs.clone());
     let pool = s.media.clone();
@@ -298,6 +299,31 @@ fn speed_job(s: &mut Session, p: &Value) -> Result<Value> {
     let outs: Vec<String> = tasks.iter().map(|t| t.3.path.clone()).collect();
     let job = start_render(s, format!("Speed change ({} clip(s))", tasks.len()), tasks, true, false, bool_p(p, "wait").unwrap_or(false))?;
     Ok(json!({"job": job, "outputs": outs}))
+}
+
+/// Kdenlive's Extract Zone: the Source Monitor's zone (In to Out) of a media clip written to a new
+/// file (ProRes 422 HQ, or 24-bit WAV for sound only; the clip's own size and rate), added to the
+/// project when it is done unless `addToProject` is false.
+fn extract_zone(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "clip.extractZone";
+    let item = u64_p(p, "item").map(ItemId).or(s.state.source_item).ok_or_else(|| bad(cmd, "open a clip in the Source Monitor"))?;
+    let view = crate::clip_ops::source_view(s, item).ok_or_else(|| bad(cmd, "the clip is unavailable"))?;
+    let (m, path, name) = file_of(&s.project, view.media).ok_or_else(|| bad(cmd, "the zone of a media file can be extracted"))?;
+    let range = view.selected_range();
+    if range.duration <= Tick::ZERO {
+        return Err(bad(cmd, "the zone is empty"));
+    }
+    let (proj, seq, _) = clip_project(&s.project, view.media, &|_: &mut redrob_film_project::TrackItem, _: TrackKind| {}).ok_or_else(|| bad(cmd, "not a media clip"))?;
+    let mut st = intermediate(m.info.video.is_some());
+    st.range = Some(range);
+    st.path = match str_p(p, "path").map(str::trim).filter(|x| !x.is_empty()) {
+        Some(x) => x.to_string(),
+        None => out_path(&dest_dir(p, &path), &stem(&path), "_zone", st.extension(), &[]),
+    };
+    let out = st.path.clone();
+    let add = bool_p(p, "addToProject").unwrap_or(true);
+    let job = start_render(s, format!("Extract Zone ({name})"), vec![(view.media, Arc::new(proj), seq, st)], add, false, bool_p(p, "wait").unwrap_or(false))?;
+    Ok(json!({"job": job, "outputs": [out]}))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -509,6 +535,7 @@ fn jobs_run(s: &mut Session, p: &Value) -> Result<Value> {
     let id = s.jobs.iter().map(|j| j.id).max().unwrap_or(0) + 1;
     let job = crate::Job { id, label: format!("{} ({} clip(s))", cj.name, work.len()), progress: Default::default(), result: Default::default() };
     job.progress.total.store(work.len() as u64, Ordering::Relaxed);
+    s.job_items.insert(id, work.iter().map(|w| w.0).collect());
     let outputs: Arc<Mutex<Vec<(ItemId, String)>>> = Arc::default();
     let (prog, res, outs) = (job.progress.clone(), job.result.clone(), outputs.clone());
     let outs_json: Vec<String> = work.iter().map(|w| w.2.clone()).collect();
@@ -738,6 +765,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec("transcode.profiles.list", "List Transcode Profiles", "{}", always, profiles_list, false),
         spec("transcode.profiles.save", "Save Transcode Profile", r#"{"name":str,"preset":exportPresetName,"scale":f32=1}"#, always, profiles_save, true),
         spec("transcode.profiles.delete", "Delete Transcode Profile", r#"{"name":str}"#, always, profiles_delete, true),
+        spec("clip.extractZone", "Extract Zone", r#"{"item":id?,"path":str?,"addToProject":bool=true,"destination":dir?,"wait":bool?}"#, always, extract_zone, true),
         spec("clipJobs.list", "List Clip Jobs", "{}", always, jobs_list, false),
         spec(
             "clipJobs.save",

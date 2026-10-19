@@ -453,6 +453,9 @@ pub struct Session {
     pub restored_layout: Option<Value>,
     /// Clip jobs (stabilize, speed change, transcode, custom) whose outputs are added when done.
     pub clip_jobs: Vec<clip_jobs::PendingClipJob>,
+    /// Project items each background job works on (clip jobs, proxies, transcodes): job id ->
+    /// items. The Source Monitor's job overlay shows the jobs of the clip it shows.
+    pub job_items: std::collections::BTreeMap<u64, Vec<redrob_film_project::ItemId>>,
 }
 
 /// An export advanced a batch at a time on the host's thread ([`Session::pump_jobs`]).
@@ -549,6 +552,7 @@ impl Session {
             ui_layout: None,
             restored_layout: None,
             clip_jobs: Vec::new(),
+            job_items: Default::default(),
         }
     }
 

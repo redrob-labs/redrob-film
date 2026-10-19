@@ -237,6 +237,9 @@ pub struct Playback {
     /// Where the playhead was when this play started (Settings ▸ Timeline ▸ Return the playhead
     /// to its start position when playback stops).
     pub started_at: Option<Tick>,
+    /// A loop for this play only (Kdenlive's Loop Zone and Loop Selected Clip): start and end
+    /// (exclusive) of the range played over and over until playback stops. Overrides `looping`.
+    pub loop_range: Option<(Tick, Tick)>,
 }
 
 /// How long (s) the audio clock may stand still during playback before the wall clock takes over.
@@ -1032,6 +1035,7 @@ impl FilmcraftApp {
         let was_playing = self.playback.playing;
         self.playback.playing = false;
         self.playback.stop_at = None;
+        self.playback.loop_range = None;
         self.playback.preroll = None;
         self.playback.meter.finish();
         self.frames.stop_prefetch();
@@ -1188,16 +1192,19 @@ impl FilmcraftApp {
         let t = self.playback.anchor_tick + Tick::from_seconds_f64(elapsed * self.playback.speed);
         let seq = self.session.active_sequence();
         let dur = seq.map(|q| q.duration()).unwrap_or_default();
-        let (lo, hi) = if self.playback.looping {
+        let looping = self.playback.looping || self.playback.loop_range.is_some();
+        let (lo, hi) = if let Some((a, b)) = self.playback.loop_range {
+            (a, b.min(dur))
+        } else if self.playback.looping {
             (seq.and_then(|q| q.mark_in).unwrap_or(Tick::ZERO), seq.and_then(|q| q.mark_out).map(|o| o + rate.frame_duration()).unwrap_or(dur))
         } else {
             (Tick::ZERO, dur)
         };
-        if let Some(end) = self.playback.stop_at.filter(|e| t >= *e && self.playback.speed > 0.0 && !self.playback.looping) {
+        if let Some(end) = self.playback.stop_at.filter(|e| t >= *e && self.playback.speed > 0.0 && !looping) {
             self.session.set_playhead(end);
             self.stop();
         } else if t >= hi && self.playback.speed > 0.0 {
-            if self.playback.looping {
+            if looping {
                 self.session.set_playhead(lo);
                 self.play(self.playback.speed);
             } else {

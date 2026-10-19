@@ -1033,3 +1033,87 @@
 	Remove Preview Zone	Видалити зону попереднього перегляду
 	Remove All Preview Zones	Видалити всі зони попереднього перегляду
 	Automatic Preview	Автоматичний попередній перегляд
+	Loop Zone	Зациклити зону
+	Loop Selected Clip	Зациклити вибраний кліп
+	Set Playback Speed	Задати швидкість відтворення
+	Focus Timecode	Фокус на тайм-код
+	Align Playhead to Mouse Position	Вирівняти курсор відтворення за мишею
+	Switch Monitor Fullscreen	Перемкнути монітор на весь екран
+	Show Monitor in Its Own Window	Показати монітор в окремому вікні
+	Monitor Info Overlay	Інформаційне накладання монітора
+	Playback FPS	FPS відтворення
+	Change Overlay	Змінити накладання
+	No Guide Pattern	Без шаблону напрямних
+	Rule of Thirds	Правило третин
+	Center Cross	Центральний хрестик
+	Diagonals	Діагоналі
+	Grid	Сітка
+	Golden Ratio	Золотий перетин
+	Move Overlay Toolbar	Перемістити панель накладання
+	Always Show Audio Thumbnails	Завжди показувати аудіомініатюри
+	Show Source Timecode	Показувати тайм-код джерела
+	Multitrack View	Багатодоріжковий вигляд
+	Monitor Overlay	Накладання монітора
+	Monitor Config	Налаштування монітора
+	Guide Pattern	Шаблон напрямних
+	Go to Next Snap Point	Перейти до наступної точки прилипання
+	Go to Previous Snap Point	Перейти до попередньої точки прилипання
+	Forward 1 Second	Вперед на 1 секунду
+	Rewind 1 Second	Назад на 1 секунду
+	Detect Jog Shuttle	Виявити джог-шатл
+	Extract Zone	Витягти зону
+	Extract Zone…	Витягти зону…
+	Play Backwards (J)	Відтворити назад (J)
+	Fast Forward (L)	Перемотати вперед (L)
+	Play Zone	Відтворити зону
+	(full screen)	(на весь екран)
+	(in its own window)	(в окремому вікні)
+	Program Monitor	Монітор програми
+	Source Monitor	Монітор джерела
+	{fps} fps	{fps} кадр/с
+	Marker	Маркер
+	Go to Previous Keyframe	Перейти до попереднього ключового кадру
+	Add Keyframe	Додати ключовий кадр
+	Go to Next Keyframe	Перейти до наступного ключового кадру
+	Automatic Keyframes	Автоматичні ключові кадри
+	Go to Marker	Перейти до маркера
+	(no markers)	(немає маркерів)
+	Write the Source Monitor's zone (In to Out) to a new file.	Записати зону монітора джерела (від входу до виходу) у новий файл.
+	File:	Файл:
+	Add clip to project	Додати кліп до проєкту
+	Extracting the zone…	Витягування зони…
+	(no video tracks)	(немає відеодоріжок)
+	Add Project Note	Додати нотатку проєкту
+	Go to this frame	Перейти до цього кадру
+	Jog Shuttle	Джог-шатл
+	Enable jog shuttle	Увімкнути джог-шатл
+	Device path	Шлях до пристрою
+	Detect	Виявити
+	Button 1	Кнопка 1
+	Button 2	Кнопка 2
+	Button 3	Кнопка 3
+	Button 4	Кнопка 4
+	Button 5	Кнопка 5
+	Button 6	Кнопка 6
+	Button 7	Кнопка 7
+	Button 8	Кнопка 8
+	Button 9	Кнопка 9
+	Button 10	Кнопка 10
+	Button 11	Кнопка 11
+	Button 12	Кнопка 12
+	Button 13	Кнопка 13
+	Button 14	Кнопка 14
+	Button 15	Кнопка 15
+	GPU processing of effects in the Program Monitor	Обробка ефектів на GPU в моніторі програми
+	Play/pause on monitor click	Відтворення/пауза кліком по монітору
+	Custom monitor background	Власне тло монітора
+	Monitor background color	Колір тла монітора
+	Monitor overlay color	Колір накладання монітора
+	Screen used for full screen monitor	Екран для монітора на весь екран
+	Mirror the monitor while it is full screen	Дублювати монітор на весь екран
+	This screen	Цей екран
+	Screen to the left	Екран ліворуч
+	Screen to the right	Екран праворуч
+	Screen above	Екран зверху
+	Screen below	Екран знизу
+	Each button runs the command id typed beside it (for example playback.toggle, markers.markIn, playhead.nextSnap; see Keyboard Shortcuts). The jog wheel steps frames and the shuttle ring plays at up to 10x either way.	Кожна кнопка виконує введений поруч ідентифікатор команди (наприклад playback.toggle, markers.markIn, playhead.nextSnap; див. Сполучення клавіш). Колесо джог крокує кадрами, а кільце шатл відтворює до 10x в обидва боки.

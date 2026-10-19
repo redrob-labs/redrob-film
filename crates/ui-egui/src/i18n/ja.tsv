@@ -4734,3 +4734,80 @@
 	Remove All Preview Zones	すべてのプレビューゾーンを削除
 	Automatic Preview	自動プレビュー
 	Preview zone	プレビューゾーン
+	Loop Zone	ゾーンをループ
+	Loop Selected Clip	選択クリップをループ
+	Set Playback Speed	再生速度を設定
+	Focus Timecode	タイムコードにフォーカス
+	Align Playhead to Mouse Position	再生ヘッドをマウス位置に合わせる
+	Switch Monitor Fullscreen	モニターをフルスクリーン切り替え
+	Show Monitor in Its Own Window	モニターを別ウィンドウで表示
+	Monitor Info Overlay	モニター情報オーバーレイ
+	Playback FPS	再生 FPS
+	Change Overlay	オーバーレイを変更
+	No Guide Pattern	ガイドパターンなし
+	Rule of Thirds	三分割法
+	Center Cross	中央十字
+	Diagonals	対角線
+	Golden Ratio	黄金比
+	Move Overlay Toolbar	オーバーレイツールバーを移動
+	Always Show Audio Thumbnails	常にオーディオサムネールを表示
+	Show Source Timecode	ソースタイムコードを表示
+	Multitrack View	マルチトラック表示
+	Monitor Overlay	モニターオーバーレイ
+	Monitor Config	モニター設定
+	Guide Pattern	ガイドパターン
+	Go to Next Snap Point	次のスナップポイントへ移動
+	Go to Previous Snap Point	前のスナップポイントへ移動
+	Forward 1 Second	1 秒進む
+	Rewind 1 Second	1 秒戻る
+	Detect Jog Shuttle	ジョグシャトルを検出
+	Extract Zone	ゾーンを書き出し
+	Extract Zone…	ゾーンを書き出し…
+	Play Backwards (J)	逆再生 (J)
+	Fast Forward (L)	早送り (L)
+	Play Zone	ゾーンを再生
+	(full screen)	(フルスクリーン)
+	(in its own window)	(別ウィンドウ)
+	{fps} fps	{fps} fps
+	Go to Previous Keyframe	前のキーフレームへ移動
+	Add Keyframe	キーフレームを追加
+	Go to Next Keyframe	次のキーフレームへ移動
+	Automatic Keyframes	自動キーフレーム
+	Go to Marker	マーカーへ移動
+	(no markers)	(マーカーなし)
+	Write the Source Monitor's zone (In to Out) to a new file.	ソースモニターのゾーン (イン～アウト) を新しいファイルに書き出します。
+	File:	ファイル:
+	Add clip to project	クリップをプロジェクトに追加
+	Extracting the zone…	ゾーンを書き出し中…
+	(no video tracks)	(ビデオトラックなし)
+	Add Project Note	プロジェクトメモを追加
+	Go to this frame	このフレームへ移動
+	Jog Shuttle	ジョグシャトル
+	Enable jog shuttle	ジョグシャトルを有効にする
+	Device path	デバイスのパス
+	Detect	検出
+	Button 1	ボタン 1
+	Button 2	ボタン 2
+	Button 3	ボタン 3
+	Button 4	ボタン 4
+	Button 5	ボタン 5
+	Button 6	ボタン 6
+	Button 7	ボタン 7
+	Button 8	ボタン 8
+	Button 9	ボタン 9
+	Button 10	ボタン 10
+	Button 11	ボタン 11
+	Button 12	ボタン 12
+	Button 13	ボタン 13
+	Button 14	ボタン 14
+	Button 15	ボタン 15
+	GPU processing of effects in the Program Monitor	プログラムモニターでエフェクトを GPU 処理
+	Play/pause on monitor click	モニタークリックで再生/一時停止
+	Screen used for full screen monitor	フルスクリーンモニターに使う画面
+	Mirror the monitor while it is full screen	フルスクリーン中もモニターをミラー表示
+	This screen	この画面
+	Screen to the left	左の画面
+	Screen to the right	右の画面
+	Screen above	上の画面
+	Screen below	下の画面
+	Each button runs the command id typed beside it (for example playback.toggle, markers.markIn, playhead.nextSnap; see Keyboard Shortcuts). The jog wheel steps frames and the shuttle ring plays at up to 10x either way.	各ボタンは横に入力したコマンド ID を実行します (例: playback.toggle、markers.markIn、playhead.nextSnap。キーボードショートカットを参照)。ジョグホイールはフレーム単位で移動し、シャトルリングは両方向に最大 10 倍速で再生します。

@@ -4746,3 +4746,80 @@
 	Remove All Preview Zones	Quitar todas las zonas de previsualización
 	Automatic Preview	Previsualización automática
 	Preview zone	Zona de previsualización
+	Loop Zone	Bucle de zona
+	Loop Selected Clip	Bucle del clip seleccionado
+	Set Playback Speed	Establecer velocidad de reproducción
+	Focus Timecode	Enfocar código de tiempo
+	Align Playhead to Mouse Position	Alinear cabezal con la posición del ratón
+	Switch Monitor Fullscreen	Cambiar monitor a pantalla completa
+	Show Monitor in Its Own Window	Mostrar monitor en su propia ventana
+	Monitor Info Overlay	Superposición de información del monitor
+	Playback FPS	FPS de reproducción
+	Change Overlay	Cambiar superposición
+	No Guide Pattern	Sin patrón de guías
+	Rule of Thirds	Regla de los tercios
+	Center Cross	Cruz central
+	Diagonals	Diagonales
+	Golden Ratio	Proporción áurea
+	Move Overlay Toolbar	Mover barra de superposición
+	Always Show Audio Thumbnails	Mostrar siempre miniaturas de audio
+	Show Source Timecode	Mostrar código de tiempo de origen
+	Multitrack View	Vista multipista
+	Monitor Overlay	Superposición del monitor
+	Monitor Config	Configuración del monitor
+	Guide Pattern	Patrón de guías
+	Go to Next Snap Point	Ir al siguiente punto de ajuste
+	Go to Previous Snap Point	Ir al punto de ajuste anterior
+	Forward 1 Second	Avanzar 1 segundo
+	Rewind 1 Second	Retroceder 1 segundo
+	Detect Jog Shuttle	Detectar jog shuttle
+	Extract Zone	Extraer zona
+	Extract Zone…	Extraer zona…
+	Play Backwards (J)	Reproducir hacia atrás (J)
+	Fast Forward (L)	Avance rápido (L)
+	Play Zone	Reproducir zona
+	(full screen)	(pantalla completa)
+	(in its own window)	(en su propia ventana)
+	{fps} fps	{fps} fps
+	Go to Previous Keyframe	Ir al fotograma clave anterior
+	Add Keyframe	Añadir fotograma clave
+	Go to Next Keyframe	Ir al siguiente fotograma clave
+	Automatic Keyframes	Fotogramas clave automáticos
+	Go to Marker	Ir al marcador
+	(no markers)	(sin marcadores)
+	Write the Source Monitor's zone (In to Out) to a new file.	Escribe la zona del monitor de origen (de entrada a salida) en un archivo nuevo.
+	File:	Archivo:
+	Add clip to project	Añadir clip al proyecto
+	Extracting the zone…	Extrayendo la zona…
+	(no video tracks)	(sin pistas de vídeo)
+	Add Project Note	Añadir nota del proyecto
+	Go to this frame	Ir a este fotograma
+	Jog Shuttle	Jog shuttle
+	Enable jog shuttle	Activar jog shuttle
+	Device path	Ruta del dispositivo
+	Detect	Detectar
+	Button 1	Botón 1
+	Button 2	Botón 2
+	Button 3	Botón 3
+	Button 4	Botón 4
+	Button 5	Botón 5
+	Button 6	Botón 6
+	Button 7	Botón 7
+	Button 8	Botón 8
+	Button 9	Botón 9
+	Button 10	Botón 10
+	Button 11	Botón 11
+	Button 12	Botón 12
+	Button 13	Botón 13
+	Button 14	Botón 14
+	Button 15	Botón 15
+	GPU processing of effects in the Program Monitor	Procesar efectos en la GPU en el monitor de programa
+	Play/pause on monitor click	Reproducir/pausar al hacer clic en el monitor
+	Screen used for full screen monitor	Pantalla para el monitor a pantalla completa
+	Mirror the monitor while it is full screen	Reflejar el monitor mientras está a pantalla completa
+	This screen	Esta pantalla
+	Screen to the left	Pantalla a la izquierda
+	Screen to the right	Pantalla a la derecha
+	Screen above	Pantalla superior
+	Screen below	Pantalla inferior
+	Each button runs the command id typed beside it (for example playback.toggle, markers.markIn, playhead.nextSnap; see Keyboard Shortcuts). The jog wheel steps frames and the shuttle ring plays at up to 10x either way.	Cada botón ejecuta el id de comando escrito a su lado (por ejemplo playback.toggle, markers.markIn, playhead.nextSnap; consulte Métodos abreviados de teclado). La rueda jog avanza fotogramas y el anillo shuttle reproduce hasta 10x en ambos sentidos.

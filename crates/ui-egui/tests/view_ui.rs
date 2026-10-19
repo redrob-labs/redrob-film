@@ -187,7 +187,7 @@ fn num(v: &Value) -> f64 {
     v.as_f64().unwrap_or_else(|| panic!("not a number: {v}"))
 }
 
-/// #807: the wheel over a monitor zooms about the pointer, a middle-button drag pans, Fit resets,
+/// #807: Ctrl / Cmd + the wheel over a monitor zooms about the pointer (the plain wheel seeks), a middle-button drag pans, Fit resets,
 /// and each monitor keeps its own view.
 #[test]
 fn wheel_zooms_about_the_pointer_and_the_middle_button_pans() {
@@ -198,7 +198,7 @@ fn wheel_zooms_about_the_pointer_and_the_middle_button_pans() {
     let centre = (area[0] + area[2] / 2.0, area[1] + area[3] / 2.0);
     let at = (area[0] + area[2] * 0.25, area[1] + area[3] * 0.4);
     // 50 points up: 1.5 times; the point under the pointer stays under it
-    d.ok("ui.scroll", json!({"x": at.0, "y": at.1, "dx": 0.0, "dy": 50.0}));
+    d.ok("ui.scroll", json!({"x": at.0, "y": at.1, "dx": 0.0, "dy": 50.0, "command": true}));
     d.frames(2);
     let p = d.program();
     assert!((num(&p["zoom"]) - 1.5).abs() < 1e-4, "{p}");
@@ -225,7 +225,7 @@ fn wheel_zooms_about_the_pointer_and_the_middle_button_pans() {
 
     // zooming out stops at the menu's smallest level; Fit resets zoom and pan
     for _ in 0..12 {
-        d.ok("ui.scroll", json!({"x": centre.0, "y": centre.1, "dx": 0.0, "dy": -50.0}));
+        d.ok("ui.scroll", json!({"x": centre.0, "y": centre.1, "dx": 0.0, "dy": -50.0, "command": true}));
     }
     d.frames(2);
     assert!((num(&d.program()["zoom"]) - 0.1).abs() < 1e-6, "stops at 10%");
@@ -233,8 +233,8 @@ fn wheel_zooms_about_the_pointer_and_the_middle_button_pans() {
     let p = d.program();
     assert!(p["zoom"].is_null() && p["pan"] == json!([0.0, 0.0]), "{p}");
 
-    // from Fit, the wheel zooms in too; the Source monitor keeps its own view
-    d.ok("ui.scroll", json!({"x": centre.0, "y": centre.1, "dx": 0.0, "dy": 20.0}));
+    // from Fit, Ctrl + the wheel zooms in too; the Source monitor keeps its own view
+    d.ok("ui.scroll", json!({"x": centre.0, "y": centre.1, "dx": 0.0, "dy": 20.0, "command": true}));
     d.frames(2);
     assert!(d.program()["zoom"].as_f64().is_some(), "zoomed in from Fit");
     let source = d.ok("ui.inspect", json!({}))["ui"]["source"].clone();

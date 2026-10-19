@@ -120,6 +120,10 @@ pub enum Icon {
     Moon,
     /// Colour parameters: pick a colour from the Program monitor (a pipette).
     Eyedropper,
+    /// Play backwards (two triangles pointing left).
+    Rewind,
+    /// Fast forward (two triangles pointing right).
+    FastForward,
 }
 
 pub struct Pen16<'a> {
@@ -763,6 +767,14 @@ pub fn paint(painter: &Painter, rect: Rect, icon: Icon, color: Color32) {
             pen.line(&[(9.5, 7.5), (3.5, 12.5)]);
             pen.line(&[(3.5, 12.5), (2.5, 13.5)]);
         }
+        Rewind => {
+            pen.fill(&[(8.0, 3.5), (2.0, 8.0), (8.0, 12.5)]);
+            pen.fill(&[(14.0, 3.5), (8.0, 8.0), (14.0, 12.5)]);
+        }
+        FastForward => {
+            pen.fill(&[(2.0, 3.5), (8.0, 8.0), (2.0, 12.5)]);
+            pen.fill(&[(8.0, 3.5), (14.0, 8.0), (8.0, 12.5)]);
+        }
     }
 }
 
@@ -895,6 +907,8 @@ mod tests {
         Network,
         Clock,
         Eyedropper,
+        Rewind,
+        FastForward,
     ];
 
     /// Paint `icon` at `ppp` device pixels per point into a rect of `size` points whose corner is
