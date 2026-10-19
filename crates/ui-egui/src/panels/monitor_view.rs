@@ -440,6 +440,12 @@ pub fn snap_move(app: &FilmcraftApp, pic: Rect, frame: (u32, u32), moving: Rect,
             }
         }
     }
+    // the grid's lines (View ▸ Grid…)
+    for i in 1..=v.grid_lines.min(64) {
+        let f = i as f32 / (v.grid_lines.min(64) + 1) as f32;
+        tx.push(pic.min.x + pic.width() * f);
+        ty.push(pic.min.y + pic.height() * f);
+    }
     let m = moving.translate(off);
     let mut off = off;
     let mut lines = Vec::new();
@@ -537,6 +543,19 @@ pub fn rulers(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, top: Rect, le
 /// area) to remove it.
 pub fn guides(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, area: Rect, pic: Rect, frame: (u32, u32)) {
     let v = view(app, w).clone();
+    // the grid (View ▸ Grid…): evenly spaced lines across and down the picture
+    if v.grid_lines > 0 {
+        let n = v.grid_lines.min(64);
+        let [r, g, b, a] = v.grid_color;
+        let stroke = Stroke::new(1.0, egui::Color32::from_rgba_unmultiplied(r, g, b, a));
+        let p = ui.painter().with_clip_rect(pic.intersect(area));
+        for i in 1..=n {
+            let f = i as f32 / (n + 1) as f32;
+            let (x, y) = (pic.min.x + pic.width() * f, pic.min.y + pic.height() * f);
+            p.line_segment([pos2(x, pic.min.y), pos2(x, pic.max.y)], stroke);
+            p.line_segment([pos2(pic.min.x, y), pos2(pic.max.x, y)], stroke);
+        }
+    }
     if !v.show_guides || v.guides.is_empty() {
         return;
     }

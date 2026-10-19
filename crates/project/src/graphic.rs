@@ -25,6 +25,8 @@ pub const CAPS_OPTS: &[&str] = &["Normal", "All Caps", "Small Caps"];
 pub const STROKE_OPTS: &[&str] = &["Outer", "Center", "Inner"];
 pub const SHAPE_OPTS: &[&str] = &["Rectangle", "Ellipse", "Polygon", "Path"];
 pub const FILL_KIND_OPTS: &[&str] = &["Solid", "Linear Gradient"];
+/// Typewriter reveal units (`tw_unit`).
+pub const TYPEWRITER_UNITS: &[&str] = &["Character", "Word", "Line"];
 
 /// Whether an effect instance is a graphic layer.
 pub fn is_layer_id(id: &str) -> bool {
@@ -95,6 +97,10 @@ fn transform() -> Vec<ParamDef> {
         fl("scale_width", "Scale Width", 100.0, (0.0, 100_000.0), (0.0, 400.0), "%", T),
         bo("uniform_scale", "Uniform Scale", true, T),
         p("rotation", "Rotation", ParamKind::Angle, ParamValue::Float(0.0), true, T),
+        // Kdenlive's title objects also turn about X and Y: the layer is a flat card seen front
+        // on, so it foreshortens (and shows its mirror image past 90°)
+        p("rotation_x", "Rotation X", ParamKind::Angle, ParamValue::Float(0.0), true, T),
+        p("rotation_y", "Rotation Y", ParamKind::Angle, ParamValue::Float(0.0), true, T),
         fl("opacity", "Opacity", 100.0, (0.0, 100.0), (0.0, 100.0), "%", T),
     ]
 }
@@ -109,6 +115,7 @@ fn layer_def(id: &'static str, name: &'static str, mut params: Vec<ParamDef>) ->
 pub(crate) fn layer_defs() -> Vec<EffectDef> {
     const X: &str = "Text";
     const S: &str = "Shape";
+    const TW: &str = "Typewriter";
     vec![
         layer_def(
             TEXT_LAYER,
@@ -132,6 +139,19 @@ pub(crate) fn layer_defs() -> Vec<EffectDef> {
                 fl("box_width", "Text Box Width", 0.0, (0.0, 100_000.0), (0.0, 3840.0), "", X),
                 fl("box_height", "Text Box Height", 0.0, (0.0, 100_000.0), (0.0, 2160.0), "", X),
                 bo("vertical", "Vertical Text", false, X),
+                // Kdenlive's typewriter: the text appears a character, word or line at a time
+                bo("typewriter", "Typewriter", false, TW),
+                chc("tw_unit", "Reveal By", TYPEWRITER_UNITS, 0, TW),
+                p("tw_step", "Step", ParamKind::Float { min: 0.0, max: 10.0, soft_min: 0.0, soft_max: 1.0, unit: "s", decimals: 2 }, ParamValue::Float(0.08), false, TW),
+                p(
+                    "tw_variation",
+                    "Variation",
+                    ParamKind::Float { min: 0.0, max: 10.0, soft_min: 0.0, soft_max: 1.0, unit: "s", decimals: 2 },
+                    ParamValue::Float(0.0),
+                    false,
+                    TW,
+                ),
+                p("tw_seed", "Seed", ParamKind::Float { min: 0.0, max: 9999.0, soft_min: 0.0, soft_max: 100.0, unit: "", decimals: 0 }, ParamValue::Float(1.0), false, TW),
             ],
         ),
         layer_def(
@@ -188,6 +208,9 @@ pub struct LayerTransform {
     pub position: Vec2,
     pub anchor: Vec2,
     pub scale: Vec2,
+    /// Foreshortening from Rotation Y (x) and Rotation X (y): the cosines of the turns, applied
+    /// with the scale (1, 1 = flat on).
+    pub tilt: Vec2,
     pub rotation: f64,
     pub opacity: f32,
 }
@@ -345,6 +368,12 @@ pub fn eval_layer(e: &EffectInstance, t: Tick, frame: (u32, u32)) -> Option<Laye
     let position = if pos.x.is_nan() || pos.y.is_nan() { Vec2::new(frame.0 as f64 / 2.0, frame.1 as f64 / 2.0) } else { pos };
     let s = ff(e, "scale", t) as f64 / 100.0;
     let sw = if bb(e, "uniform_scale", t) { s } else { ff(e, "scale_width", t) as f64 / 100.0 };
+    // Rotation X / Y foreshorten the card (never quite flat, so the transform stays invertible)
+    let foreshorten = |deg: f32| {
+        let c = (deg as f64).to_radians().cos();
+        if c.abs() < 1e-3 { 1e-3f64.copysign(c) } else { c }
+    };
+    let tilt = Vec2::new(foreshorten(ff(e, "rotation_y", t)), foreshorten(ff(e, "rotation_x", t)));
     Some(LayerSpec {
         name: ss(e, "name", t),
         enabled: e.enabled,
@@ -366,6 +395,7 @@ pub fn eval_layer(e: &EffectInstance, t: Tick, frame: (u32, u32)) -> Option<Laye
             position,
             anchor: vv(e, "anchor", t),
             scale: Vec2::new(sw, s),
+            tilt,
             rotation: ff(e, "rotation", t) as f64,
             opacity: (ff(e, "opacity", t) / 100.0).clamp(0.0, 1.0),
         },
@@ -402,6 +432,7 @@ fn layer_instance(id: &str) -> EffectInstance {
         post_fader: false,
         essential: false,
         layer: None,
+        zone: None,
     })
 }
 

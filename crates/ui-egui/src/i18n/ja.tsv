@@ -4117,3 +4117,113 @@
 	32-bit float	32 ビット浮動小数点
 	24-bit	24 ビット
 	16-bit	16 ビット
+	Apply Current Value to Selected Keyframes	現在の値を選択したキーフレームに適用
+	Automatic Keyframes (while playing)	自動キーフレーム (再生中)
+	Compare Effect (Program Monitor)	エフェクトを比較 (プログラムモニター)
+	Copy Keyframe	キーフレームをコピー
+	Copy Keyframes to Clipboard	キーフレームをクリップボードにコピー
+	Effects enabled (switch the whole effect stack on or off)	エフェクト有効 (エフェクトスタック全体のオン/オフ)
+	Import Keyframes from Clipboard…	クリップボードからキーフレームを読み込み…
+	Limit Automatic Keyframes	自動キーフレームを制限
+	Move Effect Down	エフェクトを下へ移動
+	Move Effect Up	エフェクトを上へ移動
+	Move Keyframe to Playhead	キーフレームを再生ヘッドに移動
+	Paste Keyframe at Playhead	再生ヘッドにキーフレームをペースト
+	Set Effect Zone In at Playhead	再生ヘッドでエフェクト範囲の開始を設定
+	Set Effect Zone Out at Playhead	再生ヘッドでエフェクト範囲の終了を設定
+	Show Keyframes in Timeline	タイムラインにキーフレームを表示
+	Show only 32-bit (high bit depth) effects	32 ビット (高ビット深度) エフェクトのみ表示
+	Show only YUV effects	YUV エフェクトのみ表示
+	Show only accelerated effects	高速処理エフェクトのみ表示
+	Show/hide the description of effects	エフェクトの説明を表示/非表示
+	Use Effect Zone	エフェクト範囲を使用
+	With effects	エフェクトあり
+	Without effects	エフェクトなし
+	✓ Use Effect Zone	✓ エフェクト範囲を使用
+	(no favorite effects)	(お気に入りのエフェクトなし)
+	32-bit color	32 ビットカラー
+	Add Effect	エフェクトを追加
+	Add Effect…	エフェクトを追加…
+	Click an effect to see its description	エフェクトをクリックすると説明が表示されます
+	Controls: {list}	コントロール: {list}
+	Copied {n} keyframes	{n} 個のキーフレームをコピーしました
+	Effects Enabled	エフェクト有効
+	GPU accelerated	GPU 高速処理
+	Import Keyframes	キーフレームを読み込み
+	Imported {n} keyframes	{n} 個のキーフレームを読み込みました
+	Insert an Effect	エフェクトを挿入
+	Into: {param}	読み込み先: {param}
+	Keep the clip's keyframe times (else start at the playhead)	クリップのキーフレーム時間を保持 (オフ: 再生ヘッドから開始)
+	Keyframe data (paste with Ctrl+V):	キーフレームデータ (Ctrl+V でペースト):
+	Keyframes copied to the clipboard	キーフレームをクリップボードにコピーしました
+	Point component:	ポイントの成分:
+	Show Description	説明を表示
+	Time offset (frames):	時間オフセット (フレーム):
+	Value offset:	値オフセット:
+	{n} keyframable parameters	キーフレーム可能なパラメーター {n} 個
+	✓ Effects Enabled	✓ エフェクト有効
+	Circular	円形
+	Elastic	弾性
+	Move Effect	エフェクトを移動
+	Toggle Effect Stack	エフェクトスタックの切り替え
+	Set Effect Zone	エフェクト範囲を設定
+	Paste Keyframes	キーフレームをペースト
+	Move Keyframes	キーフレームを移動
+	Apply Value to Keyframes	キーフレームに値を適用
+	Grain Extract	グレイン抽出
+	Grain Merge	グレイン結合
+	Or	OR
+	And	AND
+	Xor	XOR
+	Nor	NOR
+	Nand	NAND
+	Not Xor	NOT XOR
+	Alpha Atop	アルファ アトップ
+	Alpha Xor	アルファ XOR
+	Destination Out	デスティネーションアウト
+	Path to a greyscale image	グレースケール画像のパス
+	Luma Wipe	ルマワイプ
+	Wipe Method	ワイプ方式
+	Luma Image File	ルマ画像ファイル
+	Spiral	スパイラル
+	Matrix Snake	マトリックススネーク
+	Waterfall	ウォーターフォール
+	Burst	バースト
+	Cloud	クラウド
+	Curtain	カーテン
+	Double Iris	ダブルアイリス
+	Image File	画像ファイル
+	Insert a Transition	トランジションを挿入
+	Default Transition	デフォルトのトランジション
+	At Clip Start	クリップの先頭
+	At Clip End	クリップの末尾
+	Insert Special Character	特殊文字を挿入
+	Insert Special Character…	特殊文字を挿入…
+	Unicode (hex):	Unicode (16 進):
+	Select All Layers	すべてのレイヤーを選択
+	Keep Only Text Layers Selected	テキストレイヤーのみ選択したままにする
+	Keep Only Shape Layers Selected	シェイプレイヤーのみ選択したままにする
+	Keep Only Rectangle Layers Selected	長方形レイヤーのみ選択したままにする
+	Deselect All Layers	すべてのレイヤーの選択を解除
+	Copy Graphic Layers	グラフィックレイヤーをコピー
+	Paste Graphic Layers	グラフィックレイヤーをペースト
+	Rotation X	X 回転
+	Rotation Y	Y 回転
+	Reveal By	表示単位
+	Step	ステップ
+	Variation	ばらつき
+	Seed	シード
+	Character	文字
+	Word	単語
+	Grid…	グリッド…
+	Lines:	線の数:
+	Snap to the grid and guides	グリッドとガイドにスナップ
+	Patterns…	パターン…
+	Patterns	パターン
+	No patterns yet: select layers of a graphic and save them.	パターンはまだありません。グラフィックのレイヤーを選択して保存してください。
+	Pattern name	パターン名
+	Save Selected Layers	選択したレイヤーを保存
+	Add as New Source Graphic	新しいソースグラフィックとして追加
+	Copy Track to Position	トラッキングを位置にコピー
+	Stabilize Position with Track	トラッキングで位置を安定化
+	Copy Mask Track to Position	マスクのトラッキングを位置にコピー

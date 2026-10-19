@@ -18,11 +18,20 @@ use crate::theme::Tokens;
 
 pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
-    let sr = Rect::from_min_size(rect.min + vec2(8.0, 6.0), vec2(rect.width() - 16.0, 22.0));
+    // the search field, then the filter toggles (accelerated / 32-bit / YUV) and the description
+    // pane's toggle at its right
+    let toggles_w = 4.0 * 26.0;
+    let sr = Rect::from_min_size(rect.min + vec2(8.0, 6.0), vec2((rect.width() - 16.0 - toggles_w).max(60.0), 22.0));
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(sr));
     let mut q = app.ui.effects_search.clone();
     crate::widgets::search_field(&mut child, &mut q, tl!("Search effects"), sr.width(), &t);
     app.ui.effects_search = q.clone();
+    filter_toggles(app, ui, pos2(sr.max.x + 4.0, sr.min.y));
+    let desc_h = if app.ui.fx.show_description { 96.0f32.min(rect.height() * 0.4) } else { 0.0 };
+    if desc_h > 0.0 {
+        crate::panels::effect_stack::description_pane(app, ui, Rect::from_min_max(pos2(rect.min.x, rect.max.y - desc_h), rect.max));
+    }
+    let rect = Rect::from_min_max(rect.min, pos2(rect.max.x, rect.max.y - desc_h));
     let body = Rect::from_min_max(pos2(rect.min.x, sr.max.y + 6.0), rect.max);
     // wide panel: the tree on the left, the Lumetri Presets thumbnail grid on the right
     let grid_area = (body.width() > 640.0).then(|| Rect::from_min_max(pos2(body.min.x + 300.0, body.min.y), body.max));
@@ -40,6 +49,22 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let mut lumetri_apply: Option<String> = None;
     let mut preset_action: Option<(String, String)> = None;
     egui::ScrollArea::vertical().id_salt("fx-scroll").auto_shrink([false, false]).show(&mut bui, |ui| {
+        // Favorites: the effects marked as favourites (right-click ▸ Add to Favorites)
+        let favorites: Vec<&redrob_film_project::EffectDef> = app
+            .ui
+            .fx
+            .favorites
+            .iter()
+            .filter_map(|id| redrob_film_project::find_effect(id))
+            .filter(|d| crate::i18n::matches_query(d.name, &filter) && crate::panels::effect_stack::passes_filters(app, d))
+            .collect();
+        if !favorites.is_empty() && folder_row(app, ui, "Favorites", 0, &filter) {
+            for d in favorites {
+                if let Some(id) = effect_row(app, ui, d) {
+                    apply = Some(id);
+                }
+            }
+        }
         for &top in tops {
             if top == "Presets" {
                 let any = app.session.presets.all().iter().any(|p| crate::i18n::matches_query(&p.name, &filter));
@@ -54,7 +79,11 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                 }
                 continue;
             }
-            let mut items: Vec<_> = defs.iter().filter(|d| d.category.first() == Some(&top)).filter(|d| crate::i18n::matches_query(d.name, &filter)).collect();
+            let mut items: Vec<_> = defs
+                .iter()
+                .filter(|d| d.category.first() == Some(&top))
+                .filter(|d| crate::i18n::matches_query(d.name, &filter) && crate::panels::effect_stack::passes_filters(app, d))
+                .collect();
             // Premiere lists effect folders and effects alphabetically (obsolete ones last)
             if top == "Video Effects" || top == "Legacy" || top == redrob_film_project::effect::MORE_TOP {
                 let last = |d: &redrob_film_project::EffectDef| matches!(d.category.get(1), Some(&"Obsolete") | Some(&"Deprecated"));
@@ -84,36 +113,8 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                     continue;
                 }
                 for d in items.iter().filter(|d| sub(d) == s) {
-                    let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 20.0), Sense::click_and_drag());
-                    if resp.hovered() {
-                        ui.painter().rect_filled(r, 0.0, t.hover);
-                    }
-                    let x = r.min.x + 46.0;
-                    let icon_r = Rect::from_center_size(pos2(x - 10.0, r.center().y), vec2(13.0, 13.0));
-                    let is_tr = matches!(d.kind, redrob_film_project::EffectKind::VideoTransition | redrob_film_project::EffectKind::AudioTransition);
-                    ui.painter().rect_stroke(icon_r, 2.0, egui::Stroke::new(1.0, t.text_dim), egui::StrokeKind::Inside);
-                    if is_tr {
-                        ui.painter().line_segment([icon_r.left_bottom(), icon_r.right_top()], egui::Stroke::new(1.0, t.text_dim));
-                    } else {
-                        ui.painter().text(icon_r.center(), Align2::CENTER_CENTER, "fx", Tokens::ui(8.0), t.text_dim);
-                    }
-                    ui.painter().text(pos2(x, r.center().y), Align2::LEFT_CENTER, crate::i18n::t(d.name), Tokens::ui(12.0), t.text);
-                    // badges: accelerated / 32-bit / YUV
-                    let mut bx = r.max.x - 8.0;
-                    for (on, label) in [(d.yuv, "YUV"), (d.float32, "32"), (d.accelerated, "⚡")] {
-                        if on {
-                            let br = Rect::from_min_size(pos2(bx - 22.0, r.min.y + 3.0), vec2(20.0, 14.0));
-                            ui.painter().rect_filled(br, 2.0, t.field_border);
-                            ui.painter().text(br.center(), Align2::CENTER_CENTER, label, Tokens::ui(8.5), t.text_dim);
-                            bx -= 24.0;
-                        }
-                    }
-                    app.auto.add(&format!("effects.item.{}", d.id), r, d.name);
-                    if resp.drag_started() {
-                        crate::panels::start_drag_effect(ui, d.id);
-                    }
-                    if resp.double_clicked() {
-                        apply = Some(d.id.to_string());
+                    if let Some(id) = effect_row(app, ui, d) {
+                        apply = Some(id);
                     }
                 }
             }
@@ -136,6 +137,133 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         let r = app.session.execute("effects.apply", json!({"effect": id}));
         if let Err(e) = r {
             app.ui.status = e.to_string();
+        }
+    }
+}
+
+/// One effect or transition row: icon, name, badges (accelerated / 32-bit / YUV, a star for a
+/// favourite). Drag it onto a clip; double-click applies it to the selection (returned); a click
+/// shows it in the description pane; right-click for favourites.
+fn effect_row(app: &mut FilmcraftApp, ui: &mut egui::Ui, d: &redrob_film_project::EffectDef) -> Option<String> {
+    let t = app.tokens;
+    let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 20.0), Sense::click_and_drag());
+    let described = app.ui.fx.show_description && app.ui.fx.described.as_deref() == Some(d.id);
+    if resp.hovered() || described {
+        ui.painter().rect_filled(r, 0.0, t.hover);
+    }
+    let x = r.min.x + 46.0;
+    let icon_r = Rect::from_center_size(pos2(x - 10.0, r.center().y), vec2(13.0, 13.0));
+    let is_tr = matches!(d.kind, redrob_film_project::EffectKind::VideoTransition | redrob_film_project::EffectKind::AudioTransition);
+    ui.painter().rect_stroke(icon_r, 2.0, egui::Stroke::new(1.0, t.text_dim), egui::StrokeKind::Inside);
+    if is_tr {
+        ui.painter().line_segment([icon_r.left_bottom(), icon_r.right_top()], egui::Stroke::new(1.0, t.text_dim));
+    } else {
+        ui.painter().text(icon_r.center(), Align2::CENTER_CENTER, "fx", Tokens::ui(8.0), t.text_dim);
+    }
+    ui.painter().text(pos2(x, r.center().y), Align2::LEFT_CENTER, crate::i18n::t(d.name), Tokens::ui(12.0), t.text);
+    // badges: accelerated / 32-bit / YUV, and the favourite star
+    let mut bx = r.max.x - 8.0;
+    let fav = crate::panels::effect_stack::is_favorite(app, d.id);
+    for (on, label) in [(d.yuv, "YUV"), (d.float32, "32"), (d.accelerated, "⚡"), (fav, "★")] {
+        if on {
+            let br = Rect::from_min_size(pos2(bx - 22.0, r.min.y + 3.0), vec2(20.0, 14.0));
+            ui.painter().rect_filled(br, 2.0, t.field_border);
+            ui.painter().text(br.center(), Align2::CENTER_CENTER, label, Tokens::ui(8.5), t.text_dim);
+            bx -= 24.0;
+        }
+    }
+    app.auto.add(&format!("effects.item.{}", d.id), r, d.name);
+    // a transition plays a small animated preview of itself while hovered
+    if d.kind == redrob_film_project::EffectKind::VideoTransition && resp.hovered() && !resp.dragged() {
+        let time = ui.input(|i| i.time);
+        let tex = transition_preview(app, ui.ctx(), d, time);
+        egui::Tooltip::always_open(ui.ctx().clone(), ui.layer_id(), egui::Id::new(("tr-preview", d.id)), egui::PopupAnchor::Pointer).show(|ui| {
+            ui.image((tex, vec2(PREVIEW_W as f32, PREVIEW_H as f32)));
+        });
+        ui.ctx().request_repaint();
+    }
+    if resp.drag_started() {
+        crate::panels::start_drag_effect(ui, d.id);
+    }
+    if resp.clicked() {
+        app.ui.fx.described = Some(d.id.to_string());
+    }
+    crate::panels::effect_stack::effect_menu(app, &resp, d.id);
+    resp.double_clicked().then(|| d.id.to_string())
+}
+
+const PREVIEW_W: usize = 128;
+const PREVIEW_H: usize = 72;
+/// Frames in one cycle of a transition preview (rendered once each, then cached).
+const PREVIEW_FRAMES: usize = 16;
+
+/// One frame of a transition's animated preview: the transition from a warm "A" picture to a cool
+/// "B" picture, at the progress the clock gives (a 1.6 s cycle with a short hold at each end).
+fn transition_preview(app: &mut FilmcraftApp, ctx: &egui::Context, d: &redrob_film_project::EffectDef, time: f64) -> egui::TextureId {
+    let phase = (time / 1.6).fract();
+    let frame = ((phase * (PREVIEW_FRAMES + 4) as f64) as usize).saturating_sub(2).min(PREVIEW_FRAMES - 1);
+    let name = format!("transition-preview-{}-{frame}", d.id);
+    if let Some((id, _)) = app.texture_existing(&name) {
+        return id;
+    }
+    let picture = |warm: bool| {
+        let mut img = redrob_film_render::Image::new(PREVIEW_W, PREVIEW_H);
+        for y in 0..PREVIEW_H {
+            for x in 0..PREVIEW_W {
+                let (u, v) = (x as f32 / PREVIEW_W as f32, y as f32 / PREVIEW_H as f32);
+                // a letter-like block in the middle so motion and shapes read
+                let mark = (0.38..0.62).contains(&u) && (0.25..0.75).contains(&v) && !((0.45..0.55).contains(&u) && (0.4..0.6).contains(&v));
+                let c = if warm {
+                    [0.55 + 0.4 * u, 0.25 + 0.2 * v, 0.08, 1.0]
+                } else {
+                    [0.05, 0.25 + 0.3 * v, 0.45 + 0.45 * u, 1.0]
+                };
+                let c = if mark { [0.95, 0.95, 0.95, 1.0] } else { c };
+                let i = (y * PREVIEW_W + x) * 4;
+                img.px[i..i + 4].copy_from_slice(&c);
+            }
+        }
+        img
+    };
+    let p = frame as f32 / (PREVIEW_FRAMES - 1) as f32;
+    let img = redrob_film_render::transitions::apply_scaled(&d.instance(), &picture(true), &picture(false), p, PREVIEW_H as f32 / 1080.0);
+    let rgba = crate::frames::Rgba { w: img.w, h: img.h, px: img.over_black_rgba8() };
+    let key = crate::frames::FrameKey {
+        target: crate::frames::Target::Item(redrob_film_project::ItemId(u64::MAX - 1)),
+        frame: frame as i64,
+        size: PREVIEW_W as u32,
+        revision: 0,
+        draft: false,
+    };
+    app.texture_for(ctx, &name, key, &rgba)
+}
+
+/// The Effects panel's filter toggles: only accelerated / 32-bit / YUV effects, and the
+/// description pane. Automation ids `effects.filter.accelerated|float32|yuv`, `effects.describe`.
+fn filter_toggles(app: &mut FilmcraftApp, ui: &mut egui::Ui, at: egui::Pos2) {
+    let t = app.tokens;
+    let fx = &app.ui.fx;
+    let rows = [
+        ("accelerated", "⚡", tl!("Show only accelerated effects"), fx.only_accelerated),
+        ("float32", "32", tl!("Show only 32-bit (high bit depth) effects"), fx.only_float32),
+        ("yuv", "YUV", tl!("Show only YUV effects"), fx.only_yuv),
+        ("describe", "ⓘ", tl!("Show/hide the description of effects"), fx.show_description),
+    ];
+    for (i, (key, label, tip, on)) in rows.into_iter().enumerate() {
+        let r = Rect::from_min_size(pos2(at.x + i as f32 * 26.0, at.y), vec2(24.0, 22.0));
+        let resp = ui.interact(r, egui::Id::new(("fx-filter", key)), Sense::click()).on_hover_text(tip);
+        ui.painter().rect_filled(r, 3.0, if on { t.pill_active_bg } else if resp.hovered() { t.hover } else { t.panel_bg });
+        ui.painter().text(r.center(), Align2::CENTER_CENTER, label, Tokens::ui(10.0), if on { t.text } else { t.text_dim });
+        let auto = if key == "describe" { "effects.describe".to_string() } else { format!("effects.filter.{key}") };
+        app.auto.add(&auto, r, tip);
+        if resp.clicked() {
+            let f = &mut app.ui.fx;
+            match key {
+                "accelerated" => f.only_accelerated = !f.only_accelerated,
+                "float32" => f.only_float32 = !f.only_float32,
+                "yuv" => f.only_yuv = !f.only_yuv,
+                _ => f.show_description = !f.show_description,
+            }
         }
     }
 }

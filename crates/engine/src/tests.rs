@@ -481,7 +481,8 @@ fn every_video_transition_applies_via_command() {
         .iter()
         .filter(|d| d.kind == redrob_film_project::EffectKind::VideoTransition && d.category[0] != "Obsolete")
         .collect();
-    assert_eq!(defs.len(), 84 + 21);
+    // Premiere's 84 + Kdenlive's Luma Wipe, and the 21 legacy ones
+    assert_eq!(defs.len(), 85 + 21);
     for (i, d) in defs.iter().enumerate() {
         // alternate id and display-name lookups
         let name = if i % 2 == 0 { d.id } else { d.name };
@@ -545,7 +546,7 @@ fn effects_list_reports_transition_folders() {
     assert!(all.iter().all(|e| e["kind"] == "VideoTransition" && e["folder"].is_string()));
     let wipes = s.execute("effects.list", json!({"folder": "Video Transitions/Wipe", "detail": true})).unwrap();
     let wipes = wipes.as_array().unwrap();
-    assert_eq!(wipes.len(), 9);
+    assert_eq!(wipes.len(), 10);
     let lw = wipes.iter().find(|e| e["id"] == "linear_wipe").unwrap();
     assert_eq!(lw["folder"], "Wipe");
     assert_eq!(lw["path"], "Video Transitions/Wipe");

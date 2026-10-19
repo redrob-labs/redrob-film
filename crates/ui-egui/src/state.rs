@@ -382,6 +382,10 @@ pub struct MonitorView {
     /// Playback volume of this monitor, percent (Settings ▸ Volume): scales what the monitor plays
     /// without changing the Mix level or the other monitor (Kdenlive's per-monitor volume).
     pub volume: f32,
+    /// Grid over the picture (View ▸ Grid…): lines across and down (0 = off), and their colour.
+    /// Graphic drags snap to it with Snap in Program Monitor on.
+    pub grid_lines: u32,
+    pub grid_color: [u8; 4],
 }
 
 impl Default for MonitorView {
@@ -405,6 +409,8 @@ impl Default for MonitorView {
             snap: true,
             guides: Vec::new(),
             volume: 100.0,
+            grid_lines: 0,
+            grid_color: [255, 255, 255, 90],
         }
     }
 }
@@ -666,6 +672,10 @@ pub struct UiState {
     /// Media Browser view state (tree, path field, Edit Columns…). See `panels::media_browser`.
     #[serde(default)]
     pub media_browser: crate::panels::media_browser::MediaBrowserUi,
+    /// Favourite effects, Effects panel filters, keyframe clipboard, automatic keyframes, effect
+    /// comparison. See `panels::effect_stack`.
+    #[serde(default)]
+    pub fx: crate::panels::effect_stack::FxStackUi,
 }
 
 /// An open Edit / Clip / File menu dialog: the engine command it runs on OK and the parameters
@@ -1083,6 +1093,7 @@ impl Default for UiState {
             keys: Default::default(),
             project_panel: Default::default(),
             media_browser: Default::default(),
+            fx: Default::default(),
         }
     }
 }

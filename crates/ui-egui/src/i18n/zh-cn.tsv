@@ -4110,3 +4110,113 @@
 	32-bit float	32 位浮点
 	24-bit	24 位
 	16-bit	16 位
+	Apply Current Value to Selected Keyframes	将当前值应用到所选关键帧
+	Automatic Keyframes (while playing)	自动关键帧（播放时）
+	Compare Effect (Program Monitor)	比较效果（节目监视器）
+	Copy Keyframe	复制关键帧
+	Copy Keyframes to Clipboard	将关键帧复制到剪贴板
+	Effects enabled (switch the whole effect stack on or off)	效果已启用（打开或关闭整个效果堆栈）
+	Import Keyframes from Clipboard…	从剪贴板导入关键帧…
+	Limit Automatic Keyframes	限制自动关键帧
+	Move Effect Down	下移效果
+	Move Effect Up	上移效果
+	Move Keyframe to Playhead	将关键帧移到播放指示器
+	Paste Keyframe at Playhead	在播放指示器处粘贴关键帧
+	Set Effect Zone In at Playhead	在播放指示器处设置效果区域入点
+	Set Effect Zone Out at Playhead	在播放指示器处设置效果区域出点
+	Show Keyframes in Timeline	在时间轴中显示关键帧
+	Show only 32-bit (high bit depth) effects	仅显示 32 位（高位深）效果
+	Show only YUV effects	仅显示 YUV 效果
+	Show only accelerated effects	仅显示加速效果
+	Show/hide the description of effects	显示/隐藏效果说明
+	Use Effect Zone	使用效果区域
+	With effects	有效果
+	Without effects	无效果
+	✓ Use Effect Zone	✓ 使用效果区域
+	(no favorite effects)	（无收藏效果）
+	32-bit color	32 位颜色
+	Add Effect	添加效果
+	Add Effect…	添加效果…
+	Click an effect to see its description	单击效果以查看其说明
+	Controls: {list}	控件：{list}
+	Copied {n} keyframes	已复制 {n} 个关键帧
+	Effects Enabled	效果已启用
+	GPU accelerated	GPU 加速
+	Import Keyframes	导入关键帧
+	Imported {n} keyframes	已导入 {n} 个关键帧
+	Insert an Effect	插入效果
+	Into: {param}	目标：{param}
+	Keep the clip's keyframe times (else start at the playhead)	保留剪辑的关键帧时间（否则从播放指示器开始）
+	Keyframe data (paste with Ctrl+V):	关键帧数据（用 Ctrl+V 粘贴）：
+	Keyframes copied to the clipboard	关键帧已复制到剪贴板
+	Point component:	点分量：
+	Show Description	显示说明
+	Time offset (frames):	时间偏移（帧）：
+	Value offset:	值偏移：
+	{n} keyframable parameters	{n} 个可设关键帧的参数
+	✓ Effects Enabled	✓ 效果已启用
+	Circular	圆形
+	Elastic	弹性
+	Move Effect	移动效果
+	Toggle Effect Stack	切换效果堆栈
+	Set Effect Zone	设置效果区域
+	Paste Keyframes	粘贴关键帧
+	Move Keyframes	移动关键帧
+	Apply Value to Keyframes	将值应用到关键帧
+	Grain Extract	颗粒提取
+	Grain Merge	颗粒合并
+	Or	或
+	And	与
+	Xor	异或
+	Nor	或非
+	Nand	与非
+	Not Xor	同或
+	Alpha Atop	Alpha 叠于其上
+	Alpha Xor	Alpha 异或
+	Destination Out	目标排除
+	Path to a greyscale image	灰度图像的路径
+	Luma Wipe	亮度擦除
+	Wipe Method	擦除方式
+	Luma Image File	亮度图像文件
+	Spiral	螺旋
+	Matrix Snake	矩阵蛇形
+	Waterfall	瀑布
+	Burst	爆裂
+	Cloud	云
+	Curtain	幕布
+	Double Iris	双光圈
+	Image File	图像文件
+	Insert a Transition	插入过渡
+	Default Transition	默认过渡
+	At Clip Start	在剪辑开头
+	At Clip End	在剪辑结尾
+	Insert Special Character	插入特殊字符
+	Insert Special Character…	插入特殊字符…
+	Unicode (hex):	Unicode（十六进制）：
+	Select All Layers	选择所有图层
+	Keep Only Text Layers Selected	仅保留选中的文本图层
+	Keep Only Shape Layers Selected	仅保留选中的形状图层
+	Keep Only Rectangle Layers Selected	仅保留选中的矩形图层
+	Deselect All Layers	取消选择所有图层
+	Copy Graphic Layers	复制图形图层
+	Paste Graphic Layers	粘贴图形图层
+	Rotation X	X 旋转
+	Rotation Y	Y 旋转
+	Reveal By	显示单位
+	Step	步长
+	Variation	变化
+	Seed	种子
+	Character	字符
+	Word	单词
+	Grid…	网格…
+	Lines:	线条数：
+	Snap to the grid and guides	对齐网格和参考线
+	Patterns…	图案…
+	Patterns	图案
+	No patterns yet: select layers of a graphic and save them.	还没有图案：选择图形的图层并保存。
+	Pattern name	图案名称
+	Save Selected Layers	保存所选图层
+	Add as New Source Graphic	添加为新的源图形
+	Copy Track to Position	将跟踪复制到位置
+	Stabilize Position with Track	用跟踪稳定位置
+	Copy Mask Track to Position	将蒙版跟踪复制到位置

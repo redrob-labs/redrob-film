@@ -2,7 +2,7 @@
 //!
 //! [`plan_frame`] resolves what is visible at a time into a list of layers the GPU can draw
 //! directly: a decoded source frame (YUV planes or RGBA), the matrix from source pixels to output
-//! pixels, an opacity and a blend mode (all 27 of [`Blend`] are composited by the GPU). A media
+//! pixels, an opacity and a blend mode (all 38 of [`Blend`] are composited by the GPU). A media
 //! clip whose enabled standard effects all have a GPU implementation ([`crate::gpufx`]) carries
 //! them as a [`LayerFx`]: their parameters evaluated at the frame's time, run by the GPU on the
 //! clip's working image before Motion places it, in the CPU's order (effects → Motion → Opacity /

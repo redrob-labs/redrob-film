@@ -32,6 +32,7 @@ mod dissolve;
 mod grunge;
 mod legacy;
 mod lights;
+mod luma;
 mod motion;
 mod special;
 pub mod wipe;
@@ -64,6 +65,7 @@ pub fn apply_scaled(e: &EffectInstance, a: &Image, b: &Image, p: f32, scale: f32
     let id = e.effect.as_str();
     dissolve::apply(id, &t)
         .or_else(|| wipe::apply(id, &t))
+        .or_else(|| luma::apply(id, &t))
         .or_else(|| motion::apply(id, &t))
         .or_else(|| lights::apply(id, &t))
         .or_else(|| grunge::apply(id, &t))
@@ -117,6 +119,13 @@ impl Tx<'_> {
         match self.value(id) {
             Some(ParamValue::Choice(c)) => c,
             _ => 0,
+        }
+    }
+    /// A text parameter (a file path…).
+    pub fn text(&self, id: &str) -> String {
+        match self.value(id) {
+            Some(ParamValue::Text(s)) => s,
+            _ => String::new(),
         }
     }
     pub fn flag(&self, id: &str) -> bool {

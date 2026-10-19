@@ -99,6 +99,7 @@ impl EffectDef {
             post_fader: false,
             essential: false,
             layer: None,
+            zone: None,
         }
     }
 }
@@ -120,9 +121,17 @@ pub struct EffectInstance {
     /// ([`crate::graphic_design::LayerExtra`]). Schema v12.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub layer: Option<Box<crate::graphic_design::LayerExtra>>,
+    /// Effect zone (Kdenlive's "Use effect zone"): the media-time span `[in, out)` of the clip the
+    /// effect applies in; `None` = the whole clip. Video effects only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub zone: Option<(redrob_film_time::Tick, redrob_film_time::Tick)>,
 }
 
 impl EffectInstance {
+    /// Whether the effect applies at media time `t` (inside its zone, or it has none).
+    pub fn in_zone(&self, t: redrob_film_time::Tick) -> bool {
+        self.zone.is_none_or(|(a, b)| t >= a && t < b)
+    }
     pub fn def(&self) -> Option<&'static EffectDef> {
         find_effect(&self.effect)
     }
@@ -171,6 +180,18 @@ pub const BLEND_MODES: &[&str] = &[
     "Saturation",
     "Color",
     "Luminosity",
+    // Kdenlive's compositions (appended: projects store the index)
+    "Grain Extract",
+    "Grain Merge",
+    "Or",
+    "And",
+    "Xor",
+    "Nor",
+    "Nand",
+    "Not Xor",
+    "Alpha Atop",
+    "Alpha Xor",
+    "Destination Out",
 ];
 
 pub(crate) fn f(id: &'static str, label: &'static str, def: f64, min: f64, max: f64, unit: &'static str) -> ParamDef {

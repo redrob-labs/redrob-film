@@ -4118,3 +4118,113 @@
 	32-bit float	Virgule flottante 32 bits
 	24-bit	24 bits
 	16-bit	16 bits
+	Apply Current Value to Selected Keyframes	Appliquer la valeur actuelle aux images clés sélectionnées
+	Automatic Keyframes (while playing)	Images clés automatiques (pendant la lecture)
+	Compare Effect (Program Monitor)	Comparer l'effet (moniteur de programme)
+	Copy Keyframe	Copier l'image clé
+	Copy Keyframes to Clipboard	Copier les images clés dans le presse-papiers
+	Effects enabled (switch the whole effect stack on or off)	Effets activés (active ou désactive toute la pile d'effets)
+	Import Keyframes from Clipboard…	Importer des images clés du presse-papiers…
+	Limit Automatic Keyframes	Limiter les images clés automatiques
+	Move Effect Down	Descendre l'effet
+	Move Effect Up	Monter l'effet
+	Move Keyframe to Playhead	Déplacer l'image clé vers la tête de lecture
+	Paste Keyframe at Playhead	Coller l'image clé à la tête de lecture
+	Set Effect Zone In at Playhead	Définir l'entrée de la zone d'effet à la tête de lecture
+	Set Effect Zone Out at Playhead	Définir la sortie de la zone d'effet à la tête de lecture
+	Show Keyframes in Timeline	Afficher les images clés dans la timeline
+	Show only 32-bit (high bit depth) effects	Afficher uniquement les effets 32 bits (haute profondeur)
+	Show only YUV effects	Afficher uniquement les effets YUV
+	Show only accelerated effects	Afficher uniquement les effets accélérés
+	Show/hide the description of effects	Afficher/masquer la description des effets
+	Use Effect Zone	Utiliser la zone d'effet
+	With effects	Avec effets
+	Without effects	Sans effets
+	✓ Use Effect Zone	✓ Utiliser la zone d'effet
+	(no favorite effects)	(aucun effet favori)
+	32-bit color	Couleur 32 bits
+	Add Effect	Ajouter un effet
+	Add Effect…	Ajouter un effet…
+	Click an effect to see its description	Cliquez sur un effet pour voir sa description
+	Controls: {list}	Paramètres : {list}
+	Copied {n} keyframes	{n} images clés copiées
+	Effects Enabled	Effets activés
+	GPU accelerated	Accéléré par le GPU
+	Import Keyframes	Importer des images clés
+	Imported {n} keyframes	{n} images clés importées
+	Insert an Effect	Insérer un effet
+	Into: {param}	Vers : {param}
+	Keep the clip's keyframe times (else start at the playhead)	Conserver les temps des images clés du clip (sinon commencer à la tête de lecture)
+	Keyframe data (paste with Ctrl+V):	Données d'images clés (coller avec Ctrl+V) :
+	Keyframes copied to the clipboard	Images clés copiées dans le presse-papiers
+	Point component:	Composante du point :
+	Show Description	Afficher la description
+	Time offset (frames):	Décalage temporel (images) :
+	Value offset:	Décalage de valeur :
+	{n} keyframable parameters	{n} paramètres animables
+	✓ Effects Enabled	✓ Effets activés
+	Circular	Circulaire
+	Elastic	Élastique
+	Move Effect	Déplacer l'effet
+	Toggle Effect Stack	Activer/désactiver la pile d'effets
+	Set Effect Zone	Définir la zone d'effet
+	Paste Keyframes	Coller les images clés
+	Move Keyframes	Déplacer les images clés
+	Apply Value to Keyframes	Appliquer la valeur aux images clés
+	Grain Extract	Extraction de grain
+	Grain Merge	Fusion de grain
+	Or	Ou
+	And	Et
+	Xor	Ou exclusif
+	Nor	Non-ou
+	Nand	Non-et
+	Not Xor	Non-ou exclusif
+	Alpha Atop	Alpha au-dessus
+	Alpha Xor	Alpha ou exclusif
+	Destination Out	Destination hors
+	Path to a greyscale image	Chemin d'une image en niveaux de gris
+	Luma Wipe	Balayage de luminance
+	Wipe Method	Méthode de balayage
+	Luma Image File	Fichier image de luminance
+	Spiral	Spirale
+	Matrix Snake	Serpent en matrice
+	Waterfall	Cascade
+	Burst	Éclatement
+	Cloud	Nuage
+	Curtain	Rideau
+	Double Iris	Double iris
+	Image File	Fichier image
+	Insert a Transition	Insérer une transition
+	Default Transition	Transition par défaut
+	At Clip Start	Au début du clip
+	At Clip End	À la fin du clip
+	Insert Special Character	Insérer un caractère spécial
+	Insert Special Character…	Insérer un caractère spécial…
+	Unicode (hex):	Unicode (hex) :
+	Select All Layers	Sélectionner tous les calques
+	Keep Only Text Layers Selected	Ne garder sélectionnés que les calques de texte
+	Keep Only Shape Layers Selected	Ne garder sélectionnés que les calques de forme
+	Keep Only Rectangle Layers Selected	Ne garder sélectionnés que les calques rectangle
+	Deselect All Layers	Désélectionner tous les calques
+	Copy Graphic Layers	Copier les calques graphiques
+	Paste Graphic Layers	Coller les calques graphiques
+	Rotation X	Rotation X
+	Rotation Y	Rotation Y
+	Reveal By	Révéler par
+	Step	Pas
+	Variation	Variation
+	Seed	Graine
+	Character	Caractère
+	Word	Mot
+	Grid…	Grille…
+	Lines:	Lignes :
+	Snap to the grid and guides	Magnétisme sur la grille et les repères
+	Patterns…	Motifs…
+	Patterns	Motifs
+	No patterns yet: select layers of a graphic and save them.	Aucun motif : sélectionnez des calques d'un graphique et enregistrez-les.
+	Pattern name	Nom du motif
+	Save Selected Layers	Enregistrer les calques sélectionnés
+	Add as New Source Graphic	Ajouter comme nouveau graphique source
+	Copy Track to Position	Copier le suivi vers la position
+	Stabilize Position with Track	Stabiliser la position avec le suivi
+	Copy Mask Track to Position	Copier le suivi du masque vers la position

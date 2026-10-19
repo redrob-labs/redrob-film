@@ -242,10 +242,19 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which)
             ui.painter().image(tex, pic, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
         }
         if let Some(ra) = ref_area {
-            // the reference frame (CPU path)
-            let rf = rate.frame_at(Tick(mv.compare_ref.unwrap_or(time.0)));
-            let rkey = FrameKey { target: cpu_target, frame: rf, size: size_key, revision: rev, draft: false };
-            app.frames.request(rkey, rate.tick_of(rf), scale, &project, 1);
+            // the reference frame (CPU path): another frame, or (Compare Effect) this frame
+            // without the selected clips' effects
+            let without = if app.ui.fx.compare_effects { without_effects(app, &ctx) } else { None };
+            let (rkey, rf, rproject) = match &without {
+                Some((p, salt)) => {
+                    (FrameKey { target: cpu_target, frame, size: size_key, revision: rev ^ salt, draft: false }, frame, p.clone())
+                }
+                None => {
+                    let rf = rate.frame_at(Tick(mv.compare_ref.unwrap_or(time.0)));
+                    (FrameKey { target: cpu_target, frame: rf, size: size_key, revision: rev, draft: false }, rf, project.clone())
+                }
+            };
+            app.frames.request(rkey, rate.tick_of(rf), scale, &rproject, 1);
             let rpic = fit(ra, display_w, frame_size.1 as f32);
             ui.painter().rect_filled(rpic, 0.0, t.monitor_bg);
             if let (Some(tex), _) = cpu_texture(app, &ctx, &format!("monitor-{prefix}-ref"), rkey, &[], DisplayMode::Composite) {
@@ -253,7 +262,12 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which)
             }
             app.auto.add("program.compare.reference", rpic, "reference frame");
             let bar = Rect::from_min_max(pos2(ra.min.x, ra.max.y + 2.0), pos2(video_area.max.x, ra.max.y + 22.0));
-            monitor_view::compare_bar(app, ui, bar, rate, drop_frame);
+            if without.is_some() {
+                ui.painter().text(pos2(ra.center().x, bar.center().y), Align2::CENTER_CENTER, tl!("Without effects"), Tokens::ui(11.0), t.text_dim);
+                ui.painter().text(pos2(video_area.center().x, bar.center().y), Align2::CENTER_CENTER, tl!("With effects"), Tokens::ui(11.0), t.text_dim);
+            } else {
+                monitor_view::compare_bar(app, ui, bar, rate, drop_frame);
+            }
         }
         if mv.safe_margins {
             for (f, c) in [(0.9, Color32::from_white_alpha(120)), (0.8, Color32::from_white_alpha(90))] {
@@ -981,4 +995,38 @@ mod tests {
         assert_eq!(sample_rgb(&Rgba { w: 0, h: 0, px: vec![] }, (0.5, 0.5)), None);
         assert_eq!(sample_rgb(&Rgba { w: 4, h: 4, px: vec![0; 10] }, (0.5, 0.5)), None);
     }
+}
+
+/// Compare Effect: the project with the selected clips' standard effects switched off, and the
+/// revision salt that keeps its frames apart from the monitor's own. Cached per revision and
+/// selection (the project is only cloned when either changes). None without a selected clip that
+/// has effects.
+fn without_effects(app: &FilmcraftApp, ctx: &egui::Context) -> Option<(std::sync::Arc<redrob_film_project::Project>, u64)> {
+    let seq_id = app.session.state.active_sequence?;
+    let sel: Vec<u64> = app.session.state.selection.iter().map(|c| c.0).collect();
+    let rev = app.session.revision;
+    let id = egui::Id::new("compare-effects-project");
+    type Cached = (u64, Vec<u64>, Option<(std::sync::Arc<redrob_film_project::Project>, u64)>);
+    if let Some((r, s, p)) = ctx.data(|d| d.get_temp::<Cached>(id))
+        && r == rev
+        && s == sel
+    {
+        return p;
+    }
+    let mut project = (*app.session.project).clone();
+    let mut changed = false;
+    if let Some(q) = project.sequence_mut(seq_id) {
+        for c in &sel {
+            if let Some((_, it)) = q.find_item_mut(redrob_film_project::ClipId(*c)) {
+                for e in it.effects.iter_mut().filter(|e| e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e)) {
+                    changed |= e.enabled;
+                    e.enabled = false;
+                }
+            }
+        }
+    }
+    let salt = sel.iter().fold(0x0c0f_fe75_0000_0000u64, |a, c| a.rotate_left(13) ^ c);
+    let out = changed.then(|| (std::sync::Arc::new(project), salt));
+    ctx.data_mut(|d| d.insert_temp::<Cached>(id, (rev, sel, out.clone())));
+    out
 }
