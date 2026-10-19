@@ -27,10 +27,44 @@ pub struct CpalOut {
     /// The last stream error, written by cpal's error callback and shown by `note` (a desktop
     /// launch has no terminal; on Windows `windows_subsystem = "windows"` discards stderr).
     error: Arc<Mutex<Option<String>>>,
-    /// A silent stream kept open while the editor is idle (Linux, Windows): a sound server
-    /// suspends an output nothing plays to after a few seconds, and waking it delayed the first
-    /// picture of every play by ~0.9 s. Separate from `stream`, so it never touches the clock.
-    keepalive: Option<cpal::Stream>,
+    /// A stream kept open while the editor is idle (Linux, Windows): a sound server suspends an
+    /// output nothing plays to after a few seconds, and waking it delayed the first picture of
+    /// every play by ~0.9 s. It plays silence until `start` installs a callback in its slot, so
+    /// play and scrub start on a stream that is already running: opening one on WASAPI (device
+    /// lookup, `supported_output_configs`, `IAudioClient::Initialize`) blocked the UI thread for
+    /// up to seconds on the first scrub move and on every Play.
+    keepalive: Option<Idle>,
+    /// The current play / scrub runs on `keepalive` (not on `stream`).
+    routed: bool,
+    /// The stream configuration last chosen per device name ([`Self::config`]): on WASAPI asking
+    /// for the supported configurations probes every format, which is slow. Cleared by
+    /// `configure`.
+    configs: Mutex<Option<(String, cpal::SupportedStreamConfig)>>,
+}
+
+/// The callback a stream plays from.
+type Fill = Box<dyn FnMut(&mut [f32], usize) + Send>;
+
+/// The idle stream ([`CpalOut::keepalive`]) and the callback it plays (`None` = silence).
+struct Idle {
+    _stream: cpal::Stream,
+    slot: Arc<Mutex<Option<Fill>>>,
+    failed: Arc<AtomicBool>,
+}
+
+/// The idle stream's callback: the installed callback, counting its frames into `played`, or
+/// silence (not counted, so the playback clock starts at 0 when a callback is installed).
+fn routed_fill(slot: Arc<Mutex<Option<Fill>>>, played: Arc<AtomicU64>) -> Fill {
+    Box::new(move |buf: &mut [f32], ch: usize| {
+        let mut g = slot.lock().unwrap_or_else(PoisonError::into_inner);
+        match g.as_mut() {
+            Some(fill) => {
+                fill(buf, ch);
+                played.fetch_add((buf.len() / ch.max(1)) as u64, Ordering::SeqCst);
+            }
+            None => buf.fill(0.0),
+        }
+    })
 }
 
 /// A hardware note for the status bar, translated when it is shown.
@@ -156,43 +190,82 @@ impl CpalOut {
             fallback,
             error: Arc::new(Mutex::new(None)),
             keepalive: None,
+            routed: false,
+            configs: Mutex::new(None),
         };
         out.open_keepalive();
         out
     }
 
-    /// (Re)open the silent idle stream on the device playback will use ([`Self::keepalive`]).
-    /// Best effort: a device that refuses it just wakes on play, as before.
+    /// (Re)open the idle stream on the device playback will use ([`Self::keepalive`]), in the
+    /// configuration playback would open, so `start` can play on it. Best effort: a device that
+    /// refuses it opens its own stream on play, as before.
     fn open_keepalive(&mut self) {
         self.keepalive = None;
+        self.routed = false;
         if !cfg!(any(target_os = "linux", target_os = "windows")) {
             return;
         }
         let host = host(&self.hw.device_class);
         let Some(choice) = output_device(&host, &self.hw.default_output, &self.fallback) else { return };
+        let dev = choice.device;
         // a raw ALSA device is exclusive: a second stream on it would lock playback out
-        if choice.device.name().is_ok_and(|n| fallback_rank(&n) == 3) {
+        if dev.name().is_ok_and(|n| fallback_rank(&n) == 3) {
             return;
         }
-        let Ok(cfg) = choice.device.default_output_config() else { return };
-        let config: cpal::StreamConfig = cfg.clone().into();
-        let err = |e: cpal::StreamError| log::debug!("audio keep-alive stream: {e}");
-        let stream = match cfg.sample_format() {
-            cpal::SampleFormat::F32 => choice.device.build_output_stream(&config, |b: &mut [f32], _| b.fill(0.0), err, None),
-            cpal::SampleFormat::I16 => choice.device.build_output_stream(&config, |b: &mut [i16], _| b.fill(0), err, None),
-            cpal::SampleFormat::I32 => choice.device.build_output_stream(&config, |b: &mut [i32], _| b.fill(0), err, None),
-            cpal::SampleFormat::U16 => choice.device.build_output_stream(&config, |b: &mut [u16], _| b.fill(u16::MAX / 2 + 1), err, None),
-            _ => return,
-        };
-        match stream {
-            Ok(s) if s.play().is_ok() => self.keepalive = Some(s),
-            Ok(_) => {}
-            Err(e) => log::debug!("audio keep-alive stream not opened: {e}"),
+        let Ok(cfg) = self.config(&dev) else { return };
+        if cfg.channels() == 0 || cfg.sample_rate().0 == 0 {
+            return;
+        }
+        let config = self.stream_config(&cfg);
+        let slot: Arc<Mutex<Option<Fill>>> = Arc::new(Mutex::new(None));
+        let failed = Arc::new(AtomicBool::new(false));
+        for (c, sc) in attempts(&cfg, &config, dev.default_output_config().ok()) {
+            // the frames are counted by `routed_fill` (only while a callback is installed)
+            let fill = routed_fill(slot.clone(), self.played.clone());
+            match self.build(&dev, c.sample_format(), &sc, fill, Arc::new(AtomicU64::new(0)), failed.clone()) {
+                Ok(s) => {
+                    if let Err(e) = s.play() {
+                        log::debug!("audio keep-alive stream not started: {e}");
+                        return;
+                    }
+                    self.rate = c.sample_rate().0;
+                    self.channels = c.channels();
+                    self.keepalive = Some(Idle { _stream: s, slot, failed });
+                    return;
+                }
+                Err(e) => log::debug!("audio keep-alive stream not opened ({:?} {} Hz): {e}", c.sample_format(), c.sample_rate().0),
+            }
         }
     }
 
+    /// The stream configuration for `cfg`, with the settings' fixed buffer size when the device
+    /// supports it.
+    fn stream_config(&self, cfg: &cpal::SupportedStreamConfig) -> cpal::StreamConfig {
+        let mut config: cpal::StreamConfig = cfg.clone().into();
+        if let cpal::SupportedBufferSize::Range { min, max } = cfg.buffer_size()
+            && (*min..=*max).contains(&self.hw.buffer_size)
+        {
+            config.buffer_size = cpal::BufferSize::Fixed(self.hw.buffer_size);
+        }
+        config
+    }
+
     /// The stream configuration the settings ask for, falling back to the device default.
+    /// Remembered per device until `configure` ([`Self::configs`]).
     fn config(&self, dev: &cpal::Device) -> Result<cpal::SupportedStreamConfig, String> {
+        let name = dev.name().unwrap_or_default();
+        if let Some((n, c)) = self.configs.lock().unwrap_or_else(PoisonError::into_inner).as_ref()
+            && *n == name
+        {
+            return Ok(c.clone());
+        }
+        let chosen = self.probe_config(dev)?;
+        *self.configs.lock().unwrap_or_else(PoisonError::into_inner) = Some((name, chosen.clone()));
+        Ok(chosen)
+    }
+
+    fn probe_config(&self, dev: &cpal::Device) -> Result<cpal::SupportedStreamConfig, String> {
         let default = dev.default_output_config().map_err(|e| e.to_string())?;
         let want = if self.hw.force_document_rate { self.document_rate.unwrap_or(self.hw.sample_rate) } else { self.hw.sample_rate };
         let exact = dev.supported_output_configs().ok().and_then(|it| {
@@ -213,19 +286,21 @@ impl CpalOut {
         format: cpal::SampleFormat,
         config: &cpal::StreamConfig,
         fill: Box<dyn FnMut(&mut [f32], usize) + Send>,
+        played: Arc<AtomicU64>,
+        failed: Arc<AtomicBool>,
     ) -> Result<cpal::Stream, cpal::BuildStreamError> {
         match format {
-            cpal::SampleFormat::F32 => self.f32_stream(dev, config, fill),
-            cpal::SampleFormat::I8 => self.converted_stream::<i8>(dev, config, fill),
-            cpal::SampleFormat::I16 => self.converted_stream::<i16>(dev, config, fill),
-            cpal::SampleFormat::I24 => self.converted_stream::<cpal::I24>(dev, config, fill),
-            cpal::SampleFormat::I32 => self.converted_stream::<i32>(dev, config, fill),
-            cpal::SampleFormat::I64 => self.converted_stream::<i64>(dev, config, fill),
-            cpal::SampleFormat::U8 => self.converted_stream::<u8>(dev, config, fill),
-            cpal::SampleFormat::U16 => self.converted_stream::<u16>(dev, config, fill),
-            cpal::SampleFormat::U32 => self.converted_stream::<u32>(dev, config, fill),
-            cpal::SampleFormat::U64 => self.converted_stream::<u64>(dev, config, fill),
-            cpal::SampleFormat::F64 => self.converted_stream::<f64>(dev, config, fill),
+            cpal::SampleFormat::F32 => self.f32_stream(dev, config, fill, played, failed),
+            cpal::SampleFormat::I8 => self.converted_stream::<i8>(dev, config, fill, played, failed),
+            cpal::SampleFormat::I16 => self.converted_stream::<i16>(dev, config, fill, played, failed),
+            cpal::SampleFormat::I24 => self.converted_stream::<cpal::I24>(dev, config, fill, played, failed),
+            cpal::SampleFormat::I32 => self.converted_stream::<i32>(dev, config, fill, played, failed),
+            cpal::SampleFormat::I64 => self.converted_stream::<i64>(dev, config, fill, played, failed),
+            cpal::SampleFormat::U8 => self.converted_stream::<u8>(dev, config, fill, played, failed),
+            cpal::SampleFormat::U16 => self.converted_stream::<u16>(dev, config, fill, played, failed),
+            cpal::SampleFormat::U32 => self.converted_stream::<u32>(dev, config, fill, played, failed),
+            cpal::SampleFormat::U64 => self.converted_stream::<u64>(dev, config, fill, played, failed),
+            cpal::SampleFormat::F64 => self.converted_stream::<f64>(dev, config, fill, played, failed),
             _ => Err(cpal::BuildStreamError::StreamConfigNotSupported),
         }
     }
@@ -235,10 +310,10 @@ impl CpalOut {
         dev: &cpal::Device,
         config: &cpal::StreamConfig,
         mut fill: Box<dyn FnMut(&mut [f32], usize) + Send>,
+        played: Arc<AtomicU64>,
+        failed: Arc<AtomicBool>,
     ) -> Result<cpal::Stream, cpal::BuildStreamError> {
         let channels = usize::from(config.channels);
-        let played = self.played.clone();
-        let failed = self.failed.clone();
         let error = self.error.clone();
         dev.build_output_stream(
             config,
@@ -256,13 +331,13 @@ impl CpalOut {
         dev: &cpal::Device,
         config: &cpal::StreamConfig,
         mut fill: Box<dyn FnMut(&mut [f32], usize) + Send>,
+        played: Arc<AtomicU64>,
+        failed: Arc<AtomicBool>,
     ) -> Result<cpal::Stream, cpal::BuildStreamError>
     where
         T: cpal::SizedSample + cpal::FromSample<f32>,
     {
         let channels = usize::from(config.channels);
-        let played = self.played.clone();
-        let failed = self.failed.clone();
         let error_flag = failed.clone();
         let error = self.error.clone();
         let mut scratch = Vec::new();
@@ -334,6 +409,22 @@ impl AudioOut for CpalOut {
     fn start(&mut self, fill: Box<dyn FnMut(&mut [f32], usize) + Send>) -> Result<u32, String> {
         self.stop();
         *self.error.lock().unwrap_or_else(PoisonError::into_inner) = None;
+        // the idle stream died (device unplugged, sound server restarted): open it again
+        if self.keepalive.as_ref().is_some_and(|k| k.failed.load(Ordering::SeqCst)) {
+            self.open_keepalive();
+        }
+        // Play on the idle stream when there is one: it already runs, so nothing is opened on
+        // the UI thread and the clock moves on the device's next callback.
+        if let Some(k) = self.keepalive.as_ref() {
+            let old = {
+                let mut slot = k.slot.lock().unwrap_or_else(PoisonError::into_inner);
+                self.played.store(0, Ordering::SeqCst);
+                slot.replace(fill)
+            };
+            drop(old);
+            self.routed = true;
+            return Ok(self.rate);
+        }
         let r = self.open(fill);
         if let Err(e) = &r {
             log::warn!("audio output unavailable: {e}");
@@ -343,6 +434,13 @@ impl AudioOut for CpalOut {
     }
     fn stop(&mut self) {
         self.stream = None;
+        if std::mem::take(&mut self.routed)
+            && let Some(k) = self.keepalive.as_ref()
+        {
+            // back to silence; the old callback (and its mixing thread) is dropped outside the lock
+            let old = k.slot.lock().unwrap_or_else(PoisonError::into_inner).take();
+            drop(old);
+        }
     }
     fn sample_rate(&self) -> u32 {
         self.rate
@@ -351,6 +449,9 @@ impl AudioOut for CpalOut {
         self.channels as usize
     }
     fn played_frames(&self) -> Option<u64> {
+        if self.routed {
+            return self.keepalive.as_ref().filter(|k| !k.failed.load(Ordering::SeqCst)).map(|_| self.played.load(Ordering::SeqCst));
+        }
         self.stream.as_ref().filter(|_| !self.failed.load(Ordering::SeqCst)).map(|_| self.played.load(Ordering::SeqCst))
     }
     fn devices(&self) -> AudioDevices {
@@ -364,6 +465,8 @@ impl AudioOut for CpalOut {
     fn configure(&mut self, hw: &AudioHardwarePrefs, document_rate: Option<u32>) {
         self.hw = hw.clone();
         self.document_rate = document_rate;
+        // the settings (or the document rate) may ask for another configuration
+        *self.configs.lock().unwrap_or_else(PoisonError::into_inner) = None;
         // the rate playback mixes at must be known before `start`
         let host = host(&self.hw.device_class);
         if let Some(choice) = output_device(&host, &self.hw.default_output, &self.fallback)
@@ -393,12 +496,7 @@ impl CpalOut {
         if cfg.channels() == 0 || cfg.sample_rate().0 == 0 {
             return Err("the output device returned an invalid channel count or sample rate".into());
         }
-        let mut config: cpal::StreamConfig = cfg.clone().into();
-        if let cpal::SupportedBufferSize::Range { min, max } = cfg.buffer_size()
-            && (*min..=*max).contains(&self.hw.buffer_size)
-        {
-            config.buffer_size = cpal::BufferSize::Fixed(self.hw.buffer_size);
-        }
+        let config = self.stream_config(&cfg);
         self.played.store(0, Ordering::SeqCst);
         self.failed.store(false, Ordering::SeqCst);
         // Every attempt gets the same mixer: a failed `build_output_stream` consumes its closure.
@@ -410,7 +508,7 @@ impl CpalOut {
         let mut opened = None;
         let mut last = String::from("no stream configuration to try");
         for (c, sc) in attempts(&cfg, &config, dev.default_output_config().ok()) {
-            match self.build(&dev, c.sample_format(), &sc, shared()) {
+            match self.build(&dev, c.sample_format(), &sc, shared(), self.played.clone(), self.failed.clone()) {
                 Ok(s) => {
                     opened = Some((s, c, sc));
                     break;
@@ -478,6 +576,28 @@ mod tests {
         let mut samples = [cpal::I24::EQUILIBRIUM; 3];
         convert_samples(&[-1.0, 0.0, 1.0], &mut samples);
         assert_eq!(samples.map(|s| s.inner()), [-8_388_608, 0, 8_388_607]);
+    }
+
+    /// The idle stream plays silence without moving the clock, and the installed callback (play,
+    /// scrub) from the next device buffer on, counting its frames.
+    #[test]
+    fn idle_stream_plays_the_installed_callback() {
+        let slot: Arc<Mutex<Option<Fill>>> = Arc::new(Mutex::new(None));
+        let played = Arc::new(AtomicU64::new(0));
+        let mut cb = routed_fill(slot.clone(), played.clone());
+        let mut buf = vec![9.0_f32; 256 * 2];
+        cb(&mut buf, 2);
+        assert!(buf.iter().all(|s| *s == 0.0), "silence while idle");
+        assert_eq!(played.load(Ordering::SeqCst), 0, "idle silence is not playback");
+        let half: Fill = Box::new(|b: &mut [f32], _| b.fill(0.5));
+        *slot.lock().unwrap() = Some(half);
+        cb(&mut buf, 2);
+        assert!(buf.iter().all(|s| *s == 0.5));
+        assert_eq!(played.load(Ordering::SeqCst), 256);
+        slot.lock().unwrap().take();
+        cb(&mut buf, 2);
+        assert!(buf.iter().all(|s| *s == 0.0), "back to silence after stop");
+        assert_eq!(played.load(Ordering::SeqCst), 256);
     }
 
     #[test]

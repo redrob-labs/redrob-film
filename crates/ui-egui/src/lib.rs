@@ -228,6 +228,10 @@ pub struct Playback {
     /// A reopened output has not consumed any samples yet: the wall clock keeps driving until
     /// it does, so waiting on a device that may never wake does not freeze the playhead.
     audio_waking: bool,
+    /// Where the current output's sound starts (the playhead `start_audio` mixed from).
+    audio_from: Tick,
+    /// The sound of this play was started again at the picture once (it joined too late).
+    audio_rejoined: bool,
     /// Audio underruns for the current (or last) play (desktop: sound is mixed ahead).
     #[cfg(not(target_arch = "wasm32"))]
     pub audio_stats: std::sync::Arc<play_ahead::AudioStats>,
@@ -261,6 +265,21 @@ pub const AUDIO_STALL_S: f64 = 1.0;
 /// Bluetooth): measured here as a 1.5–2 s pause after the first callback, which the 1 s wait
 /// took for a stall, so every sequence played without sound.
 pub const AUDIO_START_STALL_S: f64 = 4.0;
+
+/// A starting output that first plays more than this far (wall-clock s) off the picture is
+/// started again at the picture rather than taking the clock out of sync ([`audio_join`]).
+pub const AUDIO_JOIN_S: f64 = 0.06;
+
+/// A starting output has played `played_s` seconds (device time) while the picture, on the wall
+/// clock, got to `shown`; its sound started at `from`. Returns the clock anchor that carries the
+/// picture on from `shown` without a jump, and whether the sound is more than [`AUDIO_JOIN_S`]
+/// off the picture (it should then start again at the picture).
+pub fn audio_join(shown: Tick, played_s: f64, speed: f64, from: Tick) -> (Tick, bool) {
+    let played = Tick::from_seconds_f64(played_s * speed);
+    let anchor = if shown > played { shown - played } else { Tick::ZERO };
+    let off = (anchor.seconds() - from.seconds()).abs() / speed.abs().max(1e-9);
+    (anchor, off > AUDIO_JOIN_S)
+}
 
 /// After the audio output is lost mid-play, the first try to open it again waits this long; each
 /// later try waits one step longer.
@@ -975,6 +994,7 @@ impl FilmcraftApp {
         self.playback.audio_retry = None;
         self.playback.audio_tries = 0;
         self.playback.audio_waking = false;
+        self.playback.audio_rejoined = false;
         if let Some(a) = self.audio.as_mut() {
             a.stop();
         }
@@ -1001,6 +1021,13 @@ impl FilmcraftApp {
         self.playback.anchor_tick = self.session.playhead();
         self.playback.audio_seen = (0, now);
         self.start_audio();
+        // The picture starts now, on the wall clock; the sound joins it when the device first
+        // plays (`advance_playback`). Driving the picture by the device clock from the start held
+        // it still until the output woke (0.5–1 s on Windows/WASAPI after Space).
+        self.playback.audio_rejoined = false;
+        if self.playback.audio_clock {
+            self.playback.audio_waking = true;
+        }
         // Audio Track Mixer: an automation pass runs while playing forward in real time
         if (self.playback.speed - 1.0).abs() < 1e-9 && !self.session.mixrec.active() {
             let t = self.session.playhead();
@@ -1071,6 +1098,7 @@ impl FilmcraftApp {
     fn start_audio(&mut self) {
         let Some(seq_id) = self.session.state.active_sequence else { return };
         let start_tick = self.session.playhead();
+        self.playback.audio_from = start_tick;
         let Some(a) = self.audio.as_mut() else { return };
         let sr = a.sample_rate();
         // Mix at a lower effective rate for forward shuttle playback, then hand the
@@ -1162,13 +1190,29 @@ impl FilmcraftApp {
         if let Some((f, sr)) = reading {
             let stall = now - self.playback.audio_seen.1;
             if f != self.playback.audio_seen.0 {
+                // the first buffer is filled the moment a stream opens, before the device runs:
+                // only a second callback shows it is playing
+                let first = self.playback.audio_seen.0 == 0;
                 self.playback.audio_seen = (f, now);
-                if self.playback.audio_waking && sr > 0 {
-                    // the reopened output plays: its clock takes over from the displayed frame
-                    self.playback.audio_waking = false;
+                if self.playback.audio_waking && sr > 0 && !first {
                     let shown = self.session.playhead();
-                    let played = Tick::from_seconds_f64(f as f64 / f64::from(sr) * self.playback.speed);
-                    self.playback.anchor_tick = if shown > played { shown - played } else { Tick::ZERO };
+                    let (anchor, late) = audio_join(shown, f as f64 / f64::from(sr), self.playback.speed, self.playback.audio_from);
+                    if late && !self.playback.audio_rejoined {
+                        // the device woke after the picture had moved on: its sound would lag
+                        // the picture, so start it again where the picture is (the device runs
+                        // now, so it joins at once); the wall clock goes on driving meanwhile
+                        self.playback.audio_rejoined = true;
+                        self.playback.audio_seen = (0, now);
+                        self.start_audio();
+                        if !self.playback.audio_clock {
+                            self.playback.audio_waking = false;
+                            self.schedule_audio_retry(now);
+                        }
+                    } else {
+                        // the output plays: its clock takes over from the displayed frame
+                        self.playback.audio_waking = false;
+                        self.playback.anchor_tick = anchor;
+                    }
                 }
             } else if stall >= audio_stall_limit(f, sr) {
                 // the device stopped consuming samples: continue from where the audio got to on
@@ -2624,6 +2668,40 @@ mod audio_recovery_tests {
         assert_eq!(app.session.playhead(), displayed);
         assert!(app.ui.status.contains("Audio output failed"));
         app.stop();
+    }
+
+    /// Space starts the picture at once: the wall clock drives while the device has not played
+    /// yet (a waking WASAPI endpoint held the picture still for 0.5–1 s).
+    #[test]
+    fn play_moves_the_picture_before_the_device_plays() {
+        let mut session = Session::default();
+        session.execute("file.openDemoProject", json!({})).unwrap();
+        let ctx = egui::Context::default();
+        let mut app = FilmcraftApp::new(session);
+        app.audio = Some(Box::new(Device { ready: true, starts: Arc::new(AtomicUsize::new(0)), reading: Some(0) }));
+        app.session.set_playhead(Tick::ZERO);
+        app.play(1.0);
+        app.end_preroll(0.0);
+        assert!(app.playback.audio_clock && app.playback.audio_waking);
+        let mut output = ctx.run_ui(egui::RawInput { time: Some(0.5), ..Default::default() }, |ui| app.advance_playback(ui.ctx()));
+        output.textures_delta.clear();
+        assert!(app.playback.playing);
+        assert!(app.session.playhead() >= Tick::from_seconds_f64(0.4), "the picture moved on the wall clock");
+        app.stop();
+    }
+
+    #[test]
+    fn sound_that_starts_late_joins_the_picture() {
+        let s = Tick::from_seconds_f64;
+        // in step: the clock carries on from the picture
+        let (anchor, late) = audio_join(s(1.0), 0.98, 1.0, Tick::ZERO);
+        assert!(!late);
+        assert!((anchor.seconds() - 0.02).abs() < 1e-3);
+        // the device woke 0.8 s after the picture started: start the sound again at the picture
+        let (_, late) = audio_join(s(1.0), 0.2, 1.0, Tick::ZERO);
+        assert!(late);
+        // never anchored before the start
+        assert_eq!(audio_join(s(0.1), 0.5, 1.0, Tick::ZERO).0, Tick::ZERO);
     }
 }
 
