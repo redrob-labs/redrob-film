@@ -5,7 +5,7 @@
 //! ([`ai`]), hand-offs between them ([`handoff`]) and one project bundle ([`bundle`]).
 //!
 //! Usage: `filmcraft [--control <port>] [--demo|--empty] [--recover|--no-recover] [--data-dir <dir>]
-//! [project.rfilm | media files…]`; `--help` prints the options, `--version` the version. An
+//! [--safe-mode] [project.rfilm | media files…]`; `--help` prints the options, `--version` the version. An
 //! unknown option is an error (exit code 2), not a file to open.
 //!
 //! Without a project, `--demo` or `--empty`, Settings ▸ General ▸ At Startup decides: Show Home
@@ -25,6 +25,11 @@
 //! with unsaved changes the app asks to recover them; `--recover` recovers the newest without
 //! asking, `--no-recover` starts without asking (the changes stay available via File ▸ Recover
 //! Unsaved Changes…).
+//!
+//! `--safe-mode` (or `REDROB_FILM_SAFE_MODE=1`, or automatically after a start that died before
+//! its window opened) starts on a software graphics adapter, composites, exports and decodes on the
+//! CPU; see [`graphics`]. A panic writes a crash report (backtrace, OS, GPU adapter, version) to the
+//! log folder, and the next start says where it is.
 //!
 //! `log` records go to standard error and `<data dir>/Logs/redrob-film.log` (`RUST_LOG` sets the
 //! levels); see [`logging`].
@@ -46,7 +51,6 @@ mod control_server;
 mod dev_icon;
 mod device;
 mod file_filters;
-#[cfg(any(target_os = "windows", test))]
 mod graphics;
 mod handoff;
 mod jog_shuttle;
@@ -106,7 +110,7 @@ fn main() -> eframe::Result {
     let env_port = std::env::var_os("REDROB_FILM_CONTROL_PORT")
         .or_else(|| std::env::var_os("FILMCRAFT_CONTROL_PORT")) // legacy: the pre-rename variable still works
         .map(|p| p.to_string_lossy().into_owned());
-    let Launch { control_port, files, demo, startup_flag, recover, data_dir } = match args::parse(env_port, std::env::args().skip(1)) {
+    let Launch { control_port, files, demo, startup_flag, recover, data_dir, safe_mode } = match args::parse(env_port, std::env::args().skip(1)) {
         Ok(Cli::Run(l)) => l,
         Ok(Cli::Help) => {
             tell(args::USAGE, false);
@@ -140,12 +144,27 @@ fn main() -> eframe::Result {
     dev_icon::ensure_dev_desktop_entry();
     // Panics anywhere go to <data dir>/Logs/crash-<day>.log with a backtrace; the UI pass and
     // frame workers catch them and keep running (see redrob_film_ui_egui::crash).
-    redrob_film_ui_egui::crash::install(log_dir);
-    // OS hardware video decoders (VideoToolbox on macOS) in front of our own; Settings ▸ Playback ▸
-    // Hardware decoding switches them off. Unsupported streams and failures use our decoders.
-    register_hardware_decoders();
-    register_gpu_frame_renderer();
-    let options = eframe::NativeOptions {
+    redrob_film_ui_egui::crash::install(log_dir.clone());
+    let crash_report = redrob_film_ui_egui::crash::take_pending_report();
+    if let Some(p) = &crash_report {
+        log::warn!("the previous session crashed; crash report: {}", p.display());
+    }
+    // A start that dies while the window's GPU device is created (a driver crash) leaves its mark;
+    // the next start then runs in safe mode (see graphics.rs).
+    let previous_start_failed = log_dir.as_deref().is_some_and(graphics::begin_start);
+    let safe = graphics::safe_mode(safe_mode, std::env::var("REDROB_FILM_SAFE_MODE").ok().as_deref(), previous_start_failed);
+    if let Some(s) = &safe {
+        log::warn!("safe mode ({}): software graphics adapter, CPU compositing and export, no hardware decoding", s.reason);
+    }
+    if safe.is_none() {
+        // OS hardware video decoders (VideoToolbox on macOS) in front of our own; Settings ▸
+        // Playback ▸ Hardware decoding switches them off. Unsupported streams and failures use our
+        // decoders.
+        register_hardware_decoders();
+        register_gpu_frame_renderer();
+    }
+    let start_dir = log_dir.clone();
+    let mut options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("Redrob Film")
             .with_inner_size([1600.0, 980.0])
@@ -162,17 +181,17 @@ fn main() -> eframe::Result {
         event_loop_builder: agent_event_loop(control_port.is_some()),
         ..Default::default()
     };
-    // Before eframe creates the wgpu instance: leave OpenGL out on Windows (see graphics.rs).
-    #[cfg(target_os = "windows")]
-    let options = {
-        let mut options = options;
-        graphics::configure(&mut options, eframe::wgpu::Backends::from_env());
-        options
-    };
+    // Before eframe creates the wgpu instance: leave OpenGL out on Windows, choose the adapter and
+    // the device limits ourselves, safe mode (see graphics.rs).
+    graphics::configure(&mut options, eframe::wgpu::Backends::from_env(), safe.is_some());
     let started = eframe::run_native(
         "Redrob Film",
         options,
         Box::new(move |cc| {
+            // the window and its GPU device exist: this start got past the graphics step
+            if let Some(d) = &start_dir {
+                graphics::window_up(d);
+            }
             let mut session = Session::default();
             if let Some(dir) = data_dir.clone().or_else(default_data_dir) {
                 let mut cfg = AutosaveConfig::new(dir);
@@ -225,12 +244,14 @@ fn main() -> eframe::Result {
             app.ui.extras.welcome = project_given.is_none() && !startup_flag && app.session.prefs.general.at_startup == "showWelcome";
             app.integrated_titlebar = cfg!(target_os = "macos");
             if let Some(rs) = cc.wgpu_render_state.clone()
+                && safe.is_none()
                 && std::env::var_os("REDROB_FILM_CPU_COMPOSITE").is_none()
                 && std::env::var_os("FILMCRAFT_CPU_COMPOSITE").is_none()
             // legacy: the pre-rename variable still works
             {
                 app.set_wgpu(rs);
             }
+            app.start_notice = start_notice(crash_report.as_deref(), safe.as_ref());
             // Keep device selection available even when the default device is unavailable.
             // Settings ▸ Audio Hardware is applied on the first frame (`apply_prefs`).
             app.audio = Some(Box::new(audio::CpalOut::new()));
@@ -357,8 +378,34 @@ fn main() -> eframe::Result {
         log::error!("{msg}");
         redrob_film_ui_egui::crash::record(&msg);
         let _ = rfd::MessageDialog::new().set_title("Redrob Film").set_description(&msg).set_level(rfd::MessageLevel::Error).show();
+    } else {
+        // a panic the session caught and showed is not a crash to report on the next start
+        redrob_film_ui_egui::crash::clean_exit();
     }
     started
+}
+
+/// What the first window says at start-up: where the previous session's crash report is, and
+/// that this start runs in safe mode. `None` when there is nothing to say.
+fn start_notice(crash_report: Option<&std::path::Path>, safe: Option<&graphics::SafeMode>) -> Option<String> {
+    use redrob_film_ui_egui::i18n::{fmt, t};
+    let mut lines = Vec::new();
+    if let Some(p) = crash_report {
+        let path = p.display().to_string();
+        lines.push(fmt(
+            t("Redrob Film closed unexpectedly last time. The crash report is in {path}; please attach it when you report the problem."),
+            &[("path", &path)],
+        ));
+    }
+    match safe {
+        Some(s) if s.automatic => lines.push(
+            t("The previous start stopped before the window opened, so this start uses safe mode: the preview, effects and export render on the CPU and hardware decoding is off. The next start uses the graphics hardware again.")
+                .to_string(),
+        ),
+        Some(_) => lines.push(t("Safe mode: the preview, effects and export render on the CPU and hardware decoding is off.").to_string()),
+        None => {}
+    }
+    (!lines.is_empty()).then(|| lines.join("\n\n"))
 }
 
 /// Files copied in the file manager, else an image, on the system clipboard (Paste, #611).

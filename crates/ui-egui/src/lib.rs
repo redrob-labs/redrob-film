@@ -343,6 +343,8 @@ pub struct FilmcraftApp {
     styled: bool,
     /// A panic in the UI pass, shown in an error window until dismissed (see [`crash`]).
     pub ui_error: Option<String>,
+    /// Said once at start-up, until dismissed: the previous session's crash report, safe mode.
+    pub start_notice: Option<String>,
     /// Fault injection for robustness tests: the next UI pass panics.
     #[doc(hidden)]
     pub panic_next_frame: bool,
@@ -571,6 +573,7 @@ impl FilmcraftApp {
             next_token: 1,
             styled: false,
             ui_error: None,
+            start_notice: None,
             panic_next_frame: false,
             quit_confirmed: false,
             fonts_ready: false,
@@ -2191,6 +2194,30 @@ impl FilmcraftApp {
             self.ui_error = None;
         }
     }
+
+    /// The start-up notice (a crash report from the last session, safe mode). Automation id:
+    /// `startNotice.dismiss`.
+    fn start_notice_window(&mut self, ctx: &egui::Context) {
+        let Some(msg) = self.start_notice.clone() else { return };
+        let mut close = false;
+        // the product name is not translated
+        egui::Window::new("Redrob Film")
+            .id(egui::Id::new("start notice"))
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .show(ctx, |ui| {
+                ui.set_max_width(460.0);
+                ui.label(msg.as_str());
+                ui.add_space(8.0);
+                let ok = ui.button(tl!("OK"));
+                self.auto.add("startNotice.dismiss", ok.rect, "OK");
+                close |= ok.clicked();
+            });
+        if close {
+            self.start_notice = None;
+        }
+    }
 }
 
 impl eframe::App for FilmcraftApp {
@@ -2299,6 +2326,7 @@ impl eframe::App for FilmcraftApp {
             self.playback.playing = false;
         }
         self.error_window(ui.ctx());
+        self.start_notice_window(ui.ctx());
         let ctx = ui.ctx().clone();
         self.last_ui_time = ctx.input(|i| i.time);
         if !self.synthetic.is_empty() {
