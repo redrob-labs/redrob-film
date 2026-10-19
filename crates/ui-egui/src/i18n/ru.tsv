@@ -359,3 +359,181 @@
 	Redrob Account…	Аккаунт Redrob…
 	Agent	Агент
 	Add Redrob Film to Redrob Code	Добавить Redrob Film в Redrob Code
+# Kdenlive parity p11: render options, clip jobs, archives, backups, cache
+	Open folder after export	Открыть папку после экспорта
+	Play after render	Воспроизвести после рендеринга
+	Add rendered file to project	Добавить готовый файл в проект
+	Keep log file next to the output	Сохранять журнал рядом с файлом
+	Separate file for each audio track	Отдельный файл для каждой аудиодорожки
+	Shut down computer after renderings	Выключить компьютер после рендеринга
+	Render Options	Параметры рендеринга
+	After Export	После экспорта
+	Video Stream	Видеопоток
+	Export video	Экспортировать видео
+	Aspect Ratio	Соотношение сторон
+	Match Source	Как в источнике
+	Scaling Interpolation	Интерполяция масштабирования
+	Deinterlacer	Деинтерлейсинг
+	Encoder Speed	Скорость кодировщика
+	Render full color range	Рендерить в полном цветовом диапазоне
+	Render at preview resolution ({res})	Рендерить в разрешении предпросмотра ({res})
+	Use proxy clips	Использовать прокси-клипы
+	Parallel processing	Параллельная обработка
+	Encoding Threads	Потоки кодирования
+	0 = one per core	0 = по одному на ядро
+	Show frame count instead of timecode	Показывать номер кадра вместо таймкода
+	All markers	Все маркеры
+	Queue Marker Sections	Поставить в очередь участки между маркерами
+	Generate Script	Создать сценарий
+	Render script saved: {name}	Сценарий рендеринга сохранён: {name}
+	Queued {n} marker sections	В очереди участков между маркерами: {n}
+	Play	Воспроизвести
+	Open Folder	Открыть папку
+	Add to Project	Добавить в проект
+	Render Scripts	Сценарии рендеринга
+	Start	Запустить
+	Delete	Удалить
+	From marker	От маркера
+	to	до
+	Sequence End	Конец эпизода
+	Edit…	Изменить…
+	Editing preset {name}	Изменение пресета {name}
+	Preset Name	Имя пресета
+	Save Changes	Сохранить изменения
+	Done	Готово
+	Saved preset {name}	Пресет {name} сохранён
+	Area (default)	По площади (по умолчанию)
+	Nearest Neighbor	Ближайший сосед
+	Bilinear	Билинейная
+	Bicubic	Бикубическая
+	Lanczos	Ланцош
+	None	Нет
+	One Field (fast)	Одно поле (быстро)
+	Linear Blend	Линейное смешивание
+	Edge Directed	По направлению краёв
+	Slow (best compression)	Медленно (лучшее сжатие)
+	Medium	Средне
+	Fast	Быстро
+	16:9	16:9
+	4:3	4:3
+	1:1 (square)	1:1 (квадрат)
+	4:5 (portrait)	4:5 (портрет)
+	9:16 (vertical)	9:16 (вертикально)
+	2.39:1 (scope)	2.39:1 (скоуп)
+	1.85:1 (flat)	1.85:1 (флэт)
+	PPM	PPM
+	WebP	WebP
+	FLAC Audio	Аудио FLAC
+	PPM Sequence	Последовательность PPM
+	WebP Sequence	Последовательность WebP
+	WebP Sequence with Alpha	Последовательность WebP с альфой
+	Numbered PPM stills (binary, 8-bit RGB)	Нумерованные кадры PPM (двоичные, 8-бит RGB)
+	Numbered WebP stills (lossless)	Нумерованные кадры WebP (без потерь)
+	Numbered WebP stills (lossless, RGBA)	Нумерованные кадры WebP (без потерь, RGBA)
+	FLAC 48 kHz 16-bit	FLAC 48 кГц 16 бит
+	FLAC 48 kHz 24-bit	FLAC 48 кГц 24 бит
+	FLAC, stereo 48 kHz 16-bit, lossless	FLAC, стерео 48 кГц 16 бит, без потерь
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, стерео 48 кГц 24 бит, без потерь
+	Open Export Output	Открыть экспортированный файл
+	Add Export Output to Project	Добавить экспортированный файл в проект
+	Generate Render Script	Создать сценарий рендеринга
+	List Render Scripts	Список сценариев рендеринга
+	Start Render Script	Запустить сценарий рендеринга
+	Delete Render Script	Удалить сценарий рендеринга
+	Remove Missing Clips	Убрать отсутствующие клипы
+	Open Archived Project…	Открыть архивированный проект…
+	List Project Backups	Список резервных копий проекта
+	Open Backup File…	Открыть резервную копию…
+	Cached Data Usage	Объём кэшированных данных
+	Delete Cached Data	Удалить кэшированные данные
+	Stabilize Clip	Стабилизировать клип
+	Duplicate Clip with Speed Change	Дублировать клип с изменением скорости
+	Transcode Clips	Перекодировать клипы
+	List Transcode Profiles	Список профилей перекодирования
+	Save Transcode Profile	Сохранить профиль перекодирования
+	Delete Transcode Profile	Удалить профиль перекодирования
+	List Clip Jobs	Список заданий для клипов
+	Save Clip Job	Сохранить задание для клипов
+	Delete Clip Job	Удалить задание для клипов
+	Run Clip Job	Выполнить задание для клипов
+	Clip in Timeline	Клип на таймлайне
+	Go to Clip in Timeline	Перейти к клипу на таймлайне
+	Reveal in File Manager	Показать в файловом менеджере
+	Replace Audio or Video Part	Заменить звук или видео
+	Adjust Profile to Current Clip	Подстроить профиль под клип
+	Insert at Timecode	Вставить по таймкоду
+	Delete Clips In Use	Удалить используемые клипы
+	{clips} of these clips are used in the timeline ({uses} timeline clips). Delete them and their timeline clips?	{clips} из этих клипов используются на таймлайне ({uses} клипов на таймлайне). Удалить их вместе с клипами на таймлайне?
+	Cancel	Отмена
+	Remove from Project	Убрать из проекта
+	Remove All Missing	Убрать все отсутствующие
+	Open Recent	Открыть недавние
+	Clear List	Очистить список
+	Archive:	Архив:
+	Folder only	Только папка
+	Open Backup File	Открыть резервную копию
+	Last hour	Последний час
+	Last day	Последний день
+	Last week	Последняя неделя
+	Older	Старше
+	No backups yet: every save of the project keeps one.	Резервных копий пока нет: каждое сохранение проекта оставляет одну.
+	Restore	Восстановить
+	Welcome to Redrob Film	Добро пожаловать в Redrob Film
+	New Project	Новый проект
+	Recent Projects	Недавние проекты
+	No recent projects	Нет недавних проектов
+	Show this screen at startup	Показывать этот экран при запуске
+	Show Welcome Screen	Показать экран приветствия
+	Warn when the cache exceeds	Предупреждать, когда кэш превышает
+	Delete oldest files (or warn) when the cache exceeds	Удалять самые старые файлы (или предупреждать), когда кэш превышает
+	Manage Cached Data	Управление кэшированными данными
+	Delete only files older than	Удалять только файлы старше
+	 days	 дн.
+	(0 = all)	(0 = все)
+	Current project	Текущий проект
+	All projects	Все проекты
+	Render previews	Превью рендеринга
+	Proxy clips	Прокси-клипы
+	Backups	Резервные копии
+	Backups of all projects	Резервные копии всех проектов
+	Media cache (all projects)	Медиакэш (все проекты)
+	{files} file(s), {size}	Файлов: {files}, {size}
+	Replace Audio Part…	Заменить звук…
+	Replace Video Part…	Заменить видео…
+	Clip Jobs	Задания для клипов
+	Stabilize	Стабилизировать
+	Duplicate with Speed Change…	Дублировать с изменением скорости…
+	Transcode…	Перекодировать…
+	Configure Clip Jobs…	Настроить задания для клипов…
+	Duplicate with Speed Change	Дублировать с изменением скорости
+	Custom Clip Jobs	Свои задания для клипов
+	Speed	Скорость
+	Reverse	Обратно
+	Pitch compensation	Компенсация высоты тона
+	Create	Создать
+	Profile	Профиль
+	Add the result to the project	Добавить результат в проект
+	Replace the original clip	Заменить исходный клип
+	Transcode	Перекодировать
+	New or changed profile	Новый или изменённый профиль
+	Name	Имя
+	Export preset	Пресет экспорта
+	Scale	Масштаб
+	Save Profile	Сохранить профиль
+	Saved jobs	Сохранённые задания
+	No custom clip jobs yet.	Своих заданий для клипов пока нет.
+	Run	Выполнить
+	Arguments ({input}, {output})	Аргументы ({input}, {output})
+	Output extension	Расширение результата
+	Save Job	Сохранить задание
+	Started job {job}	Задание {job} запущено
+	Saved	Сохранено
+	ProRes 422 LT (edit friendly)	ProRes 422 LT (для монтажа)
+	ProRes 422 HQ	ProRes 422 HQ
+	DNxHR SQ (edit friendly)	DNxHR SQ (для монтажа)
+	DNxHR HQ	DNxHR HQ
+	APV 422-10	APV 422-10
+	WAV 24-bit (audio)	WAV 24 бит (звук)
+# Kdenlive parity p11: shortcut categories
+	Cache	Кэш
+	ClipJobs	Задания для клипов

@@ -118,11 +118,7 @@ fn stem_jobs(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings) -> 
         if let Some(q2) = p.sequence_mut(seq) {
             for (j, t2) in q2.audio_tracks.iter_mut().enumerate() {
                 t2.solo = false;
-                if j != i {
-                    t2.muted = true;
-                } else {
-                    t2.muted = false;
-                }
+                t2.muted = j != i;
             }
         }
         let mut st = ExportSettings { format: Format::Wav, path: String::new(), range: settings.range, include_audio: true, ..Default::default() };

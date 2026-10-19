@@ -407,7 +407,7 @@ fn transcode(s: &mut Session, p: &Value) -> Result<Value> {
     let mut taken = Vec::new();
     for item in items_p(s, p) {
         let Some((m, path, _)) = file_of(&s.project, item) else { continue };
-        let (proj, seq, _) = clip_project(&s.project, item, &|_, _| {}).ok_or_else(|| bad(cmd, "not a media clip"))?;
+        let (proj, seq, _) = clip_project(&s.project, item, &|_: &mut redrob_film_project::TrackItem, _: TrackKind| {}).ok_or_else(|| bad(cmd, "not a media clip"))?;
         let mut st = if m.info.video.is_some() && !preset.settings.format.is_audio_only() { preset.settings.clone() } else { intermediate(false) };
         st.frame_size = None;
         st.frame_rate = None;

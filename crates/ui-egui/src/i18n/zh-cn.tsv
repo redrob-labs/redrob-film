@@ -3567,3 +3567,165 @@
 	The reply hit its length limit.	回复已达到长度上限。
 	The turn ended: {reason}.	本轮已结束：{reason}。
 	Workspace changed. The next message starts the agent with it.	工作区已更改。下一条消息将用它启动智能体。
+# Kdenlive parity p11: render options, clip jobs, archives, backups, cache
+	Open folder after export	导出后打开文件夹
+	Play after render	渲染后播放
+	Add rendered file to project	将渲染文件添加到项目
+	Keep log file next to the output	在输出旁保留日志文件
+	Separate file for each audio track	每个音频轨道单独文件
+	Shut down computer after renderings	渲染完成后关机
+	Render Options	渲染选项
+	After Export	导出后
+	Video Stream	视频流
+	Export video	导出视频
+	Aspect Ratio	宽高比
+	Scaling Interpolation	缩放插值
+	Deinterlacer	去隔行
+	Encoder Speed	编码器速度
+	Render full color range	以全色彩范围渲染
+	Render at preview resolution ({res})	以预览分辨率渲染 ({res})
+	Use proxy clips	使用代理剪辑
+	Parallel processing	并行处理
+	Encoding Threads	编码线程
+	0 = one per core	0 = 每个核心一个
+	Show frame count instead of timecode	显示帧数而非时间码
+	All markers	所有标记
+	Queue Marker Sections	将标记区段加入队列
+	Generate Script	生成脚本
+	Render script saved: {name}	渲染脚本已保存：{name}
+	Queued {n} marker sections	已将 {n} 个标记区段加入队列
+	Play	播放
+	Open Folder	打开文件夹
+	Add to Project	添加到项目
+	Render Scripts	渲染脚本
+	Start	开始
+	From marker	从标记
+	to	到
+	Sequence End	序列结尾
+	Editing preset {name}	正在编辑预设 {name}
+	Preset Name	预设名称
+	Save Changes	保存更改
+	Saved preset {name}	已保存预设 {name}
+	Area (default)	区域（默认）
+	Nearest Neighbor	最近邻
+	Bilinear	双线性
+	Bicubic	双三次
+	Lanczos	Lanczos
+	One Field (fast)	单场（快速）
+	Linear Blend	线性混合
+	Edge Directed	边缘导向
+	Slow (best compression)	慢（最佳压缩）
+	16:9	16:9
+	4:3	4:3
+	1:1 (square)	1:1（方形）
+	4:5 (portrait)	4:5（竖向）
+	9:16 (vertical)	9:16（竖屏）
+	2.39:1 (scope)	2.39:1（宽银幕）
+	1.85:1 (flat)	1.85:1（遮幅）
+	PPM	PPM
+	WebP	WebP
+	FLAC Audio	FLAC 音频
+	PPM Sequence	PPM 序列
+	WebP Sequence	WebP 序列
+	WebP Sequence with Alpha	带 Alpha 的 WebP 序列
+	Numbered PPM stills (binary, 8-bit RGB)	编号 PPM 静帧（二进制，8 位 RGB）
+	Numbered WebP stills (lossless)	编号 WebP 静帧（无损）
+	Numbered WebP stills (lossless, RGBA)	编号 WebP 静帧（无损，RGBA）
+	FLAC 48 kHz 16-bit	FLAC 48 kHz 16 位
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24 位
+	FLAC, stereo 48 kHz 16-bit, lossless	FLAC，立体声 48 kHz 16 位，无损
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC，立体声 48 kHz 24 位，无损
+	Open Export Output	打开导出文件
+	Add Export Output to Project	将导出文件添加到项目
+	Generate Render Script	生成渲染脚本
+	List Render Scripts	列出渲染脚本
+	Start Render Script	启动渲染脚本
+	Delete Render Script	删除渲染脚本
+	Remove Missing Clips	移除缺失的剪辑
+	Open Archived Project…	打开归档项目…
+	List Project Backups	列出项目备份
+	Open Backup File…	打开备份文件…
+	Cached Data Usage	缓存数据用量
+	Delete Cached Data	删除缓存数据
+	Stabilize Clip	稳定剪辑
+	Duplicate Clip with Speed Change	复制剪辑并更改速度
+	Transcode Clips	转码剪辑
+	List Transcode Profiles	列出转码配置
+	Save Transcode Profile	保存转码配置
+	Delete Transcode Profile	删除转码配置
+	List Clip Jobs	列出剪辑任务
+	Save Clip Job	保存剪辑任务
+	Delete Clip Job	删除剪辑任务
+	Run Clip Job	运行剪辑任务
+	Clip in Timeline	时间轴中的剪辑
+	Go to Clip in Timeline	转到时间轴中的剪辑
+	Reveal in File Manager	在文件管理器中显示
+	Replace Audio or Video Part	替换音频或视频部分
+	Adjust Profile to Current Clip	将配置调整为当前剪辑
+	Insert at Timecode	在时间码处插入
+	Delete Clips In Use	删除使用中的剪辑
+	{clips} of these clips are used in the timeline ({uses} timeline clips). Delete them and their timeline clips?	其中 {clips} 个剪辑在时间轴中使用（时间轴剪辑 {uses} 个）。连同时间轴剪辑一起删除吗？
+	Remove from Project	从项目中移除
+	Remove All Missing	移除所有缺失项
+	Open Recent	打开最近项目
+	Clear List	清除列表
+	Archive:	归档：
+	Folder only	仅文件夹
+	Open Backup File	打开备份文件
+	Last hour	最近一小时
+	Last day	最近一天
+	Last week	最近一周
+	Older	更早
+	No backups yet: every save of the project keeps one.	尚无备份：每次保存项目都会保留一份。
+	Welcome to Redrob Film	欢迎使用 Redrob Film
+	New Project	新建项目
+	Recent Projects	最近的项目
+	No recent projects	没有最近的项目
+	Show this screen at startup	启动时显示此屏幕
+	Show Welcome Screen	显示欢迎屏幕
+	Warn when the cache exceeds	缓存超出时警告
+	Delete oldest files (or warn) when the cache exceeds	缓存超出时删除最旧的文件（或警告）
+	Manage Cached Data	管理缓存数据
+	Delete only files older than	仅删除早于以下时间的文件
+	 days	 天
+	(0 = all)	（0 = 全部）
+	Current project	当前项目
+	All projects	所有项目
+	Render previews	渲染预览
+	Proxy clips	代理剪辑
+	Backups	备份
+	Backups of all projects	所有项目的备份
+	Media cache (all projects)	媒体缓存（所有项目）
+	{files} file(s), {size}	{files} 个文件，{size}
+	Replace Audio Part…	替换音频部分…
+	Replace Video Part…	替换视频部分…
+	Clip Jobs	剪辑任务
+	Stabilize	稳定
+	Duplicate with Speed Change…	复制并更改速度…
+	Transcode…	转码…
+	Configure Clip Jobs…	配置剪辑任务…
+	Duplicate with Speed Change	复制并更改速度
+	Custom Clip Jobs	自定义剪辑任务
+	Pitch compensation	音调补偿
+	Create	创建
+	Add the result to the project	将结果添加到项目
+	Replace the original clip	替换原始剪辑
+	New or changed profile	新建或修改的配置
+	Export preset	导出预设
+	Save Profile	保存配置
+	Saved jobs	已保存的任务
+	No custom clip jobs yet.	尚无自定义剪辑任务。
+	Run	运行
+	Arguments ({input}, {output})	参数（{input}, {output}）
+	Output extension	输出扩展名
+	Save Job	保存任务
+	Started job {job}	已启动任务 {job}
+	Saved	已保存
+	ProRes 422 LT (edit friendly)	ProRes 422 LT（适合剪辑）
+	ProRes 422 HQ	ProRes 422 HQ
+	DNxHR SQ (edit friendly)	DNxHR SQ（适合剪辑）
+	DNxHR HQ	DNxHR HQ
+	WAV 24-bit (audio)	WAV 24 位（音频）
+# Kdenlive parity p11: shortcut categories
+	Cache	缓存
+	ClipJobs	剪辑任务

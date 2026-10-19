@@ -1792,7 +1792,7 @@ feature = "10-bit presets (AV1, DNxHR, ProRes, x265 main10)"
 manual = "https://docs.kdenlive.org/en/exporting/render.html"
 film = "partial"
 evidence = "crates/export/src/presets.rs:121"
-gap = "ProRes/DNxHR/APV; no 10-bit H.265/AV1 software encode"
+gap = "10-bit only through ProRes / DNxHR / APV; no 10-bit H.265 or AV1 software encoder (clean-room encoders not written) and no x265 main10 preset"
 
 [[row]]
 id = "K4-200"
@@ -1828,7 +1828,7 @@ feature = "Generic presets (GIF HQ, MP4 H.264/AAC, MPEG-2, WebM VP8/Vorbis)"
 manual = "https://docs.kdenlive.org/en/exporting/render.html"
 film = "partial"
 evidence = "crates/export/src/lib.rs:218"
-gap = "no MPEG-2, no WebM"
+gap = "MP4 H.264/AAC and animated GIF exist; no MPEG-2 or WebM VP8/Vorbis encoder (clean-room encoders not written)"
 
 [[row]]
 id = "K4-204"
@@ -1837,7 +1837,7 @@ feature = "UHD presets (MP4 H.265, WebM AV1/Opus, WebM VP9/Opus)"
 manual = "https://docs.kdenlive.org/en/exporting/render.html"
 film = "partial"
 evidence = "crates/export/src/presets.rs:105"
-gap = "H.265/AV1 only through a hardware encoder; no WebM"
+gap = "H.265 / AV1 only through a platform hardware encoder; no VP9 / AV1 / Opus software encoder and no WebM muxer"
 
 [[row]]
 id = "K4-205"
@@ -1855,7 +1855,7 @@ feature = "Hardware-accelerated presets (NVENC, VAAPI, VideoToolbox)"
 manual = "https://docs.kdenlive.org/en/exporting/render.html"
 film = "partial"
 evidence = "crates/export/src/lib.rs:364"
-gap = "platform H.264/H.265/AV1 hardware encoder when registered"
+gap = "NVENC (H.264 / H.265) and VideoToolbox encoders register; no VA-API encoder (VA-API is decode-only here)"
 
 [[row]]
 id = "K4-207"
@@ -2026,7 +2026,7 @@ feature = "Embed subtitles as a stream instead of burning in"
 manual = "https://docs.kdenlive.org/en/exporting/render.html"
 film = "partial"
 evidence = "crates/export/src/lib.rs:384"
-gap = "burn-in or sidecar file; no in-container subtitle stream"
+gap = "captions burn in or go to a sidecar .srt / .vtt; the MP4 / MOV muxer writes no text (tx3g) track and there is no Matroska muxer"
 
 [[row]]
 id = "K4-226"
