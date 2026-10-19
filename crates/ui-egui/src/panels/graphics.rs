@@ -583,6 +583,10 @@ pub fn monitor_overlay(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect, fra
     let id = egui::Id::new("gfx-overlay");
     let resp = ui.interact(pic, id, if graphics_tool { Sense::click_and_drag() } else { Sense::hover() });
     let hover = resp.hover_pos();
+    // the Program monitor's own click actions (Play/pause on monitor click, double-click full
+    // screen) read this: a click that lands on no graphic layer belongs to the picture
+    let on_layer = resp.interact_pointer_pos().or(hover).is_some_and(|p| views.iter().any(|v| v.hit(p)));
+    ui.data_mut(|d| d.insert_temp(egui::Id::new("gfx-overlay-click"), (resp.clicked() && !on_layer, resp.double_clicked() && !on_layer)));
     let mut actions: Vec<(String, Value)> = Vec::new();
     let drag_id = id.with("drag");
     let mut drag: Option<DragState> = ui.data(|d| d.get_temp(drag_id));

@@ -682,6 +682,24 @@ const fn float(min: f64, max: f64, decimals: usize, unit: &'static str) -> Kind 
     Kind::Float { min, max, decimals, unit }
 }
 
+const FULLSCREEN_SCREENS: &[(&str, &str)] =
+    &[("current", "This screen"), ("left", "Screen to the left"), ("right", "Screen to the right"), ("above", "Screen above"), ("below", "Screen below")];
+
+/// The first ShuttlePRO / ShuttleXpress event device listed under /dev/input/by-id (Linux).
+pub fn detect_jog_shuttle() -> Option<String> {
+    let mut found: Vec<String> = std::fs::read_dir("/dev/input/by-id")
+        .ok()?
+        .filter_map(|e| e.ok())
+        .map(|e| e.path().to_string_lossy().into_owned())
+        .filter(|p| {
+            let n = p.to_ascii_lowercase();
+            (n.contains("shuttle") || n.contains("contour")) && n.contains("event")
+        })
+        .collect();
+    found.sort();
+    found.into_iter().next()
+}
+
 const STARTUP: &[(&str, &str)] = &[
     ("showHome", "Show Home"),
     ("showWelcome", "Show Welcome Screen"),
@@ -1086,6 +1104,39 @@ static CATEGORIES: &[Category] = &[
             b("playback.disableVideoInBackground", "Disable video output when in the background", false),
             b("playback.draftDecode", "Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)", true),
             f("playback.hardwareDecoding", "Hardware decoding", Kind::Choice(HW_DECODE), true),
+            b("playback.gpuProcessing", "GPU processing of effects in the Program Monitor", true),
+            b("playback.playOnMonitorClick", "Play/pause on monitor click", true),
+            b("playback.customMonitorBackground", "Custom monitor background", true),
+            sub("playback.monitorBackground", "Monitor background color", Kind::Color, "playback.customMonitorBackground", true),
+            f("playback.overlayColor", "Monitor overlay color", Kind::Color, true),
+            f("playback.fullscreenScreen", "Screen used for full screen monitor", Kind::Choice(FULLSCREEN_SCREENS), true),
+            b("playback.mirrorFullscreen", "Mirror the monitor while it is full screen", true),
+            Row::Group(
+                "Jog Shuttle",
+                &[
+                    b("playback.jogShuttle.enabled", "Enable jog shuttle", true),
+                    sub("playback.jogShuttle.device", "Device path", Kind::Text, "playback.jogShuttle.enabled", true),
+                    Row::Button { id: "playback.jogShuttle.detect", label: "Detect", command: "prefs.detectJogShuttle" },
+                    sub("playback.jogShuttle.button1", "Button 1", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button2", "Button 2", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button3", "Button 3", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button4", "Button 4", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button5", "Button 5", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button6", "Button 6", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button7", "Button 7", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button8", "Button 8", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button9", "Button 9", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button10", "Button 10", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button11", "Button 11", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button12", "Button 12", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button13", "Button 13", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button14", "Button 14", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button15", "Button 15", Kind::Text, "playback.jogShuttle.enabled", true),
+                    Row::Note(
+                        "Each button runs the command id typed beside it (for example playback.toggle, markers.markIn, playhead.nextSnap; see Keyboard Shortcuts). The jog wheel steps frames and the shuttle ring plays at up to 10x either way.",
+                    ),
+                ],
+            ),
             Row::Note(
                 "Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and Redrob Film's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.",
             ),

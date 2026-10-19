@@ -1345,6 +1345,16 @@ fn build() -> Vec<CommandSpec> {
             s.set_prefs(next).map_err(|e| EngineError::Other(format!("saving preferences: {e}")))?;
             Ok(s.prefs.to_value())
         }),
+        // Settings ▸ Playback ▸ Jog Shuttle ▸ Detect: the first ShuttlePRO / ShuttleXpress event
+        // device the system lists (Linux /dev/input/by-id) becomes the device, and the shuttle is on
+        cmd!("prefs.detectJogShuttle", "Detect Jog Shuttle", [], None, "{}", always, |s, _| {
+            let found = crate::settings::detect_jog_shuttle().ok_or_else(|| EngineError::Other("no ShuttlePRO or ShuttleXpress was found (Linux event devices under /dev/input/by-id)".into()))?;
+            let mut next = s.prefs.clone();
+            next.playback.jog_shuttle.device = found.clone();
+            next.playback.jog_shuttle.enabled = true;
+            s.set_prefs(next).map_err(|e| EngineError::Other(format!("saving preferences: {e}")))?;
+            Ok(json!({"device": found}))
+        }),
         cmd!("prefs.reset", "Reset Preferences", [], None, r#"{"category":str?}"#, always, |s, p| {
             let next = match str_p(p, "category") {
                 Some(c) => {

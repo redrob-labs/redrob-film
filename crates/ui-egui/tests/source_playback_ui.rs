@@ -198,14 +198,14 @@ fn a_single_frame_source_range_starts_at_the_marked_last_frame() {
 }
 
 #[test]
-fn j_and_l_shuttle_the_source_both_ways_and_double_the_speed() {
+fn j_and_l_shuttle_the_source_both_ways_and_step_up_the_speed() {
     let mut h = Harness::builder().with_step_dt(0.25).with_size(egui::vec2(1280.0, 800.0)).build_eframe(move |_cc| app(5));
     h.step();
     h.state_mut().ui.focused = PanelKind::Source;
     let before = h.state().session.project.to_json();
     let program = h.state().session.playhead();
     let ctx = h.ctx.clone();
-    for speed in [1.0, 2.0, 4.0, 8.0, 8.0] {
+    for speed in [1.0, 1.5, 2.0, 3.0, 5.5, 10.0, 10.0] {
         let r = menus::invoke(h.state_mut(), &ctx, "playback.forward", json!({})).unwrap();
         assert_eq!(r["speed"], speed);
     }
@@ -217,7 +217,7 @@ fn j_and_l_shuttle_the_source_both_ways_and_double_the_speed() {
     h.step();
     assert!(h.state().session.state.source_playhead < at, "J plays the Source backward");
     assert!(!h.state().source_playback.clock.audio_clock, "shuttle speeds play without sound");
-    assert_eq!(menus::invoke(h.state_mut(), &ctx, "playback.reverse", json!({})).unwrap()["speed"], -2.0);
+    assert_eq!(menus::invoke(h.state_mut(), &ctx, "playback.reverse", json!({})).unwrap()["speed"], -1.5);
     for _ in 0..8 {
         h.step();
     }

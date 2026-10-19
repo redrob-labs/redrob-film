@@ -87,6 +87,10 @@ pub fn source_command(id: &str) -> bool {
                 | "markers.clearCurrent"
                 | "markers.clearAll"
                 | "markers.edit"
+                | "playhead.nextSnap"
+                | "playhead.prevSnap"
+                | "playhead.forwardSecond"
+                | "playhead.backSecond"
         )
 }
 
@@ -174,6 +178,31 @@ pub(crate) fn route(s: &mut Session, id: &str, p: &Value) -> Result<Option<Value
                 marks["out"] = Value::Null;
             }
             s.execute("project.setMarks", marks)?;
+        }
+        "playhead.nextSnap" | "playhead.prevSnap" => {
+            // the clip monitor's snap points: its markers, In / Out and the clip's ends
+            let mut points: Vec<Tick> = view.markers.iter().map(|m| m.start).collect();
+            points.extend(view.mark_in);
+            points.extend(view.mark_out);
+            points.push(view.start);
+            points.push(Tick(view.end.0.saturating_sub(view.rate.frame_duration().0)).max(view.start));
+            let time = if id.ends_with("Next") {
+                points.into_iter().filter(|t| *t > cursor).min()
+            } else {
+                points.into_iter().filter(|t| *t < cursor).max()
+            };
+            if let Some(t) = time {
+                s.execute("source.setPlayhead", json!({"time":t.0}))?;
+            }
+        }
+        "playhead.forwardSecond" | "playhead.backSecond" => {
+            let n = crate::keyboard::frames_per_second(view.rate);
+            if view.rate.frame_duration().0 > 0 {
+                let dir = if id.ends_with("forwardSecond") { 1 } else { -1 };
+                let f = view.rate.frame_at(cursor).saturating_add(n * dir);
+                let t = view.rate.tick_of(f).clamp(view.start, Tick(view.end.0.saturating_sub(view.rate.frame_duration().0)).max(view.start));
+                s.execute("source.setPlayhead", json!({"time":t.0}))?;
+            }
         }
         "markers.goNext" | "markers.goPrev" => {
             let time = if id.ends_with("Next") {

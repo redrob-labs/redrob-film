@@ -296,7 +296,8 @@ pub fn checked(app: &FilmcraftApp, id: &str) -> Option<bool> {
 /// Project Settings ▸ General ▸ Renderer is "Software Only": the Program monitor composites on
 /// the CPU.
 pub fn software_renderer(app: &FilmcraftApp) -> bool {
-    app.session.project.settings.renderer == redrob_film_engine::project_tools::RENDERER_SOFTWARE
+    // Settings ▸ Playback ▸ GPU processing off takes every project to the CPU renderer
+    !app.session.prefs.playback.gpu_processing || app.session.project.settings.renderer == redrob_film_engine::project_tools::RENDERER_SOFTWARE
 }
 
 /// Hand a path to the operating system (open it in its default application, or reveal it in the

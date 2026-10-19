@@ -39,7 +39,7 @@ impl FilmcraftApp {
         if !speed.is_finite() || speed == 0.0 {
             return Err("Source shuttle speed must be a non-zero number".into());
         }
-        self.start_source_playback(None, None, speed.clamp(-8.0, 8.0))
+        self.start_source_playback(None, None, speed.clamp(-10.0, 10.0))
     }
 
     pub fn play_source_range(&mut self, from_playhead: bool, preroll: bool) -> Result<(), String> {

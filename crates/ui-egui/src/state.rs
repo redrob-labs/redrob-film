@@ -386,7 +386,34 @@ pub struct MonitorView {
     /// Graphic drags snap to it with Snap in Program Monitor on.
     pub grid_lines: u32,
     pub grid_color: [u8; 4],
+    /// Kdenlive's Monitor Info Overlay: one switch for the info drawn over the picture (the
+    /// timecode, playback FPS, the marker under the playhead, the audio waveform strip).
+    pub info_overlay: bool,
+    pub overlay_timecode: bool,
+    pub overlay_fps: bool,
+    pub overlay_markers: bool,
+    /// The audio waveform strip along the bottom of the picture (Source Monitor).
+    pub overlay_waveform: bool,
+    /// Always show the Source Monitor's waveform strip (else it shows while the pointer is over the
+    /// bottom of the picture).
+    pub always_audio_thumbnails: bool,
+    /// The guide pattern over the picture ([`OVERLAY_PATTERNS`]; 0 = none). Change Overlay cycles it.
+    pub overlay_pattern: u8,
+    /// The overlay toolbar sits at the left of the picture (else the right).
+    pub toolbar_left: bool,
+    /// Edit Mode: the editing handles over the picture (graphics, masks, clip transform and crop).
+    pub edit_handles: bool,
+    /// Show the Source clip's embedded start timecode instead of counting from zero.
+    pub source_timecode: bool,
+    /// Multitrack View (Program): every video track of the sequence in a grid.
+    pub multitrack: bool,
+    /// Automatic keyframes (the overlay toolbar's red dot): every change made with the monitor's
+    /// handles writes a keyframe at the playhead.
+    pub auto_keyframe: bool,
 }
+
+/// Change Overlay patterns: none, rule of thirds, centre cross, diagonals, 4 x 4 grid, golden ratio.
+pub const OVERLAY_PATTERNS: [&str; 6] = ["None", "Rule of Thirds", "Center Cross", "Diagonals", "Grid", "Golden Ratio"];
 
 impl Default for MonitorView {
     fn default() -> Self {
@@ -411,6 +438,18 @@ impl Default for MonitorView {
             volume: 100.0,
             grid_lines: 0,
             grid_color: [255, 255, 255, 90],
+            info_overlay: false,
+            overlay_timecode: true,
+            overlay_fps: true,
+            overlay_markers: true,
+            overlay_waveform: true,
+            always_audio_thumbnails: false,
+            overlay_pattern: 0,
+            toolbar_left: false,
+            edit_handles: true,
+            source_timecode: false,
+            multitrack: false,
+            auto_keyframe: false,
         }
     }
 }

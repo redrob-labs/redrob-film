@@ -88,6 +88,96 @@ pub struct PlaybackPrefs {
     /// or `off` (always Redrob Film's own decoders). Media already open keeps its decoder until it
     /// is reopened.
     pub hardware_decoding: String,
+    /// Kdenlive's "Play/pause on monitor click": a click on a monitor's picture toggles its playback.
+    pub play_on_monitor_click: bool,
+    /// Draw the monitors' picture area in `monitor_background` instead of the theme's colour.
+    pub custom_monitor_background: bool,
+    /// `#rrggbb` behind the monitor picture (with `custom_monitor_background`).
+    pub monitor_background: String,
+    /// `#rrggbb` of the monitor overlay lines (guide patterns, guides, info overlays).
+    pub overlay_color: String,
+    /// The screen a monitor goes full screen on: `current` (the main window's), or the screen
+    /// `left` / `right` / `above` / `below` of it.
+    pub fullscreen_screen: String,
+    /// Keep the docked monitor showing while the same monitor is full screen (or in its own window).
+    pub mirror_fullscreen: bool,
+    /// Process effects on the GPU in the Program monitor (off: the CPU renderer, in every project).
+    pub gpu_processing: bool,
+    /// A ShuttlePRO / ShuttleXpress jog shuttle (Linux event device).
+    pub jog_shuttle: JogShuttlePrefs,
+}
+
+/// Settings ▸ Playback ▸ Jog Shuttle: the device and what its buttons do.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct JogShuttlePrefs {
+    pub enabled: bool,
+    /// Event device path, e.g. `/dev/input/by-id/usb-Contour_Design_ShuttlePRO_v2-event-if00`.
+    pub device: String,
+    /// Command id run by each button (empty = nothing).
+    pub button1: String,
+    pub button2: String,
+    pub button3: String,
+    pub button4: String,
+    pub button5: String,
+    pub button6: String,
+    pub button7: String,
+    pub button8: String,
+    pub button9: String,
+    pub button10: String,
+    pub button11: String,
+    pub button12: String,
+    pub button13: String,
+    pub button14: String,
+    pub button15: String,
+}
+
+impl Default for JogShuttlePrefs {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            device: String::new(),
+            button1: "playback.toggle".into(),
+            button2: "playback.reverse".into(),
+            button3: "playback.stop".into(),
+            button4: "playback.forward".into(),
+            button5: "markers.markIn".into(),
+            button6: "markers.markOut".into(),
+            button7: "markers.add".into(),
+            button8: "playhead.prevSnap".into(),
+            button9: "playhead.nextSnap".into(),
+            button10: String::new(),
+            button11: String::new(),
+            button12: String::new(),
+            button13: String::new(),
+            button14: String::new(),
+            button15: String::new(),
+        }
+    }
+}
+
+impl JogShuttlePrefs {
+    /// The command of button `n` (1-based), if one is set.
+    pub fn button(&self, n: usize) -> Option<&str> {
+        let b = [
+            &self.button1,
+            &self.button2,
+            &self.button3,
+            &self.button4,
+            &self.button5,
+            &self.button6,
+            &self.button7,
+            &self.button8,
+            &self.button9,
+            &self.button10,
+            &self.button11,
+            &self.button12,
+            &self.button13,
+            &self.button14,
+            &self.button15,
+        ];
+        b.get(n.checked_sub(1)?).map(|s| s.trim()).filter(|s| !s.is_empty())
+    }
 }
 
 impl Default for PlaybackPrefs {
@@ -101,6 +191,14 @@ impl Default for PlaybackPrefs {
             disable_video_in_background: true,
             draft_decode: false,
             hardware_decoding: "auto".into(),
+            play_on_monitor_click: false,
+            custom_monitor_background: false,
+            monitor_background: "#000000".into(),
+            overlay_color: "#3da5ff".into(),
+            fullscreen_screen: "current".into(),
+            mirror_fullscreen: true,
+            gpu_processing: true,
+            jog_shuttle: JogShuttlePrefs::default(),
         }
     }
 }

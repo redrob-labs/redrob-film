@@ -71,6 +71,12 @@ pub fn hot_number(ui: &mut Ui, id: egui::Id, value: f64, speed: f64, range: (f64
 /// scrub (1 frame per point, Shift ×10), click to type a time (Enter or clicking away commits,
 /// Escape cancels). Returns the time to go to (never before `min`), or why a typed time is invalid.
 #[allow(clippy::too_many_arguments)]
+/// Ask the timecode field `id` ([`timecode_field`]) to take the keyboard on its next pass, its
+/// value selected (Kdenlive's Focus Timecode).
+pub fn request_timecode_focus(ctx: &egui::Context, id: egui::Id) {
+    ctx.data_mut(|d| d.insert_temp(id.with("focus-request"), true));
+}
+
 pub fn timecode_field(
     ui: &mut Ui,
     id: egui::Id,
@@ -85,6 +91,13 @@ pub fn timecode_field(
     let editing_id = id.with("editing");
     let edit_id = id.with("edit");
     let select_all_id = id.with("select-all");
+    // Focus Timecode (`monitor.focusTimecode`): start editing as a click would
+    if ui.data_mut(|d| d.remove_temp::<bool>(id.with("focus-request"))).is_some() && ui.data(|d| d.get_temp::<String>(editing_id)).is_none() {
+        ui.data_mut(|d| {
+            d.insert_temp(editing_id, text.to_string());
+            d.insert_temp(select_all_id, true);
+        });
+    }
     if let Some(mut buf) = ui.data(|d| d.get_temp::<String>(editing_id)) {
         // Left/Right on the whole selected value start from its last digit (egui would jump to the start)
         let arrow = ui.input(|i| i.modifiers.is_none() && (i.key_pressed(egui::Key::ArrowLeft) || i.key_pressed(egui::Key::ArrowRight)));

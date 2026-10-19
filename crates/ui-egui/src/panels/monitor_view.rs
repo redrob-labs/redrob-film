@@ -134,7 +134,70 @@ pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<
         v.pan = [0.0, 0.0];
         return Some(Ok(json!({"monitor": pfx, "zoom": zoom})));
     }
+    if let Some(n) = rest.strip_prefix("overlay.pattern.") {
+        let n: u8 = n.parse().ok().filter(|n| usize::from(*n) < crate::state::OVERLAY_PATTERNS.len())?;
+        let v = view_mut(app, w);
+        v.overlay_pattern = n;
+        return Some(Ok(json!({"monitor": pfx, "pattern": crate::state::OVERLAY_PATTERNS[usize::from(n)]})));
+    }
     let r = match rest {
+        "overlay.info" => {
+            let v = view_mut(app, w);
+            v.info_overlay = toggled(v.info_overlay, params);
+            Ok(json!({"monitor": pfx, "infoOverlay": v.info_overlay}))
+        }
+        "overlay.timecode" | "overlay.fps" | "overlay.markers" | "overlay.waveform" => {
+            let v = view_mut(app, w);
+            let slot = match rest {
+                "overlay.timecode" => &mut v.overlay_timecode,
+                "overlay.fps" => &mut v.overlay_fps,
+                "overlay.markers" => &mut v.overlay_markers,
+                _ => &mut v.overlay_waveform,
+            };
+            *slot = toggled(*slot, params);
+            let on = *slot;
+            // choosing an info overlay shows the info overlays
+            if on {
+                v.info_overlay = true;
+            }
+            let mut out = serde_json::Map::new();
+            out.insert("monitor".into(), json!(pfx));
+            out.insert(rest.trim_start_matches("overlay.").into(), json!(on));
+            Ok(Value::Object(out))
+        }
+        "overlay.nextPattern" => {
+            let v = view_mut(app, w);
+            v.overlay_pattern = ((usize::from(v.overlay_pattern) + 1) % crate::state::OVERLAY_PATTERNS.len()) as u8;
+            Ok(json!({"monitor": pfx, "pattern": crate::state::OVERLAY_PATTERNS[usize::from(v.overlay_pattern)]}))
+        }
+        "overlay.editMode" => {
+            let v = view_mut(app, w);
+            v.edit_handles = toggled(v.edit_handles, params);
+            Ok(json!({"monitor": pfx, "editMode": v.edit_handles}))
+        }
+        "overlay.moveToolbar" => {
+            let v = view_mut(app, w);
+            v.toolbar_left = !v.toolbar_left;
+            Ok(json!({"monitor": pfx, "toolbar": if v.toolbar_left { "left" } else { "right" }}))
+        }
+        "overlay.audioThumbnails" => {
+            let v = &mut app.ui.source;
+            v.always_audio_thumbnails = toggled(v.always_audio_thumbnails, params);
+            Ok(json!({"monitor": "source", "alwaysAudioThumbnails": v.always_audio_thumbnails}))
+        }
+        "sourceTimecode" => {
+            let v = &mut app.ui.source;
+            v.source_timecode = toggled(v.source_timecode, params);
+            Ok(json!({"monitor": "source", "sourceTimecode": v.source_timecode}))
+        }
+        "multitrack" => {
+            let v = &mut app.ui.program;
+            v.multitrack = toggled(v.multitrack, params);
+            if v.multitrack {
+                v.multicam = false;
+            }
+            Ok(json!({"monitor": "program", "multitrack": v.multitrack}))
+        }
         "highQualityPlayback" => {
             let v = view_mut(app, w);
             v.high_quality = toggled(v.high_quality, params);
@@ -241,6 +304,7 @@ pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<
 fn set_display(app: &mut FilmcraftApp, w: Which, d: &str) -> Result<Value, String> {
     if d == "multicam" {
         app.ui.program.multicam = true;
+        app.ui.program.multitrack = false;
         return Ok(json!({"monitor": "program", "display": "multicam"}));
     }
     let (_, mode) = DISPLAY_NAMES.iter().find(|(n, _)| *n == d).ok_or_else(|| format!("unknown display mode `{d}`"))?;
@@ -308,7 +372,16 @@ pub fn checked(app: &FilmcraftApp, id: &str) -> Option<bool> {
         "showGuides" => Some(v.show_guides),
         "lockGuides" => Some(v.lock_guides),
         "snapInProgramMonitor" => Some(app.ui.program.snap),
-        _ => None,
+        "overlay.info" => Some(v.info_overlay),
+        "overlay.timecode" => Some(v.overlay_timecode),
+        "overlay.fps" => Some(v.overlay_fps),
+        "overlay.markers" => Some(v.overlay_markers),
+        "overlay.waveform" => Some(v.overlay_waveform),
+        "overlay.editMode" => Some(v.edit_handles),
+        "overlay.audioThumbnails" => Some(app.ui.source.always_audio_thumbnails),
+        "sourceTimecode" => Some(app.ui.source.source_timecode),
+        "multitrack" => Some(app.ui.program.multitrack),
+        r => r.strip_prefix("overlay.pattern.").and_then(|n| n.parse::<u8>().ok()).map(|n| v.overlay_pattern == n),
     }
 }
 
@@ -365,7 +438,20 @@ pub fn zoom_pan_input(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, area:
     {
         // as fast as the Timeline's own wheel zoom
         let wheel = crate::panels::timeline::wheel_input(&ctx);
-        let f = if (wheel.pinch - 1.0).abs() > 1e-4 { wheel.pinch } else { (1.0 + wheel.delta.y * 0.01).clamp(0.5, 2.0) };
+        let pinched = (wheel.pinch - 1.0).abs() > 1e-4;
+        // Kdenlive: the wheel over a monitor seeks a frame per notch (down = forward); Ctrl / Cmd
+        // with the wheel, or a pinch, zooms
+        if !pinched && !wheel.command && wheel.delta.y != 0.0 {
+            let acc_id = egui::Id::new((prefix(w), "wheel-seek"));
+            let acc = ui.data(|d| d.get_temp::<f32>(acc_id)).unwrap_or(0.0) - wheel.delta.y;
+            let steps = (acc / 40.0).trunc();
+            ui.data_mut(|d| d.insert_temp(acc_id, acc - steps * 40.0));
+            if steps != 0.0 {
+                step_monitor(app, w, steps as i64);
+            }
+            return;
+        }
+        let f = if pinched { wheel.pinch } else { (1.0 + wheel.delta.y * 0.01).clamp(0.5, 2.0) };
         if (f - 1.0).abs() > 1e-4 && pic.width() > 0.0 && fw > 0.0 {
             let cur = pic.width() * ppp / fw;
             let z = (cur * f).clamp(ZOOMS[0].1, ZOOMS[ZOOMS.len() - 1].1);
@@ -403,6 +489,31 @@ pub fn zoom_pan_input(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, area:
         let max = ((pic.size() - area.size()) / 2.0).max(Vec2::ZERO);
         let v = view_mut(app, w);
         v.pan = [(v.pan[0] + d.x).clamp(-max.x, max.x), (v.pan[1] + d.y).clamp(-max.y, max.y)];
+    }
+}
+
+/// Move a monitor's playhead by `frames` (Program: the sequence playhead; Source: the clip's),
+/// stopping its playback, as the wheel over the picture does.
+pub fn step_monitor(app: &mut FilmcraftApp, w: Which, frames: i64) {
+    let r = match w {
+        Which::Program => {
+            app.stop();
+            app.session.execute("playhead.step", json!({"frames": frames})).map(|_| ())
+        }
+        Which::Source => {
+            app.stop_source();
+            let Some(view) = app.session.state.source_item.and_then(|i| redrob_film_engine::clip_ops::source_view(&app.session, i)) else { return };
+            if view.rate.frame_duration().0 == 0 {
+                return;
+            }
+            let f = view.rate.frame_at(app.session.state.source_playhead).saturating_add(frames);
+            let last = Tick(view.end.0.saturating_sub(view.rate.frame_duration().0)).max(view.start);
+            let t = view.rate.tick_of(f).clamp(view.start, last);
+            app.session.execute("source.setPlayhead", json!({"time": t.0})).map(|_| ())
+        }
+    };
+    if let Err(e) = r {
+        app.ui.status = e.to_string();
     }
 }
 
