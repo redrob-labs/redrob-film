@@ -1,0 +1,84 @@
+# Nightly real-world media corpus (docs/corpus.md, gaps.md G6). One job: generate the small tier
+# of tests/corpus/manifest.toml with ffmpeg (a black-box fixture generator, never linked or
+# shipped), then run the engine's acceptance harness (crates/engine/src/corpus_tests.rs) over it:
+# import -> razor, move, effect -> export -> ffprobe / ffmpeg checks. Release profile: decoding
+# and encoding at the CI profile's opt-level 0 would take most of the night.
+name: Nightly corpus
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Comma-separated manifest ids (empty = every small file)"
+        required: false
+        default: ""
+      seconds:
+        description: "Seconds of each edited sequence to export"
+        required: false
+        default: "3"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-corpus
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: 1
+
+jobs:
+  corpus:
+    name: generate corpus, round-trip every file
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg and the system headers the workspace needs
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg \
+            libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libasound2-dev libgtk-3-dev
+          ffmpeg -hide_banner -version | head -1
+      - name: Check the manifest
+        run: python3 scripts/corpus.py check
+      - name: Generate the small corpus
+        # Fails when a small file grows past 2 MB; a generator this ffmpeg build cannot run is
+        # reported and skipped (the harness then skips that file by name).
+        run: |
+          python3 scripts/corpus.py generate --tier small --out target/corpus
+          python3 scripts/corpus.py verify --out target/corpus
+          du -sh target/corpus
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: nightly-corpus
+      - name: Acceptance harness
+        env:
+          REDROB_FILM_CORPUS: ${{ github.workspace }}/target/corpus
+          REDROB_FILM_REQUIRE_ORACLES: "1"
+          REDROB_FILM_CORPUS_ONLY: ${{ inputs.only }}
+          REDROB_FILM_CORPUS_SECONDS: ${{ inputs.seconds || '3' }}
+        run: |
+          set -o pipefail
+          cargo test -p redrob-film-engine --release --locked corpus_ -- --nocapture --test-threads=1 2>&1 | tee target/corpus-report.txt
+      - name: Summary
+        if: always()
+        run: |
+          if [ -f target/corpus-report.txt ]; then
+            {
+              echo '```'
+              grep -E '^(PASS|FAIL|XFAIL|XPASS) |^corpus ' target/corpus-report.txt || true
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: corpus-report
+          path: target/corpus-report.txt
+          if-no-files-found: ignore
