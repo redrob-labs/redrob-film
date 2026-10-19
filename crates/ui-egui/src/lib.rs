@@ -1400,6 +1400,26 @@ impl FilmcraftApp {
 
     // ---------------------------------------------------------------- files
 
+    /// After a Premiere Pro project was opened or imported (`file.open` / `file.import` result): say
+    /// in the status bar how many things did not carry over. Each one is listed, with its name, in
+    /// the Events panel (the engine logs the import report there).
+    pub fn note_premiere_import(&mut self, result: &Value) {
+        let docs: Vec<&Value> = match result.get("documents").and_then(Value::as_array) {
+            Some(d) => d.iter().collect(),
+            None => vec![result],
+        };
+        let premiere: Vec<&&Value> = docs.iter().filter(|d| d.get("format").and_then(Value::as_str) == Some(redrob_film_interchange::Format::Prproj.name())).collect();
+        if premiere.is_empty() {
+            return;
+        }
+        let count: u64 = premiere.iter().filter_map(|d| d.get("warnings").and_then(Value::as_u64)).sum();
+        self.ui.status = if count == 0 {
+            tl!("Premiere Pro project imported").to_string()
+        } else {
+            tlf!("Premiere Pro project imported; {count} thing(s) did not carry over (listed in the Events panel)", count)
+        };
+    }
+
     /// Destination of imports started from the currently shown Project panel view.
     pub fn import_bin(&self) -> redrob_film_project::BinId {
         panels::project::view_of(self, panels::project::shown_inst(self)).bin
@@ -1412,7 +1432,7 @@ impl FilmcraftApp {
                     .iter()
                     .chain(redrob_film_media::AUDIO_EXTENSIONS)
                     .chain(redrob_film_media::STILL_EXTENSIONS)
-                    .chain(&["srt", "vtt", "scc", "edl", "xml", "fcpxml", "otio", "aaf", "omf"])
+                    .chain(&["srt", "vtt", "scc", "edl", "xml", "fcpxml", "otio", "aaf", "omf", "prproj"])
                     .copied()
                     .collect();
                 let paths = self.hooks.pick_files.as_mut().map(|f| f(&exts)).unwrap_or_default();
@@ -1421,6 +1441,9 @@ impl FilmcraftApp {
                 }
                 let bin = params.get("bin").cloned().unwrap_or_else(|| json!(self.import_bin().0));
                 let r = self.session.execute("file.import", json!({"paths": paths, "bin": bin})).map_err(|e| e.to_string());
+                if let Ok(v) = &r {
+                    self.note_premiere_import(v);
+                }
                 if let Ok(v) = &r
                     && let Some(errs) = v.get("errors").and_then(Value::as_array)
                     && !errs.is_empty()
@@ -1448,7 +1471,11 @@ impl FilmcraftApp {
             }
             "file.open" => {
                 let Some(path) = self.hooks.pick_open_project.as_mut().and_then(|f| f()) else { return Ok(Value::Null) };
-                self.session.execute("file.open", json!({"path": path})).map_err(|e| e.to_string())
+                let r = self.session.execute("file.open", json!({"path": path})).map_err(|e| e.to_string());
+                if let Ok(v) = &r {
+                    self.note_premiere_import(v);
+                }
+                r
             }
             // File ▸ Open Archived Project…: a .tar.gz / .zip made by Project Manager ▸ Archive
             "file.openArchive" => {
@@ -1554,6 +1581,9 @@ impl FilmcraftApp {
         if !paths.is_empty() {
             let pointer = self.drop_pointer(ctx);
             let imported = self.session.execute("file.import", json!({"paths": paths, "bin": self.import_bin().0}));
+            if let Ok(v) = &imported {
+                self.note_premiere_import(v);
+            }
             if let Ok(v) = imported
                 && let Some(pos) = pointer
                 && self.session.prefs.timeline.drop_import_to_timeline

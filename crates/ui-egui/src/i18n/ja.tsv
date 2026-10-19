@@ -5216,3 +5216,6 @@
 	Redrob Film closed unexpectedly last time. The crash report is in {path}; please attach it when you report the problem.	前回、Redrob Film が予期せず終了しました。クラッシュレポートは {path} にあります。問題を報告するときに添付してください。
 	The previous start stopped before the window opened, so this start uses safe mode: the preview, effects and export render on the CPU and hardware decoding is off. The next start uses the graphics hardware again.	前回の起動はウィンドウが開く前に停止したため、今回はセーフモードで起動しています。プレビュー、エフェクト、書き出しは CPU でレンダリングされ、ハードウェアデコードはオフです。次回の起動ではグラフィックハードウェアを再び使用します。
 	Safe mode: the preview, effects and export render on the CPU and hardware decoding is off.	セーフモード: プレビュー、エフェクト、書き出しは CPU でレンダリングされ、ハードウェアデコードはオフです。
+	Premiere Pro Project	Premiere Pro プロジェクト
+	Premiere Pro project imported	Premiere Pro プロジェクトを読み込みました
+	Premiere Pro project imported; {count} thing(s) did not carry over (listed in the Events panel)	Premiere Pro プロジェクトを読み込みました。{count} 件は引き継がれませんでした（イベントパネルに一覧があります）
