@@ -5274,3 +5274,6 @@
 	Toggle Track Hidden / Mute	Alternar ocultar / silenciar pista
 	Toggle Track Lock	Alternar el bloqueo de la pista
 	Toggle Track Target	Alternar el destino de la pista
+	Redrob Film closed unexpectedly last time. The crash report is in {path}; please attach it when you report the problem.	Redrob Film se cerró de forma inesperada la última vez. El informe del fallo está en {path}; adjúntalo cuando informes del problema.
+	The previous start stopped before the window opened, so this start uses safe mode: the preview, effects and export render on the CPU and hardware decoding is off. The next start uses the graphics hardware again.	El inicio anterior se detuvo antes de que se abriera la ventana, así que este inicio usa el modo seguro: la vista previa, los efectos y la exportación se renderizan en la CPU y la decodificación por hardware está desactivada. El próximo inicio volverá a usar el hardware gráfico.
+	Safe mode: the preview, effects and export render on the CPU and hardware decoding is off.	Modo seguro: la vista previa, los efectos y la exportación se renderizan en la CPU y la decodificación por hardware está desactivada.

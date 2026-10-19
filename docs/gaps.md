@@ -91,6 +91,29 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Done when:** weak-linked or runtime-loaded OS symbols on old macOS, a software / safe-mode
   start when the GPU adapter fails, a PR workflow running `cargo xtask ci` on macOS, Windows and
   Linux, and a crash-report triage pass. **40–80 h.**
+- **Done (beta/g4, 2026-10-19; not yet run on real hardware):**
+  - *Old macOS:* every VideoToolbox / CoreMedia / CoreVideo name in `crates/platform` was checked
+    against Apple's availability. Only `kVTCompressionPropertyKey_ConstantBitRate` (macOS 13) is
+    newer than the 11.0 deployment target, and it is already looked up with `dlsym`.
+    `apps/redrob-film-app/tests/macos_symbols.rs` fails when a linked name is newer than 11.0, or
+    when a new name has no recorded availability.
+  - *GPU start-up:* `apps/redrob-film-app/src/graphics.rs` picks the adapter itself, on every OS.
+    It takes the best one that can present to the window, logs each adapter and the reason, and
+    clamps the device limits to what the adapter reports, so `request_device` no longer fails on
+    older GPUs. `--safe-mode` / `REDROB_FILM_SAFE_MODE=1` starts on a software adapter, with
+    DirectX 12 alone on Windows, CPU compositing and export, and no hardware decoders. Safe mode
+    also turns on by itself after a start that died before its window opened. A GPU compositor
+    that panics while building its pipelines (FXC, #1458) sends exports to the CPU.
+  - *Audio (#1705):* when WASAPI refuses the configured stream, the app tries the mix format,
+    float, stereo float / 16-bit, then 48 / 44.1 kHz. A stream that fails to start counts as one
+    more failed attempt, and playback continues without sound.
+  - *Crash reports:* a crash report includes the OS version and the GPU adapter. The next start
+    shows where it is.
+  - *CI:* `rust-desktop` runs clippy and the tests on macOS 14 and Windows 2022, with the same
+    "did any Rust input change" skip. Formatting is checked on Linux only.
+  - *Still open:* checks on macOS 12, Intel UHD and Windows 11 machines; the triage pass over
+    upstream crash reports (#380, #413, #439, #477, #582, #687). An adapter that crashes the driver
+    during instance creation is caught only on the next start (by safe mode), not in the same one.
 
 ## G5. Hardware acceleration is partial
 
