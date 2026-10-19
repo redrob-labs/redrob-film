@@ -19,6 +19,7 @@ mod distort;
 mod immersive;
 mod kfx;
 pub(crate) use kfx::{is_magnifier, magnify};
+pub(crate) use kfx::alpha::mask_selection;
 mod lights;
 mod stylize;
 mod temporal;
@@ -119,14 +120,16 @@ impl FxEnv for ItemEnv<'_> {
             env: None,
             working: self.seq.settings.color.working,
         };
+        let mut chain = crate::mask::MaskChain::default();
         for e in &self.item.effects {
             if std::ptr::eq(e, upto) {
                 break;
             }
             if e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e) && !is_temporal(&e.effect) {
-                crate::mask::apply_effect(&mut img, e, &cx);
+                chain.apply(&mut img, e, &cx);
             }
         }
+        chain.finish(&mut img);
         Some(img)
     }
     fn source_frame(&self, dt: f64, scale: f32) -> Option<Image> {

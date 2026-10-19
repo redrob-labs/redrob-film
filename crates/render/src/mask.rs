@@ -187,7 +187,8 @@ pub fn scale_by(img: &mut Image, cov: &[f32]) {
 
 /// Apply an effect limited to its masks (Premiere: a masked effect only applies inside the mask).
 pub fn apply_effect(img: &mut Image, e: &EffectInstance, cx: &crate::effects::FxCtx) {
-    if !e.enabled || e.masks.is_empty() {
+    // the Motion Tracker's masks are the region it tracks and draws on, not a limit on it
+    if !e.enabled || e.masks.is_empty() || e.effect == "k_motion_tracker" {
         crate::effects::apply(img, e, cx);
         return;
     }
@@ -198,6 +199,45 @@ pub fn apply_effect(img: &mut Image, e: &EffectInstance, cx: &crate::effects::Fx
     let original = img.clone();
     crate::effects::apply(img, e, cx);
     mix(img, &original, &cov);
+}
+
+/// A clip's effect stack with mask chains (Kdenlive's "(Mask)" effects): a chain start
+/// ([`redrob_film_project::effect::MASK_STARTS`]) keeps a snapshot of the picture and a selection
+/// of it; the effects after it change the picture only inside the selection, up to a Mask Apply
+/// ([`redrob_film_project::effect::MASK_APPLY`]) or the end of the stack ([`MaskChain::finish`]).
+#[derive(Default)]
+pub struct MaskChain {
+    open: Option<(Image, Vec<f32>)>,
+}
+
+impl MaskChain {
+    /// Apply one effect of the stack (with its own masks, see [`apply_effect`]).
+    pub fn apply(&mut self, img: &mut Image, e: &EffectInstance, cx: &crate::effects::FxCtx) {
+        let active = e.enabled && e.in_zone(cx.t);
+        if active && redrob_film_project::effect::MASK_STARTS.contains(&e.effect.as_str()) {
+            self.finish(img);
+            if let Some(sel) = crate::vfx::mask_selection(img, e, cx)
+                && sel.len() == img.w * img.h
+            {
+                self.open = Some((img.clone(), sel));
+            }
+            return;
+        }
+        if active && e.effect == redrob_film_project::effect::MASK_APPLY {
+            self.finish(img);
+            return;
+        }
+        apply_effect(img, e, cx);
+    }
+    /// Close an open chain: outside its selection the picture goes back to the snapshot.
+    pub fn finish(&mut self, img: &mut Image) {
+        if let Some((orig, sel)) = self.open.take()
+            && orig.w == img.w
+            && orig.h == img.h
+        {
+            mix(img, &orig, &sel);
+        }
+    }
 }
 
 /// Apply the masks of an item's Opacity effect to its layer (before Motion), if any.

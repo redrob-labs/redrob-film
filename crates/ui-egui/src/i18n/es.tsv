@@ -4823,3 +4823,311 @@
 	Screen above	Pantalla superior
 	Screen below	Pantalla inferior
 	Each button runs the command id typed beside it (for example playback.toggle, markers.markIn, playhead.nextSnap; see Keyboard Shortcuts). The jog wheel steps frames and the shuttle ring plays at up to 10x either way.	Cada botón ejecuta el id de comando escrito a su lado (por ejemplo playback.toggle, markers.markIn, playhead.nextSnap; consulte Métodos abreviados de teclado). La rueda jog avanza fotogramas y el anillo shuttle reproduce hasta 10x en ambos sentidos.
+
+# More Video Effects: Kdenlive alpha / keying, utility scopes, VR360, motion and border effects
+	Alpha, Mask and Keying	Alfa, máscara y clave
+	VR360 and 3D	VR360 y 3D
+	Transform, Distort and Perspective	Transformar, distorsionar y perspectiva
+	Write on Clear	Escribir sobre vacío
+	Min	Mín.
+	Max	Máx.
+	Alpha as Gray	Alfa en gris
+	Gray + Red	Gris + rojo
+	Selection on Black	Selección sobre negro
+	Selection on Gray	Selección sobre gris
+	Selection on White	Selección sobre blanco
+	Selection on Checkers	Selección sobre cuadros
+	No Op	Sin operación
+	Shave	Rasurar
+	Shrink Hard	Reducir (duro)
+	Shrink Soft	Reducir (suave)
+	Grow Hard	Ampliar (duro)
+	Grow Soft	Ampliar (suave)
+	Edge Inwards	Borde hacia dentro
+	Edge Outwards	Borde hacia fuera
+	De-Key	Quitar clave
+	Target	Objetivo
+	Luma Adjust	Ajuste de luma
+	Arrow	Flecha
+	Median Blur	Desenfoque mediano
+	Pixelate	Pixelar
+	Opaque Fill	Relleno opaco
+	Nearest-Neighbor	Vecino más próximo
+	Side by Side Parallel	Lado a lado paralelo
+	Side by Side Crosseye	Lado a lado cruzado
+	Above-Below (Left Above)	Arriba-abajo (izquierdo arriba)
+	Above-Below (Right Above)	Arriba-abajo (derecho arriba)
+	Interleaved Rows (Left Top)	Filas entrelazadas (izquierdo arriba)
+	Interleaved Rows (Right Top)	Filas entrelazadas (derecho arriba)
+	Interleaved Columns (Left First)	Columnas entrelazadas (izquierdo primero)
+	Interleaved Columns (Right First)	Columnas entrelazadas (derecho primero)
+	Anaglyph Red/Blue Gray	Anaglifo rojo/azul gris
+	Anaglyph Red/Green Gray	Anaglifo rojo/verde gris
+	Anaglyph Red/Cyan Gray	Anaglifo rojo/cian gris
+	Anaglyph Red/Cyan Half Colored	Anaglifo rojo/cian semicolor
+	Anaglyph Red/Cyan Color	Anaglifo rojo/cian color
+	Anaglyph Red/Cyan Dubois	Anaglifo rojo/cian Dubois
+	Anaglyph Green/Magenta Gray	Anaglifo verde/magenta gris
+	Anaglyph Green/Magenta Half Colored	Anaglifo verde/magenta semicolor
+	Anaglyph Green/Magenta Colored	Anaglifo verde/magenta color
+	Anaglyph Green/Magenta Dubois	Anaglifo verde/magenta Dubois
+	Anaglyph Yellow/Blue Gray	Anaglifo amarillo/azul gris
+	Anaglyph Yellow/Blue Half Colored	Anaglifo amarillo/azul semicolor
+	Anaglyph Yellow/Blue Colored	Anaglifo amarillo/azul color
+	Anaglyph Yellow/Blue Dubois	Anaglifo amarillo/azul Dubois
+	Mono Output Left	Salida mono izquierda
+	Mono Output Right	Salida mono derecha
+	Checkerboard (Left First)	Tablero (izquierdo primero)
+	Checkerboard (Right First)	Tablero (derecho primero)
+	HDMI Frame Pack	Empaquetado de fotogramas HDMI
+	Smear	Extender
+	Reflect	Reflejar
+	Wrap	Envolver
+	Margins	Márgenes
+	EBU	EBU
+	SMPTE	SMPTE
+	Apple	Apple
+	Wide RGB	RGB amplio
+	CIE 1931	CIE 1931
+	Rec. 2020	Rec. 2020
+	DCI-P3	DCI-P3
+	xyY	xyY
+	UCS	UCS
+	LUV	LUV
+	PAL SD	PAL SD
+	NTSC SD	NTSC SD
+	720 HD	720 HD
+	1080 Full HD	1080 Full HD
+	2K	2K
+	4K	4K
+	Color2	Color2
+	Hex	Hex
+	Dec	Dec
+	White on Black	Blanco sobre negro
+	Black on White	Negro sobre blanco
+	White on Gray	Blanco sobre gris
+	Black on Gray	Negro sobre gris
+	Color on Black	Color sobre negro
+	Color on White	Color sobre blanco
+	Color on Gray	Color sobre gris
+	R	R
+	G	G
+	B	B
+	Y'	Y'
+	Pr	Pr
+	Pb	Pb
+	CCIR Rec. 601	CCIR Rec. 601
+	CCIR Rec. 709	CCIR Rec. 709
+	Gray	Gris
+	Color 5	Color 5
+	U	U
+	V	V
+	Instant	Instantáneo
+	Peak	Pico
+	Peak+Instant	Pico+instantáneo
+	Y'PbPr - Rec.601	Y'PbPr - Rec.601
+	Y'PbPr - Rec.709	Y'PbPr - Rec.709
+	HSV	HSV
+	HSL	HSL
+	Row	Fila
+	Column	Columna
+	Flat	Plano
+	Aflat	Aflat
+	Xflat	Xflat
+	Yflat	Yflat
+	Acolor	Acolor
+	Orange	Naranja
+	Show Numbers	Mostrar números
+	Draw Dots	Dibujar puntos
+	Digital	Digital
+	Millivolts	Milivoltios
+	IRE	IRE
+	Image or Video Resource	Recurso de imagen o vídeo
+	Use Luma	Usar luma
+	Use Threshold	Usar umbral
+	End	Fin
+	Blend In	Mezcla hacia dentro
+	Blend Out	Mezcla hacia fuera
+	Blur Width at Start	Ancho del desenfoque al inicio
+	Blur Width at End	Ancho del desenfoque al final
+	Blur Height at Start	Alto del desenfoque al inicio
+	Blur Height at End	Alto del desenfoque al final
+	Alpha Gradient	Degradado alfa
+	Operation	Operación
+	Transition Width	Ancho de transición
+	Transparency Top	Transparencia arriba
+	Transparency Bottom	Transparencia abajo
+	Alpha Operations	Operaciones alfa
+	Display	Mostrar
+	Display Input Alpha	Mostrar alfa de entrada
+	Shrink/Grow/Blur	Reducir/ampliar/desenfocar
+	Alpha Strobing	Estroboscopio alfa
+	Interval	Intervalo
+	Backgroundkey	Backgroundkey
+	HSV Keying	Clave HSV
+	Key Spill Mop Up	Limpieza de derrame de clave
+	Mask Type	Tipo de máscara
+	Operation 1	Operación 1
+	Operation 2	Operación 2
+	Mask to Alpha	Máscara a alfa
+	Hue Gate	Filtro de tono
+	Saturation Threshold	Umbral de saturación
+	Amount 1	Cantidad 1
+	Amount 2	Cantidad 2
+	Frame Shape	Forma del marco
+	Shape Width	Grosor de la forma
+	Shape Color	Color de la forma
+	Blur Type	Tipo de desenfoque
+	Motion Tracker	Rastreador de movimiento
+	Premultiply or Unpremultiply	Premultiplicar o despremultiplicar
+	Unpremultiply	Despremultiplicar
+	Secondary Color Correction Area Selection (Mask)	Selección de área de corrección de color secundaria (máscara)
+	Invert Selection	Invertir selección
+	Shape Alpha	Alfa de forma
+	Shape Alpha (Mask)	Alfa de forma (máscara)
+	Mask Apply	Aplicar máscara
+	Spot Remover	Eliminador de manchas
+	Gate Weave	Oscilación de ventanilla
+	Maximum Horizontal Movement	Movimiento horizontal máximo
+	Maximum Vertical Movement	Movimiento vertical máximo
+	Glitching (Rows and Color)	Glitch (filas y color)
+	Glitch Frequency	Frecuencia del glitch
+	Shift Intensity	Intensidad del desplazamiento
+	Color Glitching Intensity	Intensidad del glitch de color
+	Glitching (Rows Only)	Glitch (solo filas)
+	Minimum Block Height	Altura mínima de bloque
+	Maximum Block Height	Altura máxima de bloque
+	Lag Fun	Lag Fun
+	Nervous	Nervioso
+	Vertigo	Vértigo
+	Phase Increment	Incremento de fase
+	Zoom Rate	Tasa de zoom
+	Elastic Scale	Escala elástica
+	Linear Width	Ancho lineal
+	Linear Scale Factor	Factor de escala lineal
+	Non-Linear Scale Factor	Factor de escala no lineal
+	Fill Borders	Rellenar bordes
+	Letter-boxing	Bandas de cine
+	Nosync0r (Broken TV)	Nosync0r (TV averiada)
+	HSync	HSync
+	Pillar Echo	Eco de columnas
+	CIE Scope	Diagrama CIE
+	Color System	Sistema de color
+	CIE System	Sistema CIE
+	Gamuts to Draw	Gamas que dibujar
+	Display Correct Gamma	Mostrar gamma correcta
+	Show White Point	Mostrar punto blanco
+	Input Gamma	Gamma de entrada
+	Fill with CIE Colors	Rellenar con colores CIE
+	Data Scope	Monitor de datos
+	X Offset	Desplazamiento X
+	Y Offset	Desplazamiento Y
+	Components	Componentes
+	Show Axis	Mostrar ejes
+	Level Height	Altura del nivel
+	Components to Display	Componentes que mostrar
+	Foreground Opacity	Opacidad del primer plano
+	Colors Mode	Modo de colores
+	Nikon D90 Stairstepping Fix	Corrección de escalonado de Nikon D90
+	Oscilloscope (Simple)	Osciloscopio (simple)
+	Draw Scope Grid	Dibujar cuadrícula
+	Print Statistics	Mostrar estadísticas
+	Draw Trace Profile Line	Dibujar línea de perfil
+	Trace X Position	Posición X del trazo
+	Trace Y Position	Posición Y del trazo
+	Scope X Position	Posición X del monitor
+	Scope Y Position	Posición Y del monitor
+	Scope Width	Ancho del monitor
+	Scope Height	Alto del monitor
+	Oscilloscope (Advanced)	Osciloscopio (avanzado)
+	R / G / B Trace	Trazo R / G / B
+	Y / Pr / Pb Trace	Trazo Y / Pr / Pb
+	Alpha Trace	Trazo alfa
+	Display Average	Mostrar media
+	Display RMS	Mostrar RMS
+	Display Minimum / Maximum	Mostrar mínimo / máximo
+	256 Scale	Escala 256
+	Marker 1	Marcador 1
+	Marker 2	Marcador 2
+	Crosshair Color	Color de la cruz
+	RGB Parade	Desfile RGB
+	Timeout Indicator	Indicador de tiempo restante
+	Indicator Color	Color del indicador
+	Vectorscope (Advanced)	Vectorscopio (avanzado)
+	Tint 1	Tinte 1
+	Tint 2	Tinte 2
+	Envelope	Envolvente
+	Graticule	Retícula
+	Graticule Opacity	Opacidad de la retícula
+	Graticule Flags	Opciones de la retícula
+	Low Threshold	Umbral bajo
+	High Threshold	Umbral alto
+	Video Values	Valores de vídeo
+	Measurement	Medida
+	256-Scale	Escala 256
+	Show Alpha	Mostrar alfa
+	Big Window	Ventana grande
+	X Position	Posición X
+	Y Position	Posición Y
+	Video Waveform Monitor	Monitor de forma de onda
+	Flags	Opciones
+	Stereoscopic 3D	3D estereoscópico
+	Input Format	Formato de entrada
+	Output Format	Formato de salida
+	VR360 Cap Top and Bottom	VR360 Tapar polos
+	VR360 Equirectangular to Rectilinear	VR360 Equirrectangular a rectilíneo
+	Yaw	Guiñada
+	Pitch	Cabeceo
+	FOV	Campo de visión
+	Fisheye	Ojo de pez
+	VR360 Equirectangular to Stereo	VR360 Equirrectangular a estereográfico
+	VR360 Equirectangular Mask	VR360 Máscara equirrectangular
+	Horizontal Start	Inicio horizontal
+	Horizontal End	Fin horizontal
+	Vertical Start	Inicio vertical
+	Vertical End	Fin vertical
+	VR360 Hemispherical to Equirectangular	VR360 Hemisférico a equirrectangular
+	Projection	Proyección
+	Equidistant Fisheye	Ojo de pez equidistante
+	Alignment Yaw	Guiñada de alineación
+	Alignment Pitch	Cabeceo de alineación
+	Alignment Roll	Alabeo de alineación
+	Lens FOV	Campo de visión de la lente
+	Lens Radius	Radio de la lente
+	Front X	Delantera X
+	Front	Delantera
+	Front Y	Delantera Y
+	Front Up	Arriba delantera
+	Back X	Trasera X
+	Back	Trasera
+	Back Y	Trasera Y
+	Back Up	Arriba trasera
+	Nadir Radius	Radio del nadir
+	Nadir Start	Inicio del nadir
+	Lens Distortion A	Distorsión de lente A
+	Lens Distortion B	Distorsión de lente B
+	Lens Distortion C	Distorsión de lente C
+	Lens Distortion Radius	Radio de distorsión de lente
+	Lens Vignetting A	Viñeteado de lente A
+	Lens Vignetting	Viñeteado de lente
+	Lens Vignetting B	Viñeteado de lente B
+	Lens Vignetting C	Viñeteado de lente C
+	Lens Vignetting D	Viñeteado de lente D
+	Lens Vignetting Radius	Radio de viñeteado de lente
+	VR360 Stabilize	VR360 Estabilizar
+	Analysis Sample Radius	Radio de muestra del análisis
+	Analysis Search Radius	Radio de búsqueda del análisis
+	Analysis Offset	Separación del análisis
+	Use Backwards-Facing Track Point	Usar punto de seguimiento trasero
+	Yaw Amount	Cantidad de guiñada
+	Pitch Amount	Cantidad de cabeceo
+	Roll Amount	Cantidad de alabeo
+	Yaw Smoothing	Suavizado de guiñada
+	Pitch Smoothing	Suavizado de cabeceo
+	Roll Smoothing	Suavizado de alabeo
+	Yaw Time Bias	Sesgo temporal de guiñada
+	Pitch Time Bias	Sesgo temporal de cabeceo
+	Roll Time Bias	Sesgo temporal de alabeo
+	VR360 Wrap	VR360 Envolver
+	Blur Start	Inicio del desenfoque
+	Blur End	Fin del desenfoque

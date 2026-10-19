@@ -12,18 +12,18 @@ use redrob_film_project::EffectInstance;
 
 use super::*;
 
-type V3 = [f64; 3];
+pub(crate) type V3 = [f64; 3];
 
 #[inline]
-fn dir(lon: f64, lat: f64) -> V3 {
+pub(crate) fn dir(lon: f64, lat: f64) -> V3 {
     [lat.cos() * lon.sin(), lat.sin(), lat.cos() * lon.cos()]
 }
 #[inline]
-fn lonlat(d: V3) -> (f64, f64) {
+pub(crate) fn lonlat(d: V3) -> (f64, f64) {
     (d[0].atan2(d[2]), d[1].clamp(-1.0, 1.0).asin())
 }
 #[inline]
-fn dot(a: V3, b: V3) -> f64 {
+pub(crate) fn dot(a: V3, b: V3) -> f64 {
     a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }
 #[inline]
@@ -31,8 +31,8 @@ fn cross(a: V3, b: V3) -> V3 {
     [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
 }
 
-type M3 = [[f64; 3]; 3];
-fn mmul(a: M3, b: M3) -> M3 {
+pub(crate) type M3 = [[f64; 3]; 3];
+pub(crate) fn mmul(a: M3, b: M3) -> M3 {
     let mut o = [[0.0; 3]; 3];
     for i in 0..3 {
         for j in 0..3 {
@@ -41,14 +41,14 @@ fn mmul(a: M3, b: M3) -> M3 {
     }
     o
 }
-fn mvec(m: &M3, v: V3) -> V3 {
+pub(crate) fn mvec(m: &M3, v: V3) -> V3 {
     [dot(m[0], v), dot(m[1], v), dot(m[2], v)]
 }
-fn transpose(m: M3) -> M3 {
+pub(crate) fn transpose(m: M3) -> M3 {
     [[m[0][0], m[1][0], m[2][0]], [m[0][1], m[1][1], m[2][1]], [m[0][2], m[1][2], m[2][2]]]
 }
 /// Rotation from tilt (about X), pan (about Y) and roll (about Z), degrees: R = Ry · Rx · Rz.
-fn rotation(tilt: f64, pan: f64, roll: f64) -> M3 {
+pub(crate) fn rotation(tilt: f64, pan: f64, roll: f64) -> M3 {
     let (sx, cx) = tilt.to_radians().sin_cos();
     let (sy, cy) = pan.to_radians().sin_cos();
     let (sz, cz) = roll.to_radians().sin_cos();
@@ -64,7 +64,7 @@ fn px_to_lonlat(x: f64, y: f64, w: usize, h: usize) -> (f64, f64) {
 }
 
 /// Bilinear sample with horizontal wrap (vertical clamp), pixel centres at +0.5.
-fn sample_wrap(img: &Image, x: f64, y: f64) -> [f32; 4] {
+pub(crate) fn sample_wrap(img: &Image, x: f64, y: f64) -> [f32; 4] {
     let (w, h) = (img.w as isize, img.h as isize);
     let fx = x - 0.5;
     let fy = (y - 0.5).clamp(0.0, (h - 1) as f64);
@@ -81,7 +81,7 @@ fn sample_wrap(img: &Image, x: f64, y: f64) -> [f32; 4] {
     }
     o
 }
-fn sample_dir(img: &Image, d: V3) -> [f32; 4] {
+pub(crate) fn sample_dir(img: &Image, d: V3) -> [f32; 4] {
     let (lon, lat) = lonlat(d);
     sample_wrap(img, (lon / TAU + 0.5) * img.w as f64, (0.5 - lat / PI) * img.h as f64)
 }
@@ -114,7 +114,7 @@ fn per_view(img: &mut Image, layout: u32, f: impl Fn(&mut Image)) {
 
 /// Three-pass box approximation of a Gaussian along each row with wrap-around; the sigma of a
 /// row is `sigma / cos(latitude)` (capped at a quarter turn).
-fn blur_rows_wrap(img: &mut Image, sigma: f32) {
+pub(crate) fn blur_rows_wrap(img: &mut Image, sigma: f32) {
     let (w, h) = (img.w, img.h);
     img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
         let lat = (0.5 - (y as f64 + 0.5) / h as f64) * PI;

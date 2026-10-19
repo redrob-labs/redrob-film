@@ -4804,3 +4804,311 @@
 	Screen above	上方屏幕
 	Screen below	下方屏幕
 	Each button runs the command id typed beside it (for example playback.toggle, markers.markIn, playhead.nextSnap; see Keyboard Shortcuts). The jog wheel steps frames and the shuttle ring plays at up to 10x either way.	每个按钮运行旁边输入的命令 ID(例如 playback.toggle、markers.markIn、playhead.nextSnap;参见键盘快捷键)。飞梭内圈逐帧步进,外圈可双向以最高 10 倍速播放。
+
+# More Video Effects: Kdenlive alpha / keying, utility scopes, VR360, motion and border effects
+	Alpha, Mask and Keying	Alpha、遮罩与抠像
+	VR360 and 3D	VR360 与 3D
+	Transform, Distort and Perspective	变换、扭曲与透视
+	Write on Clear	写入透明区域
+	Min	最小值
+	Max	最大值
+	Alpha as Gray	Alpha 显示为灰度
+	Gray + Red	灰度 + 红色
+	Selection on Black	选区置于黑色上
+	Selection on Gray	选区置于灰色上
+	Selection on White	选区置于白色上
+	Selection on Checkers	选区置于棋盘格上
+	No Op	无操作
+	Shave	修边
+	Shrink Hard	收缩（硬）
+	Shrink Soft	收缩（软）
+	Grow Hard	扩展（硬）
+	Grow Soft	扩展（软）
+	Edge Inwards	向内边缘
+	Edge Outwards	向外边缘
+	De-Key	去除键色
+	Target	目标
+	Luma Adjust	亮度调整
+	Arrow	箭头
+	Median Blur	中值模糊
+	Pixelate	像素化
+	Opaque Fill	不透明填充
+	Nearest-Neighbor	最近邻
+	Side by Side Parallel	左右并排（平行）
+	Side by Side Crosseye	左右并排（交叉）
+	Above-Below (Left Above)	上下（左眼在上）
+	Above-Below (Right Above)	上下（右眼在上）
+	Interleaved Rows (Left Top)	行交错（左眼在首行）
+	Interleaved Rows (Right Top)	行交错（右眼在首行）
+	Interleaved Columns (Left First)	列交错（左眼在先）
+	Interleaved Columns (Right First)	列交错（右眼在先）
+	Anaglyph Red/Blue Gray	红蓝立体 灰度
+	Anaglyph Red/Green Gray	红绿立体 灰度
+	Anaglyph Red/Cyan Gray	红青立体 灰度
+	Anaglyph Red/Cyan Half Colored	红青立体 半彩色
+	Anaglyph Red/Cyan Color	红青立体 彩色
+	Anaglyph Red/Cyan Dubois	红青立体 Dubois
+	Anaglyph Green/Magenta Gray	绿品立体 灰度
+	Anaglyph Green/Magenta Half Colored	绿品立体 半彩色
+	Anaglyph Green/Magenta Colored	绿品立体 彩色
+	Anaglyph Green/Magenta Dubois	绿品立体 Dubois
+	Anaglyph Yellow/Blue Gray	黄蓝立体 灰度
+	Anaglyph Yellow/Blue Half Colored	黄蓝立体 半彩色
+	Anaglyph Yellow/Blue Colored	黄蓝立体 彩色
+	Anaglyph Yellow/Blue Dubois	黄蓝立体 Dubois
+	Mono Output Left	单眼输出（左）
+	Mono Output Right	单眼输出（右）
+	Checkerboard (Left First)	棋盘格（左眼在先）
+	Checkerboard (Right First)	棋盘格（右眼在先）
+	HDMI Frame Pack	HDMI 帧封装
+	Smear	拉伸边缘
+	Reflect	反射
+	Wrap	环绕
+	Margins	边距
+	EBU	EBU
+	SMPTE	SMPTE
+	Apple	Apple
+	Wide RGB	宽色域 RGB
+	CIE 1931	CIE 1931
+	Rec. 2020	Rec. 2020
+	DCI-P3	DCI-P3
+	xyY	xyY
+	UCS	UCS
+	LUV	LUV
+	PAL SD	PAL SD
+	NTSC SD	NTSC SD
+	720 HD	720 HD
+	1080 Full HD	1080 Full HD
+	2K	2K
+	4K	4K
+	Color2	彩色2
+	Hex	十六进制
+	Dec	十进制
+	White on Black	黑底白色
+	Black on White	白底黑色
+	White on Gray	灰底白色
+	Black on Gray	灰底黑色
+	Color on Black	黑底彩色
+	Color on White	白底彩色
+	Color on Gray	灰底彩色
+	R	R
+	G	G
+	B	B
+	Y'	Y'
+	Pr	Pr
+	Pb	Pb
+	CCIR Rec. 601	CCIR Rec. 601
+	CCIR Rec. 709	CCIR Rec. 709
+	Gray	灰色
+	Color 5	彩色 5
+	U	U
+	V	V
+	Instant	瞬时
+	Peak	峰值
+	Peak+Instant	峰值 + 瞬时
+	Y'PbPr - Rec.601	Y'PbPr - Rec.601
+	Y'PbPr - Rec.709	Y'PbPr - Rec.709
+	HSV	HSV
+	HSL	HSL
+	Row	行
+	Column	列
+	Flat	平坦
+	Aflat	Aflat
+	Xflat	Xflat
+	Yflat	Yflat
+	Acolor	Acolor
+	Orange	橙色
+	Show Numbers	显示数字
+	Draw Dots	绘制点线
+	Digital	数字
+	Millivolts	毫伏
+	IRE	IRE
+	Image or Video Resource	图像或视频文件
+	Use Luma	使用亮度
+	Use Threshold	使用阈值
+	End	结束
+	Blend In	向内混合
+	Blend Out	向外混合
+	Blur Width at Start	起始模糊宽度
+	Blur Width at End	结束模糊宽度
+	Blur Height at Start	起始模糊高度
+	Blur Height at End	结束模糊高度
+	Alpha Gradient	Alpha 渐变
+	Operation	运算
+	Transition Width	过渡宽度
+	Transparency Top	顶部透明度
+	Transparency Bottom	底部透明度
+	Alpha Operations	Alpha 操作
+	Display	显示
+	Display Input Alpha	显示输入 Alpha
+	Shrink/Grow/Blur	收缩/扩展/模糊
+	Alpha Strobing	Alpha 频闪
+	Interval	间隔
+	Backgroundkey	Backgroundkey
+	HSV Keying	HSV 抠像
+	Key Spill Mop Up	溢色清除
+	Mask Type	遮罩类型
+	Operation 1	运算 1
+	Operation 2	运算 2
+	Mask to Alpha	遮罩转为 Alpha
+	Hue Gate	色相门限
+	Saturation Threshold	饱和度阈值
+	Amount 1	数量 1
+	Amount 2	数量 2
+	Frame Shape	框形状
+	Shape Width	框线宽度
+	Shape Color	框线颜色
+	Blur Type	模糊类型
+	Motion Tracker	运动跟踪器
+	Premultiply or Unpremultiply	预乘或取消预乘
+	Unpremultiply	取消预乘
+	Secondary Color Correction Area Selection (Mask)	二级调色区域选择（遮罩）
+	Invert Selection	反转选区
+	Shape Alpha	形状 Alpha
+	Shape Alpha (Mask)	形状 Alpha（遮罩）
+	Mask Apply	应用遮罩
+	Spot Remover	污点移除
+	Gate Weave	片门抖动
+	Maximum Horizontal Movement	最大水平移动
+	Maximum Vertical Movement	最大垂直移动
+	Glitching (Rows and Color)	故障（行与颜色）
+	Glitch Frequency	故障频率
+	Shift Intensity	位移强度
+	Color Glitching Intensity	颜色故障强度
+	Glitching (Rows Only)	故障（仅行）
+	Minimum Block Height	最小块高度
+	Maximum Block Height	最大块高度
+	Lag Fun	Lag Fun
+	Nervous	神经质
+	Vertigo	眩晕
+	Phase Increment	相位增量
+	Zoom Rate	缩放率
+	Elastic Scale	弹性缩放
+	Linear Width	线性区宽度
+	Linear Scale Factor	线性缩放系数
+	Non-Linear Scale Factor	非线性缩放系数
+	Fill Borders	填充边框
+	Letter-boxing	遮幅黑边
+	Nosync0r (Broken TV)	Nosync0r（坏电视）
+	HSync	HSync
+	Pillar Echo	侧边回声
+	CIE Scope	CIE 色度图
+	Color System	色彩系统
+	CIE System	CIE 体系
+	Gamuts to Draw	要绘制的色域
+	Display Correct Gamma	以正确伽马显示
+	Show White Point	显示白点
+	Input Gamma	输入伽马
+	Fill with CIE Colors	以 CIE 颜色填充
+	Data Scope	数据示波器
+	X Offset	X 偏移
+	Y Offset	Y 偏移
+	Components	分量
+	Show Axis	显示坐标轴
+	Level Height	电平高度
+	Components to Display	要显示的分量
+	Foreground Opacity	前景不透明度
+	Colors Mode	配色模式
+	Nikon D90 Stairstepping Fix	Nikon D90 阶梯纹修复
+	Oscilloscope (Simple)	示波器（简单）
+	Draw Scope Grid	绘制网格
+	Print Statistics	显示统计
+	Draw Trace Profile Line	绘制采样线
+	Trace X Position	采样线 X 位置
+	Trace Y Position	采样线 Y 位置
+	Scope X Position	示波器 X 位置
+	Scope Y Position	示波器 Y 位置
+	Scope Width	示波器宽度
+	Scope Height	示波器高度
+	Oscilloscope (Advanced)	示波器（高级）
+	R / G / B Trace	R / G / B 曲线
+	Y / Pr / Pb Trace	Y / Pr / Pb 曲线
+	Alpha Trace	Alpha 曲线
+	Display Average	显示平均值
+	Display RMS	显示 RMS
+	Display Minimum / Maximum	显示最小值 / 最大值
+	256 Scale	256 刻度
+	Marker 1	标记 1
+	Marker 2	标记 2
+	Crosshair Color	十字线颜色
+	RGB Parade	RGB 分量图
+	Timeout Indicator	剩余时间指示器
+	Indicator Color	指示器颜色
+	Vectorscope (Advanced)	矢量示波器（高级）
+	Tint 1	色调 1
+	Tint 2	色调 2
+	Envelope	包络
+	Graticule	刻度线
+	Graticule Opacity	刻度线不透明度
+	Graticule Flags	刻度线选项
+	Low Threshold	下限阈值
+	High Threshold	上限阈值
+	Video Values	视频数值
+	Measurement	测量
+	256-Scale	256 刻度
+	Show Alpha	显示 Alpha
+	Big Window	大窗口
+	X Position	X 位置
+	Y Position	Y 位置
+	Video Waveform Monitor	波形监视器
+	Flags	选项
+	Stereoscopic 3D	立体 3D
+	Input Format	输入格式
+	Output Format	输出格式
+	VR360 Cap Top and Bottom	VR360 填补天顶与天底
+	VR360 Equirectangular to Rectilinear	VR360 等距柱状转直线投影
+	Yaw	偏航
+	Pitch	俯仰
+	FOV	视场角
+	Fisheye	鱼眼
+	VR360 Equirectangular to Stereo	VR360 等距柱状转球极投影
+	VR360 Equirectangular Mask	VR360 等距柱状遮罩
+	Horizontal Start	水平起点
+	Horizontal End	水平终点
+	Vertical Start	垂直起点
+	Vertical End	垂直终点
+	VR360 Hemispherical to Equirectangular	VR360 半球转等距柱状
+	Projection	投影
+	Equidistant Fisheye	等距鱼眼
+	Alignment Yaw	对齐偏航
+	Alignment Pitch	对齐俯仰
+	Alignment Roll	对齐滚转
+	Lens FOV	镜头视场角
+	Lens Radius	镜头半径
+	Front X	前镜头 X
+	Front	前镜头
+	Front Y	前镜头 Y
+	Front Up	前镜头上方向
+	Back X	后镜头 X
+	Back	后镜头
+	Back Y	后镜头 Y
+	Back Up	后镜头上方向
+	Nadir Radius	天底半径
+	Nadir Start	天底起点
+	Lens Distortion A	镜头畸变 A
+	Lens Distortion B	镜头畸变 B
+	Lens Distortion C	镜头畸变 C
+	Lens Distortion Radius	镜头畸变半径
+	Lens Vignetting A	镜头暗角 A
+	Lens Vignetting	镜头暗角
+	Lens Vignetting B	镜头暗角 B
+	Lens Vignetting C	镜头暗角 C
+	Lens Vignetting D	镜头暗角 D
+	Lens Vignetting Radius	镜头暗角半径
+	VR360 Stabilize	VR360 稳定
+	Analysis Sample Radius	分析采样半径
+	Analysis Search Radius	分析搜索半径
+	Analysis Offset	分析点间距
+	Use Backwards-Facing Track Point	使用后方跟踪点
+	Yaw Amount	偏航数量
+	Pitch Amount	俯仰数量
+	Roll Amount	滚转数量
+	Yaw Smoothing	偏航平滑
+	Pitch Smoothing	俯仰平滑
+	Roll Smoothing	滚转平滑
+	Yaw Time Bias	偏航时间偏移
+	Pitch Time Bias	俯仰时间偏移
+	Roll Time Bias	滚转时间偏移
+	VR360 Wrap	VR360 包裹
+	Blur Start	模糊起点
+	Blur End	模糊终点

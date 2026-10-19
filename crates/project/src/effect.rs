@@ -20,6 +20,8 @@ mod vfx;
 mod kfx;
 mod kcolor;
 pub use kcolor::{COLOR_MATRICES, PHASE_MODES};
+mod kdx;
+pub use kdx::{MASK_APPLY, MASK_STARTS};
 pub use kfx::{GPS_KEYWORDS, MORE_TOP, PSEUDO_PRESETS, TIMER_FORMATS};
 pub use vfx::{EASINGS, ECHO_OPERATORS, FRAME_LAYOUTS, LIGHT_IDS, SIMPLE_BLEND, TRACK_CHOICES, auto_point, ultra_key_setting};
 
@@ -866,6 +868,7 @@ fn build_effects() -> Vec<EffectDef> {
     v.extend(vfx::defs());
     v.extend(kfx::defs());
     v.extend(kcolor::defs());
+    v.extend(kdx::defs());
     vfx::extend_core(&mut v);
     v.extend(crate::vtransition::video_transition_defs());
     v.extend(crate::graphic::layer_defs());

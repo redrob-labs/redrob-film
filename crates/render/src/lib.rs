@@ -251,9 +251,11 @@ pub(crate) fn render_seq_tracks(project: &Project, seq: &Sequence, t: Tick, opts
                 env: Some(&env),
                 working: seq.settings.color.working,
             };
+            let mut chain = mask::MaskChain::default();
             for e in item.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic)) {
-                mask::apply_effect(&mut adjusted, e, &cx);
+                chain.apply(&mut adjusted, e, &cx);
             }
+            chain.finish(&mut adjusted);
             let (op, bl) = opacity_blend(item, mt);
             // Adjustment layer opacity (and opacity masks, in sequence pixels) mix adjusted over original.
             let mut out = canvas.snapshot();
@@ -514,6 +516,7 @@ pub(crate) fn item_layer_ex(
             env: Some(&env),
             working: seq.settings.color.working,
         };
+        let mut chain = mask::MaskChain::default();
         for e in item.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e)) {
             if redrob_film_media::cancel::cancelled() {
                 return None;
@@ -529,8 +532,9 @@ pub(crate) fn item_layer_ex(
                     continue;
                 }
             }
-            mask::apply_effect(&mut layer, e, &cx);
+            chain.apply(&mut layer, e, &cx);
         }
+        chain.finish(&mut layer);
     }
     mask::apply_opacity_masks(&mut layer, item, mt, px_scale);
     let placed = if layer.w == w && layer.h == h && identity_placement(&m) { layer } else { layer.transformed(w, h, &m) };
