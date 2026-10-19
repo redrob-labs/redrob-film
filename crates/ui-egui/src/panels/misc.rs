@@ -100,7 +100,9 @@ pub fn markers(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
             ui.painter().rect_filled(Rect::from_min_size(r.min + vec2(4.0, 6.0), vec2(4.0, 26.0)), 2.0, Color32::from_rgb(c[0], c[1], c[2]));
             let name = if m.name.is_empty() { tl!("Marker") } else { &m.name };
             ui.painter().text(pos2(r.min.x + 16.0, r.min.y + 12.0), Align2::LEFT_CENTER, name, Tokens::ui(12.0), t.text);
-            let mut tc = format_time(m.start, seq.settings.frame_rate, seq.settings.drop_frame, TimeDisplay::Timecode, 48000);
+            // from the sequence's start timecode (Sequence Settings ▸ Start Time)
+            let ofs = seq.settings.frame_rate.tick_of(seq.start_timecode.max(0));
+            let mut tc = format_time(m.start + ofs, seq.settings.frame_rate, seq.settings.drop_frame, TimeDisplay::Timecode, 48000);
             if m.duration > redrob_film_time::Tick::ZERO {
                 let d = format_time(m.duration, seq.settings.frame_rate, seq.settings.drop_frame, TimeDisplay::Timecode, 48000);
                 tc = format!("{tc}  ({d})");

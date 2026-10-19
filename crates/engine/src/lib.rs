@@ -51,6 +51,7 @@ pub mod shortcut_presets;
 pub mod shortcuts;
 pub mod source_monitor;
 pub mod sync;
+pub mod timeline_ops;
 pub mod transcript;
 pub mod trim;
 pub mod voiceover;
@@ -325,6 +326,18 @@ pub struct EditorState {
     /// The last Edit ▸ Find… (Find Next continues it).
     #[serde(default)]
     pub find: Option<project_tools::FindState>,
+    /// The keyboard-selected (current) track of the Timeline: track commands without a `track`
+    /// act on it (lock, mute, target, select all in track…). None = the lowest video track.
+    #[serde(default)]
+    pub current_track: Option<TrackId>,
+    /// Timeline edit mode for drops and moves: Overwrite (default), Normal (a drop that would
+    /// cover another clip is refused) or Insert (drops insert, Delete ripples).
+    #[serde(default)]
+    pub edit_mode: timeline_ops::EditMode,
+    /// "Use timeline zone" off: source Insert / Overwrite go to the playhead even when the
+    /// sequence has an In point.
+    #[serde(default)]
+    pub ignore_timeline_zone: bool,
 }
 
 /// Events for frontends (drained each frame).

@@ -234,6 +234,9 @@ pub struct Playback {
     pub hidden: bool,
     /// Forward playback stops here (Play In to Out, Play from Playhead to Out Point).
     pub stop_at: Option<Tick>,
+    /// Where the playhead was when this play started (Settings ▸ Timeline ▸ Return the playhead
+    /// to its start position when playback stops).
+    pub started_at: Option<Tick>,
 }
 
 /// How long (s) the audio clock may stand still during playback before the wall clock takes over.
@@ -918,6 +921,9 @@ impl FilmcraftApp {
         if !self.playback.playing || self.playback.speed != speed {
             self.playback.meter.start(speed);
         }
+        if !self.playback.playing {
+            self.playback.started_at = Some(self.session.playhead());
+        }
         self.playback.playing = true;
         self.playback.speed = speed;
         self.playback.anchor_tick = self.session.playhead();
@@ -978,6 +984,7 @@ impl FilmcraftApp {
     }
 
     pub fn stop(&mut self) {
+        let was_playing = self.playback.playing;
         self.playback.playing = false;
         self.playback.stop_at = None;
         self.playback.preroll = None;
@@ -995,6 +1002,12 @@ impl FilmcraftApp {
         }
         panels::multicam::on_stop(self);
         panels::voiceover::on_stop(self);
+        if let Some(t) = self.playback.started_at.take()
+            && was_playing
+            && self.session.prefs.timeline.return_to_start_on_stop
+        {
+            self.session.set_playhead(t);
+        }
     }
 
     fn start_audio(&mut self) {

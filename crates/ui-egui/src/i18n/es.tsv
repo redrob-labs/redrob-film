@@ -3698,3 +3698,45 @@
 	Stream {n}	Flujo {n}
 	Enabled	Activado
 	Switch Audio Stream	Cambiar flujo de audio
+# Timeline (Kdenlive parity, p04)
+	Edit Mode	Modo de edición
+	Normal Mode	Modo normal
+	Overwrite Mode	Modo de sobrescritura
+	Insert Mode	Modo de inserción
+	Use Timeline Zone for Insert	Usar la zona de la línea de tiempo al insertar
+	Remove Space in All Tracks	Quitar espacio en todas las pistas
+	Remove All Spaces After Playhead	Quitar todos los espacios tras el cabezal
+	Remove All Clips After Playhead	Quitar todos los clips tras el cabezal
+	Insert Space…	Insertar espacio…
+	Identify Gaps	Identificar huecos
+	Track Compositing	Composición de pistas
+	Disable Timeline Effects	Desactivar los efectos de la línea de tiempo
+	Clip Duration…	Duración del clip…
+	Default bin for new sequences	Bandeja predeterminada para las secuencias nuevas
+	Return the playhead to its start position when playback stops	Devolver el cabezal a su posición inicial al detener la reproducción
+	Insert Track	Insertar pista
+	Delete Track	Eliminar pista
+	Move Track Up	Subir pista
+	Move Track Down	Bajar pista
+	Unlock Track	Desbloquear pista
+	Lock Track	Bloquear pista
+	Select All in Track	Seleccionar todo en la pista
+	Rename Track	Cambiar nombre de la pista
+	Expand or Collapse Track	Expandir o contraer la pista
+	Fit Tracks to View	Ajustar las pistas a la vista
+	Waveform Zoom	Zoom de la forma de onda
+	Normalize Audio Waveforms	Normalizar las formas de onda de audio
+	Show Clip Names	Mostrar nombres de clips
+	Show Clip Label Colors	Mostrar colores de etiqueta de los clips
+	Show Marker Comments	Mostrar comentarios de marcadores
+	Zoom Centered on Playhead	Zoom centrado en el cabezal
+	Show Time in Frames	Mostrar el tiempo en fotogramas
+	Clip Duration	Duración del clip
+	Insert Space	Insertar espacio
+	Maintain Audio Pitch	Mantener el tono del audio
+	In:	Entrada:
+	Out:	Salida:
+	Current Track	Pista actual
+	All Tracks	Todas las pistas
+	Apply to Group	Aplicar al grupo
+	Only Equal Values	Solo valores iguales

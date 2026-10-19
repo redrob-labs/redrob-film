@@ -57,6 +57,8 @@ fn meta(command: &str) -> Option<(&'static str, &'static str)> {
         "clip.frameHoldOptions" => (tl!("Frame Hold Options"), "frameHold"),
         "clip.fieldOptions" => (tl!("Field Options"), "fieldOptions"),
         "clip.speedDuration" => (tl!("Clip Speed / Duration"), "speedDuration"),
+        "clip.setTiming" => (tl!("Clip Duration"), "clipDuration"),
+        "sequence.insertSpace" => (tl!("Insert Space"), "insertSpace"),
         "file.closeProject" => (tl!("Save Project"), "closeProject"),
         "app.quit" => (tl!("Save Project"), "quit"),
         _ => return None,
@@ -229,9 +231,29 @@ fn defaults(app: &FilmcraftApp, id: &str) -> (Value, Value) {
             let speed = it.as_ref().map_or(1.0, |i| i.speed);
             let interp = it.as_ref().map_or(redrob_film_project::TimeInterpolation::default(), |i| i.time_interpolation);
             (
-                json!({"speed": (speed.abs() * 100.0 * 100.0).round() / 100.0, "reverse": speed < 0.0, "ripple": false, "interpolation": interp.name()}),
+                json!({"speed": (speed.abs() * 100.0 * 100.0).round() / 100.0, "reverse": speed < 0.0, "ripple": false, "interpolation": interp.name(), "maintainPitch": false}),
                 json!({"duration": it.as_ref().map_or(0, |i| i.duration.0), "speed": speed.abs(), "fps": fps}),
             )
+        }
+        "clip.setTiming" => {
+            // the first selected clip: position, source In, duration (frames); Out follows
+            let q = s.active_sequence();
+            let rate = q.map(|q| q.settings.frame_rate).unwrap_or_default();
+            let it = q.and_then(|q| s.state.selection.iter().find_map(|c| q.find_item(*c).map(|x| x.1.clone())));
+            match it {
+                Some(i) => {
+                    let v = json!({"startFrame": rate.frame_at(i.start), "sourceInFrame": rate.frame_at(i.source_in), "durationFrames": rate.frame_at(i.duration)});
+                    let mut params = v.clone();
+                    params["clip"] = json!(i.id.0);
+                    // the values shown at first: a field left alone is not sent (frames round)
+                    (params, json!({"fps": rate.as_f64(), "name": i.name, "orig": v}))
+                }
+                None => (json!({}), json!({"fps": rate.as_f64()})),
+            }
+        }
+        "sequence.insertSpace" => {
+            let rate = s.active_sequence().map(|q| q.settings.frame_rate).unwrap_or_default();
+            (json!({"durationFrames": rate.timecode_base(), "track": "current"}), json!({"fps": rate.as_f64()}))
         }
         _ => (json!({}), Value::Null),
     }
@@ -555,12 +577,40 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                 }
                 check(ui, &mut elems, pre, p, "reverse", tl!("Reverse Speed"), true);
                 check(ui, &mut elems, pre, p, "ripple", tl!("Ripple Edit, Shifting Trailing Clips"), true);
+                check(ui, &mut elems, pre, p, "maintainPitch", tl!("Maintain Audio Pitch"), true);
                 ui.label(RichText::new(tl!("Time Interpolation")).strong());
                 for m in redrob_film_project::TimeInterpolation::ALL {
                     let r = ui.radio(p["interpolation"].as_str() == Some(m.name()), crate::i18n::t(m.label()));
                     push(&mut elems, format!("{pre}.interpolation.{}", m.name()), &r, m.label());
                     if r.clicked() {
                         p["interpolation"] = json!(m.name());
+                    }
+                }
+            }
+            "clip.setTiming" => {
+                let fps = d.info["fps"].as_f64().unwrap_or(24.0);
+                if let Some(name) = d.info["name"].as_str() {
+                    ui.label(RichText::new(name).strong());
+                }
+                frames(ui, &mut elems, pre, p, "startFrame", tl!("Position:"), fps);
+                frames(ui, &mut elems, pre, p, "sourceInFrame", tl!("In:"), fps);
+                frames(ui, &mut elems, pre, p, "durationFrames", tl!("Duration:"), fps);
+                // Out = In + duration (source frames at the clip's speed are not shown)
+                let out = p["sourceInFrame"].as_i64().unwrap_or(0).saturating_add(p["durationFrames"].as_i64().unwrap_or(0));
+                let rate = redrob_film_time::FrameRate::from_f64(if fps > 0.0 { fps } else { 24.0 });
+                ui.horizontal(|ui| {
+                    ui.label(tl!("Out:"));
+                    ui.label(RichText::new(redrob_film_time::format_timecode_frames(out, rate, false)).monospace());
+                });
+            }
+            "sequence.insertSpace" => {
+                let fps = d.info["fps"].as_f64().unwrap_or(24.0);
+                frames(ui, &mut elems, pre, p, "durationFrames", tl!("Duration:"), fps);
+                for (k, l) in [("current", tl!("Current Track")), ("all", tl!("All Tracks"))] {
+                    let r = ui.radio(p["track"].as_str() == Some(k), l);
+                    push(&mut elems, format!("{pre}.track.{k}"), &r, l);
+                    if r.clicked() {
+                        p["track"] = json!(k);
                     }
                 }
             }
@@ -678,6 +728,17 @@ fn finish(d: &ClipDialogDraft) -> Value {
         // the timecode field only applies to Source Timecode / Sequence Time
         "clip.frameHoldOptions" if !matches!(p["holdOn"].as_str(), Some("sourceTimecode" | "sequenceTime")) => {
             p.as_object_mut().map(|m| m.remove("timecode"));
+        }
+        "clip.setTiming" => {
+            for k in ["startFrame", "sourceInFrame", "durationFrames"] {
+                if p.get(k) == d.info["orig"].get(k) {
+                    p.as_object_mut().map(|m| m.remove(k));
+                }
+            }
+        }
+        // the current track is the engine's default
+        "sequence.insertSpace" if p["track"].as_str() == Some("current") => {
+            p.as_object_mut().map(|m| m.remove("track"));
         }
         _ => {}
     }

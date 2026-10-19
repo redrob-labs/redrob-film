@@ -3679,3 +3679,45 @@
 	Stream {n}	音频流 {n}
 	Enabled	启用
 	Switch Audio Stream	切换音频流
+# Timeline (Kdenlive parity, p04)
+	Edit Mode	编辑模式
+	Normal Mode	普通模式
+	Overwrite Mode	覆盖模式
+	Insert Mode	插入模式
+	Use Timeline Zone for Insert	插入时使用时间线区域
+	Remove Space in All Tracks	移除所有轨道中的空隙
+	Remove All Spaces After Playhead	移除播放头之后的所有空隙
+	Remove All Clips After Playhead	移除播放头之后的所有剪辑
+	Insert Space…	插入空隙…
+	Identify Gaps	标记空隙
+	Track Compositing	轨道合成
+	Disable Timeline Effects	停用时间线效果
+	Clip Duration…	剪辑持续时间…
+	Default bin for new sequences	新序列的默认素材箱
+	Return the playhead to its start position when playback stops	停止播放时将播放头移回起始位置
+	Insert Track	插入轨道
+	Delete Track	删除轨道
+	Move Track Up	上移轨道
+	Move Track Down	下移轨道
+	Unlock Track	解锁轨道
+	Lock Track	锁定轨道
+	Select All in Track	选择轨道中的全部
+	Rename Track	重命名轨道
+	Expand or Collapse Track	展开或折叠轨道
+	Fit Tracks to View	使轨道适合视图
+	Waveform Zoom	波形缩放
+	Normalize Audio Waveforms	标准化音频波形
+	Show Clip Names	显示剪辑名称
+	Show Clip Label Colors	显示剪辑标签颜色
+	Show Marker Comments	显示标记注释
+	Zoom Centered on Playhead	以播放头为中心缩放
+	Show Time in Frames	以帧显示时间
+	Clip Duration	剪辑持续时间
+	Insert Space	插入空隙
+	Maintain Audio Pitch	保持音频音调
+	In:	入点:
+	Out:	出点:
+	Current Track	当前轨道
+	All Tracks	所有轨道
+	Apply to Group	应用于编组
+	Only Equal Values	仅相同的值

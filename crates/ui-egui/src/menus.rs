@@ -644,6 +644,13 @@ pub fn menu_items(app: &FilmcraftApp) -> Vec<MenuItem> {
             "app.language.german" => it.checked = Some(app.ui.language == crate::i18n::Language::De),
             "app.language.russian" => it.checked = Some(app.ui.language == crate::i18n::Language::Ru),
             "app.language.french" => it.checked = Some(app.ui.language == crate::i18n::Language::Fr),
+            // Sequence ▸ Edit Mode and the timeline switches (radio / toggle items)
+            "timeline.editMode.normal" | "timeline.editMode.overwrite" | "timeline.editMode.insert" => {
+                it.checked = Some(it.id.ends_with(app.session.state.edit_mode.name()));
+            }
+            "sequence.useTimelineZone" => it.checked = Some(!app.session.state.ignore_timeline_zone),
+            "sequence.trackCompositing" => it.checked = Some(app.session.active_sequence().is_none_or(|q| !q.timeline_options.no_track_compositing)),
+            "sequence.disableTimelineEffects" => it.checked = Some(app.session.active_sequence().is_some_and(|q| q.timeline_options.effects_disabled)),
             _ => {}
         }
         if it.id.starts_with("view.") {

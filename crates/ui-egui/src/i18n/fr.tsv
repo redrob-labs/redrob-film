@@ -3687,3 +3687,45 @@
 	Stream {n}	Flux {n}
 	Enabled	Activé
 	Switch Audio Stream	Changer de flux audio
+# Timeline (Kdenlive parity, p04)
+	Edit Mode	Mode d’édition
+	Normal Mode	Mode normal
+	Overwrite Mode	Mode écrasement
+	Insert Mode	Mode insertion
+	Use Timeline Zone for Insert	Utiliser la zone de la timeline pour l’insertion
+	Remove Space in All Tracks	Supprimer l’espace dans toutes les pistes
+	Remove All Spaces After Playhead	Supprimer tous les espaces après la tête de lecture
+	Remove All Clips After Playhead	Supprimer tous les clips après la tête de lecture
+	Insert Space…	Insérer un espace…
+	Identify Gaps	Repérer les vides
+	Track Compositing	Composition des pistes
+	Disable Timeline Effects	Désactiver les effets de la timeline
+	Clip Duration…	Durée du clip…
+	Default bin for new sequences	Chutier par défaut des nouvelles séquences
+	Return the playhead to its start position when playback stops	Ramener la tête de lecture à sa position de départ à l’arrêt de la lecture
+	Insert Track	Insérer une piste
+	Delete Track	Supprimer la piste
+	Move Track Up	Monter la piste
+	Move Track Down	Descendre la piste
+	Unlock Track	Déverrouiller la piste
+	Lock Track	Verrouiller la piste
+	Select All in Track	Tout sélectionner dans la piste
+	Rename Track	Renommer la piste
+	Expand or Collapse Track	Déplier ou replier la piste
+	Fit Tracks to View	Ajuster les pistes à la vue
+	Waveform Zoom	Zoom de la forme d’onde
+	Normalize Audio Waveforms	Normaliser les formes d’onde audio
+	Show Clip Names	Afficher les noms des clips
+	Show Clip Label Colors	Afficher les couleurs d’étiquette des clips
+	Show Marker Comments	Afficher les commentaires des marqueurs
+	Zoom Centered on Playhead	Zoom centré sur la tête de lecture
+	Show Time in Frames	Afficher le temps en images
+	Clip Duration	Durée du clip
+	Insert Space	Insérer un espace
+	Maintain Audio Pitch	Conserver la hauteur du son
+	In:	Entrée :
+	Out:	Sortie :
+	Current Track	Piste courante
+	All Tracks	Toutes les pistes
+	Apply to Group	Appliquer au groupe
+	Only Equal Values	Valeurs identiques uniquement

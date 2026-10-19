@@ -3686,3 +3686,45 @@
 	Stream {n}	ストリーム {n}
 	Enabled	有効
 	Switch Audio Stream	オーディオストリームを切り替え
+# Timeline (Kdenlive parity, p04)
+	Edit Mode	編集モード
+	Normal Mode	通常モード
+	Overwrite Mode	上書きモード
+	Insert Mode	挿入モード
+	Use Timeline Zone for Insert	挿入にタイムラインゾーンを使用
+	Remove Space in All Tracks	すべてのトラックのスペースを削除
+	Remove All Spaces After Playhead	再生ヘッド以降のスペースをすべて削除
+	Remove All Clips After Playhead	再生ヘッド以降のクリップをすべて削除
+	Insert Space…	スペースを挿入…
+	Identify Gaps	ギャップを特定
+	Track Compositing	トラックの合成
+	Disable Timeline Effects	タイムラインのエフェクトを無効化
+	Clip Duration…	クリップのデュレーション…
+	Default bin for new sequences	新規シーケンスのデフォルトビン
+	Return the playhead to its start position when playback stops	再生停止時に再生ヘッドを開始位置に戻す
+	Insert Track	トラックを挿入
+	Delete Track	トラックを削除
+	Move Track Up	トラックを上へ移動
+	Move Track Down	トラックを下へ移動
+	Unlock Track	トラックのロックを解除
+	Lock Track	トラックをロック
+	Select All in Track	トラック内をすべて選択
+	Rename Track	トラック名を変更
+	Expand or Collapse Track	トラックを展開または折りたたむ
+	Fit Tracks to View	トラックを表示に合わせる
+	Waveform Zoom	波形のズーム
+	Normalize Audio Waveforms	オーディオ波形を正規化
+	Show Clip Names	クリップ名を表示
+	Show Clip Label Colors	クリップのラベルカラーを表示
+	Show Marker Comments	マーカーのコメントを表示
+	Zoom Centered on Playhead	再生ヘッドを中心にズーム
+	Show Time in Frames	時間をフレームで表示
+	Clip Duration	クリップのデュレーション
+	Insert Space	スペースを挿入
+	Maintain Audio Pitch	オーディオのピッチを保持
+	In:	イン:
+	Out:	アウト:
+	Current Track	現在のトラック
+	All Tracks	すべてのトラック
+	Apply to Group	グループに適用
+	Only Equal Values	同じ値のみ
