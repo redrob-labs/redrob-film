@@ -3657,3 +3657,31 @@
 	Default Transition	Transition par défaut
 	At Clip Start	Au début du clip
 	At Clip End	À la fin du clip
+	Insert Special Character	Insérer un caractère spécial
+	Insert Special Character…	Insérer un caractère spécial…
+	Unicode (hex):	Unicode (hex) :
+	Select All Layers	Sélectionner tous les calques
+	Keep Only Text Layers Selected	Ne garder sélectionnés que les calques de texte
+	Keep Only Shape Layers Selected	Ne garder sélectionnés que les calques de forme
+	Keep Only Rectangle Layers Selected	Ne garder sélectionnés que les calques rectangle
+	Deselect All Layers	Désélectionner tous les calques
+	Copy Graphic Layers	Copier les calques graphiques
+	Paste Graphic Layers	Coller les calques graphiques
+	Rotation X	Rotation X
+	Rotation Y	Rotation Y
+	Reveal By	Révéler par
+	Step	Pas
+	Variation	Variation
+	Seed	Graine
+	Character	Caractère
+	Word	Mot
+	Line	Ligne
+	Grid…	Grille…
+	Lines:	Lignes :
+	Snap to the grid and guides	Magnétisme sur la grille et les repères
+	Patterns…	Motifs…
+	Patterns	Motifs
+	No patterns yet: select layers of a graphic and save them.	Aucun motif : sélectionnez des calques d'un graphique et enregistrez-les.
+	Pattern name	Nom du motif
+	Save Selected Layers	Enregistrer les calques sélectionnés
+	Add as New Source Graphic	Ajouter comme nouveau graphique source

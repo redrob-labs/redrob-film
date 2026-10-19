@@ -695,6 +695,12 @@ pub fn monitor_overlay(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect, fra
             }
             _ => (cur - d.start, Vec::new()),
         };
+        // Kdenlive's titles: Shift moves only vertically, Shift+Alt only horizontally
+        let snap_off = match (d.kind, ui.input(|i| (i.modifiers.shift, i.modifiers.alt))) {
+            (DragKind::Move, (true, true)) => (vec2(snap_off.0.x, 0.0), snap_off.1),
+            (DragKind::Move, (true, false)) => (vec2(0.0, snap_off.0.y), snap_off.1),
+            _ => snap_off,
+        };
         match d.kind {
             DragKind::Move => {
                 if let Some(v) = v {

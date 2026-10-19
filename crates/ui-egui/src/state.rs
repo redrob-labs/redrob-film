@@ -323,6 +323,10 @@ pub struct MonitorView {
     /// Snap in Program Monitor: graphic drags snap to guides, the frame edges and centre.
     pub snap: bool,
     pub guides: Vec<Guide>,
+    /// Grid over the picture (View ▸ Grid…): lines across and down (0 = off), and their colour.
+    /// Graphic drags snap to it with Snap in Program Monitor on.
+    pub grid_lines: u32,
+    pub grid_color: [u8; 4],
 }
 
 impl Default for MonitorView {
@@ -345,6 +349,8 @@ impl Default for MonitorView {
             lock_guides: false,
             snap: true,
             guides: Vec::new(),
+            grid_lines: 0,
+            grid_color: [255, 255, 255, 90],
         }
     }
 }

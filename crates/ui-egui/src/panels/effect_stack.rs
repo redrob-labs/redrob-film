@@ -52,6 +52,24 @@ pub struct FxStackUi {
     /// Automatic keyframes: the last one written per parameter (`clip:effect:param` → timeline ticks).
     #[serde(skip)]
     pub last_auto: Vec<(String, i64)>,
+    /// Graphic layers copied on the Program monitor / in Essential Graphics (`graphics.copyLayers`)
+    /// and how many times they were pasted (each paste lands further down and right).
+    #[serde(skip)]
+    pub layer_clipboard: Option<Value>,
+    #[serde(skip)]
+    pub layer_pastes: u32,
+    /// Graphic patterns (Kdenlive's title patterns): named groups of layers saved from a graphic
+    /// and inserted into others (Graphics and Titles ▸ Patterns…).
+    pub patterns: Vec<(String, Value)>,
+    /// Patterns… dialog (open when Some): the name for a new pattern.
+    #[serde(skip)]
+    pub patterns_dialog: Option<String>,
+    /// Graphics and Titles ▸ Insert Special Character… (open when Some): the code point typed.
+    #[serde(skip)]
+    pub char_picker: Option<String>,
+    /// View ▸ Grid… dialog open.
+    #[serde(skip)]
+    pub grid_dialog: bool,
 }
 
 impl Default for FxStackUi {
@@ -72,6 +90,12 @@ impl Default for FxStackUi {
             clipboard: Vec::new(),
             last_export: String::new(),
             last_auto: Vec::new(),
+            layer_clipboard: None,
+            layer_pastes: 0,
+            char_picker: None,
+            grid_dialog: false,
+            patterns: Vec::new(),
+            patterns_dialog: None,
         }
     }
 }
@@ -268,10 +292,50 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, params: &Val
             app.ui.fx.add_effect = Some(String::new());
             Some(Ok(json!({"dialog": "addEffect"})))
         }
+        "graphics.patterns" => {
+            app.ui.fx.patterns_dialog = Some(String::new());
+            Some(Ok(json!({"dialog": "patterns"})))
+        }
+        "view.gridSettings" => {
+            app.ui.fx.grid_dialog = true;
+            Some(Ok(json!({"dialog": "grid"})))
+        }
+        "graphics.insertSpecialCharacter" => Some(match params.get("text").and_then(Value::as_str) {
+            // agents name the text; the menu opens the picker
+            Some(t) => insert_text(app, t).map(|_| Value::Null),
+            None => {
+                app.ui.fx.char_picker = Some(String::new());
+                Ok(json!({"dialog": "specialCharacter"}))
+            }
+        }),
         "edit.copy" if plain && app.ui.focused == PanelKind::EffectControls && !app.ui.keyframe_selection.is_empty() => Some(copy_keyframes(app, ctx)),
         "edit.paste" if plain && app.ui.focused == PanelKind::EffectControls && !app.ui.fx.clipboard.is_empty() => Some(paste_keyframes(app)),
+        // graphic layers (Kdenlive's title objects): Copy keeps them, each Paste puts a copy
+        // further down and right
+        "edit.copy" if plain && graphics_focus(app) && !app.session.state.graphic_layers.is_empty() => {
+            Some(app.session.execute("graphics.copyLayers", json!({})).map_err(|e| e.to_string()).map(|v| {
+                let n = v["layers"].as_array().map_or(0, Vec::len);
+                app.ui.fx.layer_clipboard = Some(v["layers"].clone());
+                app.ui.fx.layer_pastes = 0;
+                json!({"layers": n})
+            }))
+        }
+        "edit.paste" if plain && graphics_focus(app) && app.ui.fx.layer_clipboard.is_some() => {
+            let k = f64::from(app.ui.fx.layer_pastes + 1) * 20.0;
+            let layers = app.ui.fx.layer_clipboard.clone().unwrap_or_default();
+            let r = app.session.execute("graphics.pasteLayers", json!({"layers": layers, "offset": [k, k]})).map_err(|e| e.to_string());
+            if r.is_ok() {
+                app.ui.fx.layer_pastes += 1;
+            }
+            Some(r)
+        }
         _ => None,
     }
+}
+
+/// Whether Copy / Paste act on graphic layers: the Program monitor or Essential Graphics has focus.
+fn graphics_focus(app: &FilmcraftApp) -> bool {
+    matches!(app.ui.focused, PanelKind::Program | PanelKind::EssentialGraphics)
 }
 
 /// Copy the selected keyframes (Ctrl+C in Effect Controls). The text form goes on the system
@@ -406,6 +470,180 @@ pub fn auto_keyframe(app: &mut FilmcraftApp, p: &mut Value) {
 pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
     add_effect_dialog(app, ctx);
     import_dialog(app, ctx);
+    char_picker(app, ctx);
+    grid_dialog(app, ctx);
+    patterns_dialog(app, ctx);
+}
+
+/// Graphics and Titles ▸ Patterns…: save the selected graphic layers as a named pattern, insert a
+/// pattern into the selected graphic (where it was drawn), delete patterns.
+fn patterns_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+    let Some(mut name) = app.ui.fx.patterns_dialog.clone() else { return };
+    let mut open = true;
+    let mut save = false;
+    let mut insert: Option<usize> = None;
+    let mut delete: Option<usize> = None;
+    egui::Window::new(tl!("Patterns")).id(egui::Id::new("Patterns dialog")).open(&mut open).collapsible(false).default_width(300.0).show(ctx, |ui| {
+        if app.ui.fx.patterns.is_empty() {
+            ui.label(egui::RichText::new(tl!("No patterns yet: select layers of a graphic and save them.")).color(app.tokens.text_dim));
+        }
+        for (i, (n, layers)) in app.ui.fx.patterns.iter().enumerate() {
+            ui.horizontal(|ui| {
+                let count = layers.as_array().map_or(0, Vec::len);
+                ui.label(format!("{n} ({count})"));
+                if ui.button(tl!("Insert")).clicked() {
+                    insert = Some(i);
+                }
+                if ui.button(tl!("Delete")).clicked() {
+                    delete = Some(i);
+                }
+            });
+        }
+        ui.separator();
+        ui.horizontal(|ui| {
+            let r = ui.add(egui::TextEdit::singleline(&mut name).hint_text(tl!("Pattern name")).desired_width(150.0));
+            app.auto.add("patterns.name", r.rect, "Pattern name");
+            let b = ui.add_enabled(!name.trim().is_empty() && !app.session.state.graphic_layers.is_empty(), egui::Button::new(tl!("Save Selected Layers")));
+            app.auto.add("patterns.save", b.rect, "Save Selected Layers");
+            save = b.clicked();
+        });
+    });
+    if save {
+        match app.session.execute("graphics.copyLayers", json!({})) {
+            Ok(v) => {
+                let n = name.trim().to_string();
+                app.ui.fx.patterns.retain(|(x, _)| *x != n);
+                app.ui.fx.patterns.push((n, v["layers"].clone()));
+                name.clear();
+            }
+            Err(e) => app.ui.status = e.to_string(),
+        }
+    }
+    if let Some(i) = insert
+        && let Some((_, layers)) = app.ui.fx.patterns.get(i).cloned()
+        && let Err(e) = app.session.execute("graphics.pasteLayers", json!({"layers": layers, "offset": [0.0, 0.0]}))
+    {
+        app.ui.status = e.to_string();
+    }
+    if let Some(i) = delete
+        && i < app.ui.fx.patterns.len()
+    {
+        app.ui.fx.patterns.remove(i);
+    }
+    app.ui.fx.patterns_dialog = if open && !ctx.input(|i| i.key_pressed(egui::Key::Escape)) { Some(name) } else { None };
+}
+
+/// View ▸ Grid…: lines over the Program monitor picture (count and colour); graphics snap to them.
+fn grid_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+    if !app.ui.fx.grid_dialog {
+        return;
+    }
+    let mut open = true;
+    egui::Window::new(tl!("Grid")).id(egui::Id::new("Grid dialog")).open(&mut open).collapsible(false).resizable(false).show(ctx, |ui| {
+        let v = &mut app.ui.program;
+        ui.horizontal(|ui| {
+            ui.label(tl!("Lines:"));
+            let r = ui.add(egui::Slider::new(&mut v.grid_lines, 0..=32));
+            app.auto.add("grid.lines", r.rect, "Lines");
+        });
+        ui.horizontal(|ui| {
+            ui.label(tl!("Color:"));
+            let [r, g, b, a] = v.grid_color;
+            let mut c = egui::Color32::from_rgba_unmultiplied(r, g, b, a);
+            if egui::color_picker::color_edit_button_srgba(ui, &mut c, egui::color_picker::Alpha::OnlyBlend).changed() {
+                v.grid_color = c.to_srgba_unmultiplied();
+            }
+        });
+        ui.checkbox(&mut v.snap, tl!("Snap to the grid and guides"));
+        if ui.button(tl!("Close")).clicked() {
+            app.ui.fx.grid_dialog = false;
+        }
+    });
+    if !open || ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+        app.ui.fx.grid_dialog = false;
+    }
+}
+
+/// The characters Insert Special Character… offers in its grid.
+const SPECIAL_CHARACTERS: &str = "©®™℗°±×÷≈≠≤≥∞√∑µπΩαβγδλσφ€£¥¢₹₩§¶†‡•·…–—‘’“”«»‹›¿¡←↑→↓↔⇒★☆♥♦♣♠✓✗♪♫";
+
+/// Insert `s` into the text layer being edited (at the caret, over the selection), or at the end of
+/// the selected text layer's text.
+pub fn insert_text(app: &mut FilmcraftApp, s: &str) -> Result<(), String> {
+    let seq = app.session.active_sequence().ok_or("no sequence")?;
+    let (clip, layer, range) = match &app.ui.gfx_edit {
+        Some(ed) => (ed.clip, ed.layer, Some((ed.caret.min(ed.anchor), ed.caret.max(ed.anchor)))),
+        None => {
+            let clip = app.session.state.selection.first().ok_or("select a text layer first")?.0;
+            (clip, app.session.state.graphic_layers.first().copied().ok_or("select a text layer first")?, None)
+        }
+    };
+    let (_, it) = seq.find_item(redrob_film_project::ClipId(clip)).ok_or("select a text layer first")?;
+    let idx = redrob_film_project::graphic::layer_indices(&it.effects);
+    let e = idx.get(layer).map(|&i| &it.effects[i]).filter(|e| e.effect == redrob_film_project::graphic::TEXT_LAYER).ok_or("select a text layer first")?;
+    let mt = it.source_time_at(app.session.playhead().clamp(it.start, (it.end() - Tick(1)).max(it.start)));
+    let mut text = match e.param("text").map(|p| p.value_at(mt)) {
+        Some(redrob_film_project::ParamValue::Text(t)) => t,
+        _ => String::new(),
+    };
+    let (a, b) = range.unwrap_or((text.len(), text.len()));
+    let fix = |i: usize| {
+        let mut i = i.min(text.len());
+        while !text.is_char_boundary(i) {
+            i -= 1;
+        }
+        i
+    };
+    let (a, b) = (fix(a), fix(b));
+    text.replace_range(a..b, s);
+    app.session.execute("graphics.setText", json!({"clip": clip, "layer": layer, "text": text})).map_err(|e| e.to_string())?;
+    if let Some(ed) = app.ui.gfx_edit.as_mut() {
+        ed.caret = a + s.len();
+        ed.anchor = ed.caret;
+    }
+    Ok(())
+}
+
+/// Insert Special Character…: a grid of symbols and a field for any Unicode code point (hex).
+fn char_picker(app: &mut FilmcraftApp, ctx: &egui::Context) {
+    let Some(mut code) = app.ui.fx.char_picker.clone() else { return };
+    let mut open = true;
+    let mut pick: Option<String> = None;
+    egui::Window::new(tl!("Insert Special Character")).id(egui::Id::new("Insert Special Character")).open(&mut open).collapsible(false).resizable(false).show(ctx, |ui| {
+        egui::Grid::new("special-chars").spacing([2.0, 2.0]).show(ui, |ui| {
+            for (i, c) in SPECIAL_CHARACTERS.chars().enumerate() {
+                let b = ui.add_sized([26.0, 26.0], egui::Button::new(egui::RichText::new(c.to_string()).size(15.0)));
+                app.auto.add(&format!("specialCharacter.{:04X}", c as u32), b.rect, &c.to_string());
+                if b.on_hover_text(format!("U+{:04X}", c as u32)).clicked() {
+                    pick = Some(c.to_string());
+                }
+                if i % 12 == 11 {
+                    ui.end_row();
+                }
+            }
+        });
+        ui.separator();
+        ui.horizontal(|ui| {
+            ui.label(tl!("Unicode (hex):"));
+            let r = ui.add(egui::TextEdit::singleline(&mut code).desired_width(80.0).hint_text("2764"));
+            app.auto.add("specialCharacter.code", r.rect, "Unicode");
+            let typed = u32::from_str_radix(code.trim().trim_start_matches("U+").trim_start_matches("u+"), 16).ok().and_then(char::from_u32).filter(|c| !c.is_control());
+            ui.label(egui::RichText::new(typed.map(String::from).unwrap_or_default()).size(18.0));
+            let b = ui.add_enabled(typed.is_some(), egui::Button::new(tl!("Insert")));
+            app.auto.add("specialCharacter.insert", b.rect, "Insert");
+            if b.clicked()
+                && let Some(c) = typed
+            {
+                pick = Some(c.to_string());
+            }
+        });
+    });
+    if let Some(s) = pick
+        && let Err(e) = insert_text(app, &s)
+    {
+        app.ui.status = e;
+    }
+    app.ui.fx.char_picker = if open && !ctx.input(|i| i.key_pressed(egui::Key::Escape)) { Some(code) } else { None };
 }
 
 /// Sequence ▸ Add Effect…: effects by folder (favourites first), searchable; applies to the

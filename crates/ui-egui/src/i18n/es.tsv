@@ -3668,3 +3668,31 @@
 	Default Transition	Transición predeterminada
 	At Clip Start	Al inicio del clip
 	At Clip End	Al final del clip
+	Insert Special Character	Insertar carácter especial
+	Insert Special Character…	Insertar carácter especial…
+	Unicode (hex):	Unicode (hex):
+	Select All Layers	Seleccionar todas las capas
+	Keep Only Text Layers Selected	Mantener seleccionadas solo las capas de texto
+	Keep Only Shape Layers Selected	Mantener seleccionadas solo las capas de forma
+	Keep Only Rectangle Layers Selected	Mantener seleccionadas solo las capas de rectángulo
+	Deselect All Layers	Deseleccionar todas las capas
+	Copy Graphic Layers	Copiar capas gráficas
+	Paste Graphic Layers	Pegar capas gráficas
+	Rotation X	Rotación X
+	Rotation Y	Rotación Y
+	Reveal By	Mostrar por
+	Step	Paso
+	Variation	Variación
+	Seed	Semilla
+	Character	Carácter
+	Word	Palabra
+	Line	Línea
+	Grid…	Cuadrícula…
+	Lines:	Líneas:
+	Snap to the grid and guides	Ajustar a la cuadrícula y las guías
+	Patterns…	Patrones…
+	Patterns	Patrones
+	No patterns yet: select layers of a graphic and save them.	Aún no hay patrones: seleccione capas de un gráfico y guárdelas.
+	Pattern name	Nombre del patrón
+	Save Selected Layers	Guardar capas seleccionadas
+	Add as New Source Graphic	Añadir como nuevo gráfico de origen

@@ -654,6 +654,116 @@ fn select_layer_step(s: &mut Session, forward: bool) -> Result<Value> {
     Ok(json!({"clip": clip.0, "layer": l}))
 }
 
+/// Select every layer of the graphic (`all`), or keep only the selected layers of one kind
+/// (`text`, `shape`, `rectangle`) — all layers of that kind when none is selected.
+fn keep_layers(s: &mut Session, p: &Value, kind: &str) -> Result<Value> {
+    let clip = target_clip(s, p).ok_or_else(|| bad("graphics.keepLayers", "no graphic clip"))?;
+    let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let (_, it) = seq.find_item(clip).ok_or_else(|| bad("graphics.keepLayers", "no such clip"))?;
+    let idx = layer_indices(&it.effects);
+    let shape_of = |e: &EffectInstance| match e.param("shape").map(|p| &p.value) {
+        Some(ParamValue::Choice(c)) => *c,
+        _ => 0,
+    };
+    let fits = |e: &EffectInstance| match kind {
+        "text" => e.effect == graphic::TEXT_LAYER,
+        "shape" => e.effect == graphic::SHAPE_LAYER,
+        "rectangle" => e.effect == graphic::SHAPE_LAYER && shape_of(e) == 0,
+        _ => true,
+    };
+    let from: Vec<usize> =
+        if kind == "all" || s.state.graphic_layers.is_empty() || s.state.selection.first() != Some(&clip) { (0..idx.len()).collect() } else { s.state.graphic_layers.clone() };
+    let keep: Vec<usize> = from.into_iter().filter(|&l| idx.get(l).is_some_and(|&ei| fits(&it.effects[ei]))).collect();
+    s.state.selection = vec![clip];
+    s.state.graphic_layers = keep.clone();
+    Ok(json!({"clip": clip.0, "layers": keep}))
+}
+
+/// The selected (or the named) layers of a graphic, as instances `graphics.pasteLayers` takes.
+fn copy_layers(s: &mut Session, p: &Value) -> Result<Value> {
+    let clip = target_clip(s, p).ok_or_else(|| bad("graphics.copyLayers", "no graphic clip"))?;
+    let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let (_, it) = seq.find_item(clip).ok_or_else(|| bad("graphics.copyLayers", "no such clip"))?;
+    let idx = layer_indices(&it.effects);
+    let want: Vec<usize> = match p.get("layers").and_then(Value::as_array) {
+        Some(a) => a.iter().filter_map(Value::as_u64).map(|v| v as usize).collect(),
+        None => s.state.graphic_layers.clone(),
+    };
+    let layers: Vec<&EffectInstance> = want.iter().filter_map(|l| idx.get(*l)).map(|&ei| &it.effects[ei]).collect();
+    if layers.is_empty() {
+        return Err(bad("graphics.copyLayers", "select graphic layers first"));
+    }
+    Ok(json!({"clip": clip.0, "layers": layers}))
+}
+
+/// Paste copied layers into a graphic, in front of its layers and `offset` down and right of
+/// where they were (Kdenlive's title paste); the pasted layers become the selection.
+fn paste_layers(s: &mut Session, p: &Value) -> Result<Value> {
+    let clip = target_clip(s, p).ok_or_else(|| bad("graphics.pasteLayers", "no graphic clip"))?;
+    let mut layers: Vec<EffectInstance> = p
+        .get("layers")
+        .cloned()
+        .map(serde_json::from_value)
+        .transpose()
+        .map_err(|e| bad("graphics.pasteLayers", format!("not graphic layers: {e}")))?
+        .unwrap_or_default();
+    layers.retain(graphic::is_layer);
+    if layers.is_empty() {
+        return Err(bad("graphics.pasteLayers", "nothing to paste"));
+    }
+    let off = p.get("offset").and_then(Value::as_array).map(|a| Vec2::new(a.first().and_then(Value::as_f64).unwrap_or(20.0), a.get(1).and_then(Value::as_f64).unwrap_or(20.0)));
+    let off = off.unwrap_or(Vec2::new(20.0, 20.0));
+    let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let item = seq.find_item(clip).map(|(_, it)| it.item);
+    let canvas = match item.and_then(|i| s.project.item(i)).map(|p| &p.kind) {
+        Some(ItemKind::Graphic { width, height, .. }) => (*width as f64, *height as f64),
+        _ => (seq.settings.width as f64, seq.settings.height as f64),
+    };
+    for l in &mut layers {
+        // a copy is a new layer: its own uid (given below), no pin to the original's neighbours
+        if let Some(x) = l.layer.as_mut() {
+            x.uid = 0;
+            x.pin = None;
+        }
+        let shift = |v: ParamValue| match v {
+            ParamValue::Vec2(v) => {
+                let base = Vec2::new(if v.x.is_nan() { canvas.0 / 2.0 } else { v.x }, if v.y.is_nan() { canvas.1 / 2.0 } else { v.y });
+                ParamValue::Vec2(Vec2::new(base.x + off.x, base.y + off.y))
+            }
+            other => other,
+        };
+        match l.params.get_mut("position") {
+            Some(prm) => prm.map_values(shift),
+            None => {
+                l.params.insert("position".into(), Param::new(shift(ParamValue::Vec2(Vec2::new(f64::NAN, f64::NAN)))));
+            }
+        }
+    }
+    let n = layers.len();
+    let selected = s.edit_sequence("Paste Graphic Layers", |q, _, st| {
+        let (_, it) = q.find_item_mut(clip).ok_or(redrob_film_edit::EditError::NoItem(clip))?;
+        // layers paint in effect order: the pasted ones go after the last layer (in front)
+        let at = it.effects.iter().rposition(graphic::is_layer).map_or(0, |i| i + 1);
+        for (k, l) in layers.into_iter().enumerate() {
+            it.effects.insert(at + k, l);
+        }
+        let mut all: Vec<EffectInstance> = it.effects.iter().filter(|e| graphic::is_layer(e)).cloned().collect();
+        redrob_film_project::gtemplate::ensure_uids(&mut all);
+        let mut fresh = all.into_iter();
+        for e in it.effects.iter_mut().filter(|e| graphic::is_layer(e)) {
+            if let Some(f) = fresh.next() {
+                e.layer = f.layer;
+            }
+        }
+        let total = layer_indices(&it.effects).len();
+        let sel: Vec<usize> = (total - n..total).collect();
+        st.selection = vec![clip];
+        st.graphic_layers = sel.clone();
+        Ok(sel)
+    })?;
+    Ok(json!({"clip": clip.0, "layers": selected}))
+}
+
 fn has_two_layers(s: &Session) -> std::result::Result<(), String> {
     has_graphic(s)?;
     if s.state.graphic_layers.len() < 2 { Err("select two or more graphic layers".into()) } else { Ok(()) }
@@ -823,6 +933,27 @@ fn menu_commands() -> Vec<CommandSpec> {
         spec("graphics.selectPreviousGraphic", "Select Previous Graphic", SEL, None, "{}", has_graphics_in_seq, |s, _| select_graphic(s, false)),
         spec("graphics.selectNextLayer", "Select Next Layer", SEL, Some("Cmd+Alt+]"), "{}", has_graphic, |s, _| select_layer_step(s, true)),
         spec("graphics.selectPreviousLayer", "Select Previous Layer", SEL, Some("Cmd+Alt+["), "{}", has_graphic, |s, _| select_layer_step(s, false)),
+        // Kdenlive's title editor: select all, keep only one kind of layer selected, deselect
+        spec("graphics.selectAllLayers", "Select All Layers", SEL, None, r#"{"clip":id?}"#, has_graphic, |s, p| keep_layers(s, p, "all")),
+        spec("graphics.keepTextLayers", "Keep Only Text Layers Selected", SEL, None, r#"{"clip":id?}"#, has_graphic, |s, p| keep_layers(s, p, "text")),
+        spec("graphics.keepShapeLayers", "Keep Only Shape Layers Selected", SEL, None, r#"{"clip":id?}"#, has_graphic, |s, p| keep_layers(s, p, "shape")),
+        spec("graphics.keepRectangleLayers", "Keep Only Rectangle Layers Selected", SEL, None, r#"{"clip":id?}"#, has_graphic, |s, p| {
+            keep_layers(s, p, "rectangle")
+        }),
+        spec("graphics.deselectLayers", "Deselect All Layers", SEL, None, "{}", has_graphic, |s, _| {
+            s.state.graphic_layers.clear();
+            Ok(Value::Null)
+        }),
+        query("graphics.copyLayers", "Copy Graphic Layers", r#"{"clip":id?,"layers":[n]? (default: the selected layers)}"#, copy_layers),
+        spec(
+            "graphics.pasteLayers",
+            "Paste Graphic Layers",
+            &[],
+            None,
+            r#"{"clip":id?,"layers":[layer instance] (from graphics.copyLayers),"offset":[dx,dy]?=[20,20]}"#,
+            has_graphic,
+            paste_layers,
+        ),
         spec(
             "graphics.resetAllParameters",
             "Reset All Parameters",

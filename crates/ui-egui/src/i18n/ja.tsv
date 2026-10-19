@@ -3656,3 +3656,31 @@
 	Default Transition	デフォルトのトランジション
 	At Clip Start	クリップの先頭
 	At Clip End	クリップの末尾
+	Insert Special Character	特殊文字を挿入
+	Insert Special Character…	特殊文字を挿入…
+	Unicode (hex):	Unicode (16 進):
+	Select All Layers	すべてのレイヤーを選択
+	Keep Only Text Layers Selected	テキストレイヤーのみ選択したままにする
+	Keep Only Shape Layers Selected	シェイプレイヤーのみ選択したままにする
+	Keep Only Rectangle Layers Selected	長方形レイヤーのみ選択したままにする
+	Deselect All Layers	すべてのレイヤーの選択を解除
+	Copy Graphic Layers	グラフィックレイヤーをコピー
+	Paste Graphic Layers	グラフィックレイヤーをペースト
+	Rotation X	X 回転
+	Rotation Y	Y 回転
+	Reveal By	表示単位
+	Step	ステップ
+	Variation	ばらつき
+	Seed	シード
+	Character	文字
+	Word	単語
+	Line	行
+	Grid…	グリッド…
+	Lines:	線の数:
+	Snap to the grid and guides	グリッドとガイドにスナップ
+	Patterns…	パターン…
+	Patterns	パターン
+	No patterns yet: select layers of a graphic and save them.	パターンはまだありません。グラフィックのレイヤーを選択して保存してください。
+	Pattern name	パターン名
+	Save Selected Layers	選択したレイヤーを保存
+	Add as New Source Graphic	新しいソースグラフィックとして追加

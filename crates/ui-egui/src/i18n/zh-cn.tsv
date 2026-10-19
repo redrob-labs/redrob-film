@@ -3649,3 +3649,31 @@
 	Default Transition	默认过渡
 	At Clip Start	在剪辑开头
 	At Clip End	在剪辑结尾
+	Insert Special Character	插入特殊字符
+	Insert Special Character…	插入特殊字符…
+	Unicode (hex):	Unicode（十六进制）：
+	Select All Layers	选择所有图层
+	Keep Only Text Layers Selected	仅保留选中的文本图层
+	Keep Only Shape Layers Selected	仅保留选中的形状图层
+	Keep Only Rectangle Layers Selected	仅保留选中的矩形图层
+	Deselect All Layers	取消选择所有图层
+	Copy Graphic Layers	复制图形图层
+	Paste Graphic Layers	粘贴图形图层
+	Rotation X	X 旋转
+	Rotation Y	Y 旋转
+	Reveal By	显示单位
+	Step	步长
+	Variation	变化
+	Seed	种子
+	Character	字符
+	Word	单词
+	Line	行
+	Grid…	网格…
+	Lines:	线条数：
+	Snap to the grid and guides	对齐网格和参考线
+	Patterns…	图案…
+	Patterns	图案
+	No patterns yet: select layers of a graphic and save them.	还没有图案：选择图形的图层并保存。
+	Pattern name	图案名称
+	Save Selected Layers	保存所选图层
+	Add as New Source Graphic	添加为新的源图形
