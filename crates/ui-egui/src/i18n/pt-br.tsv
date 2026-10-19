@@ -359,3 +359,18 @@
 	Redrob Account…	Conta Redrob…
 	Agent	Agente
 	Add Redrob Film to Redrob Code	Adicionar Redrob Film ao Redrob Code
+
+# Timeline (Kdenlive parity, p04)
+	Edit Mode	Modo de edição
+	Normal Mode	Modo normal
+	Overwrite Mode	Modo de substituição
+	Insert Mode	Modo de inserção
+	Use Timeline Zone for Insert	Usar a zona da linha do tempo ao inserir
+	Remove Space in All Tracks	Remover espaço em todas as faixas
+	Remove All Spaces After Playhead	Remover todos os espaços após o indicador de reprodução
+	Remove All Clips After Playhead	Remover todos os clipes após o indicador de reprodução
+	Insert Space…	Inserir espaço…
+	Identify Gaps	Identificar lacunas
+	Track Compositing	Composição de faixas
+	Disable Timeline Effects	Desativar os efeitos da linha do tempo
+	Clip Duration…	Duração do clipe…

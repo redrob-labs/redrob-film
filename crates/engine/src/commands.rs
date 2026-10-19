@@ -2447,15 +2447,21 @@ fn build() -> Vec<CommandSpec> {
             let x = s.edit_sequence("Rolling Edit", |q, ctx, _| Ok(edit::roll(q, l, r, d, ctx)?))?;
             Ok(json!({"delta": x.0}))
         }),
-        cmd!("timeline.slip", "Slip", [], None, r#"{"clip":id,"delta":ticks|"deltaFrames":i64}"#, has_seq, |s, p| {
-            let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.slip", "need `clip`"))?;
+        cmd!("timeline.slip", "Slip", [], None, r#"{"clip":id,"clips":[id]? (several clips slip together),"delta":ticks|"deltaFrames":i64}"#, has_seq, |s, p| {
+            let c = clip_p(p, "clip").or_else(|| p.get("clips").and_then(|v| v.get(0)).and_then(Value::as_u64).map(ClipId)).ok_or_else(|| bad("timeline.slip", "need `clip`"))?;
             let d = p
                 .get("delta")
                 .and_then(Value::as_i64)
                 .map(Tick)
                 .or_else(|| p.get("deltaFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)))
                 .unwrap_or_default();
-            let clips = with_links(s, &[c]);
+            let listed: Vec<ClipId> = match p.get("clips").and_then(Value::as_array) {
+                Some(a) => a.iter().filter_map(|v| v.as_u64().map(ClipId)).chain([c]).collect(),
+                None => vec![c],
+            };
+            let mut clips = with_links(s, &listed);
+            clips.sort_unstable();
+            clips.dedup();
             s.edit_sequence("Slip", |q, ctx, _| {
                 // clamp across all linked partners, then slip them by the common delta
                 let deltas: Vec<(ClipId, Tick)> = clips.iter().map(|c| (*c, d)).collect();
@@ -2476,7 +2482,7 @@ fn build() -> Vec<CommandSpec> {
             s.edit_sequence("Slide", |q, ctx, _| Ok(edit::slide_items(q, &clips, d, ctx)?))?;
             Ok(Value::Null)
         }),
-        cmd!("timeline.rateStretch", "Rate Stretch", [], None, r#"{"clip":id,"edge":"in|out","delta":ticks}"#, has_seq, |s, p| {
+        cmd!("timeline.rateStretch", "Rate Stretch", [], None, r#"{"clip":id,"clips":[id]? (several clips stretch together),"edge":"in|out","delta":ticks}"#, has_seq, |s, p| {
             let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.rateStretch", "need `clip`"))?;
             let edge = if str_p(p, "edge") == Some("in") { Edge::In } else { Edge::Out };
             let d = p
@@ -2485,7 +2491,13 @@ fn build() -> Vec<CommandSpec> {
                 .map(Tick)
                 .or_else(|| p.get("deltaFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)))
                 .unwrap_or_default();
-            let clips = with_links(s, &[c]);
+            let listed: Vec<ClipId> = match p.get("clips").and_then(Value::as_array) {
+                Some(a) => a.iter().filter_map(|v| v.as_u64().map(ClipId)).chain([c]).collect(),
+                None => vec![c],
+            };
+            let mut clips = with_links(s, &listed);
+            clips.sort_unstable();
+            clips.dedup();
             let sp = s.edit_sequence("Rate Stretch", |q, ctx, _| {
                 let mut sp = 1.0;
                 for c in &clips {

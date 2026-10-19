@@ -273,6 +273,15 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     // footer timecode
     let tc = redrob_film_time::format_time(ph, seq.settings.frame_rate, seq.settings.drop_frame, redrob_film_time::TimeDisplay::Timecode, 48000);
     ui.painter().text(pos2(rect.min.x + 10.0, rect.max.y - 13.0), Align2::LEFT_CENTER, tc, Tokens::mono(13.0), t.timecode);
+    // a grouped clip: its parameter changes can go to the whole group (Kdenlive)
+    if it.group.is_some() {
+        let fr = Rect::from_min_max(pos2(rect.min.x + 130.0, rect.max.y - 24.0), pos2(split - 4.0, rect.max.y - 2.0));
+        let mut fui = ui.new_child(egui::UiBuilder::new().max_rect(fr).layout(egui::Layout::left_to_right(egui::Align::Center)).id_salt("ec-group"));
+        let c = fui.checkbox(&mut app.ui.fx_group_edit, tl!("Apply to Group"));
+        app.auto.add("effectControls.applyToGroup", c.rect, "Apply to Group");
+        let c = fui.add_enabled(app.ui.fx_group_edit, egui::Checkbox::new(&mut app.ui.fx_group_equal_only, tl!("Only Equal Values")));
+        app.auto.add("effectControls.groupEqualOnly", c.rect, "Only Equal Values");
+    }
     run(app, ui.ctx(), actions);
 }
 
@@ -967,8 +976,19 @@ pub fn properties_panel(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
 fn run(app: &mut FilmcraftApp, ctx: &egui::Context, actions: Vec<(String, Value)>) {
     let (down, press) = ctx.input(|i| (i.pointer.any_down(), i.pointer.press_start_time()));
     let key = egui::Id::new("effect-controls-drag-step");
-    for (cmd, mut p) in actions {
-        if cmd == "effects.setParam" && down {
+    for (mut cmd, mut p) in actions {
+        // Apply to Group: a plain parameter change of a grouped clip goes to its whole group
+        if cmd == "effects.setParam"
+            && app.ui.fx_group_edit
+            && p.get("mask").is_none_or(Value::is_null)
+            && p.get("keyframe").is_none()
+            && let Some(c) = p.get("clip").and_then(Value::as_u64)
+            && app.session.active_sequence().and_then(|q| q.find_item(ClipId(c))).is_some_and(|(_, it)| it.group.is_some())
+        {
+            cmd = "effects.setParamGroup".into();
+            p["onlyEqual"] = json!(app.ui.fx_group_equal_only);
+        }
+        if (cmd == "effects.setParam" || cmd == "effects.setParamGroup") && down {
             let begun = ctx.data(|d| d.get_temp::<Option<f64>>(key)).flatten();
             p["merge"] = json!(true);
             p["begin"] = json!(begun != press);

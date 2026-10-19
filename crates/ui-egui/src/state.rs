@@ -205,6 +205,41 @@ pub struct TimelineView {
     /// (`volume`, `pan`, `mute`, `send.<i>.level`, `fx.<slot>.<param>`).
     #[serde(default)]
     pub track_lanes: std::collections::BTreeMap<u64, String>,
+    /// Heights of single tracks (track id → points) set by dragging one header's edge; tracks
+    /// without one use `video_track_h` / `audio_track_h`.
+    #[serde(default)]
+    pub track_heights: std::collections::BTreeMap<u64, f32>,
+    /// Waveform zoom: ×1, ×2, ×4, ×8 (0…3), on top of the display gain.
+    #[serde(default)]
+    pub waveform_zoom: u8,
+    /// Waveforms drawn at their recorded level instead of normalised.
+    #[serde(default)]
+    pub waveform_raw: bool,
+    /// Wrench menu display toggles: clip names, clip label colours (off: one neutral colour),
+    /// marker comments written next to the markers on the ruler.
+    #[serde(default)]
+    pub hide_clip_names: bool,
+    #[serde(default)]
+    pub hide_clip_labels: bool,
+    #[serde(default)]
+    pub show_marker_comments: bool,
+    /// Wheel / pinch zoom keeps the playhead in place instead of the time under the pointer.
+    #[serde(default)]
+    pub zoom_on_playhead: bool,
+    /// Times in the Timeline (playhead field, ruler, position readout) in frames, not timecode.
+    #[serde(default)]
+    pub time_in_frames: bool,
+}
+
+impl TimelineView {
+    /// The height of track `id` of `kind` (its own, else the default of its kind).
+    pub fn track_h(&self, id: u64, kind: redrob_film_project::TrackKind) -> f32 {
+        self.track_heights.get(&id).copied().unwrap_or(if kind == redrob_film_project::TrackKind::Video { self.video_track_h } else { self.audio_track_h })
+    }
+    /// The waveform zoom factor (1, 2, 4, 8).
+    pub fn waveform_zoom_factor(&self) -> f32 {
+        f32::from(1u8 << self.waveform_zoom.min(3))
+    }
 }
 
 impl TimelineView {
@@ -234,6 +269,14 @@ impl Default for TimelineView {
             fit_pending: true,
             fit_empty: None,
             track_lanes: Default::default(),
+            track_heights: Default::default(),
+            waveform_zoom: 0,
+            waveform_raw: false,
+            hide_clip_names: false,
+            hide_clip_labels: false,
+            show_marker_comments: false,
+            zoom_on_playhead: false,
+            time_in_frames: false,
         }
     }
 }
@@ -446,6 +489,13 @@ pub struct UiState {
     /// share of the panel). Dragging the divider sets it (#643).
     #[serde(default)]
     pub effect_controls_split: f32,
+    /// Effect Controls ▸ Apply to Group: a parameter changed on a grouped clip changes on every
+    /// clip of its group with the same effect; with `fx_group_equal_only`, only where the value
+    /// was the same.
+    #[serde(default)]
+    pub fx_group_edit: bool,
+    #[serde(default)]
+    pub fx_group_equal_only: bool,
     pub show_menu_bar: bool,
     /// The header bar (Home, Import, Edit, Export, workspaces). An app that embeds Redrob Film can hide it.
     #[serde(default = "shown")]
@@ -960,6 +1010,8 @@ impl Default for UiState {
             lumetri_grid_folder: None,
             collapsed_fx: vec![],
             effect_controls_split: 0.0,
+            fx_group_edit: false,
+            fx_group_equal_only: false,
             show_menu_bar: true,
             show_header: true,
             show_status_bar: true,
