@@ -176,6 +176,19 @@ pub fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, area:
     let mut actions: Vec<(String, Value)> = Vec::new();
     for (tr, row) in seq.caption_tracks.iter().zip(rows(area, seq.caption_tracks.len())) {
         let lane = Rect::from_min_max(pos2(layout.content.min.x, row.min.y), pos2(layout.content.max.x, row.max.y));
+        // a double-click on the empty lane adds a caption there (Kdenlive); read from the pointer so
+        // the lane takes no clicks or drags from the timeline beneath it
+        let dbl = ctx.input(|i| i.pointer.button_double_clicked(egui::PointerButton::Primary).then(|| i.pointer.interact_pos()).flatten());
+        if let Some(p) = dbl
+            && !tr.locked
+            && lane.contains(p)
+            && ui.rect_contains_pointer(lane)
+        {
+            let t = rate.snap_nearest(layout.tick_at(p.x).max(redrob_film_time::Tick::ZERO));
+            if tr.caption_at(t).is_none() {
+                actions.push(("captions.add".into(), json!({"track": tr.id.0, "time": t.0})));
+            }
+        }
         for c in &tr.captions {
             let r = block_rect(c, row, layout, drag).intersect(lane);
             if r.width() <= 0.0 {

@@ -722,6 +722,13 @@ pub struct UiState {
     /// comparison. See `panels::effect_stack`.
     #[serde(default)]
     pub fx: crate::panels::effect_stack::FxStackUi,
+    /// Markers panel view, marker dialogs and ruler marker drags. See `panels::marker_ui`.
+    #[serde(default)]
+    pub markers: crate::panels::marker_ui::MarkerUi,
+    /// Kdenlive-parity extras of the timeline, subtitles, speech, keyframes and the command bar.
+    /// See `panels::kparity`.
+    #[serde(default)]
+    pub kp: crate::panels::kparity::KpUi,
 }
 
 /// An open Edit / Clip / File menu dialog: the engine command it runs on OK and the parameters
@@ -1154,6 +1161,8 @@ impl Default for UiState {
             project_panel: Default::default(),
             media_browser: Default::default(),
             fx: Default::default(),
+            markers: Default::default(),
+            kp: Default::default(),
         }
     }
 }

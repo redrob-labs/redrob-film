@@ -1253,6 +1253,47 @@ pub struct ProjectSettings {
     /// Default folder of audio captures (voice-over recordings; None: the project's root).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub capture_bin: Option<BinId>,
+    /// Project Settings ▸ Markers: the project's own marker categories (a name for each marker
+    /// colour used as a category, in category order 1, 2, …). Empty = the default set
+    /// ([`default_marker_categories`]), until they are first edited.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub marker_categories: Vec<MarkerCategory>,
+    /// The category new markers get when none is chosen (Markers panel ▸ default category).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_marker_category: Option<Label>,
+}
+
+/// A marker category: a marker colour and the name the project gives it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MarkerCategory {
+    pub color: Label,
+    pub name: String,
+}
+
+/// The categories a new project starts with: the marker colours in the Markers panel's order,
+/// named after their colour.
+pub fn default_marker_categories() -> Vec<MarkerCategory> {
+    use Label::*;
+    [Green, Rose, Purple, Mango, Yellow, Blue, Teal, Violet, Forest, Brown].iter().map(|l| MarkerCategory { color: *l, name: l.name().to_string() }).collect()
+}
+
+impl ProjectSettings {
+    /// The project's marker categories, in order (category 1 first).
+    pub fn marker_categories(&self) -> Vec<MarkerCategory> {
+        if self.marker_categories.is_empty() { default_marker_categories() } else { self.marker_categories.clone() }
+    }
+    /// The colour of category `n` (1-based), if the project has that many.
+    pub fn marker_category(&self, n: usize) -> Option<Label> {
+        n.checked_sub(1).and_then(|i| self.marker_categories().get(i).map(|c| c.color))
+    }
+    /// The name of the category a marker colour stands for (the colour's name when no category uses it).
+    pub fn marker_category_name(&self, color: Label) -> String {
+        self.marker_categories().into_iter().find(|c| c.color == color).map(|c| c.name).unwrap_or_else(|| color.name().to_string())
+    }
+    /// The colour new markers get: the default category, else the first category.
+    pub fn default_marker_color(&self) -> Label {
+        self.default_marker_category.or_else(|| self.marker_categories().first().map(|c| c.color)).unwrap_or(Label::Green)
+    }
 }
 
 fn title_safe_default() -> (f64, f64) {
@@ -1324,6 +1365,8 @@ impl Default for ProjectSettings {
             scratch: ScratchDisks::default(),
             sequence_bin: None,
             capture_bin: None,
+            marker_categories: Vec::new(),
+            default_marker_category: None,
         }
     }
 }

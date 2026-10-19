@@ -1394,16 +1394,22 @@ impl FilmcraftApp {
                 self.session.execute("graphics.newFromFile", json!({"path": path})).map_err(|e| e.to_string())
             }
             "captions.import" => {
-                let paths = self.hooks.pick_files.as_mut().map(|f| f(&["srt", "vtt", "scc", "mcc", "stl", "ttml", "dfxp", "xml"])).unwrap_or_default();
+                let exts = ["srt", "vtt", "scc", "mcc", "stl", "ttml", "dfxp", "xml", "ass", "ssa", "sbv"];
+                let paths = self.hooks.pick_files.as_mut().map(|f| f(&exts)).unwrap_or_default();
                 let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
-                self.session.execute("captions.import", json!({"path": path})).map_err(|e| e.to_string())
+                // a binary EBU STL file has no text encoding; text files ask for one (Kdenlive)
+                if path.to_ascii_lowercase().ends_with(".stl") {
+                    return self.session.execute("captions.import", json!({"path": path})).map_err(|e| e.to_string());
+                }
+                self.ui.kp.caption_import = Some((path, "auto".into()));
+                Ok(Value::Null)
             }
             "captions.export" => {
                 let name = self.session.state.active_sequence.and_then(|s| self.session.project.item(s)).map(|i| i.name.clone()).unwrap_or_default();
                 let suggested = format!("{}.srt", name.replace(' ', "_"));
                 let Some(path) =
                     self.hooks.pick_save_as.as_mut().and_then(|f| {
-                        f("Captions (SRT, WebVTT, SCC, MCC, EBU STL, TTML, DFXP)", &["srt", "vtt", "scc", "mcc", "stl", "ttml", "dfxp"], &suggested)
+                        f("Captions (SRT, WebVTT, SCC, MCC, EBU STL, TTML, DFXP, ASS, SBV)", &["srt", "vtt", "scc", "mcc", "stl", "ttml", "dfxp", "ass", "sbv"], &suggested)
                     })
                 else {
                     return Ok(Value::Null);
@@ -1532,6 +1538,10 @@ impl FilmcraftApp {
             && let Err(e) = panels::voiceover::record_key(self, ctx)
         {
             self.ui.status = e;
+        }
+        // the focused Markers panel's own keys (F2 edit, Delete, Cmd+A, Up / Down)
+        if panels::marker_ui::panel_keys(self, ctx) || panels::kparity::effect_controls_keys(self, ctx) {
+            return;
         }
         // Panel shortcuts of the focused panel override application shortcuts on the same chord.
         // egui ignores extra Shift and Alt when matching, so the most specific chords go first

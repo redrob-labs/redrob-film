@@ -5131,3 +5131,96 @@
 	VR360 Wrap	VR360 Envolver
 	Blur Start	Inicio del desenfoque
 	Blur End	Fin del desenfoque
+# Kdenlive parity p05: markers, subtitles, speech, keyframes, clip menu, shortcuts
+	Add/Remove Timeline Marker	Añadir/quitar marcador de la línea de tiempo
+	Timeline Markers Locked	Marcadores de la línea de tiempo bloqueados
+	Export Markers…	Exportar marcadores…
+	Import Markers…	Importar marcadores…
+	Duplicate Clip	Duplicar clip
+	Edit Timeline Marker…	Editar marcador de la línea de tiempo…
+	Marker Categories…	Categorías de marcadores…
+	Find Action…	Buscar acción…
+	Add Category	Añadir categoría
+	Add Clip	Añadir clip
+	Add Markers	Añadir marcadores
+	Add Markers at Interval…	Añadir marcadores a intervalos…
+	Add Subtitle	Añadir subtítulo
+	Add marker at selected text	Añadir marcador en el texto seleccionado
+	Adjust Timeline Zone to Selection	Ajustar la zona de la línea de tiempo a la selección
+	Advanced SubStation Alpha (ASS)	Advanced SubStation Alpha (ASS)
+	All Clips	Todos los clips
+	Ascending / descending	Ascendente / descendente
+	At least 3 chapters are needed.	Se necesitan al menos 3 capítulos.
+	Categories of this project (Project Settings ▸ Markers)	Categorías de este proyecto (Ajustes del proyecto ▸ Marcadores)
+	Color Clip	Clip de color
+	Comment:	Comentario:
+	Configure Categories…	Configurar categorías…
+	Copy to Clipboard	Copiar al portapapeles
+	Create Marker from Zone	Crear marcador desde la zona
+	Create Marker from Zone Quickly	Crear marcador desde la zona rápidamente
+	Default:	Predeterminada:
+	Delete Category	Eliminar categoría
+	Delete Markers Too	Eliminar también los marcadores
+	Delete Selected Markers	Eliminar los marcadores seleccionados
+	Delete category	Eliminar categoría
+	Each chapter must be at least 10 seconds long.	Cada capítulo debe durar al menos 10 segundos.
+	Edit Marker	Editar marcador
+	Encoding:	Codificación:
+	Export markers as chapters description	Exportar marcadores como descripción de capítulos
+	Exported:	Exportado:
+	Find Action	Buscar acción
+	Format:	Formato:
+	Go To Marker…	Ir al marcador…
+	Import Subtitle File	Importar archivo de subtítulos
+	Insert selected text at the playhead	Insertar el texto seleccionado en el cabezal
+	Interval:	Intervalo:
+	JSON	JSON
+	Kdenlive Compatible	Compatible con Kdenlive
+	Larger caption text	Texto de subtítulo más grande
+	Larger transcript text	Texto de transcripción más grande
+	Lock timeline markers	Bloquear los marcadores de la línea de tiempo
+	Marker Categories	Categorías de marcadores
+	Marker Type:	Tipo de marcador:
+	Markers copied to the clipboard	Marcadores copiados al portapapeles
+	Markers start at the playhead.	Los marcadores empiezan en el cabezal.
+	New sequence from selected text	Nueva secuencia del texto seleccionado
+	No marker matches the search or the category filter.	Ningún marcador coincide con la búsqueda o el filtro de categorías.
+	No matching action	Ninguna acción coincide
+	Number of markers:	Número de marcadores:
+	Open a sequence first	Abre primero una secuencia
+	Point at the Timeline first	Señala primero la línea de tiempo
+	Range Marker	Marcador de rango
+	Reassign and Delete	Reasignar y eliminar
+	Reassign them to:	Reasignarlos a:
+	Restore Audio	Restaurar audio
+	Restore Video	Restaurar vídeo
+	Save As:	Guardar como:
+	Save…	Guardar…
+	Search for an action	Buscar una acción
+	Search markers	Buscar marcadores
+	Select a clip first	Selecciona primero un clip
+	Set Zone In	Definir entrada de zona
+	Set Zone Out	Definir salida de zona
+	Show the markers of every clip in the project	Mostrar los marcadores de todos los clips del proyecto
+	Smaller caption text	Texto de subtítulo más pequeño
+	Smaller transcript text	Texto de transcripción más pequeño
+	Sort by Category	Ordenar por categoría
+	Sort by Comment	Ordenar por comentario
+	Sort by Time	Ordenar por tiempo
+	Split mode: after the first line	Modo de división: tras la primera línea
+	Split mode: duplicate the text	Modo de división: duplicar el texto
+	SubViewer (SBV)	SubViewer (SBV)
+	Text (YouTube)	Texto (YouTube)
+	The clip has no animated parameter: turn on animation in Effect Controls first	El clip no tiene parámetros animados: activa primero la animación en Controles de efectos
+	The first chapter must start at 0:00.	El primer capítulo debe empezar en 0:00.
+	The interval is not a valid timecode	El intervalo no es un código de tiempo válido
+	The offset is not a valid timecode	El desplazamiento no es un código de tiempo válido
+	The position is not a valid timecode	La posición no es un código de tiempo válido
+	There is no marker at the playhead	No hay ningún marcador en el cabezal
+	Timeline markers are locked	Los marcadores de la línea de tiempo están bloqueados
+	Title Clip	Clip de título
+	Translate to English	Traducir al inglés
+	Turn on animation for a parameter in Effect Controls first	Activa primero la animación de un parámetro en Controles de efectos
+	{n} characters · longest line {m}	{n} caracteres · línea más larga {m}
+	{n} markers use this category.	{n} marcadores usan esta categoría.
+	✓ Timeline Markers Locked	✓ Marcadores de la línea de tiempo bloqueados

@@ -55,6 +55,15 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("view.zoomIn", "Zoom In", ["View"], Some("=")),
     uic!("view.zoomOut", "Zoom Out", ["View"], Some("-")),
     uic!("view.zoomToSequence", "Zoom to Sequence", ["View"], Some("\\")),
+    // Kdenlive parity (panels::marker_ui, panels::kparity)
+    uic!("markers.editDialog", "Edit Timeline Marker…", ["Markers"], None),
+    uic!("markers.categoriesDialog", "Marker Categories…", ["Markers"], None),
+    uic!("playhead.alignToMouse", "Align Playhead to Mouse Position", [], None),
+    uic!("window.commandBar", "Find Action…", ["Help"], Some("Cmd+Shift+P")),
+    uic!("window.focusTimecode", "Focus Timecode", [], None),
+    uic!("keyframes.toggle", "Add/Remove Keyframe", [], None),
+    uic!("keyframes.next", "Go to Next Keyframe", [], None),
+    uic!("keyframes.prev", "Go to Previous Keyframe", [], None),
     uic!("sequence.addEffectDialog", "Add Effect…", ["Sequence"], None),
     uic!("graphics.insertSpecialCharacter", "Insert Special Character…", ["Graphics and Titles"], None),
     uic!("graphics.patterns", "Patterns…", ["Graphics and Titles"], None),
@@ -310,6 +319,12 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
         return r;
     }
     if let Some(r) = crate::panels::effect_stack::route(app, ctx, id, &params) {
+        if let Err(e) = &r {
+            app.ui.status = e.clone();
+        }
+        return r;
+    }
+    if let Some(r) = crate::panels::marker_ui::route(app, id, &params).or_else(|| crate::panels::kparity::route(app, ctx, id, &params)) {
         if let Err(e) = &r {
             app.ui.status = e.clone();
         }
@@ -830,6 +845,7 @@ pub fn menu_items(app: &FilmcraftApp) -> Vec<MenuItem> {
             // Tool ▸ <tool>: the current tool is checked
             id if id.starts_with("tool.") => it.checked = Some(Tool::from_name(&id["tool.".len()..]) == Some(app.ui.tool)),
             "sequence.autoPreview" => it.checked = Some(app.session.active_sequence().is_some_and(|q| q.auto_preview)),
+            "markers.lock" => it.checked = crate::panels::marker_ui::checked(app, &it.id),
             _ => {}
         }
         if it.id.starts_with("view.") {
