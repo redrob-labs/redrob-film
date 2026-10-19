@@ -1,0 +1,59 @@
+# Redrob Film NEW build (redrob-film-fix target/release, 2026-10-19 07:59) -- re-measure of the priority-1 tasks
+# with the same scripts and method as results-film.toml (0.3.0). Same host (32 cores, llvmpipe, CPU compositor,
+# :0 1920x1080 xfwm4, PulseAudio null sink "dcv"), same window (1600x980, client at +5,+56), fresh home
+# film-home-new2, control port 9878, whole GUI session under flock film-gap/display.lock.
+# Project: results/film-new/projects/gap_project.rfilm (copy of the 0.3.0 one): sequence 8 = edit_project content
+# (1080p25, framecode_tone clip x10), 51 = pb02 (h264 1080p30 on V1/A1), 61 = overlap (A1 1 kHz 0-30 s, A2 500 Hz 10-40 s).
+# Timeline fit: 17.149 px/s = 0.686 px/frame, frame 0 at screen x 743.4 (identical to 0.3.0).
+# Scripts: tools-new/{fm.sh,film_scrub_run.sh,film_av_run.sh,perf_poll.py,film_ctl.py} = tools/ copies with only
+# binary, home, pid file and port changed; analysis by the unchanged tools/film_capscan.py (needle box
+# 744,724,730,60, monitor 584,192,562,316), scrub_lat.py, film_settle.py, film_pb01_an.sh, distinct.py, audwin.py,
+# gaps.py, bands.sh, freq.py, sc04_an.py. Evidence paths are relative to /home/ubuntu/workplace/film-gap/ (not in git).
+
+[SC-01]
+verdict = "slow"
+value = "needle 63 ms p50 / 82 ms p95 (n=119, 3 runs of 20 x 30 px / 16 ms + back; 0.3.0 68 / 104; Kdenlive 53 / 66); task cadence 20 px / 33 ms: 70 / 94 ms (0.3.0 74 / 114; Kdenlive 52 / 59); monitor exact frame 62 / 146 ms p50/p95 for 48 of 120 targets, warm runs 2-3 61-63 / 67-70 (0.3.0 61 / 80 for 43; Kdenlive 121 / 151 for 28); settle after stop 52-78 ms warm, 424 ms on the first (cold) drag (0.3.0 52-83 / 436; Kdenlive 144 p50 / 170 max); control port: playheadFrame == monitor.frame in 60 of 87 polls during the drag (0.3.0 49 of 81), monitor.frame reaches playheadFrame 69-98 ms after the stop warm, 465 ms cold (0.3.0 74-175)"
+evidence = "results/film-new/SC-01/all.txt, run1..run3/{cap.mkv,drag.log,scan.txt,latency.txt,perf.log}, run4_task/"
+note = "p95 now passes (82 <= 100 ms) but p50 63 ms is still past the 50 ms limit and 10 ms behind Kdenlive. Monitor follows the drag at 28-49 distinct frames/s (0.3.0 21-48, Kdenlive 13-14). The first drag after opening still waits ~0.42 s for the first exact picture. Needle lands on pointer x (1417 = 1417) or snaps to the edit at frame 100 (812 vs 817), as before."
+
+[SC-02]
+verdict = "works"
+value = "monitor 40-47 distinct frames/s during a 16 ms-step drag at the needle in the empty V2 lane (0.3.0 40-45; Kdenlive 13-16); final picture = needle frame (981 = 981, 100 = 100) 40-76 ms after the last move, before release (0.3.0 54-79; Kdenlive 147-150); after release + 2 s monitor 100 = playhead 100"
+evidence = "results/film-new/SC-02/run1..run3/{cap.mkv,drag.log,scan.txt,latency.txt,perf.log}, all.txt, after_release.png"
+note = "Press at x 812 hits 'playhead' (ui.timeline.hit) and drags it; needle 64 / 79 ms p50/p95 (0.3.0 67 / 86), monitor exact frame 59 / 70 ms p50/p95 for 54 of 120 targets (0.3.0 64 / 75 for 54)."
+
+[PB-01]
+verdict = "slow"
+value = "first new monitor frame 867 / 890 / 865 ms after Space (runs 1-3, project re-opened, output sink suspended; 0.3.0 894 / 118 / 115); 191 ms after re-open with the sink kept running, 96 / 85 ms warm (runs 4-6; 0.3.0 194 / 109 / 115); 373 ms on the first Space after a fresh launch (0.3.0 244); first audio window > -40 dBFS 76-82 ms after Space when suspended, 11-80 ms otherwise (Kdenlive 60-87 ms picture / 59-88 ms sound)"
+evidence = "results/film-new/PB-01/run1..run6, run7_cold/{cap.mkv,aud.mka,keys.log,scan.txt,perf.log,an.txt}"
+note = "Fails the 500 ms limit whenever the play starts on a suspended sink (3 of 3 runs, 865-890 ms), and the picture never catches up: it stops at frame 155 instead of ~175 and sound ends 718 ms before the stop key (run 1); after a fresh launch it stops at 168 (7 frames short), sound ends 201 ms early. With the sink running it passes (85-191 ms, stop frame 173-175, sound end -43..+4 ms). Kdenlive keeps a stream open at idle, so its sink never suspends. First frame shown is 51 (no skip)."
+
+[PB-02]
+verdict = "slow"
+value = "597 distinct frames in 20.0 s (29.82 fps), app counters shown 614 / dropped 0 (0.0%), max hold 167 ms (the first picture after Space; every later hold <= 3 captures = 50 ms); audio 0 underruns, minLead 169 ms (0.3.0 317 distinct, 15.8 fps, dropped 263 = 44.7%, max hold 600 ms; Kdenlive 600 distinct, 29.98 fps, 0 dropped, max hold 50 ms)"
+evidence = "results/film-new/PB-02/run1/{cap.mkv,aud.mka,keys.log,distinct.txt,holds.txt,perf_after.txt}"
+note = "Frame-rate part now passes (597 >= 590, 0 dropped). The only failed condition is 'no frame longer than 100 ms': the parked frame is held 167 ms (10 captures) after Space before playback starts; hold histogram 1 cap x82, 2 x432, 3 x81, 10 x1. Same sequence/settings as 0.3.0 (1/2 playback resolution, llvmpipe, CPU compositor)."
+
+[AU-01]
+verdict = "works"
+value = "-33.05 / -33.05 dBFS RMS L/R (source -33.05), 1000.02 Hz, 0 clicks; 9.35 s of 10 ms windows within 3 dB in a 9.35 s loud span (keys 9.83 s apart; 0.3.0 -33.06, 998.8 Hz, 9.52 of 9.54 s; Kdenlive -33.05 for 9.70 of 9.70 s, 1000.0 Hz); 0 digital-silence dropouts >= 1 ms (0.3.0 one 12.4 ms)"
+evidence = "results/film-new/AU-01/run1/{aud.mka,win10.txt,stats.txt,keys.log}"
+note = "Default sink dcv, default audio settings, tone1k_48k_30s.wav on A1 of sequence overlap, played 0-9.8 s (silent pacat stream keeping dcv running). Level exact; the 0.3.0 dropout is gone. The recorded loud span ends 403 ms before the stop key (0.3.0 202 ms) on the monitor-capture timestamps, which read early for Film's ALSA->pulse stream (see results-film.toml PB-01)."
+
+[AU-02]
+verdict = "works"
+value = "0 silences >= 10 ms (and 0 >= 1 ms) in 30 s of playback (5-35 s), in 2 runs (sink kept running / sink suspended before play); app counters 0 underruns / 0 missing frames, minLead 171 ms; 12-28 s: 1000 Hz band -33.07 dBFS, 500 Hz band -33.06 dBFS (each = source) (0.3.0 2 silences >= 10 ms: 10.1 ms + 12.5 ms; Kdenlive 0 silences, -33.07 / -33.07)"
+evidence = "results/film-new/AU-02/run1/{aud.mka,win10.txt,bands.txt,gaps.txt}, run2_nopacat/"
+note = "A1 1 kHz 0-30 s, A2 500 Hz 10-40 s, V1 video-only h264 0-40 s. The digital-zero holes of 0.3.0 are gone in both runs; mix levels exact."
+
+[SC-04]
+verdict = "works"
+value = "scrub audio in 58/59, 48/59, 48/59 (98 / 81 / 81%) 50 ms windows while dragging 5 px / 33 ms (0.3.0 98 / 86 / 86%; Kdenlive 100%); first sound with the press, 21-33 ms before the first move; sound stops 20 ms before the last move in run 1 and 508-509 ms BEFORE it in runs 2-3 (0.3.0 +35 / -358..-367 ms; Kdenlive keeps playing 322-327 ms after the stop)"
+evidence = "results/film-new/SC-04/run1..run3/{aud.mka,drag.log,win50.txt,an.txt}"
+note = "Default settings (audio.scrubAudio = true), silent pacat stream keeping dcv running. Level -30.4 dBFS median. Holes >= 10 ms inside the drag: 16 / 58 / 16 ms (run 1), 48 / 14 ms (run 2), 45 / 22 ms (run 3) (gaps.py). Runs 2-3 cut out from 2.43 s into the drag (needle x 1199 = 26.6 s, A2 still under it) to the end -- a slightly earlier and longer cut-out than 0.3.0 (~0.4 s)."
+
+[IDLE-CPU]
+verdict = "works"
+value = "0.0-18.0 % of one core (8 top samples: 0, 18, 0, 17, 0, 18, 0, 17; mean ~9 %) with the pb02 1080p30 sequence loaded and stopped, cursor over the window (0.3.0 638-661 %, ui fps 78-83); RSS 4.0 GB, 230 threads (0.3.0 1.71 GB after a sequence + 4 s playback)"
+evidence = "results/film-new/IDLE/{idle_pb02.txt,pb02_stopped.png}"
+note = "Continuous idle repaint is gone (system 99.2-99.9 % idle during the sample). Kdenlive idle CPU was not measured in the Kdenlive run. RSS after this session (all tasks played) is 2.3x the 0.3.0 figure, not measured under the same history."
