@@ -1,0 +1,2893 @@
+# Kdenlive 26.08 parity inventory, area 4: project & bin, import, proxy/transcode, render,
+# backup/autosave, preferences, workspaces, shortcuts, menus.
+# Source: docs.kdenlive.org manual only (clean room). Evidence = first non-test grep hit in OUR repo.
+# film: full = same user outcome exists; partial = exists with a narrower/different scope; none = absent.
+
+[[row]]
+id = "K4-001"
+group = "project-settings"
+feature = "Project Settings dialog (File > Project Settings, 6 tabs)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings.html"
+film = "partial"
+evidence = "crates/engine/src/project_tools.rs:145"
+gap = "settings split across Project Settings (General, Scratch Disks) and Sequence Settings; no Proxy/Markers/Metadata/Files/Cache tabs"
+
+[[row]]
+id = "K4-002"
+group = "project-settings"
+feature = "Project folder: Default / parent of project file / custom"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/general_settings.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:1173"
+gap = "per-kind scratch folders (captures, previews, auto-save) instead of one project cache folder with 3 modes"
+
+[[row]]
+id = "K4-003"
+group = "project-settings"
+feature = "Project profile list (frame size, fps, aspect, color space, scan)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/general_settings.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:838"
+gap = "profile lives per sequence; scanning/fields shown but greyed out"
+
+[[row]]
+id = "K4-004"
+group = "project-settings"
+feature = "Filter profile list by fps"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/general_settings.html"
+film = "none"
+evidence = ""
+gap = "no fps filter over sequence presets"
+
+[[row]]
+id = "K4-005"
+group = "project-settings"
+feature = "Filter profile list by scanning (interlaced/progressive)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/general_settings.html"
+film = "none"
+evidence = ""
+gap = "no interlaced sequences at all"
+
+[[row]]
+id = "K4-006"
+group = "project-settings"
+feature = "Create / edit / save custom project profiles"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu/manage_project_profiles.html"
+film = "none"
+evidence = ""
+gap = "no Save Sequence Preset; settings are typed per sequence each time"
+
+[[row]]
+id = "K4-007"
+group = "project-settings"
+feature = "Initial number of video and audio tracks"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/general_settings.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/sequence_settings.rs:149"
+gap = ""
+
+[[row]]
+id = "K4-008"
+group = "project-settings"
+feature = "Audio channels per track: 2 / 4 / 6"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/general_settings.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:847"
+gap = "Mono / Stereo / 5.1 / Adaptive master; no 4-channel track layout"
+
+[[row]]
+id = "K4-009"
+group = "project-settings"
+feature = "Timeline thumbnails on/off in project settings"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/general_settings.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1292"
+gap = "toggle is in the timeline settings menu, not the project dialog"
+
+[[row]]
+id = "K4-010"
+group = "project-settings"
+feature = "Timeline preview (preview render) profile choice"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/general_settings.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:849"
+gap = "preview codec fixed to ProRes 422; field shown greyed"
+
+[[row]]
+id = "K4-011"
+group = "project-settings"
+feature = "Edit / create timeline preview profiles and show their parameters"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_project_defaults.html"
+film = "none"
+evidence = ""
+gap = "no preview profile editor"
+
+[[row]]
+id = "K4-012"
+group = "project-settings"
+feature = "Change profile of an open project (rescale)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/file_menu.html"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:279"
+gap = ""
+
+[[row]]
+id = "K4-013"
+group = "project-settings"
+feature = "Edit layout auto-switches horizontal/vertical with the profile"
+manual = "https://docs.kdenlive.org/en/user_interface/workspace_layouts.html"
+film = "none"
+evidence = ""
+gap = "workspace does not react to a vertical frame size"
+
+[[row]]
+id = "K4-014"
+group = "project-settings"
+feature = "Safe areas adapt to the profile"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:1147"
+gap = "title/action safe stored as fractions; no vertical-specific layout"
+
+[[row]]
+id = "K4-015"
+group = "project-settings"
+feature = "Proxy tab: enable proxy clips for this project"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/proxy_settings.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:986"
+gap = "global preference only, not per project"
+
+[[row]]
+id = "K4-016"
+group = "project-settings"
+feature = "Proxy tab: generate for videos wider than N px"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/proxy_settings.html"
+film = "none"
+evidence = ""
+gap = "no size-threshold auto proxy; only ingest-time proxies for every clip"
+
+[[row]]
+id = "K4-017"
+group = "project-settings"
+feature = "Proxy tab: proxy frame width"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/proxy_settings.html"
+film = "partial"
+evidence = "crates/engine/src/proxies.rs:54"
+gap = "fixed 1/2 or 1/4 scale presets, no width field"
+
+[[row]]
+id = "K4-018"
+group = "project-settings"
+feature = "Proxy tab: encoding profile choice"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/proxy_settings.html"
+film = "full"
+evidence = "crates/engine/src/proxies.rs:540"
+gap = ""
+
+[[row]]
+id = "K4-019"
+group = "project-settings"
+feature = "Proxy profiles: add / edit / remove"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/proxy_settings.html"
+film = "none"
+evidence = ""
+gap = "built-in proxy presets only"
+
+[[row]]
+id = "K4-020"
+group = "project-settings"
+feature = "Compare proxy profile efficiency (60 s test)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/proxy_settings.html"
+film = "none"
+evidence = ""
+gap = "no benchmark of proxy presets"
+
+[[row]]
+id = "K4-021"
+group = "project-settings"
+feature = "Proxy tab: generate for images wider than N px"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/proxy_settings.html"
+film = "none"
+evidence = ""
+gap = "no image proxies"
+
+[[row]]
+id = "K4-022"
+group = "project-settings"
+feature = "External (camera-made) proxy clips"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/useful_info/using_camcorder_proxy_clips.html"
+film = "partial"
+evidence = "crates/engine/src/proxies.rs:287"
+gap = "manual Attach Proxies only; no GoPro/Sony/DJI auto-pairing"
+
+[[row]]
+id = "K4-023"
+group = "project-settings"
+feature = "Separate proxy profile for clips with alpha"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film = "none"
+evidence = ""
+gap = "proxy presets do not keep alpha"
+
+[[row]]
+id = "K4-024"
+group = "project-settings"
+feature = "Allowed encoder parameter whitelist for proxy profiles"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film = "none"
+evidence = ""
+gap = "not applicable: own encoders, no free-form parameters"
+
+[[row]]
+id = "K4-025"
+group = "project-settings"
+feature = "Markers tab: marker categories (name + color)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/guides_settings.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:327"
+gap = "16 fixed label slots renamable/recolorable; no add/delete category"
+
+[[row]]
+id = "K4-026"
+group = "project-settings"
+feature = "Metadata tab: project metadata (title, author, copyright...)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/tab_meta_data.html"
+film = "partial"
+evidence = "crates/export/src/settings.rs:337"
+gap = "metadata set in Export, not stored as project metadata"
+
+[[row]]
+id = "K4-027"
+group = "project-settings"
+feature = "Metadata tab: add custom metadata field"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/tab_meta_data.html"
+film = "none"
+evidence = ""
+gap = "fixed five fields (title, creator, copyright, description, comment)"
+
+[[row]]
+id = "K4-028"
+group = "project-settings"
+feature = "Project Files tab: counts of used / unused clips and sizes"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/tab_project_files.html"
+film = "partial"
+evidence = "crates/engine/src/project_manager.rs:10"
+gap = "Project Manager dry run reports sizes; no stats tab"
+
+[[row]]
+id = "K4-029"
+group = "project-settings"
+feature = "Project Files tab: delete unused files from disk"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/tab_project_files.html"
+film = "none"
+evidence = ""
+gap = "no on-disk deletion of unused sources (deliberate safety)"
+
+[[row]]
+id = "K4-030"
+group = "project-settings"
+feature = "Cache Data tab: per-category cache size with clear buttons"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/tab_cache_data.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:1571"
+gap = "media cache clean and Delete Render Files exist; no per-category breakdown"
+
+[[row]]
+id = "K4-031"
+group = "project-settings"
+feature = "Cache Data tab: open cache folder in file manager"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/tab_cache_data.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:1032"
+gap = "location shown in prefs; no reveal link"
+
+[[row]]
+id = "K4-032"
+group = "bin"
+feature = "Project Bin panel"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin.html"
+film = "full"
+evidence = "crates/ui-egui/src/dock.rs:79"
+gap = ""
+
+[[row]]
+id = "K4-033"
+group = "bin"
+feature = "Add Clip or Folder (import dialog)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clips.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1017"
+gap = ""
+
+[[row]]
+id = "K4-034"
+group = "bin"
+feature = "Import a folder recreating sub-folders as bin folders"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
+film = "full"
+evidence = "crates/engine/src/media_browser.rs:15"
+gap = ""
+
+[[row]]
+id = "K4-035"
+group = "bin"
+feature = "Ignore sub-folder structure on import (option)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
+film = "none"
+evidence = ""
+gap = "folder import always mirrors the tree"
+
+[[row]]
+id = "K4-036"
+group = "bin"
+feature = "Create folder (bin)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:941"
+gap = ""
+
+[[row]]
+id = "K4-037"
+group = "bin"
+feature = "Nested folders"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/engine/src/project_panel.rs:1195"
+gap = ""
+
+[[row]]
+id = "K4-038"
+group = "bin"
+feature = "Rename folder (F2 / double-click)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/engine/src/project_panel.rs:1162"
+gap = ""
+
+[[row]]
+id = "K4-039"
+group = "bin"
+feature = "Delete folder"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2799"
+gap = ""
+
+[[row]]
+id = "K4-040"
+group = "bin"
+feature = "Open folder in new bin (dockable, multiple bins)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_multiple_bins.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/project_views.rs:297"
+gap = "open bin in new tab; bins cannot float to another screen"
+
+[[row]]
+id = "K4-041"
+group = "bin"
+feature = "Go up one level in a bin (Alt+Up)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/project.rs:1"
+gap = "breadcrumb navigation instead of Alt+Up"
+
+[[row]]
+id = "K4-042"
+group = "bin"
+feature = "Default target folder for new sequences"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "none"
+evidence = ""
+gap = "new sequences go to the current bin"
+
+[[row]]
+id = "K4-043"
+group = "bin"
+feature = "Default target folder for audio captures"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "none"
+evidence = ""
+gap = "voice-over recordings go to the current bin"
+
+[[row]]
+id = "K4-044"
+group = "bin"
+feature = "Tree view / Icon view"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/engine/src/project_panel.rs:48"
+gap = "also Freeform view"
+
+[[row]]
+id = "K4-045"
+group = "bin"
+feature = "Scale (zoom) bin view slider"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/engine/src/project_panel.rs:113"
+gap = ""
+
+[[row]]
+id = "K4-046"
+group = "bin"
+feature = "Extra columns: Date, Description, Rating"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "partial"
+evidence = "crates/engine/src/project_panel.rs:248"
+gap = "Date and Description columns; no Rating"
+
+[[row]]
+id = "K4-047"
+group = "bin"
+feature = "Video preview (scrub) in thumbnails"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/engine/src/project_panel.rs:175"
+gap = ""
+
+[[row]]
+id = "K4-048"
+group = "bin"
+feature = "Bin clip effects and Disable Bin Effects"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "none"
+evidence = ""
+gap = "effects only on timeline clips; no master-clip effects"
+
+[[row]]
+id = "K4-049"
+group = "bin"
+feature = "Tags panel (toolbar toggle)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_tags.html"
+film = "partial"
+evidence = "crates/engine/src/project_panel.rs:361"
+gap = "Label column/menu; no tag panel"
+
+[[row]]
+id = "K4-050"
+group = "bin"
+feature = "Assign several tags to one clip"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_tags.html"
+film = "none"
+evidence = "crates/project/src/lib.rs:299"
+gap = "exactly one label per item"
+
+[[row]]
+id = "K4-051"
+group = "bin"
+feature = "Edit tag description and color"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_tags.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:328"
+gap = "Preferences > Labels renames/recolors 16 fixed slots"
+
+[[row]]
+id = "K4-052"
+group = "bin"
+feature = "Add / delete tags"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_tags.html"
+film = "none"
+evidence = ""
+gap = "label set is fixed at 16"
+
+[[row]]
+id = "K4-053"
+group = "bin"
+feature = "Reorder tags by drag"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_tags.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-054"
+group = "bin"
+feature = "Filter bin by tag"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_filters.html"
+film = "partial"
+evidence = "crates/project/src/find.rs:85"
+gap = "via Find / Search Bin on Label; no toolbar filter"
+
+[[row]]
+id = "K4-055"
+group = "bin"
+feature = "Filter bin by rating"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_filters.html"
+film = "none"
+evidence = ""
+gap = "no ratings"
+
+[[row]]
+id = "K4-056"
+group = "bin"
+feature = "Filter bin by usage (used / unused)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_filters.html"
+film = "partial"
+evidence = "crates/engine/src/project_panel.rs:409"
+gap = "usage columns sortable; no usage filter"
+
+[[row]]
+id = "K4-057"
+group = "bin"
+feature = "Filter bin by type (AV, mute video, audio, image, title, color, sequence...)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_filters.html"
+film = "partial"
+evidence = "crates/engine/src/project_panel.rs:362"
+gap = "Media Type column / Find; no type filter popup"
+
+[[row]]
+id = "K4-058"
+group = "bin"
+feature = "Filter combination (OR within, AND across) and active-filter indicator"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_filters.html"
+film = "partial"
+evidence = "crates/project/src/find.rs:85"
+gap = "Find supports criteria; no filter-on toolbar state"
+
+[[row]]
+id = "K4-059"
+group = "bin"
+feature = "Star rating per clip (0-5)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "partial"
+evidence = "crates/engine/src/project_panel.rs:249"
+gap = "Good boolean column only"
+
+[[row]]
+id = "K4-060"
+group = "bin"
+feature = "Sort by name"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/engine/src/project_panel.rs:1018"
+gap = ""
+
+[[row]]
+id = "K4-061"
+group = "bin"
+feature = "Sort by date"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/engine/src/project_panel.rs:432"
+gap = ""
+
+[[row]]
+id = "K4-062"
+group = "bin"
+feature = "Sort by duration"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/engine/src/project_panel.rs:367"
+gap = ""
+
+[[row]]
+id = "K4-063"
+group = "bin"
+feature = "Sort by rating"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "none"
+evidence = ""
+gap = "no ratings"
+
+[[row]]
+id = "K4-064"
+group = "bin"
+feature = "Sort by type"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/engine/src/project_panel.rs:362"
+gap = ""
+
+[[row]]
+id = "K4-065"
+group = "bin"
+feature = "Sort by insert order"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:306"
+gap = "Date Created only; no explicit insert order key"
+
+[[row]]
+id = "K4-066"
+group = "bin"
+feature = "Sort by description"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/engine/src/project_panel.rs:217"
+gap = ""
+
+[[row]]
+id = "K4-067"
+group = "bin"
+feature = "Sort descending toggle"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "full"
+evidence = "crates/engine/src/project_panel.rs:11"
+gap = ""
+
+[[row]]
+id = "K4-068"
+group = "bin"
+feature = "Search field (live filter by name)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_searching.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/project.rs:254"
+gap = ""
+
+[[row]]
+id = "K4-069"
+group = "bin"
+feature = "Audio / video stream indicator icons on bin items"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "partial"
+evidence = "crates/engine/src/media_browser.rs:620"
+gap = "stream info in columns; icon badges not verified"
+
+[[row]]
+id = "K4-070"
+group = "bin"
+feature = "Duration and instance-count indicator on bin items"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "partial"
+evidence = "crates/engine/src/project_panel.rs:242"
+gap = "usage counts as columns, not on the item"
+
+[[row]]
+id = "K4-071"
+group = "bin"
+feature = "Sequences folder always present"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "none"
+evidence = ""
+gap = "sequences live in any bin"
+
+[[row]]
+id = "K4-072"
+group = "bin"
+feature = "Drag files from the OS file manager into the bin"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin.html"
+film = "full"
+evidence = "crates/ui-egui/src/lib.rs:1378"
+gap = ""
+
+[[row]]
+id = "K4-073"
+group = "bin"
+feature = "Media Browser panel"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/media_browser.html"
+film = "full"
+evidence = "crates/ui-egui/src/dock.rs:80"
+gap = ""
+
+[[row]]
+id = "K4-074"
+group = "bin"
+feature = "Library panel (assets shared across projects)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/library.html"
+film = "none"
+evidence = "crates/ui-egui/src/dock.rs:81"
+gap = "Libraries panel is a placeholder"
+
+[[row]]
+id = "K4-075"
+group = "bin"
+feature = "Library: add timeline selection as library item"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/library.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-076"
+group = "bin"
+feature = "Library: folders and drag-rearrange"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/library.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-077"
+group = "bin"
+feature = "Library: add item to project bin"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/library.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-078"
+group = "bin"
+feature = "Library: expand library clip into its contents on the timeline"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/library.html"
+film = "none"
+evidence = ""
+gap = "no expand of a pasted multi-track item (nests can be opened, not exploded)"
+
+[[row]]
+id = "K4-079"
+group = "bin"
+feature = "Library storage folder setting"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/library.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-080"
+group = "bin"
+feature = "Copy clips between projects"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/library.html"
+film = "partial"
+evidence = "crates/engine/src/project_tools.rs:125"
+gap = "Export Selection as Project then import; no live cross-project paste"
+
+[[row]]
+id = "K4-081"
+group = "bin"
+feature = "Clip Properties widget"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "partial"
+evidence = "crates/engine/src/panels.rs:275"
+gap = "Metadata panel + Interpret Footage dialog; no single properties widget"
+
+[[row]]
+id = "K4-082"
+group = "bin"
+feature = "Clip Properties: File Info tab with path link"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:136"
+gap = ""
+
+[[row]]
+id = "K4-083"
+group = "bin"
+feature = "Clip Properties: override duration (images, color, titles)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:1432"
+gap = "duration edited on timeline clips; still default duration pref"
+
+[[row]]
+id = "K4-084"
+group = "bin"
+feature = "Clip Properties: override aspect ratio"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "full"
+evidence = "crates/project/src/lib.rs:171"
+gap = ""
+
+[[row]]
+id = "K4-085"
+group = "bin"
+feature = "Clip Properties: create / delete proxy for this clip"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "partial"
+evidence = "crates/engine/src/proxies.rs:191"
+gap = "create/detach; detach does not delete the proxy file"
+
+[[row]]
+id = "K4-086"
+group = "bin"
+feature = "Clip Properties: override frame rate"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "full"
+evidence = "crates/engine/src/clip_ops.rs:298"
+gap = ""
+
+[[row]]
+id = "K4-087"
+group = "bin"
+feature = "Clip Properties: override scanning and field order"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:613"
+gap = "field options per timeline clip, not per source"
+
+[[row]]
+id = "K4-088"
+group = "bin"
+feature = "Clip Properties: disable auto-rotate"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "none"
+evidence = ""
+gap = "no rotation metadata handling switch"
+
+[[row]]
+id = "K4-089"
+group = "bin"
+feature = "Clip Properties: override color space"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "full"
+evidence = "crates/project/src/lib.rs:176"
+gap = ""
+
+[[row]]
+id = "K4-090"
+group = "bin"
+feature = "Clip Properties: override color range (full / limited)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "none"
+evidence = ""
+gap = "range not overridable"
+
+[[row]]
+id = "K4-091"
+group = "bin"
+feature = "Clip Properties: sequence timecode offset"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "full"
+evidence = "crates/project/src/lib.rs:975"
+gap = ""
+
+[[row]]
+id = "K4-092"
+group = "bin"
+feature = "Audio Properties: enable/disable/rename channels per stream"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:186"
+gap = "Modify > Audio Channels maps channels; no rename"
+
+[[row]]
+id = "K4-093"
+group = "bin"
+feature = "Audio Properties: normalize / swap / copy channel / gain"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "partial"
+evidence = "crates/engine/src/clip_ops.rs:310"
+gap = "gain/normalize via Audio Gain; swap/copy via channel map"
+
+[[row]]
+id = "K4-094"
+group = "bin"
+feature = "Audio Properties: audio sync offset (1 ms steps)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film = "none"
+evidence = ""
+gap = "no per-source audio offset"
+
+[[row]]
+id = "K4-095"
+group = "bin"
+feature = "Clip markers widget"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/markers.html"
+film = "full"
+evidence = "crates/ui-egui/src/dock.rs:84"
+gap = ""
+
+[[row]]
+id = "K4-096"
+group = "import"
+feature = "Import formats: video containers (mp4, mov, mkv, webm, avi, mxf, ts...)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clips.html"
+film = "full"
+evidence = "crates/media/src/lib.rs:176"
+gap = ""
+
+[[row]]
+id = "K4-097"
+group = "import"
+feature = "Import formats: audio (wav, aiff, mp3, flac, ogg, opus, aac)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clips.html"
+film = "full"
+evidence = "crates/media/src/lib.rs:175"
+gap = ""
+
+[[row]]
+id = "K4-098"
+group = "import"
+feature = "Import formats: stills (png, jpg, gif, webp, tiff, bmp, tga, dpx)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clips.html"
+film = "partial"
+evidence = "crates/media/src/lib.rs:174"
+gap = "no svg, psd layers, exr stills, heic"
+
+[[row]]
+id = "K4-099"
+group = "import"
+feature = "Color clip"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/color_clip.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:976"
+gap = ""
+
+[[row]]
+id = "K4-100"
+group = "import"
+feature = "Image sequence clip (filename pattern)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/image_sequence.html"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:116"
+gap = ""
+
+[[row]]
+id = "K4-101"
+group = "import"
+feature = "Image sequence: frame duration per image (slideshow)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/image_sequence.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:1139"
+gap = "sequence plays at a frame rate; stills-as-slideshow via Automate to Sequence"
+
+[[row]]
+id = "K4-102"
+group = "import"
+feature = "Image sequence: loop"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/image_sequence.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-103"
+group = "import"
+feature = "Image sequence: center crop to fill frame"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/image_sequence.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:980"
+gap = "Default Media Scaling fills/fits; not per slideshow"
+
+[[row]]
+id = "K4-104"
+group = "import"
+feature = "Image sequence: dissolve between images (wipe, softness)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/image_sequence.html"
+film = "partial"
+evidence = "crates/engine/src/project_tools.rs:183"
+gap = "Automate to Sequence applies default transitions; no wipe/softness choice"
+
+[[row]]
+id = "K4-105"
+group = "import"
+feature = "Image sequence: Ken Burns animation (pan / zoom)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/image_sequence.html"
+film = "none"
+evidence = ""
+gap = "no automatic pan/zoom"
+
+[[row]]
+id = "K4-106"
+group = "import"
+feature = "Image sequence: low pass filter"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/image_sequence.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-107"
+group = "import"
+feature = "Automatically import selected images as an image sequence"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:990"
+gap = ""
+
+[[row]]
+id = "K4-108"
+group = "import"
+feature = "Title clip in the bin (title editor)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/title_clip.html"
+film = "partial"
+evidence = "crates/project/src/graphic_design.rs:445"
+gap = "text graphics live on the timeline; no title clip item in the bin"
+
+[[row]]
+id = "K4-109"
+group = "import"
+feature = "Template title (%s placeholder)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/template_title.html"
+film = "partial"
+evidence = "crates/engine/src/graphic_templates.rs:1154"
+gap = "graphics templates with editable text fields"
+
+[[row]]
+id = "K4-110"
+group = "import"
+feature = "Create animation (Glaxnimate)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/animation.html"
+film = "none"
+evidence = ""
+gap = "no vector animation clip / external animator"
+
+[[row]]
+id = "K4-111"
+group = "import"
+feature = "Add sequence to bin"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/sequence.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:874"
+gap = ""
+
+[[row]]
+id = "K4-112"
+group = "import"
+feature = "Online resources (Pixabay, Freesound, Archive.org)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/online_resources.html"
+film = "none"
+evidence = ""
+gap = "no online stock search"
+
+[[row]]
+id = "K4-113"
+group = "import"
+feature = "Generator: counter (count up/down, styles, beep)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/generators.html"
+film = "partial"
+evidence = "crates/media/src/generators.rs:51"
+gap = "Universal Counting Leader only"
+
+[[row]]
+id = "K4-114"
+group = "import"
+feature = "Generator: color bars (PAL, BBC, EBU, SMPTE, PM5544, FuBK)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/generators.html"
+film = "partial"
+evidence = "crates/media/src/generators.rs:45"
+gap = "one bars-and-tone pattern"
+
+[[row]]
+id = "K4-115"
+group = "import"
+feature = "Generator: white noise (video + audio)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/generators.html"
+film = "none"
+evidence = ""
+gap = "no noise generator"
+
+[[row]]
+id = "K4-116"
+group = "import"
+feature = "Check if first added clip matches project profile"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:497"
+gap = ""
+
+[[row]]
+id = "K4-117"
+group = "import"
+feature = "Import all streams of multi-stream clips"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:566"
+gap = "audio stream selectable per clip; extra video streams not imported"
+
+[[row]]
+id = "K4-118"
+group = "import"
+feature = "Read Magic Lantern metadata"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-119"
+group = "import"
+feature = "Multi-stream audio: create enough tracks on import"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:500"
+gap = ""
+
+[[row]]
+id = "K4-120"
+group = "import"
+feature = "Capture: screen grab (region, follow mouse, fps, profile)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/capturing_video.html"
+film = "none"
+evidence = ""
+gap = "no screen recording"
+
+[[row]]
+id = "K4-121"
+group = "import"
+feature = "Capture: Blackmagic DeckLink video capture"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_capture.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-122"
+group = "import"
+feature = "Capture: webcam"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/capturing_video.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-123"
+group = "import"
+feature = "Capture: audio record / voice over"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/capturing_audio.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/voiceover.rs:12"
+gap = ""
+
+[[row]]
+id = "K4-124"
+group = "import"
+feature = "Capture audio settings: device, volume, channels, sample rate, sample format"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_capture.html"
+film = "partial"
+evidence = "crates/engine/src/voiceover.rs:134"
+gap = "device/channel in prefs; no capture volume or sample format"
+
+[[row]]
+id = "K4-125"
+group = "import"
+feature = "Countdown before recording (can be disabled)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_capture.html"
+film = "full"
+evidence = "crates/engine/src/voiceover.rs:142"
+gap = ""
+
+[[row]]
+id = "K4-126"
+group = "clip-jobs"
+feature = "Extract audio to WAV"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "full"
+evidence = "crates/engine/src/clip_ops.rs:6"
+gap = ""
+
+[[row]]
+id = "K4-127"
+group = "clip-jobs"
+feature = "Automatic scene split (markers / sub-clips / cuts)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "full"
+evidence = "crates/engine/src/scene_detect.rs:3"
+gap = "runs on timeline clips rather than bin clips"
+
+[[row]]
+id = "K4-128"
+group = "clip-jobs"
+feature = "Stabilize clip job"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "partial"
+evidence = "crates/project/src/effect/vfx.rs:371"
+gap = "stabilizer is an effect, not a bin job producing a new clip"
+
+[[row]]
+id = "K4-129"
+group = "clip-jobs"
+feature = "Duplicate clip with speed change (reverse, pitch compensation)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:1432"
+gap = "speed/reverse on timeline clips; no new bin clip"
+
+[[row]]
+id = "K4-130"
+group = "clip-jobs"
+feature = "Configure custom clip jobs (external executable)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-131"
+group = "clip-jobs"
+feature = "Transcode to edit-friendly format"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:1186"
+gap = "ingest transcode / Project Manager; no per-clip dialog"
+
+[[row]]
+id = "K4-132"
+group = "clip-jobs"
+feature = "Transcode clips dialog (profile, destination, add to project)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "partial"
+evidence = "crates/engine/src/project_manager.rs:6"
+gap = ""
+
+[[row]]
+id = "K4-133"
+group = "clip-jobs"
+feature = "Transcode profiles editor (Settings > Transcode)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_transcode.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-134"
+group = "clip-jobs"
+feature = "Locate clip in OS file manager"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/media_browser.rs:431"
+gap = "in Media Browser only, not on bin items"
+
+[[row]]
+id = "K4-135"
+group = "clip-jobs"
+feature = "Reload clip"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "full"
+evidence = "crates/engine/src/relink.rs:657"
+gap = "also automatic file watching"
+
+[[row]]
+id = "K4-136"
+group = "clip-jobs"
+feature = "Replace clip (keep timeline uses)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "full"
+evidence = "crates/engine/src/relink.rs:667"
+gap = ""
+
+[[row]]
+id = "K4-137"
+group = "clip-jobs"
+feature = "Replace only the audio or the video part"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-138"
+group = "clip-jobs"
+feature = "Replace clip in timeline with another bin clip"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "full"
+evidence = "crates/engine/src/clip_ops.rs:228"
+gap = ""
+
+[[row]]
+id = "K4-139"
+group = "clip-jobs"
+feature = "Duplicate clip in bin"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1378"
+gap = ""
+
+[[row]]
+id = "K4-140"
+group = "clip-jobs"
+feature = "Proxy clip toggle per clip (P badge)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "full"
+evidence = "crates/engine/src/proxies.rs:523"
+gap = ""
+
+[[row]]
+id = "K4-141"
+group = "clip-jobs"
+feature = "Clip in Timeline: list instances and jump"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:1621"
+gap = "reverse direction only (timeline->bin); usage counts as columns"
+
+[[row]]
+id = "K4-142"
+group = "clip-jobs"
+feature = "Edit clip in external application"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:165"
+gap = ""
+
+[[row]]
+id = "K4-143"
+group = "clip-jobs"
+feature = "Delete clip (warn when used in timeline)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:2799"
+gap = "deletes item and its uses; no in-use warning dialog found"
+
+[[row]]
+id = "K4-144"
+group = "clip-jobs"
+feature = "Adjust profile to current clip"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "partial"
+evidence = "crates/engine/src/clip_ops.rs:61"
+gap = "creates a new sequence; does not change the current one"
+
+[[row]]
+id = "K4-145"
+group = "clip-jobs"
+feature = "Remove unused media"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "full"
+evidence = "crates/engine/src/clip_ops.rs:2"
+gap = ""
+
+[[row]]
+id = "K4-146"
+group = "clip-jobs"
+feature = "Insert at timecode (from clip metadata)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-147"
+group = "clip-jobs"
+feature = "Clip job progress and cancel"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1294"
+gap = ""
+
+[[row]]
+id = "K4-148"
+group = "project-notes"
+feature = "Project Notes widget (text editor saved with project)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_notes.html"
+film = "full"
+evidence = "crates/engine/src/panels.rs:357"
+gap = "plain text"
+
+[[row]]
+id = "K4-149"
+group = "project-notes"
+feature = "Insert timecode link at playhead"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_notes.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-150"
+group = "project-notes"
+feature = "Click timecode link to seek"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_notes.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-151"
+group = "project-notes"
+feature = "Create markers from selected timecodes"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_notes.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-152"
+group = "project-notes"
+feature = "Reassign timecodes to bin clip / timeline clip"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_notes.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-153"
+group = "project-notes"
+feature = "Search in notes (Ctrl+F, F3 / Shift+F3)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_notes.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-154"
+group = "project-notes"
+feature = "Rich text in notes"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_notes.html"
+film = "none"
+evidence = ""
+gap = "plain text only"
+
+[[row]]
+id = "K4-155"
+group = "file"
+feature = "New project"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/file_menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:844"
+gap = ""
+
+[[row]]
+id = "K4-156"
+group = "file"
+feature = "Open project"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/file_menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1200"
+gap = ""
+
+[[row]]
+id = "K4-157"
+group = "file"
+feature = "Missing clips dialog: search manually / recursively / placeholders / remove"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/file_menu.html"
+film = "partial"
+evidence = "crates/engine/src/relink.rs:11"
+gap = "search/relink/offline placeholder; remove-missing action not verified"
+
+[[row]]
+id = "K4-158"
+group = "file"
+feature = "Recreate missing proxies on open"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/file_menu.html"
+film = "none"
+evidence = "crates/engine/src/media_pool.rs:310"
+gap = "falls back to full resolution, does not rebuild"
+
+[[row]]
+id = "K4-159"
+group = "file"
+feature = "Open Recent (10 items, Clear List)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/file_menu.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:60"
+gap = "list stored; no Open Recent menu"
+
+[[row]]
+id = "K4-160"
+group = "file"
+feature = "Revert"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/file_menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1190"
+gap = ""
+
+[[row]]
+id = "K4-161"
+group = "file"
+feature = "Save"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/file_menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1178"
+gap = ""
+
+[[row]]
+id = "K4-162"
+group = "file"
+feature = "Save As"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/file_menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1182"
+gap = ""
+
+[[row]]
+id = "K4-163"
+group = "file"
+feature = "Save Copy"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/file_menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1186"
+gap = ""
+
+[[row]]
+id = "K4-164"
+group = "file"
+feature = "Layout saved inside the project file"
+manual = "https://docs.kdenlive.org/en/user_interface/customizing_interface.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:1304"
+gap = "open sequences/view saved; workspace layout lives in prefs"
+
+[[row]]
+id = "K4-165"
+group = "file"
+feature = "Archive project: copy all files to a folder"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/archiving.html"
+film = "full"
+evidence = "crates/engine/src/project_manager.rs:3"
+gap = ""
+
+[[row]]
+id = "K4-166"
+group = "file"
+feature = "Archive project: compress to tar.gz / zip"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/archiving.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-167"
+group = "file"
+feature = "Archive only timeline clips"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/archiving.html"
+film = "full"
+evidence = "crates/engine/src/project_manager.rs:10"
+gap = ""
+
+[[row]]
+id = "K4-168"
+group = "file"
+feature = "Open an archived project (extract then open)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/archiving.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-169"
+group = "file"
+feature = "Archive includes proxies"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/archiving.html"
+film = "full"
+evidence = "crates/engine/src/project_manager.rs:4"
+gap = ""
+
+[[row]]
+id = "K4-170"
+group = "file"
+feature = "OpenTimelineIO import"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/file_menu.html"
+film = "full"
+evidence = "crates/engine/src/interchange.rs:29"
+gap = ""
+
+[[row]]
+id = "K4-171"
+group = "file"
+feature = "OpenTimelineIO export"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/file_menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1154"
+gap = ""
+
+[[row]]
+id = "K4-172"
+group = "file"
+feature = "Open Backup File dialog (list restore points)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/backup.html"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:1249"
+gap = "auto-save versions browsable; not one backup per save"
+
+[[row]]
+id = "K4-173"
+group = "file"
+feature = "Backup written on every save"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/backup.html"
+film = "partial"
+evidence = "crates/engine/src/lib.rs:366"
+gap = "only on schema upgrade; otherwise timed auto-save ring"
+
+[[row]]
+id = "K4-174"
+group = "file"
+feature = "Backup retention tiers (last hour / day / week / older)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/backup.html"
+film = "partial"
+evidence = "crates/engine/src/autosave.rs:46"
+gap = "single ring of N versions"
+
+[[row]]
+id = "K4-175"
+group = "file"
+feature = "Auto save interval"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/auto_save.html"
+film = "full"
+evidence = "crates/engine/src/autosave.rs:44"
+gap = "minutes, not operations count"
+
+[[row]]
+id = "K4-176"
+group = "file"
+feature = "Crash recovery on next launch"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/auto_save.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1204"
+gap = ""
+
+[[row]]
+id = "K4-177"
+group = "file"
+feature = "Quit with save prompt"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/file_menu.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/keyboard.rs:132"
+gap = ""
+
+[[row]]
+id = "K4-178"
+group = "file"
+feature = "Welcome screen at startup (toggle)"
+manual = "https://docs.kdenlive.org/en/user_interface/welcome_and_splash_screen.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:67"
+gap = "home is the demo project"
+
+[[row]]
+id = "K4-179"
+group = "file"
+feature = "Open last project on startup"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:40"
+gap = ""
+
+[[row]]
+id = "K4-180"
+group = "file"
+feature = "Project folder structure (thumbs, proxies, previews, workfiles)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/folder_structure.html"
+film = "partial"
+evidence = "crates/engine/src/previews.rs:14"
+gap = "previews folder next to project; caches elsewhere"
+
+[[row]]
+id = "K4-181"
+group = "render"
+feature = "Render dialog (File > Render)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1284"
+gap = "Export mode, Cmd+M"
+
+[[row]]
+id = "K4-182"
+group = "render"
+feature = "Output file location"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/export_mode.rs:409"
+gap = ""
+
+[[row]]
+id = "K4-183"
+group = "render"
+feature = "Preset list grouped by category"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/export/src/presets.rs:35"
+gap = ""
+
+[[row]]
+id = "K4-184"
+group = "render"
+feature = "Create new preset from the selected one"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/engine/src/export_tools.rs:1068"
+gap = ""
+
+[[row]]
+id = "K4-185"
+group = "render"
+feature = "Edit custom preset"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/engine/src/export_tools.rs:1068"
+gap = "save over a user preset; no edit dialog"
+
+[[row]]
+id = "K4-186"
+group = "render"
+feature = "Delete custom preset"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/engine/src/export_tools.rs:1075"
+gap = ""
+
+[[row]]
+id = "K4-187"
+group = "render"
+feature = "Download render presets (KDE Store)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu/download_new_render_profiles.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-188"
+group = "render"
+feature = "Full project range"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/engine/src/export_tools.rs:12"
+gap = ""
+
+[[row]]
+id = "K4-189"
+group = "render"
+feature = "Selected zone range"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/engine/src/export_tools.rs:12"
+gap = ""
+
+[[row]]
+id = "K4-190"
+group = "render"
+feature = "Marker zone range (from marker A to marker B)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/engine/src/export_tools.rs:12"
+gap = "custom times; no marker pickers"
+
+[[row]]
+id = "K4-191"
+group = "render"
+feature = "Markers multi-export (one file per marker section, category filter)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-192"
+group = "render"
+feature = "Rendered file length display"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/export_mode.rs:14"
+gap = ""
+
+[[row]]
+id = "K4-193"
+group = "render"
+feature = "Render to file"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/export_mode.rs:14"
+gap = ""
+
+[[row]]
+id = "K4-194"
+group = "render"
+feature = "Generate render script for later"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-195"
+group = "render"
+feature = "Scripts tab: list / start / delete scripts"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-196"
+group = "render"
+feature = "Job queue (keep editing while rendering)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/engine/src/export_tools.rs:1090"
+gap = ""
+
+[[row]]
+id = "K4-197"
+group = "render"
+feature = "Shutdown computer after renderings"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-198"
+group = "render"
+feature = "Audio-only presets: AC3, ALAC, FLAC, MP3, OGG, WAV"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/export/src/presets.rs:175"
+gap = "WAV, AIFF, AAC only"
+
+[[row]]
+id = "K4-199"
+group = "render"
+feature = "10-bit presets (AV1, DNxHR, ProRes, x265 main10)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/export/src/presets.rs:121"
+gap = "ProRes/DNxHR/APV; no 10-bit H.265/AV1 software encode"
+
+[[row]]
+id = "K4-200"
+group = "render"
+feature = "Video with alpha presets (MOV, VP8, VP9, Ut Video)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/export/src/presets.rs:127"
+gap = "ProRes 4444 and PNG/TGA/EXR sequences; no VP8/VP9 alpha"
+
+[[row]]
+id = "K4-201"
+group = "render"
+feature = "Image sequence presets (BMP, DPX, GIF, JPEG, PNG, PPM, TGA, TIFF, WebP)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/export/src/presets.rs:148"
+gap = "also EXR; no PPM, WebP"
+
+[[row]]
+id = "K4-202"
+group = "render"
+feature = "Lossless/HQ presets (FFV1, HuffYUV, Ut Video, x264 lossless)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-203"
+group = "render"
+feature = "Generic presets (GIF HQ, MP4 H.264/AAC, MPEG-2, WebM VP8/Vorbis)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/export/src/lib.rs:218"
+gap = "no MPEG-2, no WebM"
+
+[[row]]
+id = "K4-204"
+group = "render"
+feature = "UHD presets (MP4 H.265, WebM AV1/Opus, WebM VP9/Opus)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/export/src/presets.rs:105"
+gap = "H.265/AV1 only through a hardware encoder; no WebM"
+
+[[row]]
+id = "K4-205"
+group = "render"
+feature = "Old-TV presets (MPEG-4 ASP, VOB DVD, WMV)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-206"
+group = "render"
+feature = "Hardware-accelerated presets (NVENC, VAAPI, VideoToolbox)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/export/src/lib.rs:364"
+gap = "platform H.264/H.265/AV1 hardware encoder when registered"
+
+[[row]]
+id = "K4-207"
+group = "render"
+feature = "Video stream on/off"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/export/src/lib.rs:307"
+gap = "pick an audio-only format instead of unticking video"
+
+[[row]]
+id = "K4-208"
+group = "render"
+feature = "Scaling interpolation (nearest, bilinear, bicubic, Lanczos)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = "fixed scaler"
+
+[[row]]
+id = "K4-209"
+group = "render"
+feature = "Deinterlacer choice (one-field, linear blend, YADIF, BWDIF)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-210"
+group = "render"
+feature = "Render full color range / 10-bit"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/export/src/lib.rs:378"
+gap = ""
+
+[[row]]
+id = "K4-211"
+group = "render"
+feature = "Render at preview resolution"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-212"
+group = "render"
+feature = "Use proxy clips for rendering"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = "crates/engine/src/proxies.rs:11"
+gap = ""
+
+[[row]]
+id = "K4-213"
+group = "render"
+feature = "Rescale output size"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/export/src/lib.rs:343"
+gap = ""
+
+[[row]]
+id = "K4-214"
+group = "render"
+feature = "Render overlay: timecode or frame count"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/export_mode.rs:872"
+gap = "timecode overlay; frame count not verified"
+
+[[row]]
+id = "K4-215"
+group = "render"
+feature = "Render aspect ratio crop"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/export/src/lib.rs:347"
+gap = "fit/fill/stretch + PAR; no aspect preset list"
+
+[[row]]
+id = "K4-216"
+group = "render"
+feature = "Audio stream on/off"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/export_mode.rs:770"
+gap = ""
+
+[[row]]
+id = "K4-217"
+group = "render"
+feature = "Separate file for each audio track"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/export/src/mxf_out.rs:13"
+gap = "MXF OP-Atom splits per channel; no per-track stems"
+
+[[row]]
+id = "K4-218"
+group = "render"
+feature = "Custom quality slider"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/export_mode.rs:749"
+gap = ""
+
+[[row]]
+id = "K4-219"
+group = "render"
+feature = "Encoder speed slider (very slow .. ultra fast)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-220"
+group = "render"
+feature = "Encoding threads"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = "parallelism automatic"
+
+[[row]]
+id = "K4-221"
+group = "render"
+feature = "Parallel processing"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/export/src/lib.rs:3"
+gap = "always on, not configurable"
+
+[[row]]
+id = "K4-222"
+group = "render"
+feature = "Two-pass encoding"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/export/src/settings.rs:115"
+gap = "H.264"
+
+[[row]]
+id = "K4-223"
+group = "render"
+feature = "Export metadata into rendered file"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/export/src/lib.rs:386"
+gap = ""
+
+[[row]]
+id = "K4-224"
+group = "render"
+feature = "Edit metadata from render dialog"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/export_mode.rs:13"
+gap = ""
+
+[[row]]
+id = "K4-225"
+group = "render"
+feature = "Embed subtitles as a stream instead of burning in"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "partial"
+evidence = "crates/export/src/lib.rs:384"
+gap = "burn-in or sidecar file; no in-container subtitle stream"
+
+[[row]]
+id = "K4-226"
+group = "render"
+feature = "Open folder after export"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-227"
+group = "render"
+feature = "Play after render"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-228"
+group = "render"
+feature = "Keep log files (link to render playlist)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-229"
+group = "render"
+feature = "Add rendered file to project bin"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-230"
+group = "render"
+feature = "Finished job: double-click to play, open folder, add to project"
+manual = "https://docs.kdenlive.org/en/exporting.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-231"
+group = "render"
+feature = "Share after render (email, YouTube, Nextcloud, Telegram)"
+manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-232"
+group = "render"
+feature = "Timeline preview render"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:281"
+gap = ""
+
+[[row]]
+id = "K4-233"
+group = "render"
+feature = "Manage Cached Data dialog (current / all projects, backups, proxies, older-than)"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/useful_info/manage_cached_data.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:439"
+gap = "media cache clean by age; no per-project / backup / proxy breakdown"
+
+[[row]]
+id = "K4-234"
+group = "render"
+feature = "Warn if cached data exceeds a size"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_environment.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:440"
+gap = "auto-limit rather than warning"
+
+[[row]]
+id = "K4-235"
+group = "preferences"
+feature = "Configure dialog with pages"
+manual = "https://docs.kdenlive.org/en/getting_started/configuration.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:141"
+gap = ""
+
+[[row]]
+id = "K4-236"
+group = "preferences"
+feature = "Misc: auto save on/off and interval"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
+film = "full"
+evidence = "crates/engine/src/autosave.rs:40"
+gap = ""
+
+[[row]]
+id = "K4-237"
+group = "preferences"
+feature = "Misc: disable effect parameters when effect is disabled"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-238"
+group = "preferences"
+feature = "Misc: built-in Transform/Flip effects on every clip"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
+film = "full"
+evidence = "crates/engine/src/presets.rs:11"
+gap = ""
+
+[[row]]
+id = "K4-239"
+group = "preferences"
+feature = "Misc: tab position for stacked widgets"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-240"
+group = "preferences"
+feature = "Misc: preferred track compositing"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/sequence_settings.rs:18"
+gap = "one compositor, no choice"
+
+[[row]]
+id = "K4-241"
+group = "preferences"
+feature = "Misc: default durations (color, image, title, transition, sequence)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:481"
+gap = ""
+
+[[row]]
+id = "K4-242"
+group = "preferences"
+feature = "Project Defaults: default profile, tracks, channels, preview profile, folder"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_project_defaults.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/sequence_settings.rs:99"
+gap = "no stored defaults beyond the New Sequence dialog"
+
+[[row]]
+id = "K4-243"
+group = "preferences"
+feature = "Proxy page: enable proxy clips globally"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film = "full"
+evidence = "crates/engine/src/autosave.rs:245"
+gap = ""
+
+[[row]]
+id = "K4-244"
+group = "preferences"
+feature = "Timeline: video/audio thumbnails default"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1292"
+gap = "timeline menu toggle; no preference default"
+
+[[row]]
+id = "K4-245"
+group = "preferences"
+feature = "Timeline: separate audio channel waveforms"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film = "none"
+evidence = ""
+gap = "not verified; no preference"
+
+[[row]]
+id = "K4-246"
+group = "preferences"
+feature = "Timeline: pause playback when seeking"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-247"
+group = "preferences"
+feature = "Timeline: jump to start if play pressed on last frame"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:494"
+gap = ""
+
+[[row]]
+id = "K4-248"
+group = "preferences"
+feature = "Timeline: seek to clip when adding effect"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-249"
+group = "preferences"
+feature = "Timeline: return playhead to start position on stop"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-250"
+group = "preferences"
+feature = "Timeline: raise effect / composition stack on selection"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film = "full"
+evidence = "crates/ui-egui/src/dock.rs:87"
+gap = "always follows selection"
+
+[[row]]
+id = "K4-251"
+group = "preferences"
+feature = "Timeline: autoscroll while playing"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:746"
+gap = ""
+
+[[row]]
+id = "K4-252"
+group = "preferences"
+feature = "Timeline: fixed centered playhead"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:746"
+gap = "smooth scroll during playback only"
+
+[[row]]
+id = "K4-253"
+group = "preferences"
+feature = "Timeline: mouse wheel vertical, Shift for horizontal"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:486"
+gap = ""
+
+[[row]]
+id = "K4-254"
+group = "preferences"
+feature = "Timeline: display clip marker comments"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-255"
+group = "preferences"
+feature = "Timeline: default track height"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:1275"
+gap = "per-sequence heights; no preference"
+
+[[row]]
+id = "K4-256"
+group = "preferences"
+feature = "Tools: subtitle split mode (duplicate / split after first line)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_tools.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-257"
+group = "preferences"
+feature = "Environment: concurrent threads for proxy/transcode jobs"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_environment.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-258"
+group = "preferences"
+feature = "Environment: lower CPU priority for jobs"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_environment.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-259"
+group = "preferences"
+feature = "Environment: check for updates"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_environment.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-260"
+group = "preferences"
+feature = "Environment: prevent sleep while playing / rendering"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_environment.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-261"
+group = "preferences"
+feature = "Environment: engine executable / profile paths"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_environment.html"
+film = "none"
+evidence = ""
+gap = "not applicable: built-in engine"
+
+[[row]]
+id = "K4-262"
+group = "preferences"
+feature = "Environment: default folders (projects, temp, capture, library, scripts)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_environment.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:1173"
+gap = "per-project scratch disks; no global default folders"
+
+[[row]]
+id = "K4-263"
+group = "preferences"
+feature = "Environment: default external apps (image, audio, animation, video)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_environment.html"
+film = "partial"
+evidence = "crates/engine/src/project_tools.rs:16"
+gap = "OS default app only"
+
+[[row]]
+id = "K4-264"
+group = "preferences"
+feature = "Environment: supported media types list"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_environment.html"
+film = "partial"
+evidence = "crates/media/src/lib.rs:180"
+gap = "list exists, not shown in settings"
+
+[[row]]
+id = "K4-265"
+group = "preferences"
+feature = "Colors: audio thumbnail colors"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_colors%2Bmarkers.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-266"
+group = "preferences"
+feature = "Colors: monitor overlay color"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_colors%2Bmarkers.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-267"
+group = "preferences"
+feature = "Colors: monitor background color"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_colors%2Bmarkers.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-268"
+group = "preferences"
+feature = "Colors: marker categories add / edit / delete"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_colors%2Bmarkers.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:327"
+gap = "rename/recolor fixed slots"
+
+[[row]]
+id = "K4-269"
+group = "preferences"
+feature = "Colors: per-type clip colors (video, audio, title, image, slideshow)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_colors%2Bmarkers.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:329"
+gap = "Label Defaults per media type"
+
+[[row]]
+id = "K4-270"
+group = "preferences"
+feature = "Colors: reset clip colors to default"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_colors%2Bmarkers.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1271"
+gap = ""
+
+[[row]]
+id = "K4-271"
+group = "preferences"
+feature = "Plugins: speech-to-text engine and model management"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_plugins.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:410"
+gap = "Whisper model choice; no VOSK, no in-app model download manager"
+
+[[row]]
+id = "K4-272"
+group = "preferences"
+feature = "Plugins: speech language (auto-detect or fixed)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_plugins.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:406"
+gap = ""
+
+[[row]]
+id = "K4-273"
+group = "preferences"
+feature = "Plugins: CPU / GPU device for speech"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_plugins.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-274"
+group = "preferences"
+feature = "Plugins: translate (to English / multilingual)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_plugins.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-275"
+group = "preferences"
+feature = "Plugins: object detection (SAM) plugin"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_plugins.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-276"
+group = "preferences"
+feature = "Playback: play/pause on monitor click"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "none"
+evidence = ""
+gap = "click moves playhead"
+
+[[row]]
+id = "K4-277"
+group = "preferences"
+feature = "Playback: full-screen monitor output device"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/keyboard.rs:62"
+gap = "full-screen window; no output-device choice"
+
+[[row]]
+id = "K4-278"
+group = "preferences"
+feature = "Playback: mirror monitor on full screen"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-279"
+group = "preferences"
+feature = "Playback: GPU processing"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "partial"
+evidence = "crates/export/src/lib.rs:368"
+gap = "GPU path for export/effects; not a playback toggle"
+
+[[row]]
+id = "K4-280"
+group = "preferences"
+feature = "Playback: audio backend / driver / device"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:180"
+gap = ""
+
+[[row]]
+id = "K4-281"
+group = "preferences"
+feature = "Playback: external display (Blackmagic card)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:1069"
+gap = "transmit preference only"
+
+[[row]]
+id = "K4-282"
+group = "preferences"
+feature = "Jog shuttle device and button mapping"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_jogshuttle.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-283"
+group = "preferences"
+feature = "Configuration information page (paths)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_info.html"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:137"
+gap = "log folder + system report; no paths page"
+
+[[row]]
+id = "K4-284"
+group = "settings-menu"
+feature = "Run config wizard"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-285"
+group = "settings-menu"
+feature = "Reset configuration"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1271"
+gap = ""
+
+[[row]]
+id = "K4-286"
+group = "settings-menu"
+feature = "Color schemes"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:99"
+gap = ""
+
+[[row]]
+id = "K4-287"
+group = "settings-menu"
+feature = "Configure language"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:25"
+gap = ""
+
+[[row]]
+id = "K4-288"
+group = "settings-menu"
+feature = "Show/hide menubar, status bar, toolbars; configure toolbars"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-289"
+group = "settings-menu"
+feature = "Configure notifications"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu.html"
+film = "partial"
+evidence = "crates/engine/src/panels.rs:380"
+gap = "Events panel; no notification settings"
+
+[[row]]
+id = "K4-290"
+group = "settings-menu"
+feature = "Download new project profiles / wipes"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-291"
+group = "shortcuts"
+feature = "Keyboard shortcut editor"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu/configure_shortcuts.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:140"
+gap = ""
+
+[[row]]
+id = "K4-292"
+group = "shortcuts"
+feature = "Search actions in the editor"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu/configure_shortcuts.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/shortcuts_dialog.rs:10"
+gap = ""
+
+[[row]]
+id = "K4-293"
+group = "shortcuts"
+feature = "Reset shortcuts to defaults"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu/configure_shortcuts.html"
+film = "full"
+evidence = "crates/engine/src/shortcuts.rs:1156"
+gap = ""
+
+[[row]]
+id = "K4-294"
+group = "shortcuts"
+feature = "Shortcut schemes: switch / new / delete"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu/configure_shortcuts.html"
+film = "full"
+evidence = "crates/engine/src/shortcuts.rs:1161"
+gap = ""
+
+[[row]]
+id = "K4-295"
+group = "shortcuts"
+feature = "Shortcut schemes: export / import"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu/configure_shortcuts.html"
+film = "full"
+evidence = "crates/engine/src/shortcuts.rs:1171"
+gap = ""
+
+[[row]]
+id = "K4-296"
+group = "shortcuts"
+feature = "Download shortcut schemes (KDE Store)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu/configure_shortcuts.html"
+film = "none"
+evidence = ""
+gap = "built-in Premiere/FCP/Avid presets instead"
+
+[[row]]
+id = "K4-297"
+group = "shortcuts"
+feature = "Print shortcuts"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu/configure_shortcuts.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-298"
+group = "shortcuts"
+feature = "Conflict detection"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/settings_menu/configure_shortcuts.html"
+film = "full"
+evidence = "crates/engine/src/shortcuts.rs:1131"
+gap = ""
+
+[[row]]
+id = "K4-299"
+group = "workspaces"
+feature = "Built-in layouts: Logging, Editing, Audio, Effects, Color"
+manual = "https://docs.kdenlive.org/en/user_interface/workspace_layouts.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:103"
+gap = "Assembly stands in for Logging"
+
+[[row]]
+id = "K4-300"
+group = "workspaces"
+feature = "Switch layout from menu bar buttons"
+manual = "https://docs.kdenlive.org/en/user_interface/customizing_interface.html"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:104"
+gap = "Window > Workspaces + Alt+Shift+N; no header buttons verified"
+
+[[row]]
+id = "K4-301"
+group = "workspaces"
+feature = "Save layout (named)"
+manual = "https://docs.kdenlive.org/en/user_interface/customizing_interface.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:112"
+gap = ""
+
+[[row]]
+id = "K4-302"
+group = "workspaces"
+feature = "Overwrite an existing layout"
+manual = "https://docs.kdenlive.org/en/user_interface/customizing_interface.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:111"
+gap = ""
+
+[[row]]
+id = "K4-303"
+group = "workspaces"
+feature = "Load layout"
+manual = "https://docs.kdenlive.org/en/user_interface/customizing_interface.html"
+film = "full"
+evidence = "crates/ui-egui/src/lib.rs:801"
+gap = ""
+
+[[row]]
+id = "K4-304"
+group = "workspaces"
+feature = "Manage layouts: reorder"
+manual = "https://docs.kdenlive.org/en/user_interface/customizing_interface.html"
+film = "none"
+evidence = ""
+gap = "alphabetical list"
+
+[[row]]
+id = "K4-305"
+group = "workspaces"
+feature = "Manage layouts: delete / rename"
+manual = "https://docs.kdenlive.org/en/user_interface/customizing_interface.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/workspaces.rs:232"
+gap = ""
+
+[[row]]
+id = "K4-306"
+group = "workspaces"
+feature = "Manage layouts: export / import"
+manual = "https://docs.kdenlive.org/en/user_interface/customizing_interface.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-307"
+group = "workspaces"
+feature = "Show / hide widgets from the View menu"
+manual = "https://docs.kdenlive.org/en/user_interface/customizing_interface.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:160"
+gap = "Window menu"
+
+[[row]]
+id = "K4-308"
+group = "workspaces"
+feature = "Move widgets by dragging tabs / title bars"
+manual = "https://docs.kdenlive.org/en/user_interface/customizing_interface.html"
+film = "none"
+evidence = ""
+gap = "only gutters drag; panels cannot be re-docked by drag"
+
+[[row]]
+id = "K4-309"
+group = "workspaces"
+feature = "Undock widgets as floating windows"
+manual = "https://docs.kdenlive.org/en/user_interface/customizing_interface.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-310"
+group = "workspaces"
+feature = "Auto-hide widgets to an edge sidebar"
+manual = "https://docs.kdenlive.org/en/user_interface/customizing_interface.html"
+film = "none"
+evidence = ""
+gap = ""
+
+[[row]]
+id = "K4-311"
+group = "workspaces"
+feature = "Resize panels"
+manual = "https://docs.kdenlive.org/en/user_interface/customizing_interface.html"
+film = "full"
+evidence = "crates/ui-egui/src/dock.rs:470"
+gap = ""
+
+[[row]]
+id = "K4-312"
+group = "menus"
+feature = "File menu"
+manual = "https://docs.kdenlive.org/en/user_interface/menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1178"
+gap = ""
+
+[[row]]
+id = "K4-313"
+group = "menus"
+feature = "Edit menu"
+manual = "https://docs.kdenlive.org/en/user_interface/menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1301"
+gap = ""
+
+[[row]]
+id = "K4-314"
+group = "menus"
+feature = "View menu (widget toggles, layouts)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu.html"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:110"
+gap = "split across View and Window"
+
+[[row]]
+id = "K4-315"
+group = "menus"
+feature = "Media menu (add media, jobs, transcode, proxy, properties)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu.html"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:976"
+gap = "spread over File > New and Clip"
+
+[[row]]
+id = "K4-316"
+group = "menus"
+feature = "Sequence menu"
+manual = "https://docs.kdenlive.org/en/user_interface/menu.html"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:288"
+gap = ""
+
+[[row]]
+id = "K4-317"
+group = "menus"
+feature = "Tool menu"
+manual = "https://docs.kdenlive.org/en/user_interface/menu.html"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:121"
+gap = "tools via Tools panel and keys; no Tool menu"
+
+[[row]]
+id = "K4-318"
+group = "menus"
+feature = "Monitor menu"
+manual = "https://docs.kdenlive.org/en/user_interface/menu.html"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:49"
+gap = "monitor options under View"
+
+[[row]]
+id = "K4-319"
+group = "menus"
+feature = "Markers menu"
+manual = "https://docs.kdenlive.org/en/user_interface/menu.html"
+film = "full"
+evidence = "crates/engine/src/sequence_tools.rs:166"
+gap = ""
+
+[[row]]
+id = "K4-320"
+group = "menus"
+feature = "Settings menu"
+manual = "https://docs.kdenlive.org/en/user_interface/menu.html"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:141"
+gap = "Edit > Preferences"
+
+[[row]]
+id = "K4-321"
+group = "menus"
+feature = "Help menu"
+manual = "https://docs.kdenlive.org/en/user_interface/menu.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:139"
+gap = ""
