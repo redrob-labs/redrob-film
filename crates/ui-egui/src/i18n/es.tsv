@@ -4440,3 +4440,12 @@
 	Saved the proxy profile {name}.	Se guardó el perfil de proxy {name}.
 	Deleted the proxy profile {name}.	Se eliminó el perfil de proxy {name}.
 	Allowed parameters:	Parámetros permitidos:
+# Kdenlive parity p03: timeline preview
+	Timeline Preview	Previsualización de la línea de tiempo
+	Start Preview Render	Iniciar el render de previsualización
+	Stop Preview Render	Detener el render de previsualización
+	Add Preview Zone	Añadir zona de previsualización
+	Remove Preview Zone	Quitar zona de previsualización
+	Remove All Preview Zones	Quitar todas las zonas de previsualización
+	Automatic Preview	Previsualización automática
+	Preview zone	Zona de previsualización

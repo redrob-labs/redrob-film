@@ -620,6 +620,8 @@ fn custom(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft, name: &str
                 ui.label(egui::RichText::new(tl!("(0 = all)")).weak());
             });
             let cats = d.cache_usage["categories"].as_array().cloned().unwrap_or_default();
+            // the usage chart: each kind's share of the largest one
+            let biggest = cats.iter().filter_map(|c| c["bytes"].as_u64()).max().unwrap_or(0).max(1) as f32;
             let mut del: Option<String> = None;
             for scope in ["current", "all"] {
                 ui.label(egui::RichText::new(if scope == "current" { tl!("Current project") } else { tl!("All projects") }).color(t.text_dim));
@@ -627,6 +629,13 @@ fn custom(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft, name: &str
                     let id = c["id"].as_str().unwrap_or("").to_string();
                     ui.horizontal(|ui| {
                         field_label(ui, crate::i18n::t(c["label"].as_str().unwrap_or("")));
+                        let (bar, _) = ui.allocate_exact_size(vec2(120.0, 10.0), Sense::hover());
+                        ui.painter().rect_filled(bar, 2.0, t.field_border);
+                        let share = c["bytes"].as_u64().unwrap_or(0) as f32 / biggest;
+                        if share > 0.0 {
+                            ui.painter().rect_filled(Rect::from_min_size(bar.min, vec2((bar.width() * share).max(2.0), bar.height())), 2.0, t.accent);
+                        }
+                        app.auto.add(&format!("settings.cacheManager.{id}.chart"), bar, &format!("{:.0}%", share * 100.0));
                         ui.label(tlf!("{files} file(s), {size}", files = c["files"].as_u64().unwrap_or(0), size = mb(c["bytes"].as_u64().unwrap_or(0))));
                         let b = ui.add_enabled(c["files"].as_u64().unwrap_or(0) > 0, egui::Button::new(tl!("Delete")));
                         app.auto.add(&format!("settings.cacheManager.{id}.delete"), b.rect, "Delete");

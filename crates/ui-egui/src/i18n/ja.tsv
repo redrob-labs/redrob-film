@@ -4428,3 +4428,12 @@
 	Saved the proxy profile {name}.	プロキシプロファイル {name} を保存しました。
 	Deleted the proxy profile {name}.	プロキシプロファイル {name} を削除しました。
 	Allowed parameters:	許可されているパラメーター:
+# Kdenlive parity p03: timeline preview
+	Timeline Preview	タイムラインプレビュー
+	Start Preview Render	プレビューのレンダリングを開始
+	Stop Preview Render	プレビューのレンダリングを停止
+	Add Preview Zone	プレビューゾーンを追加
+	Remove Preview Zone	プレビューゾーンを削除
+	Remove All Preview Zones	すべてのプレビューゾーンを削除
+	Automatic Preview	自動プレビュー
+	Preview zone	プレビューゾーン

@@ -635,6 +635,7 @@ impl Session {
         scene_detect::poll(self);
         export_tools::pump_queue(self, false);
         render_jobs::poll(self);
+        previews::auto_render(self);
         clip_jobs::poll(self);
         panels::log_jobs(self);
         let Some(p) = self.persistence.as_mut() else { return };

@@ -947,6 +947,8 @@ pub struct SequenceSettingsDraft {
     pub working_space: String,
     pub wide_gamut: bool,
     pub auto_tone_map: bool,
+    /// Video Previews ▸ Codec (`previews::PREVIEW_CODECS`).
+    pub preview_codec: String,
 }
 
 impl Default for SequenceSettingsDraft {
@@ -969,6 +971,7 @@ impl Default for SequenceSettingsDraft {
             working_space: "rec709".into(),
             wide_gamut: false,
             auto_tone_map: true,
+            preview_codec: "ProRes 422".into(),
         }
     }
 }

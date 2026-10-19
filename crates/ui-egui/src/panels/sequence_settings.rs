@@ -91,6 +91,7 @@ pub fn open(app: &mut FilmcraftApp) {
         working_space: st.color.working.id().into(),
         wide_gamut: st.color.wide_gamut,
         auto_tone_map: st.color.auto_tone_map,
+        preview_codec: st.preview_codec.clone(),
     };
     app.dialog = Some(crate::Dialog::SequenceSettings);
 }
@@ -117,6 +118,7 @@ pub fn open_new(app: &mut FilmcraftApp) {
         working_space: st.color.working.id().into(),
         wide_gamut: st.color.wide_gamut,
         auto_tone_map: st.color.auto_tone_map,
+        preview_codec: st.preview_codec.clone(),
         name: format!("Sequence {n:02}"),
     };
     app.dialog = Some(crate::Dialog::SequenceSettings);
@@ -240,6 +242,9 @@ fn changes(d: &SequenceSettingsDraft, cur: &SequenceSettings, cur_name: &str) ->
     }
     if d.max_render_quality != cur.max_render_quality {
         p.insert("maxRenderQuality".into(), json!(d.max_render_quality));
+    }
+    if d.preview_codec != cur.preview_codec {
+        p.insert("previewCodec".into(), json!(d.preview_codec));
     }
     if d.working_space != cur.color.working.id() {
         p.insert("workingSpace".into(), json!(d.working_space));
@@ -408,7 +413,16 @@ fn general(ui: &mut egui::Ui, d: &mut SequenceSettingsDraft, cur: &SequenceSetti
             fixed_combo(ui, elems, "previewFormat", "QuickTime", list_w, NOT_YET);
             ui.add_enabled(false, egui::Button::new(tl!("Configure…"))).on_disabled_hover_text(t(NOT_YET));
         });
-        row(ui, label_w, "Codec:", false, |ui| fixed_combo(ui, elems, "previewCodec", &cur.preview_codec, list_w, NOT_YET));
+        // Kdenlive Timeline Preview profile: the ProRes flavour of the preview files
+        row(ui, label_w, "Codec:", false, |ui| {
+            let resp = egui::ComboBox::from_id_salt("seq-settings-previewCodec").selected_text(t(&d.preview_codec)).width(list_w).show_ui(ui, |ui| {
+                for (label, _) in redrob_film_engine::previews::PREVIEW_CODECS {
+                    let o = ui.selectable_value(&mut d.preview_codec, label.to_string(), t(label));
+                    elems.push((format!("sequenceSettings.previewCodec.option.{}", label.replace(' ', "")), o.rect, label.to_string()));
+                }
+            });
+            elems.push(("sequenceSettings.previewCodec".into(), resp.response.rect, d.preview_codec.clone()));
+        });
         row(ui, label_w, "Width:", false, |ui| fixed_value(ui, elems, "previewWidth", &d.width.to_string()));
         row(ui, label_w, "Height:", false, |ui| {
             fixed_value(ui, elems, "previewHeight", &d.height.to_string());

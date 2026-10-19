@@ -4429,3 +4429,12 @@
 	Saved the proxy profile {name}.	Profil de proxy {name} enregistré.
 	Deleted the proxy profile {name}.	Profil de proxy {name} supprimé.
 	Allowed parameters:	Paramètres autorisés :
+# Kdenlive parity p03: timeline preview
+	Timeline Preview	Aperçu de la timeline
+	Start Preview Render	Démarrer le rendu d’aperçu
+	Stop Preview Render	Arrêter le rendu d’aperçu
+	Add Preview Zone	Ajouter une zone d’aperçu
+	Remove Preview Zone	Supprimer la zone d’aperçu
+	Remove All Preview Zones	Supprimer toutes les zones d’aperçu
+	Automatic Preview	Aperçu automatique
+	Preview zone	Zone d’aperçu

@@ -1019,46 +1019,12 @@
 	Cache	Кеш
 	ClipJobs	Завдання для кліпів
 # Kdenlive parity p03: scopes options and Audio Spectrum
-	Auto Refresh	Автооновлення
-	Refresh Now	Оновити зараз
-	Realtime	Реальний час
-	Scope Source	Джерело для скопів
-	Active Monitor	Активний монітор
-	Program Monitor	Монітор програми
-	Source Monitor	Монітор джерела
-	Histogram Components	Компоненти гістограми
-	Sum	Сума
-	Unscaled	Без масштабування
-	Paint Mode	Режим відмальовування
-	Colour	Колір
-	Grey	Сірий
-	Gradient Reference Line	Опорна лінія градієнта
-	Vectorscope	Векторскоп
-	I and Q Lines	Лінії I та Q
-	Gain {n}×	Підсилення {n}×
-	Export Background ({plane})…	Експорт тла ({plane})…
-	PNG image	Зображення PNG
-	Exported the vectorscope background to {path}	Тло векторскопа експортовано до {path}
-	Could not export the vectorscope background: {error}	Не вдалося експортувати тло векторскопа: {error}
-	Auto Refresh off: click to refresh	Автооновлення вимкнено: клацніть, щоб оновити
 	Audio Spectrum	Спектр звуку
-# Kdenlive parity p03: proxy clips settings
-	Proxy Clips	Проксі-кліпи
-	Generate proxies on import for videos wider than	Створювати проксі під час імпорту відео, ширших за
-	Video width	Ширина відео
-	Proxy video resize (width, 0 = the profile's size)	Розмір проксі-відео (ширина, 0 = з профілю)
-	Generate proxies on import for images wider than	Створювати проксі під час імпорту зображень, ширших за
-	Image width	Ширина зображення
-	Proxy image resize (width)	Розмір проксі-зображення (ширина)
-	Use the proxy files cameras record (GoPro, Sony, DJI)	Використовувати проксі-файли, записані камерами (GoPro, Sony, DJI)
-	Encoding profile	Профіль кодування
-	Profile for clips with alpha channel	Профіль для кліпів з альфа-каналом
-	Manage Proxy Profiles	Керування профілями проксі
-	New from Selected Profile	Новий на основі вибраного профілю
-	New Profile	Новий профіль
-	Parameters	Параметри
-	Warning: parameters not allowed: {list}	Увага: недозволені параметри: {list}
-	Add Profile	Додати профіль
-	Saved the proxy profile {name}.	Профіль проксі {name} збережено.
-	Deleted the proxy profile {name}.	Профіль проксі {name} видалено.
-	Allowed parameters:	Дозволені параметри:
+# Kdenlive parity p03: timeline preview
+	Timeline Preview	Попередній перегляд таймлайну
+	Start Preview Render	Почати рендер попереднього перегляду
+	Stop Preview Render	Зупинити рендер попереднього перегляду
+	Add Preview Zone	Додати зону попереднього перегляду
+	Remove Preview Zone	Видалити зону попереднього перегляду
+	Remove All Preview Zones	Видалити всі зони попереднього перегляду
+	Automatic Preview	Автоматичний попередній перегляд

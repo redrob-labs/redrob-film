@@ -520,6 +520,8 @@ pub(crate) fn empty_sequence(settings: SequenceSettings) -> Sequence {
         merged: None,
         split: Default::default(),
         timeline_options: Default::default(),
+        preview_zones: Vec::new(),
+        auto_preview: false,
     }
 }
 

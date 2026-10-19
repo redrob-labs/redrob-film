@@ -678,6 +678,7 @@ pub fn menu_items(app: &FilmcraftApp) -> Vec<MenuItem> {
             "sequence.useTimelineZone" => it.checked = Some(!app.session.state.ignore_timeline_zone),
             "sequence.trackCompositing" => it.checked = Some(app.session.active_sequence().is_none_or(|q| !q.timeline_options.no_track_compositing)),
             "sequence.disableTimelineEffects" => it.checked = Some(app.session.active_sequence().is_some_and(|q| q.timeline_options.effects_disabled)),
+            "sequence.autoPreview" => it.checked = Some(app.session.active_sequence().is_some_and(|q| q.auto_preview)),
             _ => {}
         }
         if it.id.starts_with("view.") {

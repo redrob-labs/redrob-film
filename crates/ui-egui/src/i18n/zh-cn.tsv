@@ -4421,3 +4421,12 @@
 	Saved the proxy profile {name}.	已保存代理配置文件 {name}。
 	Deleted the proxy profile {name}.	已删除代理配置文件 {name}。
 	Allowed parameters:	允许的参数：
+# Kdenlive parity p03: timeline preview
+	Timeline Preview	时间线预览
+	Start Preview Render	开始预览渲染
+	Stop Preview Render	停止预览渲染
+	Add Preview Zone	添加预览区域
+	Remove Preview Zone	移除预览区域
+	Remove All Preview Zones	移除所有预览区域
+	Automatic Preview	自动预览
+	Preview zone	预览区域
