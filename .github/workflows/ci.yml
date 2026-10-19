@@ -3,8 +3,7 @@
 # OUR crates (the shell `filmcraft`, the engine and the egui UI) with `--profile ci` (root
 # Cargo.toml: every dependency at opt-level 0, no incremental); the effectcraft subtree is compiled
 # only as a dependency, and `rust` is skipped when no Rust input changed. `rust-desktop` runs the
-# same clippy and tests on macOS and Windows (formatting is the same on every OS, so only Linux
-# checks it), with the same skip. The release workflow does not repeat any of this; PR policy is the
+# same clippy and tests on macOS and Windows, only when started by hand (workflow_dispatch). The release workflow does not repeat any of this; PR policy is the
 # org-wide workflow.
 name: CI
 
@@ -113,9 +112,9 @@ jobs:
 
   rust-desktop:
     name: clippy, test (profile ci) on ${{ matrix.os }}
-    # Same gate as `rust`: start-up crashes on macOS 12 and Windows 11 (docs/gaps.md G4) reached
-    # users because only Linux ran the tests.
-    if: github.base_ref != 'main'
+    # Same gate as `rust`, by hand only (Actions > CI > Run workflow): ~40 min of macOS/Windows
+    # runners is too slow for every PR. Run it once before a release.
+    if: github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
