@@ -2433,6 +2433,23 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
         crate::panels::transition_controls::open_duration(app, id);
     }
 
+    // ---- double-click a cut between two clips (a clip's edge with a clip right against it): the
+    // default transition goes on the cut (Kdenlive's "add a mix")
+    if resp.double_clicked()
+        && tool == Tool::Selection
+        && let Some(p) = resp.interact_pointer_pos()
+        && let Hit::Clip { track, clip, edge: Some(edge) } = hit(seq, layout, p)
+        && let Some(tr) = seq.track(track)
+        && let Some((_, it)) = seq.find_item(clip)
+        && tr.items.iter().any(|o| o.id != clip && if edge == redrob_film_edit::Edge::In { o.end() == it.start } else { o.start == it.end() })
+    {
+        let side = if edge == redrob_film_edit::Edge::In { "in" } else { "out" };
+        let cmd = if tr.kind == TrackKind::Video { "sequence.applyVideoTransition" } else { "sequence.applyAudioTransition" };
+        if let Err(e) = app.session.execute(cmd, json!({"clip": clip.0, "edge": side})) {
+            app.ui.status = e.to_string();
+        }
+    }
+
     // ---- double-click a nested sequence clip: open it in its own Timeline tab
     if resp.double_clicked()
         && tool == Tool::Selection

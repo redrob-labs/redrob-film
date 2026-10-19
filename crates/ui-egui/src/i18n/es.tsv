@@ -3641,3 +3641,30 @@
 	Paste Keyframes	Pegar fotogramas clave
 	Move Keyframes	Mover fotogramas clave
 	Apply Value to Keyframes	Aplicar valor a los fotogramas clave
+	Grain Extract	Extraer grano
+	Grain Merge	Fusionar grano
+	Or	O
+	And	Y
+	Xor	O exclusivo
+	Nor	No O
+	Nand	No Y
+	Not Xor	No O exclusivo
+	Alpha Atop	Alfa encima
+	Alpha Xor	Alfa O exclusivo
+	Destination Out	Destino fuera
+	Path to a greyscale image	Ruta de una imagen en escala de grises
+	Luma Wipe	Barrido de luminancia
+	Wipe Method	Método de barrido
+	Luma Image File	Archivo de imagen de luminancia
+	Spiral	Espiral
+	Matrix Snake	Serpiente en matriz
+	Waterfall	Cascada
+	Burst	Estallido
+	Cloud	Nube
+	Curtain	Cortina
+	Double Iris	Iris doble
+	Image File	Archivo de imagen
+	Insert a Transition	Insertar una transición
+	Default Transition	Transición predeterminada
+	At Clip Start	Al inicio del clip
+	At Clip End	Al final del clip

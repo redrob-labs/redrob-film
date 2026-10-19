@@ -178,6 +178,18 @@ pub const BLEND_MODES: &[&str] = &[
     "Saturation",
     "Color",
     "Luminosity",
+    // Kdenlive's compositions (appended: projects store the index)
+    "Grain Extract",
+    "Grain Merge",
+    "Or",
+    "And",
+    "Xor",
+    "Nor",
+    "Nand",
+    "Not Xor",
+    "Alpha Atop",
+    "Alpha Xor",
+    "Destination Out",
 ];
 
 pub(crate) fn f(id: &'static str, label: &'static str, def: f64, min: f64, max: f64, unit: &'static str) -> ParamDef {

@@ -38,10 +38,26 @@ pub enum Blend {
     Saturation,
     Color,
     Luminosity,
+    /// Kdenlive's Grain Extract / Grain Merge: the difference and the sum about mid-grey.
+    GrainExtract,
+    GrainMerge,
+    /// Kdenlive's bitwise compositing operations on 8-bit channel values.
+    BitOr,
+    BitAnd,
+    BitXor,
+    BitNor,
+    BitNand,
+    BitNotXor,
+    /// Porter-Duff alpha operations that keep the destination where the layer is transparent:
+    /// the layer only over opaque destination (Atop), each only where the other is not (Xor),
+    /// and the destination cut out by the layer (Destination Out).
+    AlphaAtop,
+    AlphaXor,
+    DestinationOut,
 }
 
 impl Blend {
-    pub const ALL: [Blend; 27] = [
+    pub const ALL: [Blend; 38] = [
         Blend::Normal,
         Blend::Dissolve,
         Blend::Darken,
@@ -69,6 +85,17 @@ impl Blend {
         Blend::Saturation,
         Blend::Color,
         Blend::Luminosity,
+        Blend::GrainExtract,
+        Blend::GrainMerge,
+        Blend::BitOr,
+        Blend::BitAnd,
+        Blend::BitXor,
+        Blend::BitNor,
+        Blend::BitNand,
+        Blend::BitNotXor,
+        Blend::AlphaAtop,
+        Blend::AlphaXor,
+        Blend::DestinationOut,
     ];
     /// Position in [`Blend::ALL`] (= `redrob_film_project::effect::BLEND_MODES`).
     pub fn index(self) -> u32 {
@@ -78,6 +105,10 @@ impl Blend {
     /// which are plain "over" per pixel).
     pub fn reads_destination(self) -> bool {
         !matches!(self, Blend::Normal | Blend::Dissolve)
+    }
+    /// The Porter-Duff alpha operations, which replace the blend-mode compositing equation.
+    pub fn is_alpha_op(self) -> bool {
+        matches!(self, Blend::AlphaAtop | Blend::AlphaXor | Blend::DestinationOut)
     }
     /// Index into `redrob_film_project::effect::BLEND_MODES`.
     pub fn from_index(i: u32) -> Blend {
@@ -160,7 +191,42 @@ fn sep(mode: Blend, b: f32, s: f32) -> f32 {
                 (b / s).min(1.0)
             }
         }
+        Blend::GrainExtract => (b - s + 0.5).clamp(0.0, 1.0),
+        Blend::GrainMerge => (b + s - 0.5).clamp(0.0, 1.0),
+        Blend::BitOr | Blend::BitAnd | Blend::BitXor | Blend::BitNor | Blend::BitNand | Blend::BitNotXor => {
+            let q = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u32;
+            let (x, y) = (q(b), q(s));
+            let r = match mode {
+                Blend::BitOr => x | y,
+                Blend::BitAnd => x & y,
+                Blend::BitXor => x ^ y,
+                Blend::BitNor => !(x | y),
+                Blend::BitNand => !(x & y),
+                _ => !(x ^ y),
+            } & 0xff;
+            r as f32 / 255.0
+        }
         _ => s,
+    }
+}
+
+/// A Porter-Duff alpha operation of premultiplied `s` (alpha `sa`) with premultiplied `d` (alpha
+/// `da`), for one channel `c` (3 = alpha).
+#[inline]
+fn alpha_op(mode: Blend, s: f32, d: f32, sa: f32, da: f32, c: usize) -> f32 {
+    match mode {
+        // S·Da + D·(1 − Sa); alpha Da
+        Blend::AlphaAtop => {
+            if c == 3 {
+                da
+            } else {
+                s * da + d * (1.0 - sa)
+            }
+        }
+        // S·(1 − Da) + D·(1 − Sa)
+        Blend::AlphaXor => s * (1.0 - da) + d * (1.0 - sa),
+        // D·(1 − Sa)
+        _ => d * (1.0 - sa),
     }
 }
 
@@ -271,6 +337,12 @@ pub fn composite_at(dst: &mut Image, src: &Image, x0: usize, y0: usize, opacity:
                 sp = [sp[0] / sa, sp[1] / sa, sp[2] / sa, 1.0];
             }
             let da = d[i + 3];
+            if mode.is_alpha_op() {
+                let sa = sp[3];
+                let out: [f32; 4] = std::array::from_fn(|c| alpha_op(mode, sp[c], d[i + c], sa, da, c));
+                d[i..i + 4].copy_from_slice(&out);
+                continue;
+            }
             if mode == Blend::Normal || mode == Blend::Dissolve || da <= 0.0 {
                 let k = 1.0 - sp[3];
                 for c in 0..4 {
@@ -313,6 +385,27 @@ mod tests {
         for k in 0..3 {
             assert!((p[k] - base[k]).abs() < 1e-4);
         }
+    }
+
+    #[test]
+    fn grain_bitwise_and_alpha_operations() {
+        let b = [0.6, 0.2, 0.0];
+        let s = [0.3, 0.3, 1.0];
+        let ge = blend_rgb(Blend::GrainExtract, b, s);
+        assert!((ge[0] - 0.8).abs() < 1e-6 && (ge[1] - 0.4).abs() < 1e-6 && ge[2] == 0.0);
+        let gm = blend_rgb(Blend::GrainMerge, b, s);
+        assert!((gm[0] - 0.4).abs() < 1e-6 && gm[1] == 0.0 && (gm[2] - 0.5).abs() < 1e-6);
+        let or = blend_rgb(Blend::BitOr, [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]);
+        assert_eq!(or, [1.0, 1.0, 0.0]);
+        assert_eq!(blend_rgb(Blend::BitNotXor, [1.0, 0.0, 1.0], [1.0, 0.0, 0.0]), [1.0, 1.0, 0.0]);
+        // Destination Out cuts the layer's shape out of what is under it
+        let mut d = Image::filled(1, 1, [0.5, 0.5, 0.5, 1.0]);
+        composite(&mut d, &Image::filled(1, 1, [0.0, 0.0, 0.0, 1.0]), 1.0, Blend::DestinationOut);
+        assert_eq!(d.get(0, 0), [0.0, 0.0, 0.0, 0.0]);
+        // Atop keeps the destination's alpha
+        let mut d = Image::filled(1, 1, [0.25, 0.0, 0.0, 0.5]);
+        composite(&mut d, &Image::filled(1, 1, [0.0, 1.0, 0.0, 1.0]), 1.0, Blend::AlphaAtop);
+        assert_eq!(d.get(0, 0), [0.0, 0.5, 0.0, 0.5]);
     }
 
     #[test]

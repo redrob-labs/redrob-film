@@ -3629,3 +3629,30 @@
 	Paste Keyframes	キーフレームをペースト
 	Move Keyframes	キーフレームを移動
 	Apply Value to Keyframes	キーフレームに値を適用
+	Grain Extract	グレイン抽出
+	Grain Merge	グレイン結合
+	Or	OR
+	And	AND
+	Xor	XOR
+	Nor	NOR
+	Nand	NAND
+	Not Xor	NOT XOR
+	Alpha Atop	アルファ アトップ
+	Alpha Xor	アルファ XOR
+	Destination Out	デスティネーションアウト
+	Path to a greyscale image	グレースケール画像のパス
+	Luma Wipe	ルマワイプ
+	Wipe Method	ワイプ方式
+	Luma Image File	ルマ画像ファイル
+	Spiral	スパイラル
+	Matrix Snake	マトリックススネーク
+	Waterfall	ウォーターフォール
+	Burst	バースト
+	Cloud	クラウド
+	Curtain	カーテン
+	Double Iris	ダブルアイリス
+	Image File	画像ファイル
+	Insert a Transition	トランジションを挿入
+	Default Transition	デフォルトのトランジション
+	At Clip Start	クリップの先頭
+	At Clip End	クリップの末尾

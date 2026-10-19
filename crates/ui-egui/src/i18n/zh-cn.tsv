@@ -3622,3 +3622,30 @@
 	Paste Keyframes	粘贴关键帧
 	Move Keyframes	移动关键帧
 	Apply Value to Keyframes	将值应用到关键帧
+	Grain Extract	颗粒提取
+	Grain Merge	颗粒合并
+	Or	或
+	And	与
+	Xor	异或
+	Nor	或非
+	Nand	与非
+	Not Xor	同或
+	Alpha Atop	Alpha 叠于其上
+	Alpha Xor	Alpha 异或
+	Destination Out	目标排除
+	Path to a greyscale image	灰度图像的路径
+	Luma Wipe	亮度擦除
+	Wipe Method	擦除方式
+	Luma Image File	亮度图像文件
+	Spiral	螺旋
+	Matrix Snake	矩阵蛇形
+	Waterfall	瀑布
+	Burst	爆裂
+	Cloud	云
+	Curtain	幕布
+	Double Iris	双光圈
+	Image File	图像文件
+	Insert a Transition	插入过渡
+	Default Transition	默认过渡
+	At Clip Start	在剪辑开头
+	At Clip End	在剪辑结尾

@@ -213,6 +213,37 @@ pub fn timeline_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, clips: &[(u64, T
             ui.close();
         }
     });
+    // Insert a Transition: at the clip's start or end, over the tracks below when no clip touches
+    // it there (Kdenlive's composition from the clip menu); the default one or a favourite
+    let video: Vec<u64> = clips.iter().filter(|c| c.1 == TrackKind::Video).map(|c| c.0).collect();
+    if let Some(&clip) = video.first() {
+        ui.menu_button(tl!("Insert a Transition"), |ui| {
+            let mut choices: Vec<(String, Option<&'static str>)> = vec![(tl!("Default Transition").to_string(), None)];
+            for id in &favorites {
+                if let Some(d) = redrob_film_project::find_effect(id).filter(|d| d.kind == EffectKind::VideoTransition) {
+                    choices.push((crate::i18n::t(d.name).to_string(), Some(d.id)));
+                }
+            }
+            for (label, effect) in choices {
+                ui.menu_button(label, |ui| {
+                    for (side, text) in [("in", tl!("At Clip Start")), ("out", tl!("At Clip End"))] {
+                        let b = ui.button(text);
+                        app.auto.add(&format!("timeline.clipMenu.insertTransition.{}.{side}", effect.unwrap_or("default")), b.rect, text);
+                        if b.clicked() {
+                            let mut p = json!({"clip": clip, "edge": side});
+                            if let Some(e) = effect {
+                                p["effect"] = json!(e);
+                            }
+                            if let Err(e) = app.session.execute("sequence.applyVideoTransition", p) {
+                                app.ui.status = e.to_string();
+                            }
+                            ui.close();
+                        }
+                    }
+                });
+            }
+        });
+    }
     // (2: has standard effects, 3: one of them is on)
     let with_fx = clips.iter().any(|c| c.2);
     let on = clips.iter().any(|c| c.3);

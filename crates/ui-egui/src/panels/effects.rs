@@ -172,6 +172,15 @@ fn effect_row(app: &mut FilmcraftApp, ui: &mut egui::Ui, d: &redrob_film_project
         }
     }
     app.auto.add(&format!("effects.item.{}", d.id), r, d.name);
+    // a transition plays a small animated preview of itself while hovered
+    if d.kind == redrob_film_project::EffectKind::VideoTransition && resp.hovered() && !resp.dragged() {
+        let time = ui.input(|i| i.time);
+        let tex = transition_preview(app, ui.ctx(), d, time);
+        egui::Tooltip::always_open(ui.ctx().clone(), ui.layer_id(), egui::Id::new(("tr-preview", d.id)), egui::PopupAnchor::Pointer).show(|ui| {
+            ui.image((tex, vec2(PREVIEW_W as f32, PREVIEW_H as f32)));
+        });
+        ui.ctx().request_repaint();
+    }
     if resp.drag_started() {
         crate::panels::start_drag_effect(ui, d.id);
     }
@@ -180,6 +189,52 @@ fn effect_row(app: &mut FilmcraftApp, ui: &mut egui::Ui, d: &redrob_film_project
     }
     crate::panels::effect_stack::effect_menu(app, &resp, d.id);
     resp.double_clicked().then(|| d.id.to_string())
+}
+
+const PREVIEW_W: usize = 128;
+const PREVIEW_H: usize = 72;
+/// Frames in one cycle of a transition preview (rendered once each, then cached).
+const PREVIEW_FRAMES: usize = 16;
+
+/// One frame of a transition's animated preview: the transition from a warm "A" picture to a cool
+/// "B" picture, at the progress the clock gives (a 1.6 s cycle with a short hold at each end).
+fn transition_preview(app: &mut FilmcraftApp, ctx: &egui::Context, d: &redrob_film_project::EffectDef, time: f64) -> egui::TextureId {
+    let phase = (time / 1.6).fract();
+    let frame = ((phase * (PREVIEW_FRAMES + 4) as f64) as usize).saturating_sub(2).min(PREVIEW_FRAMES - 1);
+    let name = format!("transition-preview-{}-{frame}", d.id);
+    if let Some((id, _)) = app.texture_existing(&name) {
+        return id;
+    }
+    let picture = |warm: bool| {
+        let mut img = redrob_film_render::Image::new(PREVIEW_W, PREVIEW_H);
+        for y in 0..PREVIEW_H {
+            for x in 0..PREVIEW_W {
+                let (u, v) = (x as f32 / PREVIEW_W as f32, y as f32 / PREVIEW_H as f32);
+                // a letter-like block in the middle so motion and shapes read
+                let mark = (0.38..0.62).contains(&u) && (0.25..0.75).contains(&v) && !((0.45..0.55).contains(&u) && (0.4..0.6).contains(&v));
+                let c = if warm {
+                    [0.55 + 0.4 * u, 0.25 + 0.2 * v, 0.08, 1.0]
+                } else {
+                    [0.05, 0.25 + 0.3 * v, 0.45 + 0.45 * u, 1.0]
+                };
+                let c = if mark { [0.95, 0.95, 0.95, 1.0] } else { c };
+                let i = (y * PREVIEW_W + x) * 4;
+                img.px[i..i + 4].copy_from_slice(&c);
+            }
+        }
+        img
+    };
+    let p = frame as f32 / (PREVIEW_FRAMES - 1) as f32;
+    let img = redrob_film_render::transitions::apply_scaled(&d.instance(), &picture(true), &picture(false), p, PREVIEW_H as f32 / 1080.0);
+    let rgba = crate::frames::Rgba { w: img.w, h: img.h, px: img.over_black_rgba8() };
+    let key = crate::frames::FrameKey {
+        target: crate::frames::Target::Item(redrob_film_project::ItemId(u64::MAX - 1)),
+        frame: frame as i64,
+        size: PREVIEW_W as u32,
+        revision: 0,
+        draft: false,
+    };
+    app.texture_for(ctx, &name, key, &rgba)
 }
 
 /// The Effects panel's filter toggles: only accelerated / 32-bit / YUV effects, and the

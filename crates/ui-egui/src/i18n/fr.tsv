@@ -3630,3 +3630,30 @@
 	Paste Keyframes	Coller les images clés
 	Move Keyframes	Déplacer les images clés
 	Apply Value to Keyframes	Appliquer la valeur aux images clés
+	Grain Extract	Extraction de grain
+	Grain Merge	Fusion de grain
+	Or	Ou
+	And	Et
+	Xor	Ou exclusif
+	Nor	Non-ou
+	Nand	Non-et
+	Not Xor	Non-ou exclusif
+	Alpha Atop	Alpha au-dessus
+	Alpha Xor	Alpha ou exclusif
+	Destination Out	Destination hors
+	Path to a greyscale image	Chemin d'une image en niveaux de gris
+	Luma Wipe	Balayage de luminance
+	Wipe Method	Méthode de balayage
+	Luma Image File	Fichier image de luminance
+	Spiral	Spirale
+	Matrix Snake	Serpent en matrice
+	Waterfall	Cascade
+	Burst	Éclatement
+	Cloud	Nuage
+	Curtain	Rideau
+	Double Iris	Double iris
+	Image File	Fichier image
+	Insert a Transition	Insérer une transition
+	Default Transition	Transition par défaut
+	At Clip Start	Au début du clip
+	At Clip End	À la fin du clip

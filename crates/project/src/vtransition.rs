@@ -41,6 +41,8 @@ pub const CORNER_OPTS: &[&str] = &["Top Left", "Top Right", "Bottom Right", "Bot
 pub const SHAPE_OPTS: &[&str] = &["Circle", "Square", "Diamond", "Star", "Heart", "Triangle", "Hexagon"];
 pub const SPIN_OPTS: &[&str] = &["Clockwise", "Counter-clockwise"];
 pub const ORDER_OPTS: &[&str] = &["Random", "Left to Right", "Center Out"];
+/// Luma Wipe methods: built-in greyscale maps, or a map read from an image file.
+pub const LUMA_METHODS: &[&str] = &["Spiral", "Matrix Snake", "Waterfall", "Burst", "Cloud", "Curtain", "Double Iris", "Image File"];
 
 /// Not animatable (transition parameters have no stopwatch in Premiere).
 fn fixed(mut p: ParamDef) -> ParamDef {
@@ -311,6 +313,18 @@ pub(crate) fn video_transition_defs() -> Vec<EffectDef> {
         tr("clock_wipe", "Clock Wipe", WIPE, m, with(vec![centre(), angle("start", "Start Angle", 0.0), feather(0.0)], border())),
         tr("linear_wipe", "Linear Wipe", WIPE, m, with(vec![angle("angle", "Wipe Angle", 90.0), feather(0.0)], border())),
         tr(
+            "luma_wipe",
+            "Luma Wipe",
+            WIPE,
+            m,
+            vec![
+                ch("method", "Wipe Method", LUMA_METHODS, 0),
+                crate::effect::txt("file", "Luma Image File"),
+                num("softness", "Softness", 10.0, 100.0, "%"),
+                b("invert", "Reverse", false),
+            ],
+        ),
+        tr(
             "neon_wipe",
             "Neon Wipe",
             WIPE,
@@ -413,8 +427,9 @@ mod tests {
     fn premiere_26_transition_tree() {
         let tree = video_transition_tree();
         let counts: Vec<usize> = tree.iter().map(|(_, v)| v.len()).collect();
-        assert_eq!(counts, vec![8, 11, 10, 8, 16, 8, 4, 2, 8, 9, 21], "{tree:?}");
-        assert_eq!(counts[..10].iter().sum::<usize>(), 84);
+        // (Wipe holds Kdenlive's Luma Wipe beside Premiere's nine)
+        assert_eq!(counts, vec![8, 11, 10, 8, 16, 8, 4, 2, 8, 10, 21], "{tree:?}");
+        assert_eq!(counts[..10].iter().sum::<usize>(), 85);
         // every transition is in a known folder, ids and names are unique per kind
         let mut names = std::collections::HashSet::new();
         for d in crate::effect::effect_defs().iter().filter(|d| d.kind == EffectKind::VideoTransition) {
