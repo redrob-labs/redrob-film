@@ -1159,6 +1159,8 @@ mod clip_ops_tests;
 #[cfg(test)]
 mod color_tests;
 #[cfg(test)]
+mod corpus_tests;
+#[cfg(test)]
 mod essential_sound_tests;
 #[cfg(test)]
 mod explicit_targets_tests;

@@ -59,7 +59,7 @@ For each present file, `corpus_tests::corpus_round_trip` runs, through the engin
 
 The output is then checked with ffprobe: the duration matches the exported range within a frame,
 the decoded frame count (`-count_frames`) matches the range at the sequence rate within one frame,
-an audio stream is there exactly when the source had one, and `ffmpeg -v error -i out -f null -`
+an audio stream is there whenever the source had one, and `ffmpeg -v error -i out -f null -`
 decodes the whole file without an error line.
 
 ## Running it
