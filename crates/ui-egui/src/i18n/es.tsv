@@ -3586,3 +3586,58 @@
 	The reply hit its length limit.	La respuesta alcanzó su límite de longitud.
 	The turn ended: {reason}.	El turno terminó: {reason}.
 	Workspace changed. The next message starts the agent with it.	El espacio de trabajo cambió. El próximo mensaje inicia el agente con él.
+	Apply Current Value to Selected Keyframes	Aplicar el valor actual a los fotogramas clave seleccionados
+	Automatic Keyframes (while playing)	Fotogramas clave automáticos (durante la reproducción)
+	Compare Effect (Program Monitor)	Comparar efecto (monitor de programa)
+	Copy Keyframe	Copiar fotograma clave
+	Copy Keyframes to Clipboard	Copiar fotogramas clave al portapapeles
+	Effects enabled (switch the whole effect stack on or off)	Efectos activados (activa o desactiva toda la pila de efectos)
+	Import Keyframes from Clipboard…	Importar fotogramas clave del portapapeles…
+	Limit Automatic Keyframes	Limitar fotogramas clave automáticos
+	Move Effect Down	Bajar efecto
+	Move Effect Up	Subir efecto
+	Move Keyframe to Playhead	Mover fotograma clave al cabezal de reproducción
+	Paste Keyframe at Playhead	Pegar fotograma clave en el cabezal de reproducción
+	Set Effect Zone In at Playhead	Fijar la entrada de la zona del efecto en el cabezal
+	Set Effect Zone Out at Playhead	Fijar la salida de la zona del efecto en el cabezal
+	Show Keyframes in Timeline	Mostrar fotogramas clave en la línea de tiempo
+	Show only 32-bit (high bit depth) effects	Mostrar solo efectos de 32 bits (alta profundidad de bits)
+	Show only YUV effects	Mostrar solo efectos YUV
+	Show only accelerated effects	Mostrar solo efectos acelerados
+	Show/hide the description of effects	Mostrar u ocultar la descripción de los efectos
+	Use Effect Zone	Usar zona del efecto
+	With effects	Con efectos
+	Without effects	Sin efectos
+	✓ Use Effect Zone	✓ Usar zona del efecto
+	(no favorite effects)	(no hay efectos favoritos)
+	32-bit color	Color de 32 bits
+	Add Effect	Añadir efecto
+	Add Effect…	Añadir efecto…
+	Click an effect to see its description	Haga clic en un efecto para ver su descripción
+	Controls: {list}	Controles: {list}
+	Copied {n} keyframes	{n} fotogramas clave copiados
+	Effects Enabled	Efectos activados
+	GPU accelerated	Acelerado por GPU
+	Import Keyframes	Importar fotogramas clave
+	Imported {n} keyframes	{n} fotogramas clave importados
+	Insert an Effect	Insertar un efecto
+	Into: {param}	En: {param}
+	Keep the clip's keyframe times (else start at the playhead)	Conservar los tiempos de los fotogramas clave del clip (si no, empezar en el cabezal)
+	Keyframe data (paste with Ctrl+V):	Datos de fotogramas clave (pegar con Ctrl+V):
+	Keyframes copied to the clipboard	Fotogramas clave copiados al portapapeles
+	Point component:	Componente del punto:
+	Show Description	Mostrar descripción
+	Time offset (frames):	Desplazamiento de tiempo (fotogramas):
+	Value offset:	Desplazamiento de valor:
+	{n} keyframable parameters	{n} parámetros con fotogramas clave
+	✓ Effects Enabled	✓ Efectos activados
+	Cubic	Cúbica
+	Exponential	Exponencial
+	Circular	Circular
+	Elastic	Elástica
+	Move Effect	Mover efecto
+	Toggle Effect Stack	Activar o desactivar la pila de efectos
+	Set Effect Zone	Fijar zona del efecto
+	Paste Keyframes	Pegar fotogramas clave
+	Move Keyframes	Mover fotogramas clave
+	Apply Value to Keyframes	Aplicar valor a los fotogramas clave

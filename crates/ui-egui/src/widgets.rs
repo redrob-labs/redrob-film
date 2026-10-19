@@ -6,7 +6,13 @@ use redrob_film_time::{FrameRate, Tick, parse_timecode};
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
 
-/// Premiere "hot text": a blue number you drag horizontally to scrub, click to type.
+/// Temp-data key of the values a typed hot number can name (`%x`, `%1`…; Effect Controls sets
+/// them for the effect being drawn): a `Vec<(String, f64)>`.
+pub const HOT_NUMBER_REFS: &str = "hot-number-refs";
+
+/// Premiere "hot text": a blue number you drag horizontally to scrub, click to type. A typed value
+/// may be a basic math expression (`+ - * / ( )`) and name other fields (`%x`, `%y`, `%1`…, see
+/// [`HOT_NUMBER_REFS`]).
 /// Returns (response, Some(new value) when changed).
 pub fn hot_number(ui: &mut Ui, id: egui::Id, value: f64, speed: f64, range: (f64, f64), decimals: usize, suffix: &str, t: &Tokens) -> (Response, Option<f64>) {
     let editing_id = id.with("editing");
@@ -15,7 +21,9 @@ pub fn hot_number(ui: &mut Ui, id: egui::Id, value: f64, speed: f64, range: (f64
         let r = ui.add(egui::TextEdit::singleline(buf).desired_width(56.0).font(Tokens::ui(12.0)));
         let mut out = None;
         if r.lost_focus() {
-            if let Ok(v) = buf.trim().trim_end_matches(suffix).trim().parse::<f64>() {
+            let refs: Vec<(String, f64)> = ui.data(|d| d.get_temp(egui::Id::new(HOT_NUMBER_REFS))).unwrap_or_default();
+            let typed = buf.trim().trim_end_matches(suffix).trim();
+            if let Some(v) = typed.parse::<f64>().ok().or_else(|| crate::panels::effect_stack::eval_expr(typed, &refs)) {
                 out = Some(v.clamp(range.0, range.1));
             }
             ui.data_mut(|d| d.remove::<String>(editing_id));
@@ -93,6 +101,11 @@ pub fn timecode_field(
             ui.data_mut(|d| d.remove::<String>(editing_id));
             if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
                 return None;
+            }
+            // `+…` / `-…` moves by a time (`+1::` an hour, `-2:` two minutes, `+12.` seconds,
+            // `+9` frames, `+2:.9`…)
+            if let Some(d) = crate::panels::effect_stack::relative_frames(&buf, rate.timecode_base()) {
+                return Some(Ok(rate.tick_of(rate.frame_at(time).saturating_add(d)).max(min)));
             }
             let typed = parse_timecode(&buf, rate, drop_frame, rate.frame_at(time));
             return Some(typed.map(|f| rate.tick_of(f).max(min)).map_err(|e| e.to_string()));

@@ -3575,3 +3575,58 @@
 	The reply hit its length limit.	La réponse a atteint sa longueur maximale.
 	The turn ended: {reason}.	Le tour s’est terminé : {reason}.
 	Workspace changed. The next message starts the agent with it.	L’espace de travail a changé. Le prochain message démarre l’agent avec celui-ci.
+	Apply Current Value to Selected Keyframes	Appliquer la valeur actuelle aux images clés sélectionnées
+	Automatic Keyframes (while playing)	Images clés automatiques (pendant la lecture)
+	Compare Effect (Program Monitor)	Comparer l'effet (moniteur de programme)
+	Copy Keyframe	Copier l'image clé
+	Copy Keyframes to Clipboard	Copier les images clés dans le presse-papiers
+	Effects enabled (switch the whole effect stack on or off)	Effets activés (active ou désactive toute la pile d'effets)
+	Import Keyframes from Clipboard…	Importer des images clés du presse-papiers…
+	Limit Automatic Keyframes	Limiter les images clés automatiques
+	Move Effect Down	Descendre l'effet
+	Move Effect Up	Monter l'effet
+	Move Keyframe to Playhead	Déplacer l'image clé vers la tête de lecture
+	Paste Keyframe at Playhead	Coller l'image clé à la tête de lecture
+	Set Effect Zone In at Playhead	Définir l'entrée de la zone d'effet à la tête de lecture
+	Set Effect Zone Out at Playhead	Définir la sortie de la zone d'effet à la tête de lecture
+	Show Keyframes in Timeline	Afficher les images clés dans la timeline
+	Show only 32-bit (high bit depth) effects	Afficher uniquement les effets 32 bits (haute profondeur)
+	Show only YUV effects	Afficher uniquement les effets YUV
+	Show only accelerated effects	Afficher uniquement les effets accélérés
+	Show/hide the description of effects	Afficher/masquer la description des effets
+	Use Effect Zone	Utiliser la zone d'effet
+	With effects	Avec effets
+	Without effects	Sans effets
+	✓ Use Effect Zone	✓ Utiliser la zone d'effet
+	(no favorite effects)	(aucun effet favori)
+	32-bit color	Couleur 32 bits
+	Add Effect	Ajouter un effet
+	Add Effect…	Ajouter un effet…
+	Click an effect to see its description	Cliquez sur un effet pour voir sa description
+	Controls: {list}	Paramètres : {list}
+	Copied {n} keyframes	{n} images clés copiées
+	Effects Enabled	Effets activés
+	GPU accelerated	Accéléré par le GPU
+	Import Keyframes	Importer des images clés
+	Imported {n} keyframes	{n} images clés importées
+	Insert an Effect	Insérer un effet
+	Into: {param}	Vers : {param}
+	Keep the clip's keyframe times (else start at the playhead)	Conserver les temps des images clés du clip (sinon commencer à la tête de lecture)
+	Keyframe data (paste with Ctrl+V):	Données d'images clés (coller avec Ctrl+V) :
+	Keyframes copied to the clipboard	Images clés copiées dans le presse-papiers
+	Point component:	Composante du point :
+	Show Description	Afficher la description
+	Time offset (frames):	Décalage temporel (images) :
+	Value offset:	Décalage de valeur :
+	{n} keyframable parameters	{n} paramètres animables
+	✓ Effects Enabled	✓ Effets activés
+	Cubic	Cubique
+	Exponential	Exponentielle
+	Circular	Circulaire
+	Elastic	Élastique
+	Move Effect	Déplacer l'effet
+	Toggle Effect Stack	Activer/désactiver la pile d'effets
+	Set Effect Zone	Définir la zone d'effet
+	Paste Keyframes	Coller les images clés
+	Move Keyframes	Déplacer les images clés
+	Apply Value to Keyframes	Appliquer la valeur aux images clés

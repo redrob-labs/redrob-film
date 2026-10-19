@@ -3567,3 +3567,58 @@
 	The reply hit its length limit.	回复已达到长度上限。
 	The turn ended: {reason}.	本轮已结束：{reason}。
 	Workspace changed. The next message starts the agent with it.	工作区已更改。下一条消息将用它启动智能体。
+	Apply Current Value to Selected Keyframes	将当前值应用到所选关键帧
+	Automatic Keyframes (while playing)	自动关键帧（播放时）
+	Compare Effect (Program Monitor)	比较效果（节目监视器）
+	Copy Keyframe	复制关键帧
+	Copy Keyframes to Clipboard	将关键帧复制到剪贴板
+	Effects enabled (switch the whole effect stack on or off)	效果已启用（打开或关闭整个效果堆栈）
+	Import Keyframes from Clipboard…	从剪贴板导入关键帧…
+	Limit Automatic Keyframes	限制自动关键帧
+	Move Effect Down	下移效果
+	Move Effect Up	上移效果
+	Move Keyframe to Playhead	将关键帧移到播放指示器
+	Paste Keyframe at Playhead	在播放指示器处粘贴关键帧
+	Set Effect Zone In at Playhead	在播放指示器处设置效果区域入点
+	Set Effect Zone Out at Playhead	在播放指示器处设置效果区域出点
+	Show Keyframes in Timeline	在时间轴中显示关键帧
+	Show only 32-bit (high bit depth) effects	仅显示 32 位（高位深）效果
+	Show only YUV effects	仅显示 YUV 效果
+	Show only accelerated effects	仅显示加速效果
+	Show/hide the description of effects	显示/隐藏效果说明
+	Use Effect Zone	使用效果区域
+	With effects	有效果
+	Without effects	无效果
+	✓ Use Effect Zone	✓ 使用效果区域
+	(no favorite effects)	（无收藏效果）
+	32-bit color	32 位颜色
+	Add Effect	添加效果
+	Add Effect…	添加效果…
+	Click an effect to see its description	单击效果以查看其说明
+	Controls: {list}	控件：{list}
+	Copied {n} keyframes	已复制 {n} 个关键帧
+	Effects Enabled	效果已启用
+	GPU accelerated	GPU 加速
+	Import Keyframes	导入关键帧
+	Imported {n} keyframes	已导入 {n} 个关键帧
+	Insert an Effect	插入效果
+	Into: {param}	目标：{param}
+	Keep the clip's keyframe times (else start at the playhead)	保留剪辑的关键帧时间（否则从播放指示器开始）
+	Keyframe data (paste with Ctrl+V):	关键帧数据（用 Ctrl+V 粘贴）：
+	Keyframes copied to the clipboard	关键帧已复制到剪贴板
+	Point component:	点分量：
+	Show Description	显示说明
+	Time offset (frames):	时间偏移（帧）：
+	Value offset:	值偏移：
+	{n} keyframable parameters	{n} 个可设关键帧的参数
+	✓ Effects Enabled	✓ 效果已启用
+	Cubic	三次
+	Exponential	指数
+	Circular	圆形
+	Elastic	弹性
+	Move Effect	移动效果
+	Toggle Effect Stack	切换效果堆栈
+	Set Effect Zone	设置效果区域
+	Paste Keyframes	粘贴关键帧
+	Move Keyframes	移动关键帧
+	Apply Value to Keyframes	将值应用到关键帧

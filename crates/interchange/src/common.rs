@@ -646,6 +646,7 @@ pub(crate) fn transition_effect(name: &str, audio: bool, report: &mut Report) ->
         post_fader: false,
         essential: false,
         layer: None,
+        zone: None,
     })
 }
 

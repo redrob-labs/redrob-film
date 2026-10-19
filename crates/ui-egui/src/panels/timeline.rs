@@ -783,13 +783,39 @@ fn draw_clip(
     // fx badge right-aligned in the header (italic-ish "fx")
     if (it.has_standard_effects() || it.has_modified_intrinsics()) && w > 40.0 {
         let col = if it.has_standard_effects() { Color32::from_rgb(0xe8, 0xc5, 0x4a) } else { Color32::from_rgb(0x91, 0xa2, 0xac) };
-        clip_p.text(
+        let r = clip_p.text(
             pos2(body.max.x - 6.0, body.min.y + 8.5),
             Align2::RIGHT_CENTER,
             "fx",
             egui::FontId::new(11.0, egui::FontFamily::Name("semibold".into())),
             col,
         );
+        // the clip's effect stack is switched off (Effects Enabled): the badge is struck through
+        let standard = it.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e));
+        let mut standard = standard.peekable();
+        if standard.peek().is_some() && standard.all(|e| !e.enabled) {
+            clip_p.line_segment([pos2(r.min.x - 1.0, r.center().y), pos2(r.max.x + 1.0, r.center().y)], Stroke::new(1.5, col));
+        }
+    }
+    // the keyframes of the clip's effects (Effect Controls ▸ Options ▸ Show Keyframes in Timeline)
+    if app.ui.fx.show_clip_keyframes && w > 8.0 && body.height() > 20.0 {
+        let y = body.max.y - 6.0;
+        let dur = it.duration.0.max(1) as f64;
+        let speed = it.speed.abs().max(1e-6);
+        let mut times: Vec<Tick> = it.effects.iter().filter(|e| e.enabled).flat_map(|e| e.params.values().flat_map(|p| p.keyframes.iter().map(|k| k.time))).collect();
+        times.sort();
+        times.dedup();
+        for m in times {
+            let f = (((m - it.source_in).0 as f64 / speed) / dur) as f32;
+            if !(0.0..=1.0).contains(&f) {
+                continue;
+            }
+            let f = if it.reverse { 1.0 - f } else { f };
+            let x = body.min.x + f * w;
+            let s = 3.5;
+            let pts = vec![pos2(x, y - s), pos2(x + s, y), pos2(x, y + s), pos2(x - s, y)];
+            clip_p.add(egui::Shape::convex_polygon(pts, Color32::from_rgb(0xe0, 0xe0, 0xe0), Stroke::new(1.0, Color32::BLACK)));
+        }
     }
     // corner triangles where the clip reaches the media's first/last frame (no handles)
     let media_dur = app.session.project.item(it.item).map(|i| i.duration());
@@ -2555,6 +2581,17 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
                 }
             }
         }
+        // Insert an Effect ▸ favourites, Effects Enabled (Kdenlive)
+        let fx_clips: Vec<(u64, redrob_film_project::TrackKind, bool, bool)> = sel
+            .iter()
+            .filter_map(|c| {
+                let (tid, it) = seq.find_item(*c)?;
+                let standard: Vec<&redrob_film_project::EffectInstance> =
+                    it.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e)).collect();
+                Some((c.0, seq.track(tid)?.kind, !standard.is_empty(), standard.iter().any(|e| e.enabled)))
+            })
+            .collect();
+        crate::panels::effect_stack::timeline_menu(app, ui, &fx_clips);
     });
 
     // ---- drops: project items and effects

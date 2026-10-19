@@ -46,6 +46,7 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("view.zoomIn", "Zoom In", ["View"], Some("=")),
     uic!("view.zoomOut", "Zoom Out", ["View"], Some("-")),
     uic!("view.zoomToSequence", "Zoom to Sequence", ["View"], Some("\\")),
+    uic!("sequence.addEffectDialog", "Add Effect…", ["Sequence"], None),
     uic!("view.playbackRes.full", "Full", ["View", "Playback Resolution"], None),
     uic!("view.playbackRes.half", "1/2", ["View", "Playback Resolution"], None),
     uic!("view.playbackRes.quarter", "1/4", ["View", "Playback Resolution"], None),
@@ -241,6 +242,12 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
         return Ok(Value::Null);
     }
     if let Some(r) = crate::panels::workspaces::route(app, id, &params) {
+        return r;
+    }
+    if let Some(r) = crate::panels::effect_stack::route(app, ctx, id, &params) {
+        if let Err(e) = &r {
+            app.ui.status = e.clone();
+        }
         return r;
     }
     if let Some(t) = id.strip_prefix("tool.") {

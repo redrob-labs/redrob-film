@@ -2777,7 +2777,7 @@ fn build() -> Vec<CommandSpec> {
             "Keyframe Interpolation",
             [],
             None,
-            r#"{"clip":id,"effect":str|index,"param":str,"mediaTime":ticks,"interpolation":"linear|bezier|autoBezier|continuousBezier|hold|easeIn|easeOut"}"#,
+            r#"{"clip":id,"effect":str|index,"param":str,"mediaTime":ticks,"interpolation":"linear|bezier|autoBezier|continuousBezier|hold|easeIn|easeOut|<cubic|exponential|circular|elastic|bounce><In|Out|InOut>"}"#,
             has_seq,
             |s, p| keyframe_op(s, p, "interp")
         ),
@@ -2941,6 +2941,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::proxies::commands());
     v.extend(crate::project_manager::commands());
     v.extend(crate::masks::commands());
+    v.extend(crate::effect_stack::commands());
     v.extend(crate::presets::commands());
     v.extend(crate::export_tools::commands());
     v.extend(crate::transcript::commands());
@@ -3055,15 +3056,8 @@ fn keyframe_op(s: &mut Session, p: &Value, op: &str) -> Result<Value> {
             }
             _ => {
                 let at = mtime.unwrap_or(mt_now);
-                let kind = match interp.as_deref().unwrap_or("linear").to_ascii_lowercase().as_str() {
-                    "bezier" => redrob_film_project::Interpolation::Bezier,
-                    "autobezier" => redrob_film_project::Interpolation::AutoBezier,
-                    "continuousbezier" => redrob_film_project::Interpolation::ContinuousBezier,
-                    "hold" => redrob_film_project::Interpolation::Hold,
-                    "easein" => redrob_film_project::Interpolation::EaseIn,
-                    "easeout" => redrob_film_project::Interpolation::EaseOut,
-                    _ => redrob_film_project::Interpolation::Linear,
-                };
+                // linear, bezier, …, and the easing curves (`cubicIn`, `bounceInOut`, …)
+                let kind = redrob_film_project::Interpolation::from_key(interp.as_deref().unwrap_or("linear")).unwrap_or_default();
                 let k = prm.keyframes.iter_mut().find(|k| k.time == at).ok_or_else(|| bad("keyframe", "no keyframe at that time"))?;
                 k.interp = kind;
             }
