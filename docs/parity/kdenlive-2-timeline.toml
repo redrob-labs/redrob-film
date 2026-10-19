@@ -456,3 +456,438 @@ manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#identi
 film = "partial"
 evidence = "crates/engine/src/project_tools.rs:297 sequence.goToNextGap/PrevGap(InTrack); timeline.selectGap"
 gap = "Navigates to gaps but does not create markers for them"
+
+# ---------------------------------------------------------------- timeline toolbar / status bar / view
+[[row]]
+id = "K2-051"
+group = "timeline-view"
+feature = "Enable Track Compositing checkbox (automatic alpha compositing of tracks on/off)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#track-compositing"
+film = "none"
+evidence = "no compositing toggle found; tracks always composite top-down in crates/render"
+gap = "Cannot turn automatic track compositing off (expert mode)"
+
+[[row]]
+id = "K2-052"
+group = "timeline-view"
+feature = "Disable timeline effects (bypass all effects globally)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "none"
+evidence = "grep globalFx/fx_mute: nothing"
+gap = "No global effects bypass (Premiere's Global FX Mute also missing)"
+
+[[row]]
+id = "K2-053"
+group = "timeline-view"
+feature = "Mixed / split / split-reverse audio track layout"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#switching-between-mixed-or-split-audio"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:4 fixed split layout (video above, audio below)"
+gap = "Only the split layout; no mixed A1,V1,A2,V2 order or reversed audio order"
+
+[[row]]
+id = "K2-054"
+group = "timeline-view"
+feature = "Position indicator: hover time and total length, timecode or frames"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1246 playhead timecode field; crates/time/src/lib.rs:330 TimeDisplay"
+gap = "No hover-position readout or project length; timeline always shows timecode"
+
+[[row]]
+id = "K2-055"
+group = "timeline-view"
+feature = "Mix Clips (U): same-track transition at the cut under the playhead"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:293 trim.applyDefaultTransition; sequence.applyVideoTransition / applyAudioTransition"
+gap = "Keys Cmd+D / Shift+D instead of U; double-click on a cut does not mix"
+
+[[row]]
+id = "K2-056"
+group = "timeline-view"
+feature = "Favorite Effects toolbar button"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "none"
+evidence = "grep favorite: only export presets (crates/engine/src/export_tools.rs:4)"
+gap = "No favourite-effects list"
+
+[[row]]
+id = "K2-057"
+group = "timeline-view"
+feature = "Preview render: start/stop, add/remove zones, render status bar on ruler"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:281 sequence.renderInToOut/renderSelection/deleteRenderFiles; crates/ui-egui/src/panels/timeline.rs:1392 render bar"
+gap = "Zones are In/Out or selection, not a list of named preview zones"
+
+[[row]]
+id = "K2-058"
+group = "timeline-view"
+feature = "Automatic preview render and preview using proxy clips"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "none"
+evidence = "grep autoRender: nothing"
+gap = "Renders only on request"
+
+[[row]]
+id = "K2-059"
+group = "timeline-view"
+feature = "Manage Cached Data (preview/thumbnail cache)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "partial"
+evidence = "mediaCache.clean; sequence.deleteRenderFiles(InToOut)"
+gap = "No per-project cache size/usage dialog"
+
+[[row]]
+id = "K2-060"
+group = "timeline-view"
+feature = "Show/Hide Audio Mixer and Subtitles from the toolbar"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/ui-egui/src/dock.rs:94 PanelKind::AudioTrackMixer; crates/ui-egui/src/panels/timeline.rs:1265 captions toggle"
+gap = ""
+
+[[row]]
+id = "K2-061"
+group = "timeline-view"
+feature = "Status bar: hover hints and key-binding info for the current tool"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#status-bar"
+film = "full"
+evidence = "crates/ui-egui/src/lib.rs:1820 per-tool hint text"
+gap = "Hint is per tool, not per hovered item; no hovered clip name"
+
+[[row]]
+id = "K2-062"
+group = "timeline-view"
+feature = "Show video thumbnails (In / In-Out / all frames / none)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#show-video-thumbnails"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1291 Show Video Thumbnails + Head / Head and Tail / Continuous"
+gap = ""
+
+[[row]]
+id = "K2-063"
+group = "timeline-view"
+feature = "Show audio thumbnails, waveform zoom x1/2/4/8"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#show-audio-thumbnails"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1305 Show Audio Waveform; :876 waveform_display_gain (auto-normalised)"
+gap = "No manual waveform zoom factor"
+
+[[row]]
+id = "K2-064"
+group = "timeline-view"
+feature = "Normalize audio thumbnails / separate channels per audio track"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-right-click-menu"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:876 normalised display; :818 draw_waveform per stream"
+gap = "Normalisation always on; no per-channel lanes for one stereo stream"
+
+[[row]]
+id = "K2-065"
+group = "timeline-view"
+feature = "Toggles for marker comments, clip names, colour tags on clips"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#status-bar"
+film = "none"
+evidence = "timeline display popup crates/ui-egui/src/panels/timeline.rs:1289 has thumbnails/waveform/through edits only"
+gap = "Names, label colours and marker text always drawn"
+
+[[row]]
+id = "K2-066"
+group = "timeline-view"
+feature = "Mouse zoom centred on playhead switch"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#status-bar"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:239 zoom_about(anchor)"
+gap = "Wheel zoom anchors on pointer; no option to anchor on playhead"
+
+[[row]]
+id = "K2-067"
+group = "timeline-view"
+feature = "Fit Zoom to Project, zoom in/out, zoom slider"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#fit-zoom-to-project"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:46 view.zoomIn/zoomOut/zoomToSequence"
+gap = ""
+
+[[row]]
+id = "K2-068"
+group = "timeline-view"
+feature = "Zoombar: drag scrollbar edges to zoom"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#zoombars"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1458 zoom_scrollbar"
+gap = ""
+
+[[row]]
+id = "K2-069"
+group = "timeline-view"
+feature = "Wheel scrolls horizontally, Shift+wheel vertically (invertible)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#scrolling-and-panning"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1923 wheel_input; :2030 alt+wheel zoom"
+gap = "Invert option not verified"
+
+[[row]]
+id = "K2-070"
+group = "timeline-view"
+feature = "Pan with Ctrl+LMB or middle-button drag"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#scrolling-and-panning"
+film = "partial"
+evidence = "Hand tool crates/ui-egui/src/state.rs:24"
+gap = "No Ctrl-drag or middle-drag pan without switching tool"
+
+[[row]]
+id = "K2-071"
+group = "timeline-view"
+feature = "Fixed centred playhead during playback"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#timeline-cursor-position-caret-playhead"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:318 auto_scroll smoothScroll keeps playhead centred"
+gap = "Only during playback, not while scrubbing/seeking"
+
+[[row]]
+id = "K2-072"
+group = "timeline-view"
+feature = "Return playhead to start position on stop"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#timeline-cursor-position-caret-playhead"
+film = "none"
+evidence = "grep returnToStart: nothing"
+gap = "No such preference"
+
+[[row]]
+id = "K2-073"
+group = "timeline-view"
+feature = "Split A/V automatically when dropping an A/V clip"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#split-audio-and-video-automatically"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2183 timeline.place video/audio tracks, linked clips"
+gap = ""
+
+[[row]]
+id = "K2-074"
+group = "timeline-view"
+feature = "Disable/enable a clip's whole effect stack by clicking the effect badge on the clip"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#disable-enable-effect-stack-of-a-clip"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:2705 effects.toggleEnabled (per effect, Effect Controls)"
+gap = "No per-clip stack toggle from the timeline"
+
+[[row]]
+id = "K2-075"
+group = "timeline-view"
+feature = "Disable / enable a clip (no audio, no video)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#disabling-individual-clips"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1479 clip.enable"
+gap = ""
+
+[[row]]
+id = "K2-076"
+group = "timeline-view"
+feature = "Loop Zone playback (Ctrl+Shift+Space) and Play Zone (Ctrl+Space)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#continuously-loop-playback"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:45 playback.loop, :386; playback.inToOut (Alt+K)"
+gap = "Different default keys"
+
+# ---------------------------------------------------------------- tracks
+[[row]]
+id = "K2-077"
+group = "tracks"
+feature = "Lock track"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1125 timeline.setTrack locked; crates/project/src/lib.rs:746"
+gap = ""
+
+[[row]]
+id = "K2-078"
+group = "tracks"
+feature = "Mute audio track"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1176 timeline.setTrack muted"
+gap = ""
+
+[[row]]
+id = "K2-079"
+group = "tracks"
+feature = "Hide video track"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1161 timeline.setTrack enabled (eye)"
+gap = ""
+
+[[row]]
+id = "K2-080"
+group = "tracks"
+feature = "Enable/disable track effects from the header"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "partial"
+evidence = "crates/project/src/lib.rs:759 Track.effects (audio inserts in the Track Mixer)"
+gap = "No video track effects; no header toggle"
+
+[[row]]
+id = "K2-081"
+group = "tracks"
+feature = "Track name: click to rename"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:2484 timeline.setTrack name; crates/ui-egui/src/panels/timeline.rs:1201 name painted only"
+gap = "No rename UI in the header"
+
+[[row]]
+id = "K2-082"
+group = "tracks"
+feature = "Expand/collapse a track; Shift-click for all of a type"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1221 double-click header toggles height of ALL tracks of the type"
+gap = "Heights are per kind, not per track"
+
+[[row]]
+id = "K2-083"
+group = "tracks"
+feature = "Resize tracks individually; Shift resizes all of a type; Shift+double-click resets height"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#resizing-tracks"
+film = "partial"
+evidence = "crates/ui-egui/src/state.rs:189 video_track_h / audio_track_h (one height per kind)"
+gap = "No per-track height"
+
+[[row]]
+id = "K2-084"
+group = "tracks"
+feature = "Fit all tracks to view height"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#fit-tracks-to-view-height"
+film = "none"
+evidence = "timeline.expandAllTracks/minimizeAllTracks only (crates/ui-egui/src/panels/keyboard.rs)"
+gap = "No fit-to-view"
+
+[[row]]
+id = "K2-085"
+group = "tracks"
+feature = "Track header right-click menu (insert/delete/move/fit/identify/thumbnails)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-right-click-menu"
+film = "none"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1082 draw_headers has no context_menu"
+gap = "Track actions only from the Sequence menu"
+
+[[row]]
+id = "K2-086"
+group = "tracks"
+feature = "Add Track dialog (type, position, count)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#adding-tracks"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:309 sequence.addTracks"
+gap = ""
+
+[[row]]
+id = "K2-087"
+group = "tracks"
+feature = "Delete Track dialog (choose tracks, warn when not empty)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#deleting-tracks"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:310 sequence.deleteTracks; crates/engine/src/commands.rs:1794 sequence.deleteTrack"
+gap = "Empty-track warning not verified"
+
+[[row]]
+id = "K2-088"
+group = "tracks"
+feature = "Move track up / down (reorder within type)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#reordering-tracks"
+film = "none"
+evidence = "grep moveTrack/reorderTrack: nothing"
+gap = "Tracks cannot be reordered"
+
+[[row]]
+id = "K2-089"
+group = "tracks"
+feature = "Show record controls on an audio track"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-right-click-menu"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1230 voiceover action; crates/project/src/mixer.rs:182 record_arm"
+gap = ""
+
+[[row]]
+id = "K2-090"
+group = "tracks"
+feature = "Toggle Track Lock (Shift+L) / All Track Lock (Ctrl+Shift+L) on the selected track"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#editing"
+film = "none"
+evidence = "lock only by header click; no keyboard command (no track focus)"
+gap = "No lock shortcuts"
+
+[[row]]
+id = "K2-091"
+group = "tracks"
+feature = "Toggle Track Hidden/Mute (Ctrl+Shift+H) and Track Disabled (Shift+H)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#timeline"
+film = "partial"
+evidence = "crates/engine/src/keyboard.rs timeline.toggleMuteTargetedAudio / toggleOutputTargetedVideo"
+gap = "Acts on targeted tracks, unbound by default"
+
+[[row]]
+id = "K2-092"
+group = "tracks"
+feature = "Sync lock and solo per track"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1142 syncLock, :1190 solo"
+gap = "Film extra (not in Kdenlive)"
+
+# ---------------------------------------------------------------- grouping
+[[row]]
+id = "K2-093"
+group = "grouping"
+feature = "Group / Ungroup clips (Ctrl+G / Ctrl+Shift+G)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html#how-to-group-clips"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:1568 clip.group sets TrackItem.group, :1581 clip.ungroup"
+gap = "Group id is stored but nothing reads it: clicking does not select the group and moves ignore it (only A/V links do)"
+
+[[row]]
+id = "K2-094"
+group = "grouping"
+feature = "Click one grouped clip selects the whole group; move as one"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html#how-to-group-clips"
+film = "none"
+evidence = "crates/engine/src/commands.rs:415 with_links expands links only"
+gap = "Wire group into selection expansion"
+
+[[row]]
+id = "K2-095"
+group = "grouping"
+feature = "Alt+click edits one item inside a group (red border)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html#edit-grouped-clips"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:2186 Alt picks one side of a link"
+gap = "Works for links, not groups"
+
+[[row]]
+id = "K2-096"
+group = "grouping"
+feature = "Cutting a grouped clip cuts its group partners at the same point"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html#cutting-grouped-clips"
+film = "partial"
+evidence = "crates/edit/src/lib.rs:315 razor_items cuts linked partners"
+gap = "Links only, groups ignored"
+
+[[row]]
+id = "K2-097"
+group = "grouping"
+feature = "Apply effect parameter change to all clips in the group (optionally only equal values)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html#effects-on-grouped-clips"
+film = "none"
+evidence = "effects.setParam targets one clip (crates/engine/src/commands.rs)"
+gap = "No group-wide effect editing"
+
+[[row]]
+id = "K2-098"
+group = "grouping"
+feature = "Shift+click / Shift+drag rubber-band multi-select"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html#how-to-group-clips"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:2183 shift toggles; marquee select (lib.rs:1822 hint)"
+gap = "Marquee without Shift (Premiere)"
