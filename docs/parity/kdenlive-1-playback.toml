@@ -1216,3 +1216,1032 @@ manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html
 film = "full"
 evidence = "crates/ui-egui/src/menus.rs:66 view.display.audioWaveform"
 gap = ""
+
+# ------------------------------------------------------------------ audio effects
+# Our audio effects: crates/project/src/effect/audio.rs (53 ids in PREMIERE_AUDIO_EFFECTS, :578),
+# DSP in crates/audio-dsp/src/effects/. Kdenlive categories follow the manual's Audio Effects tree.
+
+[[row]]
+id = "K1-200"
+group = "audio-fx"
+feature = "Volume and Dynamics: Compressor / Expander"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/volume_and_dynamics/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:230 dynamics_rack (compressor, expander, gate, limiter); :255 single_band_compressor"
+gap = ""
+
+[[row]]
+id = "K1-201"
+group = "audio-fx"
+feature = "Volume and Dynamics: De-Esser"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/volume_and_dynamics/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:221 deesser"
+gap = ""
+
+[[row]]
+id = "K1-202"
+group = "audio-fx"
+feature = "Volume and Dynamics: Fade In / Fade Out"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/volume_and_dynamics/index.html"
+film = "full"
+evidence = "sequence.applyAudioTransition (Constant Power / Gain at clip start or end)"
+gap = ""
+
+[[row]]
+id = "K1-203"
+group = "audio-fx"
+feature = "Volume and Dynamics: Gain"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/volume_and_dynamics/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:200 amplify; clip.audioGain"
+gap = ""
+
+[[row]]
+id = "K1-204"
+group = "audio-fx"
+feature = "Volume and Dynamics: Limiter"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/volume_and_dynamics/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:243 hard_limiter"
+gap = ""
+
+[[row]]
+id = "K1-205"
+group = "audio-fx"
+feature = "Volume and Dynamics: Mute"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/volume_and_dynamics/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:561 mute"
+gap = ""
+
+[[row]]
+id = "K1-206"
+group = "audio-fx"
+feature = "Volume and Dynamics: Normalize (peak)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/volume_and_dynamics/index.html"
+film = "full"
+evidence = "crates/engine/src/mixer.rs:1115 clip.audioGain normalizeMax / normalizeAll"
+gap = ""
+
+[[row]]
+id = "K1-207"
+group = "audio-fx"
+feature = "Volume and Dynamics: Normalize (2 Pass) to a loudness target"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/volume_and_dynamics/index.html"
+film = "full"
+evidence = "crates/engine/src/essential_sound.rs:15 essentialSound.autoMatch (BS.1770); export loudness normalization"
+gap = ""
+
+[[row]]
+id = "K1-208"
+group = "audio-fx"
+feature = "Volume and Dynamics: Volume (keyframable)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/volume_and_dynamics/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:562 volume_a; timeline.track.A1.keyframes.volume"
+gap = ""
+
+[[row]]
+id = "K1-209"
+group = "audio-fx"
+feature = "Volume and Dynamics extras: asoftclip, simple compressor/expander, sox gain"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/volume_and_dynamics/index.html"
+film = "partial"
+evidence = "crates/project/src/effect/audio.rs:267 tube_compressor (soft clip); single_band_compressor"
+gap = "no dedicated soft clipper effect"
+
+[[row]]
+id = "K1-210"
+group = "audio-fx"
+feature = "Channels: Audio Pan"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/channels/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:560 balance_a; mixer pan automation"
+gap = ""
+
+[[row]]
+id = "K1-211"
+group = "audio-fx"
+feature = "Channels: Audiomap (route channels)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/channels/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:202 channel_mixer_a"
+gap = ""
+
+[[row]]
+id = "K1-212"
+group = "audio-fx"
+feature = "Channels: Balance"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/channels/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:560 balance_a"
+gap = ""
+
+[[row]]
+id = "K1-213"
+group = "audio-fx"
+feature = "Channels: Copy Channels to Stereo"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/channels/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:499 fill_left / fill_right"
+gap = ""
+
+[[row]]
+id = "K1-214"
+group = "audio-fx"
+feature = "Channels: Mixdown"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/channels/index.html"
+film = "partial"
+evidence = "Preferences audio.mixdownType; crates/audio-dsp/src/channels.rs Mixdown"
+gap = "mixdown is a sequence/export setting, not a per-clip effect"
+
+[[row]]
+id = "K1-215"
+group = "audio-fx"
+feature = "Channels: Pan"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/channels/index.html"
+film = "full"
+evidence = "mixer.A1.pan; balance_a effect"
+gap = ""
+
+[[row]]
+id = "K1-216"
+group = "audio-fx"
+feature = "Channels: Stereo to Mono"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/channels/index.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:834 audio.sumToMonoInSource (monitor only); channel_mixer_a can sum"
+gap = "no one-click stereo-to-mono clip effect"
+
+[[row]]
+id = "K1-217"
+group = "audio-fx"
+feature = "Channels: Swap Channels"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/channels/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:542 swap_channels"
+gap = ""
+
+[[row]]
+id = "K1-218"
+group = "audio-fx"
+feature = "EQ and Filters: audio equalizer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/eq_and_filters/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:327 graphic_eq (10/20/30 bands); :333 parametric_eq"
+gap = ""
+
+[[row]]
+id = "K1-219"
+group = "audio-fx"
+feature = "EQ and Filters: high pass / low pass"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/eq_and_filters/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:330 highpass, :331 lowpass"
+gap = ""
+
+[[row]]
+id = "K1-220"
+group = "audio-fx"
+feature = "EQ and Filters: band pass / band reject"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/eq_and_filters/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:324 bandpass, :332 notch"
+gap = ""
+
+[[row]]
+id = "K1-221"
+group = "audio-fx"
+feature = "EQ and Filters: high shelf / low shelf"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/eq_and_filters/index.html"
+film = "partial"
+evidence = "crates/project/src/effect/audio.rs:333 parametric_eq shelving bands; :351 simple_eq"
+gap = "no standalone shelf filter effects"
+
+[[row]]
+id = "K1-222"
+group = "audio-fx"
+feature = "EQ and Filters: all pass"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/eq_and_filters/index.html"
+film = "none"
+evidence = "no allpass id in crates/project/src/effect/audio.rs"
+gap = "no all-pass (phase) filter"
+
+[[row]]
+id = "K1-223"
+group = "audio-fx"
+feature = "EQ and Filters: sox band / sox bass"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/eq_and_filters/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:325 bass; :324 bandpass"
+gap = ""
+
+[[row]]
+id = "K1-224"
+group = "audio-fx"
+feature = "Modulators: flanger"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/modulators/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:372 flanger; :359 chorus_flanger"
+gap = ""
+
+[[row]]
+id = "K1-225"
+group = "audio-fx"
+feature = "Modulators: phaser"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/modulators/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:388 phaser"
+gap = ""
+
+[[row]]
+id = "K1-226"
+group = "audio-fx"
+feature = "Modulators: pulsator (auto-pan / tremolo)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/modulators/index.html"
+film = "none"
+evidence = "no tremolo / auto-pan id in crates/project/src/effect/audio.rs"
+gap = "no amplitude or pan modulation effect"
+
+[[row]]
+id = "K1-227"
+group = "audio-fx"
+feature = "Modulators: treble"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/modulators/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:356 treble"
+gap = ""
+
+[[row]]
+id = "K1-228"
+group = "audio-fx"
+feature = "Modulators: vibrato"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/modulators/index.html"
+film = "none"
+evidence = "no vibrato id in crates/project/src/effect/audio.rs"
+gap = "no pitch-modulation (vibrato) effect"
+
+[[row]]
+id = "K1-229"
+group = "audio-fx"
+feature = "Pitch and Time: octave shift / pitch scale"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/pitch_and_time/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:554 pitch_shifter (semitones, cents)"
+gap = ""
+
+[[row]]
+id = "K1-230"
+group = "audio-fx"
+feature = "Pitch and Time: time stretch without pitch change"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/pitch_and_time/index.html"
+film = "partial"
+evidence = "clip Speed/Duration with Maintain Audio Pitch (timeline.clipMenu.clip.speedDuration)"
+gap = "stretch is a clip speed setting, not an audio effect"
+
+[[row]]
+id = "K1-231"
+group = "audio-fx"
+feature = "Reverb, Echo and Delays: echo"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/reverb_echo_delays/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:280 analog_delay, :294 delay, :304 multitap_delay"
+gap = ""
+
+[[row]]
+id = "K1-232"
+group = "audio-fx"
+feature = "Reverb, Echo and Delays: compensation delay"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/reverb_echo_delays/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:294 delay (dry off gives a pure delay)"
+gap = ""
+
+[[row]]
+id = "K1-233"
+group = "audio-fx"
+feature = "Reverb (room reverb)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/reverb_echo_delays/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:446 studio_reverb, :431 convolution_reverb, :458 surround_reverb"
+gap = ""
+
+[[row]]
+id = "K1-234"
+group = "audio-fx"
+feature = "Stereo images: extrastereo / stereo widener"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/stereo_and_binaural_images/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:551 stereo_width"
+gap = ""
+
+[[row]]
+id = "K1-235"
+group = "audio-fx"
+feature = "Stereo images: crossfeed (headphone)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/stereo_and_binaural_images/index.html"
+film = "none"
+evidence = "no crossfeed id"
+gap = "no headphone crossfeed effect"
+
+[[row]]
+id = "K1-236"
+group = "audio-fx"
+feature = "Stereo images: Haas stereo enhancer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/stereo_and_binaural_images/index.html"
+film = "none"
+evidence = "no haas id"
+gap = "no inter-channel delay (Haas) enhancer"
+
+[[row]]
+id = "K1-237"
+group = "audio-fx"
+feature = "Stereo images: stereo to binaural / sofalizer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/stereo_and_binaural_images/index.html"
+film = "partial"
+evidence = "crates/project/src/effect/audio.rs:477 binauralizer; :537 panner_ambisonics"
+gap = "no SOFA HRTF file loading"
+
+[[row]]
+id = "K1-238"
+group = "audio-fx"
+feature = "Stereo images: stereo tools (M/S, phase, balance)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/stereo_and_binaural_images/index.html"
+film = "partial"
+evidence = "crates/project/src/effect/audio.rs:517 invert_a, :551 stereo_width, :560 balance_a"
+gap = "no mid/side encode-decode tool"
+
+[[row]]
+id = "K1-239"
+group = "audio-fx"
+feature = "Tools: Crusher (bit/sample-rate reduction)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/tools/index.html"
+film = "none"
+evidence = "no bitcrusher id (distortion at :487 is waveshaping)"
+gap = "no bit-depth / sample-rate crusher"
+
+[[row]]
+id = "K1-240"
+group = "audio-fx"
+feature = "Tools: Crystalizer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/tools/index.html"
+film = "none"
+evidence = "no crystalizer id"
+gap = "no transient-sharpening crystalizer"
+
+[[row]]
+id = "K1-241"
+group = "audio-fx"
+feature = "Tools: DC Shift"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/tools/index.html"
+film = "none"
+evidence = "no dc shift id"
+gap = "no DC offset effect"
+
+[[row]]
+id = "K1-242"
+group = "audio-fx"
+feature = "Tools: aderivative / aintegral"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/tools/index.html"
+film = "none"
+evidence = "no ids"
+gap = "no derivative / integral audio filters"
+
+[[row]]
+id = "K1-243"
+group = "audio-fx"
+feature = "Audio (misc): noise reduction (arnndn, afwtdn)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/audio/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:421 denoise, :423 dereverb, declicker, dehummer"
+gap = ""
+
+[[row]]
+id = "K1-244"
+group = "audio-fx"
+feature = "Audio (misc): dialogue enhance / speech normalizer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/audio/index.html"
+film = "full"
+evidence = "crates/project/src/effect/audio.rs:428 speech_enhance; vocal_enhancer"
+gap = ""
+
+[[row]]
+id = "K1-245"
+group = "audio-fx"
+feature = "Audio (misc): dynamic range control / dynamic equalizer (adrc, adynamicequalizer)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/audio/index.html"
+film = "partial"
+evidence = "crates/project/src/effect/audio.rs:253 multiband_compressor"
+gap = "no frequency-dependent dynamic EQ"
+
+[[row]]
+id = "K1-246"
+group = "audio-fx"
+feature = "Audio (misc): exciter / sub boost / virtual bass"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/audio/index.html"
+film = "partial"
+evidence = "crates/project/src/effect/audio.rs:520 mastering (exciter); :325 bass"
+gap = "no psychoacoustic sub-bass generator"
+
+[[row]]
+id = "K1-247"
+group = "audio-fx"
+feature = "Audio (misc): frequency / phase shift (afreqshift, aphaseshift)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/audio/index.html"
+film = "none"
+evidence = "no ids"
+gap = "no frequency-shifter or phase-shifter effects"
+
+[[row]]
+id = "K1-248"
+group = "audio-fx"
+feature = "Audio (misc): super pass / super stop / tilt shelf / subcut filters"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/audio/index.html"
+film = "partial"
+evidence = "crates/project/src/effect/audio.rs:335 scientific_filter (Butterworth/Chebyshev/Bessel)"
+gap = "no tilt-shelf or dedicated subcut presets"
+
+[[row]]
+id = "K1-249"
+group = "audio-fx"
+feature = "Audio (misc): auto fade at cuts / audio seam smoothing"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/audio/index.html"
+film = "partial"
+evidence = "sequence.applyAudioTransition; Preferences timeline.audioTransitionDuration"
+gap = "no automatic micro-fade at every audio edit"
+
+[[row]]
+id = "K1-250"
+group = "audio-fx"
+feature = "Plugin packs: CMT, LADSPA, Steve Harris SWH, TAP"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html"
+film = "none"
+evidence = "crates/engine/src/settings.rs plugins category: 'No plugins are installed'"
+gap = "no third-party audio plugin host (LADSPA/LV2/VST)"
+
+[[row]]
+id = "K1-251"
+group = "audio-fx"
+feature = "On Master: Audio Level Visualization Filter"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/on_master.html"
+film = "none"
+evidence = "no audio-driven video effect in crates/project/src/effect/vfx.rs"
+gap = "no rendered level-meter overlay effect"
+
+[[row]]
+id = "K1-252"
+group = "audio-fx"
+feature = "On Master: Audio Spectrum Filter"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/on_master.html"
+film = "none"
+evidence = "no ids"
+gap = "no rendered spectrum visualizer"
+
+[[row]]
+id = "K1-253"
+group = "audio-fx"
+feature = "On Master: Audio Wave / Audio Waveform Filter"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/on_master.html"
+film = "none"
+evidence = "no ids"
+gap = "no rendered waveform visualizer"
+
+[[row]]
+id = "K1-254"
+group = "audio-fx"
+feature = "On Master: Dance / Light Show (audio-reactive video)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/on_master.html"
+film = "none"
+evidence = "no ids"
+gap = "no audio-reactive video effects"
+
+[[row]]
+id = "K1-255"
+group = "audio-fx"
+feature = "Built-in Volume effect added to every audio clip"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:306 intrinsic volume and channel_volume on every audio clip"
+gap = ""
+
+# ------------------------------------------------------------------ scopes
+
+[[row]]
+id = "K1-300"
+group = "scopes"
+feature = "Scopes as dockable widgets (View > Scopes)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/view_menu.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/scopes.rs:1 Lumetri Scopes panel, several scopes in a grid"
+gap = ""
+
+[[row]]
+id = "K1-301"
+group = "scopes"
+feature = "Histogram"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/histogram_working.html"
+film = "full"
+evidence = "crates/scopes/src/lib.rs:49 ScopeKind::Histogram; crates/ui-egui/src/panels/scopes.rs:407"
+gap = ""
+
+[[row]]
+id = "K1-302"
+group = "scopes"
+feature = "Histogram components: Y, Sum, R, G, B toggled individually"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/histogram_working.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/scopes.rs:453 R/G/B drawn added together"
+gap = "components cannot be switched on/off; no Sum or separate Y trace"
+
+[[row]]
+id = "K1-303"
+group = "scopes"
+feature = "Histogram: Unscaled (fixed 256 px width)"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/histogram_working.html"
+film = "none"
+evidence = "histogram always stretches to the cell (crates/ui-egui/src/panels/scopes.rs:407)"
+gap = "no unscaled option"
+
+[[row]]
+id = "K1-304"
+group = "scopes"
+feature = "Luma mode Rec. 601 / Rec. 709"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/introducing_color_scopes.html"
+film = "full"
+evidence = "crates/scopes/src/lib.rs:151 ColorSpace Auto / Rec. 601 / Rec. 709 / Rec. 2100"
+gap = ""
+
+[[row]]
+id = "K1-305"
+group = "scopes"
+feature = "Histogram min/max value readout per component"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/histogram_working.html"
+film = "partial"
+evidence = "crates/scopes/src/summary.rs numeric summaries (scopes.read for agents)"
+gap = "min/max are not printed in the panel"
+
+[[row]]
+id = "K1-306"
+group = "scopes"
+feature = "Waveform (luma)"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/waveform_and_rgb_parade.html"
+film = "full"
+evidence = "crates/scopes/src/lib.rs:99 WaveformType Luma (also RGB, YC, YC no Chroma)"
+gap = ""
+
+[[row]]
+id = "K1-307"
+group = "scopes"
+feature = "Waveform paint modes (incl. Green, which highlights 0 and 255)"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/waveform_and_rgb_parade.html"
+film = "partial"
+evidence = "crates/scopes/src/lib.rs:222 Brightness Dimmed / Normal / Bright"
+gap = "no colour paint modes and no highlighting of clipped 0/255 values"
+
+[[row]]
+id = "K1-308"
+group = "scopes"
+feature = "Waveform / parade: mouse draws a horizontal line and shows the value"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/waveform_and_rgb_parade.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/scopes.rs has no hover handling on plots"
+gap = "no cursor level line with value readout"
+
+[[row]]
+id = "K1-309"
+group = "scopes"
+feature = "RGB Parade"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/waveform_and_rgb_parade.html"
+film = "full"
+evidence = "crates/scopes/src/lib.rs:126 ParadeType RGB / YUV / RGB-White"
+gap = ""
+
+[[row]]
+id = "K1-310"
+group = "scopes"
+feature = "RGB Parade: paint mode"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/waveform_and_rgb_parade.html"
+film = "partial"
+evidence = "crates/scopes/src/lib.rs:222 Brightness applies to the parade"
+gap = "brightness only, no paint-mode colour choice"
+
+[[row]]
+id = "K1-311"
+group = "scopes"
+feature = "RGB Parade: Draw Axis (10 steps)"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/waveform_and_rgb_parade.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/scopes.rs:476 level_graticule with labels"
+gap = ""
+
+[[row]]
+id = "K1-312"
+group = "scopes"
+feature = "RGB Parade: gradient reference line"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/waveform_and_rgb_parade.html"
+film = "none"
+evidence = "no diagonal reference line in crates/ui-egui/src/panels/scopes.rs:476"
+gap = "no bottom-left to top-right reference line option"
+
+[[row]]
+id = "K1-313"
+group = "scopes"
+feature = "Vectorscope"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/vectorscope_working.html"
+film = "full"
+evidence = "crates/scopes/src/lib.rs:49 VectorscopeYuv (and VectorscopeHls)"
+gap = ""
+
+[[row]]
+id = "K1-314"
+group = "scopes"
+feature = "Vectorscope: 75% box (broadcast-safe saturation)"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/vectorscope_working.html"
+film = "full"
+evidence = "crates/scopes/src/lib.rs:250 Targets 75% / 100%"
+gap = ""
+
+[[row]]
+id = "K1-315"
+group = "scopes"
+feature = "Vectorscope: Draw axis (U/Pb and V/Cr)"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/vectorscope_working.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/scopes.rs:504 vector_graticule axes and circles"
+gap = ""
+
+[[row]]
+id = "K1-316"
+group = "scopes"
+feature = "Vectorscope: switch YUV / YPbPr colour model"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/vectorscope_working.html"
+film = "partial"
+evidence = "crates/scopes/src/lib.rs:151 matrix choice 601 / 709 / 2100 (always YCbCr scaling)"
+gap = "no analogue YUV scaling alternative"
+
+[[row]]
+id = "K1-317"
+group = "scopes"
+feature = "Vectorscope: I and Q lines"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/vectorscope_i_and_q_lines.html"
+film = "partial"
+evidence = "crates/scopes/src/lib.rs:42 SKIN_TONE_DEG skin-tone (I) line always drawn"
+gap = "no Q line and no toggle for the I/Q lines"
+
+[[row]]
+id = "K1-318"
+group = "scopes"
+feature = "Vectorscope: Export Background (RGB / YUV / YCbCr plane image)"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/vectorscope_working.html"
+film = "none"
+evidence = "no export in crates/ui-egui/src/panels/scopes.rs"
+gap = "cannot export a colour-plane background image"
+
+[[row]]
+id = "K1-319"
+group = "scopes"
+feature = "Vectorscope gain / zoom (e.g. 5x)"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/vectorscope_working.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/scopes.rs:423 brightness gain only, fixed extent"
+gap = "vectorscope cannot be magnified around the centre"
+
+[[row]]
+id = "K1-320"
+group = "scopes"
+feature = "Auto Refresh toggle (refresh only on demand for performance)"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/introducing_color_scopes.html"
+film = "partial"
+evidence = "scopes always follow the Program frame (crates/ui-egui/src/panels/scopes.rs:1)"
+gap = "cannot pause scope updates during playback; no click-to-refresh"
+
+[[row]]
+id = "K1-321"
+group = "scopes"
+feature = "Realtime (drop samples to keep frame rate)"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/introducing_color_scopes.html"
+film = "partial"
+evidence = "crates/scopes/src/lib.rs:35 always decimated to MAX_W 480 x MAX_H 270"
+gap = "no toggle between decimated and full-resolution analysis"
+
+[[row]]
+id = "K1-322"
+group = "scopes"
+feature = "Scopes read the clip monitor or the project monitor"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/introducing_color_scopes.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/scopes.rs:2 'of the Program frame'"
+gap = "scopes never show the Source monitor frame"
+
+[[row]]
+id = "K1-323"
+group = "scopes"
+feature = "Audio Spectrum scope (dB per frequency of the playing frame)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/view_menu.html"
+film = "none"
+evidence = "crates/audio-dsp/src/fft.rs exists; no spectrum panel in crates/ui-egui/src/panels"
+gap = "no audio spectrum analyser panel"
+
+[[row]]
+id = "K1-324"
+group = "scopes"
+feature = "Loudness measurement of the programme"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/volume_and_dynamics/index.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/meters.rs:11 BS.1770 loudness readout; loudness_radar effect (audio.rs:518)"
+gap = ""
+
+# ------------------------------------------------------------------ proxies
+
+[[row]]
+id = "K1-400"
+group = "proxies"
+feature = "Enable proxy clips"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:986 media.enableProxies; media.toggleProxies"
+gap = ""
+
+[[row]]
+id = "K1-401"
+group = "proxies"
+feature = "Auto-generate proxies for videos wider than N pixels"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film = "partial"
+evidence = "crates/engine/src/proxies.rs:550 project.ingestSettings can create proxies on import"
+gap = "no frame-width threshold; ingest creates proxies for every imported clip"
+
+[[row]]
+id = "K1-402"
+group = "proxies"
+feature = "Proxy video resize: target width in pixels"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film = "partial"
+evidence = "crates/engine/src/proxies.rs:44 presets at 1/4 or 1/2 size"
+gap = "no free target width"
+
+[[row]]
+id = "K1-403"
+group = "proxies"
+feature = "Proxy encoding profile selection"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film = "full"
+evidence = "crates/engine/src/proxies.rs:44 PRESETS (ProRes Proxy/LT, H.264); media.proxyPresets"
+gap = ""
+
+[[row]]
+id = "K1-404"
+group = "proxies"
+feature = "Separate proxy profile for clips with an alpha channel"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film = "none"
+evidence = "crates/engine/src/proxies.rs:44 no alpha-capable preset"
+gap = "alpha clips get proxies without alpha"
+
+[[row]]
+id = "K1-405"
+group = "proxies"
+feature = "Auto-generate proxies for images wider than N pixels"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film = "none"
+evidence = "crates/engine/src/proxies.rs:191 media.createProxies refuses non-file media; stills not proxied"
+gap = "no image proxies"
+
+[[row]]
+id = "K1-406"
+group = "proxies"
+feature = "Proxy image resize width"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film = "none"
+evidence = "no image proxy settings"
+gap = "no image proxy size option"
+
+[[row]]
+id = "K1-407"
+group = "proxies"
+feature = "External proxy clips from cameras (GoPro, Sony, DJI)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film = "partial"
+evidence = "crates/engine/src/proxies.rs:287 media.attachProxies attaches any matching file"
+gap = "camera proxy files are not found and attached automatically"
+
+[[row]]
+id = "K1-408"
+group = "proxies"
+feature = "Allowed encoder parameters list with warning for unknown ones"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film = "none"
+evidence = "proxies use built-in encoders with fixed presets (crates/engine/src/proxies.rs:1)"
+gap = "no user-editable encoder parameters, so no allow-list"
+
+[[row]]
+id = "K1-409"
+group = "proxies"
+feature = "Manage proxy profiles: add, edit, delete"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film = "none"
+evidence = "crates/engine/src/proxies.rs:44 PRESETS is a const list"
+gap = "no custom proxy profiles"
+
+[[row]]
+id = "K1-410"
+group = "proxies"
+feature = "Proxy Clip toggle per clip (create / revert to original)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "full"
+evidence = "crates/engine/src/proxies.rs:191 media.createProxies, :480 media.detachProxies"
+gap = ""
+
+[[row]]
+id = "K1-411"
+group = "proxies"
+feature = "Proxy indicator badge on the bin clip"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/project_views.rs:35 proxy / proxy_on badges"
+gap = ""
+
+[[row]]
+id = "K1-412"
+group = "proxies"
+feature = "Final render uses the original sources"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "full"
+evidence = "crates/engine/src/proxies.rs:10 export always uses full resolution"
+gap = ""
+
+[[row]]
+id = "K1-413"
+group = "proxies"
+feature = "Proxy generation runs as a background job with progress on the clip"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html"
+film = "partial"
+evidence = "crates/engine/src/proxies.rs:4 background job; jobs.list (commands.rs:1292)"
+gap = "no progress bar drawn on the bin thumbnail"
+
+[[row]]
+id = "K1-414"
+group = "proxies"
+feature = "Monitor button to switch proxies for playback"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/monitor.rs:732 media.toggleProxies button"
+gap = ""
+
+[[row]]
+id = "K1-415"
+group = "proxies"
+feature = "Preview resolution scaling used together with or instead of proxies"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:49 playback/paused resolution; playback.draftDecode"
+gap = ""
+
+# ------------------------------------------------------------------ timeline preview rendering
+
+[[row]]
+id = "K1-500"
+group = "preview-render"
+feature = "Start Preview Render (Shift+Return)"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/tips_and_tricks/timeline_preview_rendering.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1877 sequence.renderInToOut; :1874 renderEffectsInToOut"
+gap = ""
+
+[[row]]
+id = "K1-501"
+group = "preview-render"
+feature = "Stop Preview Render"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/sequence_menu.html"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:1294 jobs.cancel; previews.rs:649 honours cancel"
+gap = "no Stop Preview Render menu item"
+
+[[row]]
+id = "K1-502"
+group = "preview-render"
+feature = "Add Preview Zone from the timeline zone"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/tips_and_tricks/timeline_preview_rendering.html"
+film = "partial"
+evidence = "renders the In/Out range on demand (crates/engine/src/previews.rs:1)"
+gap = "zones are not stored; nothing re-renders a zone automatically after an edit"
+
+[[row]]
+id = "K1-503"
+group = "preview-render"
+feature = "Multiple non-contiguous preview zones"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/tips_and_tricks/timeline_preview_rendering.html"
+film = "partial"
+evidence = "rendered segments persist anywhere by content hash (crates/engine/src/previews.rs:1)"
+gap = "no list of zones to start in one render pass"
+
+[[row]]
+id = "K1-504"
+group = "preview-render"
+feature = "Remove Preview Zone"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/sequence_menu.html"
+film = "full"
+evidence = "sequence.deleteRenderFilesInToOut"
+gap = ""
+
+[[row]]
+id = "K1-505"
+group = "preview-render"
+feature = "Remove All Preview Zones"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/sequence_menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1884 sequence.deleteRenderFiles"
+gap = ""
+
+[[row]]
+id = "K1-506"
+group = "preview-render"
+feature = "Preview bar under the ruler turns red to yellow to green chunk by chunk"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/tips_and_tricks/timeline_preview_rendering.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1411 timeline.renderBar segments (red/yellow/green)"
+gap = ""
+
+[[row]]
+id = "K1-507"
+group = "preview-render"
+feature = "Edits touching a zone invalidate only that part"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/tips_and_tricks/timeline_preview_rendering.html"
+film = "full"
+evidence = "crates/engine/src/previews.rs:18 content-hash per segment"
+gap = ""
+
+[[row]]
+id = "K1-508"
+group = "preview-render"
+feature = "Smart undo/redo keeps already rendered previews"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/tips_and_tricks/timeline_preview_rendering.html"
+film = "full"
+evidence = "crates/engine/src/previews.rs:20 undo brings the old hash back"
+gap = ""
+
+[[row]]
+id = "K1-509"
+group = "preview-render"
+feature = "Keep editing while previews render in the background"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/tips_and_tricks/timeline_preview_rendering.html"
+film = "full"
+evidence = "crates/engine/src/previews.rs:600 background job"
+gap = ""
+
+[[row]]
+id = "K1-510"
+group = "preview-render"
+feature = "Cache Data tab: preview disk usage chart and purge"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/tips_and_tricks/timeline_preview_rendering.html"
+film = "partial"
+evidence = "sequence.deleteRenderFiles; crates/engine/src/settings.rs:1034 mediaCache.clean"
+gap = "no display of how much disk the preview cache uses"
+
+[[row]]
+id = "K1-511"
+group = "preview-render"
+feature = "Preview profile: Auto or a chosen / custom encoding profile"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/tips_and_tricks/timeline_preview_rendering.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/sequence_settings.rs:411 preview codec shown, fixed ProRes 422 (NOT_YET)"
+gap = "preview format and codec cannot be changed"
+
+[[row]]
+id = "K1-512"
+group = "preview-render"
+feature = "Timeline Preview menu in the timeline toolbar"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/tips_and_tricks/timeline_preview_rendering.html"
+film = "partial"
+evidence = "Sequence menu items (crates/engine/src/commands.rs:1874-1884)"
+gap = "no preview-render button or drop-down in the timeline toolbar"
+
+[[row]]
+id = "K1-513"
+group = "preview-render"
+feature = "Rendered zones play back at full frame rate and scrub faster"
+manual = "https://docs.kdenlive.org/en/tips_and_tricks/tips_and_tricks/timeline_preview_rendering.html"
+film = "full"
+evidence = "crates/engine/src/previews.rs:23 PreviewStore::frame used by playback first"
+gap = ""
+
+# ------------------------------------------------------------------ external output / GPU
+
+[[row]]
+id = "K1-520"
+group = "external"
+feature = "External display via Blackmagic DeckLink card"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "none"
+evidence = "crates/engine/src/settings.rs:1069 playback.enableTransmit preference is stored but unused"
+gap = "no SDI/HDMI capture-card output"
+
+[[row]]
+id = "K1-521"
+group = "external"
+feature = "GPU processing option for effects"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "partial"
+evidence = "crates/render/src/gpufx.rs GPU effect path"
+gap = "no user preference to switch GPU processing on or off"
