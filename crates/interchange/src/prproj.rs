@@ -275,15 +275,25 @@ fn float_param(p: Node, shift: i64, map: impl Fn(f64) -> f64) -> Option<Param> {
     Some(finish_param(pr))
 }
 
+/// A point value at the start of `fields`: `x:y` in one field (most project versions) or `x,y` in
+/// two (seen in version 36). Returns the point and the index of the field after it.
+fn point_at(fields: &[&str]) -> Option<(f64, f64, usize)> {
+    let first = fields.first()?;
+    if let Some((x, y)) = first.split_once(':') {
+        return Some((float(x)?, float(y)?, 1));
+    }
+    Some((float(first)?, fields.get(1).copied().and_then(float)?, 2))
+}
+
 fn point_param(p: Node, shift: i64, map: impl Fn(f64, f64) -> Vec2) -> Option<Param> {
-    let s = start_fields(p);
-    let (x, y) = (s.first().copied().and_then(float)?, s.get(1).copied().and_then(float)?);
+    let (x, y, _) = point_at(&start_fields(p))?;
     let mut pr = Param::new(ParamValue::Vec2(map(x, y)));
     for f in keyframe_fields(p) {
-        let (Some(t), Some(kx), Some(ky)) = (f.first().copied().and_then(int), f.get(1).copied().and_then(float), f.get(2).copied().and_then(float)) else {
-            continue;
-        };
-        pr.keyframes.push(Keyframe::new(tick(t.saturating_sub(shift)), ParamValue::Vec2(map(kx, ky))));
+        let Some(t) = f.first().copied().and_then(int) else { continue };
+        let Some((kx, ky, next)) = f.get(1..).and_then(point_at) else { continue };
+        let mut k = Keyframe::new(tick(t.saturating_sub(shift)), ParamValue::Vec2(map(kx, ky)));
+        k.interp = interp_of(f.get(1 + next).copied());
+        pr.keyframes.push(k);
     }
     Some(finish_param(pr))
 }
@@ -710,6 +720,19 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
             t.locked = self.g.text_at(tn, &["ClipTrack", "Track", "IsLocked"]) == Some("true");
             t.enabled = self.g.text_at(tn, &["ClipTrack", "Track", "IsMuted"]) != Some("true");
         }
+        // Track Mixer inserts (effects on the audio track itself; its fader and meter are always
+        // there) are not mapped yet.
+        if let Some(chain) = self.g.at(tn, &["AudioTrack", "ComponentOwner", "Components"]) {
+            let inserts = self
+                .g
+                .list(chain, &["ComponentChain", "Components"])
+                .into_iter()
+                .filter(|c| c.has_tag_name("AudioFilterComponent") && self.g.text_at(*c, &["AudioComponent", "Component", "Intrinsic"]) != Some("true"))
+                .count();
+            if inserts > 0 {
+                self.report.warn(format!("{inserts} audio track effect(s) on track A{} were not imported", ti + 1));
+            }
+        }
         for it in self.g.list(tn, &["ClipTrack", "ClipItems", "TrackItems"]) {
             let Some(item) = self.track_item(it, kind, frame) else { continue };
             clip_ids.insert(object_key(it), item.id);
@@ -897,7 +920,8 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
             _ => {
                 let want = if video { EffectKind::Video } else { EffectKind::Audio };
                 let Some(def) = find_effect_by_name(display.trim()).filter(|d| !d.intrinsic && d.kind == want) else {
-                    self.report.warn(format!("effect \"{display}\" is not supported and was skipped"));
+                    let what = if video { "effect" } else { "audio effect" };
+                    self.report.warn(format!("{what} \"{display}\" is not supported and was skipped"));
                     return;
                 };
                 let mut inst = def.instance();
@@ -992,6 +1016,10 @@ mod tests {
         assert_eq!(int("100."), Some(100));
         assert_eq!(int("9223372036854775807"), Some(i64::MAX));
         assert_eq!(tick(i64::MAX), Tick::MAX);
+        assert_eq!(point_at(&["0.25:0.75", "0", "0"]), Some((0.25, 0.75, 1)));
+        assert_eq!(point_at(&["0.25", "0.75", "0"]), Some((0.25, 0.75, 2)));
+        assert_eq!(point_at(&["x:y"]), None);
+        assert_eq!(point_at(&[]), None);
     }
 
     #[test]

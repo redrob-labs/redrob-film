@@ -175,7 +175,7 @@ const PROJECT: &str = r#"<?xml version="1.0" encoding="UTF-8" ?>
 		<Component Version="5"><Params Version="1"><Param Index="0" ObjectRef="130"/><Param Index="1" ObjectRef="131"/></Params><DisplayName>Motion</DisplayName><Bypass>false</Bypass><Intrinsic>true</Intrinsic></Component>
 		<MatchName>AE.ADBE Motion</MatchName>
 	</VideoFilterComponent>
-	<PointComponentParam ObjectID="130" ClassID="test" Version="3"><Name>Position</Name><StartKeyframe>-91445760000000000,0.75,0.5,0,0,0,0,0,0</StartKeyframe><ParameterID>1</ParameterID></PointComponentParam>
+	<PointComponentParam ObjectID="130" ClassID="test" Version="3"><Name>Position</Name><StartKeyframe>-91445760000000000,0.75:0.5,0,0,0,0,0,0,5,4,0,0,0,0</StartKeyframe><ParameterID>1</ParameterID></PointComponentParam>
 	<VideoComponentParam ObjectID="131" ClassID="test" Version="9"><Name>Scale</Name><StartKeyframe>-91445760000000000,50.,0,0,0,0,0,0</StartKeyframe><ParameterID>2</ParameterID></VideoComponentParam>
 	<VideoFilterComponent ObjectID="122" ClassID="test" Version="8">
 		<Component Version="5"><Params Version="1"><Param Index="0" ObjectRef="132"/></Params><DisplayName>Opacity</DisplayName></Component>
