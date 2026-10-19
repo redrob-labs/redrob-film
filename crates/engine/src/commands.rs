@@ -2940,6 +2940,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::relink::commands());
     v.extend(crate::proxies::commands());
     v.extend(crate::project_manager::commands());
+    v.extend(crate::archive::commands());
     v.extend(crate::masks::commands());
     v.extend(crate::presets::commands());
     v.extend(crate::export_tools::commands());
@@ -3894,7 +3895,8 @@ fn open_project(s: &mut Session, path: &str) -> Result<Value> {
         s.toast(format!("Upgraded project from schema v{from} to v{}; the original is kept as a backup when you save", redrob_film_format::SCHEMA_VERSION));
     }
     let missing = crate::relink::on_open(s);
-    Ok(json!({"path": path, "schemaVersion": from, "migrated": migrated, "missingMedia": missing}))
+    let proxy_job = crate::proxies::recreate_missing(s, false);
+    Ok(json!({"path": path, "schemaVersion": from, "migrated": migrated, "missingMedia": missing, "recreatingProxies": proxy_job}))
 }
 
 /// Load a recovery candidate (newest when `id` is None) as the current, unsaved project.

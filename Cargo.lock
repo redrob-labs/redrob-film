@@ -5655,6 +5655,7 @@ dependencies = [
 name = "redrob-film-engine"
 version = "0.3.0"
 dependencies = [
+ "flate2",
  "image",
  "log",
  "redrob-film-audio-dsp",

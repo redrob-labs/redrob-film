@@ -281,7 +281,14 @@ fn link_media(app: &mut FilmcraftApp, ctx: &egui::Context) {
             });
             ui.add_space(6.0);
             ui.horizontal_wrapped(|ui| {
-                for (id, label) in [("offlineAll", tl!("Offline All")), ("offline", tl!("Offline")), ("cancel", tl!("Cancel")), ("locate", tl!("Locate…"))] {
+                for (id, label) in [
+                    ("offlineAll", tl!("Offline All")),
+                    ("offline", tl!("Offline")),
+                    ("remove", tl!("Remove from Project")),
+                    ("removeAll", tl!("Remove All Missing")),
+                    ("cancel", tl!("Cancel")),
+                    ("locate", tl!("Locate…")),
+                ] {
                     let r = ui.button(label);
                     push(&mut elems, format!("linkMedia.{id}"), &r, label);
                     if r.clicked() {
@@ -377,6 +384,23 @@ fn link_media(app: &mut FilmcraftApp, ctx: &egui::Context) {
             d.skipped.push(item);
             d.candidates.clear();
             d.candidate = None;
+        }
+        Some("remove") => {
+            match app.session.execute("media.removeMissing", json!({"items": [item]})) {
+                Ok(_) => {
+                    d.candidates.clear();
+                    d.candidate = None;
+                    // nothing left to link: the dialog closes
+                    keep = !app.session.offline.missing.is_empty();
+                }
+                Err(e) => app.ui.status = e.to_string(),
+            }
+        }
+        Some("removeAll") => {
+            match app.session.execute("media.removeMissing", json!({})) {
+                Ok(_) => keep = false,
+                Err(e) => app.ui.status = e.to_string(),
+            }
         }
         Some("offlineAll") | Some("cancel") => {
             let _ = app.session.execute("media.offlineAll", json!({}));
@@ -500,6 +524,7 @@ fn pm_params(d: &ProjectManagerDraft, dry: bool) -> Value {
         "preset": d.preset,
         "includeProxies": d.include_proxies,
         "includePreviews": d.include_previews,
+        "archive": d.archive,
         "dryRun": dry,
     })
 }
@@ -567,6 +592,16 @@ fn project_manager(app: &mut FilmcraftApp, ctx: &egui::Context) {
             });
             let r = ui.checkbox(&mut d.include_previews, tl!("Include Preview Files"));
             push(&mut elems, "pm.includePreviews", &r, "Include Preview Files");
+            ui.horizontal(|ui| {
+                ui.label(tl!("Archive:"));
+                for (id, label) in [("", tl!("Folder only")), ("tarGz", "tar.gz"), ("zip", "zip")] {
+                    let r = ui.radio(d.archive == id, label);
+                    push(&mut elems, format!("pm.archive.{}", if id.is_empty() { "none" } else { id }), &r, label);
+                    if r.clicked() {
+                        d.archive = id.into();
+                    }
+                }
+            });
             ui.separator();
             ui.label(RichText::new(tl!("Destination Path")).strong());
             ui.horizontal(|ui| {

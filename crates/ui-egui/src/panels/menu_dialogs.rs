@@ -35,11 +35,84 @@ pub struct Extras {
     pub dynamic_waveforms: bool,
     /// Paths handed to the operating system's opener (Edit Original, Reveal Log Files), newest last.
     pub opened: Vec<String>,
+    /// Clear asked for clips the timeline uses: the `project.delete` parameters, how many of the
+    /// clips are used and how many timeline clips go with them (the warning dialog is open).
+    pub confirm_delete: Option<(Value, usize, usize)>,
 }
 
 impl Default for Extras {
     fn default() -> Self {
-        Extras { dialog: None, dynamic_waveforms: true, opened: Vec::new() }
+        Extras { dialog: None, dynamic_waveforms: true, opened: Vec::new(), confirm_delete: None }
+    }
+}
+
+/// Of the project items `project.delete` would remove, how many are used in a sequence, and how
+/// many timeline clips use them.
+pub fn delete_uses(app: &FilmcraftApp, params: &Value) -> (usize, usize) {
+    let pr = &app.session.project;
+    let mut items: Vec<redrob_film_project::ItemId> = match params.get("items").and_then(Value::as_array) {
+        Some(a) => a.iter().filter_map(Value::as_u64).map(redrob_film_project::ItemId).collect(),
+        None => app.session.state.project_selection.clone(),
+    };
+    // a named bin takes everything in it
+    let bins: Vec<u64> = items.iter().map(|i| i.0).filter(|b| pr.root.find_bin(redrob_film_project::BinId(*b)).is_some()).collect();
+    for b in bins {
+        if let Some(bin) = pr.root.find_bin(redrob_film_project::BinId(b)) {
+            bin.all_items(&mut items);
+        }
+    }
+    let mut used = std::collections::BTreeSet::new();
+    let mut uses = 0;
+    for q in pr.sequences().filter_map(|i| pr.sequence(i.id)) {
+        for t in q.video_tracks.iter().chain(q.audio_tracks.iter()) {
+            for x in &t.items {
+                if items.contains(&x.item) {
+                    used.insert(x.item);
+                    uses += 1;
+                }
+            }
+        }
+    }
+    (used.len(), uses)
+}
+
+/// The warning before clearing clips the timeline uses (Kdenlive's "delete clip in use").
+fn confirm_delete_window(app: &mut FilmcraftApp, ctx: &egui::Context) {
+    let Some((params, clips, uses)) = app.ui.extras.confirm_delete.clone() else { return };
+    let mut answer: Option<bool> = None;
+    egui::Window::new(tl!("Delete Clips In Use"))
+        .id(egui::Id::new("confirm-delete-in-use"))
+        .collapsible(false)
+        .resizable(false)
+        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .show(ctx, |ui| {
+            ui.label(tlf!("{clips} of these clips are used in the timeline ({uses} timeline clips). Delete them and their timeline clips?", clips, uses));
+            ui.horizontal(|ui| {
+                let r = ui.button(tl!("Delete"));
+                app.auto.add("confirmDelete.ok", r.rect, "Delete");
+                if r.clicked() {
+                    answer = Some(true);
+                }
+                let r = ui.button(tl!("Cancel"));
+                app.auto.add("confirmDelete.cancel", r.rect, "Cancel");
+                if r.clicked() || ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                    answer = Some(false);
+                }
+            });
+        });
+    match answer {
+        Some(true) => {
+            app.ui.extras.confirm_delete = None;
+            let mut p = params;
+            if let Some(o) = p.as_object_mut() {
+                o.insert("confirmed".into(), json!(true));
+            }
+            if let Err(e) = crate::menus::invoke(app, ctx, "project.delete", p) {
+                app.ui.status = e;
+            }
+        }
+        Some(false) => app.ui.extras.confirm_delete = None,
+        None => {}
     }
 }
 
@@ -169,6 +242,14 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, params: &Val
     let empty = params.as_object().is_none_or(|m| m.is_empty());
     // UI commands
     match id {
+        // Clear of clips the timeline uses asks first (the warning names how many go with them)
+        "project.delete" if params.get("confirmed").is_none() => {
+            let (clips, uses) = delete_uses(app, params);
+            if clips > 0 {
+                app.ui.extras.confirm_delete = Some((params.clone(), clips, uses));
+                return Some(Ok(json!({"confirm": true, "clipsInUse": clips, "timelineClips": uses})));
+            }
+        }
         "view.dynamicAudioWaveforms" => {
             app.ui.extras.dynamic_waveforms = params.get("on").and_then(Value::as_bool).unwrap_or(!app.ui.extras.dynamic_waveforms);
             return Some(Ok(json!({"dynamicAudioWaveforms": app.ui.extras.dynamic_waveforms})));
@@ -449,6 +530,7 @@ fn pairs(v: &[&str]) -> Vec<(String, String)> {
 
 /// Draw the open dialog, if any.
 pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
+    confirm_delete_window(app, ctx);
     let Some(mut d) = app.ui.extras.dialog.clone() else { return };
     let Some((title, pre, ok_text)) = meta(&d.command) else {
         app.ui.extras.dialog = None;

@@ -549,12 +549,24 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
         crate::panels::settings::set_theme(app, ctx, k);
         return Ok(Value::Null);
     }
+    // File ▸ Open Recent ▸ <project> / Clear List
+    if let Some(n) = id.strip_prefix("file.openRecent.") {
+        let path = n.parse::<usize>().ok().and_then(|i| app.session.prefs.general.recent_projects.get(i).cloned()).ok_or("no such recent project")?;
+        return invoke(app, ctx, "file.open", json!({"path": path}));
+    }
+    if id == "file.clearRecent" {
+        let mut p = app.session.prefs.clone();
+        p.general.recent_projects.clear();
+        app.session.set_prefs(p).map_err(|e| e.to_string())?;
+        return Ok(Value::Null);
+    }
     // File dialogs for commands that need a path.
     if (id == "file.import" && params.get("paths").is_none() && params.get("path").is_none())
         || (id == "file.importImageSequence" && params.get("path").is_none())
         || (id == "file.saveAs" && params.get("path").is_none())
         || (id == "file.saveCopy" && params.get("path").is_none())
         || (id == "file.open" && params.get("path").is_none())
+        || (id == "file.openArchive" && params.get("path").is_none())
         || (id == "file.save" && params.get("path").is_none() && app.session.path.is_none())
         || (matches!(id, "captions.import" | "captions.export") && params.get("path").is_none())
         || (id == "graphics.newFromFile" && params.get("path").is_none())
@@ -648,6 +660,31 @@ pub fn menu_items(app: &FilmcraftApp) -> Vec<MenuItem> {
         }
     }
     crate::panels::workspaces::menu(app, &mut v);
+    // File ▸ Open Recent: the last ten projects, then Clear List
+    let recent = &app.session.prefs.general.recent_projects;
+    let at = v.iter().position(|i| i.id == "file.open").map_or(v.len(), |i| i + 1);
+    let mut entries: Vec<MenuItem> = recent
+        .iter()
+        .take(10)
+        .enumerate()
+        .map(|(n, p)| MenuItem {
+            id: format!("file.openRecent.{n}"),
+            label: std::path::Path::new(p).file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_else(|| p.clone()),
+            path: vec!["File".into(), "Open Recent".into()],
+            shortcut: None,
+            enabled: true,
+            checked: None,
+        })
+        .collect();
+    entries.push(MenuItem {
+        id: "file.clearRecent".into(),
+        label: app.ui.language.tr("Clear List").to_string(),
+        path: vec!["File".into(), "Open Recent".into()],
+        shortcut: None,
+        enabled: !recent.is_empty(),
+        checked: None,
+    });
+    v.splice(at..at, entries);
     v
 }
 

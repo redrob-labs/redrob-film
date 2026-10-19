@@ -756,6 +756,8 @@ pub struct ProjectManagerDraft {
     pub include_proxies: bool,
     pub include_previews: bool,
     pub destination: String,
+    /// Archive Project: "" (a folder), "tarGz" or "zip".
+    pub archive: String,
     /// Last dry-run estimate: (original bytes, resulting bytes, files).
     pub estimate: Option<(u64, u64, usize)>,
     pub message: String,
@@ -772,6 +774,7 @@ impl Default for ProjectManagerDraft {
             include_proxies: true,
             include_previews: false,
             destination: String::new(),
+            archive: String::new(),
             estimate: None,
             message: String::new(),
         }

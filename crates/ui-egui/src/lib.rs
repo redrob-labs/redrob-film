@@ -1305,6 +1305,12 @@ impl FilmcraftApp {
                 let Some(path) = self.hooks.pick_open_project.as_mut().and_then(|f| f()) else { return Ok(Value::Null) };
                 self.session.execute("file.open", json!({"path": path})).map_err(|e| e.to_string())
             }
+            // File ▸ Open Archived Project…: a .tar.gz / .zip made by Project Manager ▸ Archive
+            "file.openArchive" => {
+                let paths = self.hooks.pick_files.as_mut().map(|f| f(&["gz", "tgz", "zip"])).unwrap_or_default();
+                let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
+                self.session.execute("file.openArchive", json!({"path": path})).map_err(|e| e.to_string())
+            }
             "graphics.newFromFile" => {
                 let exts: Vec<&str> = redrob_film_media::STILL_EXTENSIONS.iter().chain(redrob_film_media::VIDEO_EXTENSIONS).copied().collect();
                 let paths = self.hooks.pick_files.as_mut().map(|f| f(&exts)).unwrap_or_default();
