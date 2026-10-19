@@ -501,6 +501,83 @@ fn notes_markers(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"markers": n}))
 }
 
+// ------------------------------------------------------------------------------------ project metadata
+
+/// The standard project metadata fields, in the order the dialog shows them (also what exports
+/// write).
+pub const PROJECT_METADATA_FIELDS: [&str; 5] = ["title", "creator", "copyright", "description", "comment"];
+
+/// `project.metadata`: the project's metadata fields.
+fn project_metadata_get(s: &mut Session, _: &Value) -> Result<Value> {
+    Ok(json!({"fields": s.project.metadata, "standard": PROJECT_METADATA_FIELDS}))
+}
+
+/// `project.setMetadata {fields: {name: text|null}}`: set (an empty text or null removes) fields
+/// of the project metadata, as one undo step.
+fn project_metadata_set(s: &mut Session, p: &Value) -> Result<Value> {
+    let fields = p.get("fields").and_then(Value::as_object).ok_or_else(|| bad("project.setMetadata", "need `fields` (an object of name → text)"))?;
+    let mut next = s.project.metadata.clone();
+    for (k, v) in fields {
+        let k = k.trim();
+        if k.is_empty() || k.len() > 100 {
+            return Err(bad("project.setMetadata", "field names must be 1 to 100 bytes"));
+        }
+        match v.as_str().map(str::trim) {
+            Some(t) if !t.is_empty() => {
+                next.insert(k.to_string(), t.chars().take(10_000).collect());
+            }
+            _ => {
+                next.remove(k);
+            }
+        }
+    }
+    if next != s.project.metadata {
+        s.edit("Edit Project Metadata", |pr, _| {
+            pr.metadata = next;
+            Ok(())
+        })?;
+    }
+    Ok(json!({"fields": s.project.metadata}))
+}
+
+/// `project.filesStats`: the project's file-based media, split into the files some sequence uses
+/// and the unused ones, with their counts and sizes on disk (Project Settings ▸ Project Files).
+fn project_files_stats(s: &mut Session, _: &Value) -> Result<Value> {
+    let mut used: std::collections::BTreeSet<ItemId> = std::collections::BTreeSet::new();
+    for q in s.project.sequences() {
+        if let ItemKind::Sequence(seq) = &q.kind {
+            for tr in seq.all_tracks() {
+                used.extend(tr.items.iter().map(|i| i.item));
+            }
+        }
+    }
+    let (mut u, mut n) = ((0u64, 0u64), (0u64, 0u64));
+    let mut unused_items = Vec::new();
+    let mut missing = 0u64;
+    for (id, it) in &s.project.items {
+        let Some(m) = it.as_media() else { continue };
+        let MediaRef::File { path } = &m.media else { continue };
+        let size = match std::fs::metadata(path) {
+            Ok(md) => md.len(),
+            Err(_) => {
+                missing += 1;
+                0
+            }
+        };
+        if used.contains(id) {
+            u = (u.0 + 1, u.1 + size);
+        } else {
+            n = (n.0 + 1, n.1 + size);
+            unused_items.push(json!({"item": id.0, "name": it.name, "path": path, "bytes": size}));
+        }
+    }
+    Ok(json!({
+        "used": {"files": u.0, "bytes": u.1},
+        "unused": {"files": n.0, "bytes": n.1, "items": unused_items},
+        "missing": missing,
+    }))
+}
+
 // ------------------------------------------------------------------------------------ registry
 
 pub(crate) fn commands() -> Vec<CommandSpec> {
@@ -544,6 +621,18 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             journal: true,
         },
         q("project.notesTimecodes", "List Timecodes in Project Notes", "{}", notes_timecodes),
+        q("project.metadata", "Get Project Metadata", "{}", project_metadata_get),
+        q("project.filesStats", "Project Files Statistics", "{}", project_files_stats),
+        CommandSpec {
+            id: "project.setMetadata",
+            label: "Edit Project Metadata",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"fields":{name:str|null}}"#,
+            enabled: always,
+            run: project_metadata_set,
+            journal: true,
+        },
         CommandSpec {
             id: "project.notesInsertTimecode",
             label: "Insert Timecode in Project Notes",

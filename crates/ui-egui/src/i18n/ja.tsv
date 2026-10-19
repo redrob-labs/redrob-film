@@ -4443,3 +4443,23 @@
 	Proxy and transcode jobs: clips at the same time	プロキシとトランスコードのジョブ: 同時に処理するクリップ数
 	Show Menu Bar	メニューバーを表示
 	Show Status Bar	ステータスバーを表示
+	Project Files	プロジェクトファイル
+	Author	作成者
+	Remove Field	フィールドを削除
+	New field name	新しいフィールド名
+	Add Field	フィールドを追加
+	Used in sequences: {n} file(s), {size}	シーケンスで使用: {n} ファイル、{size}
+	Unused: {n} file(s), {size}	未使用: {n} ファイル、{size}
+	{n} file(s) not found on disk	{n} 個のファイルがディスクに見つかりません
+	Remove unused clips with Edit ▸ Remove Unused; files on disk are never deleted.	未使用のクリップは「編集 ▸ 未使用を削除」で取り除けます。ディスク上のファイルは削除されません。
+	Create proxies only for videos wider than:	次の幅より大きいビデオだけプロキシを作成:
+	(0 = every video)	(0 = すべてのビデオ)
+	Frame rate:	フレームレート:
+	All frame rates	すべてのフレームレート
+	custom	カスタム
+	default	既定
+	Preset name:	プリセット名:
+	Save the settings of the General and Tracks tabs as a preset	「一般」と「トラック」タブの設定をプリセットとして保存します
+	Clear Default	既定を解除
+	Set as Default	既定に設定
+	Sequence Presets	シーケンスプリセット

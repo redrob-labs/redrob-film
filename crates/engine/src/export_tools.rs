@@ -284,6 +284,18 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         settings.effects.loudness.enabled = true;
         settings.effects.loudness.target_lufs = v;
     }
+    // Project Settings ▸ Metadata fills the fields the export settings leave empty
+    let pm = &s.project.metadata;
+    let md = &mut settings.metadata;
+    for (slot, key) in
+        [(&mut md.title, "title"), (&mut md.creator, "creator"), (&mut md.copyright, "copyright"), (&mut md.description, "description"), (&mut md.comment, "comment")]
+    {
+        if slot.trim().is_empty()
+            && let Some(v) = pm.get(key)
+        {
+            *slot = v.clone();
+        }
+    }
     settings.validate().map_err(|e| bad(cmd, e.to_string()))?;
     Ok((preset, settings))
 }

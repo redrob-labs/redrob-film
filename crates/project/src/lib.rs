@@ -1283,6 +1283,8 @@ pub struct IngestSettings {
     pub destination: Option<String>,
     /// Proxy / transcode preset id (the engine's `proxies::PRESETS`); empty = the default.
     pub preset: String,
+    /// Create Proxies only for videos wider than this many pixels (0 = every video).
+    pub min_proxy_width: u32,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -1355,6 +1357,11 @@ pub struct Project {
     /// tags are first edited.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<BinTag>>,
+    /// Project metadata (Project Settings ▸ Metadata): `title`, `creator`, `copyright`,
+    /// `description`, `comment` and any field the user adds. Exports take the five standard ones
+    /// unless the export settings name their own.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub metadata: BTreeMap<String, String>,
 }
 
 /// How a sequence is shown in the Timeline panel: its zoom, scroll position and track heights.
@@ -1456,6 +1463,7 @@ impl Project {
             narrations: BTreeMap::new(),
             notes: String::new(),
             tags: None,
+            metadata: BTreeMap::new(),
         }
     }
 

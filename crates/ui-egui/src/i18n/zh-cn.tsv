@@ -4436,3 +4436,23 @@
 	Proxy and transcode jobs: clips at the same time	代理和转码任务：同时处理的剪辑数
 	Show Menu Bar	显示菜单栏
 	Show Status Bar	显示状态栏
+	Project Files	项目文件
+	Author	作者
+	Remove Field	移除字段
+	New field name	新字段名称
+	Add Field	添加字段
+	Used in sequences: {n} file(s), {size}	在序列中使用：{n} 个文件，{size}
+	Unused: {n} file(s), {size}	未使用：{n} 个文件，{size}
+	{n} file(s) not found on disk	磁盘上未找到 {n} 个文件
+	Remove unused clips with Edit ▸ Remove Unused; files on disk are never deleted.	使用“编辑 ▸ 移除未使用项”移除未使用的剪辑；磁盘上的文件永远不会被删除。
+	Create proxies only for videos wider than:	仅为宽度大于此值的视频创建代理：
+	(0 = every video)	（0 = 所有视频）
+	Frame rate:	帧速率：
+	All frame rates	所有帧速率
+	custom	自定义
+	default	默认
+	Preset name:	预设名称：
+	Save the settings of the General and Tracks tabs as a preset	将“常规”和“轨道”选项卡的设置保存为预设
+	Clear Default	清除默认
+	Set as Default	设为默认
+	Sequence Presets	序列预设

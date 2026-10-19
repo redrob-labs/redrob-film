@@ -466,8 +466,16 @@ pub fn ingest(s: &mut Session, items: &[ItemId]) -> Result<Value> {
     let mut job = Value::Null;
     match ing.action {
         IngestAction::CreateProxies | IngestAction::CopyAndCreateProxies => {
-            let p = json!({"items": items.iter().map(|i| i.0).collect::<Vec<_>>(), "preset": if ing.preset.is_empty() { DEFAULT_PROXY_PRESET } else { ing.preset.as_str() }, "destination": ing.destination});
-            if items.iter().any(|i| s.project.item(*i).and_then(|x| x.as_media()).is_some_and(|m| m.info.video.is_some() && m.info.kind == MediaKind::Movie)) {
+            // only videos wider than the project's threshold (Ingest Settings ▸ Only for videos wider than)
+            let wide = |i: &ItemId| {
+                s.project
+                    .item(*i)
+                    .and_then(|x| x.as_media())
+                    .is_some_and(|m| m.info.kind == MediaKind::Movie && m.info.video.as_ref().is_some_and(|v| v.width > ing.min_proxy_width))
+            };
+            let picked: Vec<u64> = items.iter().filter(|i| wide(i)).map(|i| i.0).collect();
+            if !picked.is_empty() {
+                let p = json!({"items": picked, "preset": if ing.preset.is_empty() { DEFAULT_PROXY_PRESET } else { ing.preset.as_str() }, "destination": ing.destination});
                 job = create(s, &p)?;
             }
         }
@@ -620,7 +628,7 @@ pub fn commands() -> Vec<CommandSpec> {
             label: "Ingest Settings…",
             menu: &[],
             shortcut: None,
-            params: r#"{"enabled":bool?,"action":"copy|transcode|createProxies|copyAndCreateProxies"?,"destination":str?,"preset":str?}"#,
+            params: r#"{"enabled":bool?,"action":"copy|transcode|createProxies|copyAndCreateProxies"?,"destination":str?,"preset":str?,"minProxyWidth":u32?}"#,
             enabled: always,
             run: |s, p| {
                 let mut ing = s.project.settings.ingest.clone();
@@ -638,6 +646,9 @@ pub fn commands() -> Vec<CommandSpec> {
                         return Err(bad("project.ingestSettings", format!("unknown preset `{pr}`")));
                     }
                     ing.preset = pr.to_string();
+                }
+                if let Some(w) = u64_p(p, "minProxyWidth") {
+                    ing.min_proxy_width = w.min(u64::from(redrob_film_project::MAX_FRAME_SIDE)) as u32;
                 }
                 if ing != s.project.settings.ingest {
                     let v = ing.clone();

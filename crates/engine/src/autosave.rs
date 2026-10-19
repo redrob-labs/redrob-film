@@ -172,6 +172,8 @@ pub struct Preferences {
     pub project_panel: crate::project_panel::ProjectPanelPrefs,
     /// Media Browser: Favorites, recent directories, file types, view, columns.
     pub media_browser: crate::media_browser::MediaBrowserPrefs,
+    /// Sequence presets: the user's own and the default for new sequences.
+    pub sequence_presets: crate::sequence_presets::SequencePresetPrefs,
 }
 
 impl Default for Preferences {
@@ -199,6 +201,7 @@ impl Default for Preferences {
             voice_over: Default::default(),
             project_panel: Default::default(),
             media_browser: Default::default(),
+            sequence_presets: Default::default(),
         }
     }
 }

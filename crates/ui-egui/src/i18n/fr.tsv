@@ -4444,3 +4444,23 @@
 	Proxy and transcode jobs: clips at the same time	Tâches de proxy et de transcodage : clips en même temps
 	Show Menu Bar	Afficher la barre de menus
 	Show Status Bar	Afficher la barre d'état
+	Project Files	Fichiers du projet
+	Author	Auteur
+	Remove Field	Supprimer le champ
+	New field name	Nom du nouveau champ
+	Add Field	Ajouter un champ
+	Used in sequences: {n} file(s), {size}	Utilisés dans des séquences : {n} fichier(s), {size}
+	Unused: {n} file(s), {size}	Inutilisés : {n} fichier(s), {size}
+	{n} file(s) not found on disk	{n} fichier(s) introuvable(s) sur le disque
+	Remove unused clips with Edit ▸ Remove Unused; files on disk are never deleted.	Retirez les clips inutilisés avec Édition ▸ Supprimer les éléments inutilisés ; les fichiers sur le disque ne sont jamais supprimés.
+	Create proxies only for videos wider than:	Créer des proxys uniquement pour les vidéos plus larges que :
+	(0 = every video)	(0 = toutes les vidéos)
+	Frame rate:	Fréquence d'images :
+	All frame rates	Toutes les fréquences
+	custom	personnalisé
+	default	par défaut
+	Preset name:	Nom du préréglage :
+	Save the settings of the General and Tracks tabs as a preset	Enregistre les réglages des onglets Général et Pistes comme préréglage
+	Clear Default	Retirer le défaut
+	Set as Default	Définir par défaut
+	Sequence Presets	Préréglages de séquence

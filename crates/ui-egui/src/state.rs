@@ -951,6 +951,10 @@ pub struct SequenceSettingsDraft {
     pub working_space: String,
     pub wide_gamut: bool,
     pub auto_tone_map: bool,
+    /// Sequence Presets tab: the frame rate the list is narrowed to (`num/den`; empty = every
+    /// rate), and the preset picked or the name to save the settings under.
+    pub preset_filter: String,
+    pub preset_name: String,
 }
 
 impl Default for SequenceSettingsDraft {
@@ -973,6 +977,8 @@ impl Default for SequenceSettingsDraft {
             working_space: "rec709".into(),
             wide_gamut: false,
             auto_tone_map: true,
+            preset_filter: String::new(),
+            preset_name: String::new(),
         }
     }
 }

@@ -3116,6 +3116,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::clip_props::commands());
     v.extend(crate::library::commands());
     v.extend(crate::media_browser::commands());
+    v.extend(crate::sequence_presets::commands());
     v.extend(crate::paste_media::commands());
     // Kdenlive-parity timeline commands: edit modes, current track, spaces, snap points…
     v.extend(crate::timeline_ops::commands());
