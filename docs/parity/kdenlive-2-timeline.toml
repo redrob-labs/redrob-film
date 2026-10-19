@@ -891,3 +891,484 @@ manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html#how-
 film = "full"
 evidence = "crates/ui-egui/src/panels/timeline.rs:2183 shift toggles; marquee select (lib.rs:1822 hint)"
 gap = "Marquee without Shift (Premiere)"
+
+# ---------------------------------------------------------------- timeline markers (guides) and clip markers
+[[row]]
+id = "K2-099"
+group = "markers"
+feature = "Add/Remove timeline marker at playhead (menu, G, ruler/timeline right-click)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#ways-to-add-timeline-markers"
+film = "full"
+evidence = "crates/engine/src/sequence_tools.rs:166 markers.add (M); crates/ui-egui/src/panels/timeline.rs:1281 toolbar marker button"
+gap = "Add only; pressing again on an existing marker does not remove it (markers.clearCurrent does)"
+
+[[row]]
+id = "K2-100"
+group = "markers"
+feature = "Numpad 1-0 add markers of category 1-10"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#ways-to-add-timeline-markers"
+film = "none"
+evidence = "no per-category add command"
+gap = "One add command with default colour"
+
+[[row]]
+id = "K2-101"
+group = "markers"
+feature = "Double-click the ruler adds a timeline marker there"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#ways-to-add-timeline-markers"
+film = "none"
+evidence = "crates/ui-egui/src/panels/timeline_hit.rs:85 press on marker only seeks"
+gap = "No double-click-to-add"
+
+[[row]]
+id = "K2-102"
+group = "markers"
+feature = "Ruler right-click menu (add/edit/lock markers, export, go to, zone in/out, marker from zone, note, subtitle)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#timeline-ruler-right-click-menu"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1721 marker_menu: Clear Selected Marker, Clear Markers"
+gap = "Two entries only"
+
+[[row]]
+id = "K2-103"
+group = "markers"
+feature = "Range marker with duration (Edit Marker: Range Marker)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#timeline-marker-with-range"
+film = "full"
+evidence = "crates/project/src/lib.rs:482 Marker.duration; crates/engine/src/sequence_tools.rs:169 markers.addRange / addRangeInOut"
+gap = ""
+
+[[row]]
+id = "K2-104"
+group = "markers"
+feature = "Create marker from zone / quickly from zone"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#timeline-ruler-right-click-menu"
+film = "full"
+evidence = "crates/engine/src/sequence_tools.rs markers.addRangeInOut"
+gap = "No dialog variant from the ruler menu"
+
+[[row]]
+id = "K2-105"
+group = "markers"
+feature = "Marker categories (project-specific, colours, names, reassign on delete)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#categories"
+film = "partial"
+evidence = "crates/project/src/lib.rs:486 Marker.color: Label (16 fixed labels); MarkerKind Comment/Chapter/Segmentation/WebLink/FlashCue"
+gap = "Fixed colour set; no user-defined category names per project"
+
+[[row]]
+id = "K2-106"
+group = "markers"
+feature = "Edit Marker dialog (position, comment, category, duration)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#move-and-edit-timeline-markers"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:2069 markers.edit (control channel)"
+gap = "No dialog in the UI; double-click on marker does nothing"
+
+[[row]]
+id = "K2-107"
+group = "markers"
+feature = "Drag a timeline marker on the ruler to move it"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#move-and-edit-timeline-markers"
+film = "none"
+evidence = "crates/ui-egui/src/panels/timeline_hit.rs:85 marker press only seeks"
+gap = "Markers cannot be dragged"
+
+[[row]]
+id = "K2-108"
+group = "markers"
+feature = "Timeline Markers Locked option: markers stay or move with clips (spacer)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#move-timeline-markers-with-spacer-tool"
+film = "full"
+evidence = "crates/engine/src/sequence_tools.rs:21 markers.rippleSequenceMarkers"
+gap = ""
+
+[[row]]
+id = "K2-109"
+group = "markers"
+feature = "Markers view: list, click to seek"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#markers-view"
+film = "full"
+evidence = "crates/ui-egui/src/panels/misc.rs:62 markers panel; :113 click seeks"
+gap = ""
+
+[[row]]
+id = "K2-110"
+group = "markers"
+feature = "Markers view: show only chosen categories"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#markers-view"
+film = "full"
+evidence = "crates/ui-egui/src/panels/misc.rs:84 markers.filterColors"
+gap = ""
+
+[[row]]
+id = "K2-111"
+group = "markers"
+feature = "Markers view: search text, sort (category/time/comment), multi-select, F2 edit, delete"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#markers-view"
+film = "none"
+evidence = "crates/ui-egui/src/panels/misc.rs:93 plain list"
+gap = "No search, sort, selection, edit or delete in the panel"
+
+[[row]]
+id = "K2-112"
+group = "markers"
+feature = "Markers view: add several markers at an interval"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#markers-view"
+film = "none"
+evidence = "no interval add"
+gap = ""
+
+[[row]]
+id = "K2-113"
+group = "markers"
+feature = "Markers view: thumbnails, show markers of all clips, default category"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#markers-view"
+film = "none"
+evidence = "crates/ui-egui/src/panels/misc.rs:93 shows sequence markers only"
+gap = "No thumbnails or clip markers in the panel"
+
+[[row]]
+id = "K2-114"
+group = "markers"
+feature = "Export markers as chapters (YouTube text / JSON, format tokens, offset, copy to clipboard)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#export-timeline-markers-as-chapters-description"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:2050 markers.exportCsv; crates/engine/src/marker_export.rs:18"
+gap = "CSV only; no chapter text template, offset, JSON re-import or clipboard"
+
+[[row]]
+id = "K2-115"
+group = "markers"
+feature = "Import markers"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#markers-view"
+film = "none"
+evidence = "grep import_markers: nothing"
+gap = ""
+
+[[row]]
+id = "K2-116"
+group = "markers"
+feature = "Go to marker (next/previous, Go To Marker list)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#timeline-ruler-right-click-menu"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:2016 markers.goNext (Shift+M), :2027 markers.goPrev"
+gap = "No pick-from-list submenu"
+
+[[row]]
+id = "K2-117"
+group = "markers"
+feature = "Clip markers added in the clip monitor (move with every instance of the clip)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/markers.html#ways-to-add-markers"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1998 markers.add routed to source; crates/engine/src/source_monitor.rs:142 MediaClip.markers"
+gap = ""
+
+[[row]]
+id = "K2-118"
+group = "markers"
+feature = "Clip markers shown and draggable on timeline clips; range markers resizable"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/markers.html#move-and-edit-markers"
+film = "none"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1419 draws only sequence markers; TrackItem.markers (crates/project/src/lib.rs:534) not drawn"
+gap = "Clip markers invisible in the timeline"
+
+[[row]]
+id = "K2-119"
+group = "markers"
+feature = "Drag a zone marker from the markers view into the timeline"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/markers.html#markers-with-range"
+film = "none"
+evidence = "no drag source in crates/ui-egui/src/panels/misc.rs"
+gap = ""
+
+[[row]]
+id = "K2-120"
+group = "markers"
+feature = "Markers snap targets"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#snap"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1586 snap candidates include markers"
+gap = ""
+
+# ---------------------------------------------------------------- snapping / selection
+[[row]]
+id = "K2-121"
+group = "snapping"
+feature = "Snap to clip edges, playhead, markers across tracks (toggle)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#snap"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:301 sequence.snap (S); crates/ui-egui/src/panels/timeline.rs:1569 snap_to"
+gap = "Key S instead of Alt+M"
+
+[[row]]
+id = "K2-122"
+group = "snapping"
+feature = "Go to next / previous snap point (Alt+Right/Left)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#navigation-and-playback"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:2129 playhead.nextEdit/prevEdit; keyboard.rs playhead.nextEditAnyTrack"
+gap = "Edit points only, markers not included"
+
+[[row]]
+id = "K2-123"
+group = "selection"
+feature = "Select clip under playhead (+), add to selection (Alt++), deselect (-)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/sequence_menu.html#selection"
+film = "partial"
+evidence = "crates/engine/src/keyboard.rs:717 timeline.selectClipAtPlayhead (D)"
+gap = "No add/deselect-at-playhead variants"
+
+[[row]]
+id = "K2-124"
+group = "selection"
+feature = "Select / add / deselect transition under playhead"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/sequence_menu.html#selection"
+film = "none"
+evidence = "crates/engine/src/commands.rs:3469 select_transitions takes ids, no playhead variant"
+gap = ""
+
+[[row]]
+id = "K2-125"
+group = "selection"
+feature = "Select All (Ctrl+A), Deselect (Ctrl+Shift+A), Select All in Current Track"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/sequence_menu.html#tracks"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:1366 edit.selectAll, :1372 edit.deselectAll"
+gap = "No select-all-in-track"
+
+[[row]]
+id = "K2-126"
+group = "selection"
+feature = "Grab Current Item (Shift+G) then move with arrow keys"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#keyboard-navigation"
+film = "full"
+evidence = "crates/engine/src/keyboard.rs:723 timeline.nudgeLeft/Right(5), :727 nudgeUp/Down"
+gap = "Nudge keys move the selection directly; no grab state"
+
+# ---------------------------------------------------------------- clip right-click menu
+[[row]]
+id = "K2-127"
+group = "clip-menu"
+feature = "Copy / Paste clips"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1313 edit.copy, :1317 edit.paste, :1318 edit.pasteInsert"
+gap = ""
+
+[[row]]
+id = "K2-128"
+group = "clip-menu"
+feature = "Duplicate Clip (Ctrl+D) places a copy right after the clip"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:1378 edit.duplicate duplicates project items; Alt-drag copies in timeline (crates/ui-egui/src/panels/timeline.rs:2355)"
+gap = "No one-step duplicate-after on the timeline"
+
+[[row]]
+id = "K2-129"
+group = "clip-menu"
+feature = "Paste Effects / Remove Effects"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/clip_ops.rs:84 edit.pasteAttributes, :93 edit.removeAttributes"
+gap = ""
+
+[[row]]
+id = "K2-130"
+group = "clip-menu"
+feature = "Restore audio / video (bring back the missing A or V part)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "none"
+evidence = "grep restoreAudio: nothing"
+gap = "Re-add from source instead"
+
+[[row]]
+id = "K2-131"
+group = "clip-menu"
+feature = "Replace with Bin Selection (with confirm)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/clip_ops.rs:241 clip.replaceFromBin, :228 clip.replaceFromSource"
+gap = ""
+
+[[row]]
+id = "K2-132"
+group = "clip-menu"
+feature = "Save Clip Part to Bin (sub-clip from a timeline clip)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/clip_ops.rs:123 clip.makeSubclip (clip param)"
+gap = ""
+
+[[row]]
+id = "K2-133"
+group = "clip-menu"
+feature = "Align audio / timecode to a reference clip"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/multicam.rs:140 clip.synchronize method audio|timecode|in|out|marker, reference"
+gap = "One dialog instead of set-reference then align"
+
+[[row]]
+id = "K2-134"
+group = "clip-menu"
+feature = "Clip in Project Bin (reveal)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1621 clip.revealInProject"
+gap = ""
+
+[[row]]
+id = "K2-135"
+group = "clip-menu"
+feature = "Insert Effect / Insert Composition quick submenus"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "none"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1735 CLIP_MENU has no effect/composition entries"
+gap = "Effects applied by drag from the Effects panel only"
+
+[[row]]
+id = "K2-136"
+group = "clip-menu"
+feature = "Empty space menu: Add Clip (colour/title) directly on the track"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#empty-space-in-timeline"
+film = "none"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1853 gap_menu: Ripple Delete only"
+gap = "Generators are created in the Project panel"
+
+[[row]]
+id = "K2-137"
+group = "clip-menu"
+feature = "Clip in Timeline (list instances of a bin clip, jump to one)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html#clip-in-timeline"
+film = "partial"
+evidence = "crates/engine/src/project_panel.rs:242 Video/Audio Usage columns"
+gap = "Usage count shown, no jump-to-instance list"
+
+[[row]]
+id = "K2-138"
+group = "clip-menu"
+feature = "Insert at Timecode (place clip at its metadata timecode)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_context_menu.html"
+film = "none"
+evidence = "grep insertAtTimecode: nothing; crates/engine/src/sync.rs:82 reads start timecode for sync only"
+gap = ""
+
+[[row]]
+id = "K2-139"
+group = "clip-menu"
+feature = "Add timeline selection to Library (reusable across projects)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/sequence_menu.html#add-timeline-selection-to-library"
+film = "none"
+evidence = "crates/ui-egui/src/dock.rs:81 Libraries panel has no save-selection command"
+gap = ""
+
+# ---------------------------------------------------------------- sequences / nesting
+[[row]]
+id = "K2-140"
+group = "sequences"
+feature = "Add sequence (bin, tab-bar plus button)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#add-sequence"
+film = "full"
+evidence = "file.newSequence (crates/engine/src/commands.rs:873); sequence.open :1640"
+gap = "Tab bar plus button not verified"
+
+[[row]]
+id = "K2-141"
+group = "sequences"
+feature = "Create Sequence from Selection (replace clips with nested sequence)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#create-a-nested-sequence"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1618 clip.nest"
+gap = ""
+
+[[row]]
+id = "K2-142"
+group = "sequences"
+feature = "Copy Selection to New Sequence (originals stay)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:306 sequence.makeSubsequence"
+gap = ""
+
+[[row]]
+id = "K2-143"
+group = "sequences"
+feature = "Nested sequence is a live reference (edits propagate)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html"
+film = "full"
+evidence = "crates/engine/src/nest_fidelity_tests.rs; crates/engine/src/commands.rs:1780 sequence.nestSequences toggle"
+gap = ""
+
+[[row]]
+id = "K2-144"
+group = "sequences"
+feature = "Double-click a nested sequence opens its tab at the matching position"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#open-a-sequence-for-editing"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:2411 double-click -> sequence.revealNested (crates/engine/src/keyboard.rs:715)"
+gap = ""
+
+[[row]]
+id = "K2-145"
+group = "sequences"
+feature = "Sequence tabs: reorder by drag, close"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#change-order-of-sequence-tab"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1673 sequence.moveTab, :1651 sequence.close, sequence.closeOthers"
+gap = ""
+
+[[row]]
+id = "K2-146"
+group = "sequences"
+feature = "Switch to next/previous sequence tab (Ctrl+Tab / Ctrl+Shift+Tab)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#toggle-between-sequence-tabs"
+film = "none"
+evidence = "grep nextSequence/Ctrl+Tab: nothing"
+gap = "Tabs switch by click only"
+
+[[row]]
+id = "K2-147"
+group = "sequences"
+feature = "Sequence timecode offset (shown in monitor, ruler, markers, render)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#sequence-timecode-offset"
+film = "partial"
+evidence = "crates/project/src/lib.rs:975 Sequence.start_timecode; used in crates/engine/src/marker_export.rs:54"
+gap = "Timeline timecode field/ruler start at zero (crates/ui-egui/src/panels/timeline.rs:1249 Tick::ZERO)"
+
+[[row]]
+id = "K2-148"
+group = "sequences"
+feature = "Duplicate a sequence"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#duplicate-a-sequence"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1378 edit.duplicate on project selection"
+gap = ""
+
+[[row]]
+id = "K2-149"
+group = "sequences"
+feature = "Default target folder for new sequences"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#define-default-sequences-folder"
+film = "none"
+evidence = "grep sequences_folder: nothing"
+gap = ""
+
+[[row]]
+id = "K2-150"
+group = "sequences"
+feature = "Sequence clip waveform built and refreshed when switching tabs"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#update-the-sequence-clip-waveforms"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:900 request_sequence_peaks (mixed sequence audio)"
+gap = ""
+
+[[row]]
+id = "K2-151"
+group = "sequences"
+feature = "Per-sequence settings differ from project profile"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#change-the-settings-for-an-individual-sequence"
+film = "full"
+evidence = "crates/project/src/lib.rs:838 SequenceSettings per sequence; crates/engine/src/project_tools.rs:279 sequence.settings"
+gap = "Film exceeds Kdenlive here"
