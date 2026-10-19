@@ -316,12 +316,18 @@ impl MediaPool {
 
     /// A render-side provider bound to a project snapshot (proxies when enabled).
     pub fn provider(self: &Arc<Self>, project: Arc<Project>, services: Arc<dyn Services>) -> PoolProvider {
-        PoolProvider { pool: self.clone(), project, services, full_res: false }
+        PoolProvider { pool: self.clone(), project, services, full_res: false, proxies: false }
+    }
+
+    /// A provider that reads proxies wherever an item has one, whatever the proxy toggle says
+    /// (Export ▸ Use proxy clips).
+    pub fn proxy_provider(self: &Arc<Self>, project: Arc<Project>, services: Arc<dyn Services>) -> PoolProvider {
+        PoolProvider { pool: self.clone(), project, services, full_res: false, proxies: true }
     }
 
     /// A provider that always reads full-resolution media (export).
     pub fn full_res_provider(self: &Arc<Self>, project: Arc<Project>, services: Arc<dyn Services>) -> PoolProvider {
-        PoolProvider { pool: self.clone(), project, services, full_res: true }
+        PoolProvider { pool: self.clone(), project, services, full_res: true, proxies: false }
     }
 }
 
@@ -330,13 +336,21 @@ pub struct PoolProvider {
     pub pool: Arc<MediaPool>,
     pub project: Arc<Project>,
     pub services: Arc<dyn Services>,
-    /// Ignore proxies (export always renders full resolution).
+    /// Ignore proxies (export renders full resolution unless asked otherwise).
     pub full_res: bool,
+    /// Always use an item's proxy when it has one ([`MediaPool::proxy_provider`]).
+    pub proxies: bool,
 }
 
 impl redrob_film_render::SourceProvider for PoolProvider {
     fn source(&self, item: ItemId) -> Option<SharedSource> {
-        if self.full_res { self.pool.full_res_source(&self.project, item, &*self.services) } else { self.pool.source_for(&self.project, item, &*self.services) }
+        if self.proxies {
+            self.pool.resolve(&self.project, item, &*self.services, true)
+        } else if self.full_res {
+            self.pool.full_res_source(&self.project, item, &*self.services)
+        } else {
+            self.pool.source_for(&self.project, item, &*self.services)
+        }
     }
 }
 

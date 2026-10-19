@@ -378,6 +378,24 @@ pub struct ExportSettings {
     pub render_at_max_depth: bool,
     /// Use Maximum Render Quality: render at full size and scale with an area filter.
     pub max_render_quality: bool,
+    /// Scaling interpolation (Area = the default filter; another renders at full size first).
+    pub scale_filter: ScaleFilter,
+    /// Deinterlacer applied to every output frame.
+    pub deinterlace: Deinterlace,
+    /// Encoder speed of the built-in H.264 encoder.
+    pub encoder_speed: EncoderSpeed,
+    /// Encode H.264 in full range (0–255 luma, signalled in the VUI) instead of video range.
+    pub full_range: bool,
+    /// The video stream: off exports the audio alone ([`ExportSettings::normalized`]).
+    pub include_video: bool,
+    /// Render at preview resolution: the output frame shrinks by this factor (0..1).
+    pub preview_scale: Option<f32>,
+    /// Render from proxy clips where items have them (fast draft renders).
+    pub use_proxies: bool,
+    /// Parallel processing: render several frames at a time. Off renders one frame at a time.
+    pub parallel: bool,
+    /// Encoding threads (None or 0 = one per core).
+    pub threads: Option<u32>,
     pub audio: AudioSettings,
     pub multiplexer: Multiplexer,
     /// Captions ▸ Create Sidecar File: `srt` or `vtt` next to the output (written by the engine).
@@ -562,6 +580,15 @@ impl Default for ExportSettings {
             keyframe_distance: None,
             render_at_max_depth: false,
             max_render_quality: false,
+            scale_filter: ScaleFilter::Area,
+            deinterlace: Deinterlace::None,
+            encoder_speed: EncoderSpeed::Medium,
+            full_range: false,
+            include_video: true,
+            preview_scale: None,
+            use_proxies: false,
+            parallel: true,
+            threads: None,
             audio: AudioSettings::default(),
             multiplexer: Multiplexer::Mp4,
             caption_sidecar: None,
@@ -1415,6 +1442,8 @@ struct H264Encoder {
     u: Vec<u8>,
     v: Vec<u8>,
     signal: ColorSignal,
+    /// Full-range output (`ExportSettings::full_range`, SDR only): video-range planes expanded.
+    full_range: bool,
 }
 
 impl H264Encoder {
@@ -1446,6 +1475,9 @@ impl VideoEncoder for H264Encoder {
             }
             None => rgba_to_yuv420_8(f.rgba, f.width as usize, f.height as usize, &mut self.y, &mut self.u, &mut self.v),
         });
+        if self.full_range && f.hdr.is_none() {
+            expand_to_full_range(&mut self.y, &mut self.u, &mut self.v);
+        }
         let cw = (f.width as usize).div_ceil(2);
         let frame = redrob_film_h264enc::YuvFrame { y: &self.y, u: &self.u, v: &self.v, y_stride: f.width as usize, uv_stride: cw };
         let ps = self.enc.try_encode(&frame, f.index as i64 * self.rate.den).map_err(|e| ExportError::Encode(e.to_string()))?;
@@ -1461,6 +1493,14 @@ impl VideoEncoder for H264Encoder {
     }
     fn pass_stats(&self) -> Option<redrob_film_h264enc::PassStats> {
         self.enc.pass_stats()
+    }
+}
+
+/// Video-range 8-bit planes (Y 16–235, C 16–240) stretched to full range (0–255).
+pub fn expand_to_full_range(y: &mut [u8], u: &mut [u8], v: &mut [u8]) {
+    y.par_iter_mut().for_each(|p| *p = ((f32::from(*p) - 16.0) * 255.0 / 219.0).round().clamp(0.0, 255.0) as u8);
+    for c in [u, v] {
+        c.par_iter_mut().for_each(|p| *p = ((f32::from(*p) - 128.0) * 255.0 / 224.0 + 128.0).round().clamp(0.0, 255.0) as u8);
     }
 }
 
@@ -1616,6 +1656,15 @@ fn h264_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSetti
         H264Profile::High => redrob_film_h264enc::Profile::High,
     };
     cfg.level = s.h264_level;
+    cfg.preset = match s.encoder_speed {
+        EncoderSpeed::Slow => redrob_film_h264enc::Preset::Quality,
+        EncoderSpeed::Medium => redrob_film_h264enc::Preset::Balanced,
+        EncoderSpeed::Fast => redrob_film_h264enc::Preset::Speed,
+    };
+    let full_range = s.full_range && !s.signal.is_hdr();
+    if full_range {
+        cfg.color = redrob_film_h264enc::ColorConfig { full_range: true, ..Default::default() };
+    }
     if let Some((n, d)) = s.pixel_aspect {
         cfg.sar = (n.clamp(1, 65535) as u16, d.clamp(1, 65535) as u16);
     }
@@ -1630,7 +1679,7 @@ fn h264_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSetti
     }
     Some(
         redrob_film_h264enc::Encoder::new(cfg)
-            .map(|enc| Box::new(H264Encoder { enc, w, h, rate, y: Vec::new(), u: Vec::new(), v: Vec::new(), signal: s.signal }) as Box<dyn VideoEncoder>)
+            .map(|enc| Box::new(H264Encoder { enc, w, h, rate, y: Vec::new(), u: Vec::new(), v: Vec::new(), signal: s.signal, full_range }) as Box<dyn VideoEncoder>)
             .map_err(|e| ExportError::Encode(e.to_string())),
     )
 }
@@ -1736,6 +1785,22 @@ pub fn encode_still_with_quality(format: Format, rgba: Vec<u8>, w: u32, h: u32, 
 
 /// Run an export (blocking; call from a worker thread).
 pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
+    // the video stream turned off: the audio alone
+    if !settings.has_video() && !settings.format.is_audio_only() {
+        return export(project, seq, &settings.normalized(), sources, progress);
+    }
+    // Parallel processing off, or a fixed thread count: run the export on a pool of its own size
+    let threads = if !settings.parallel { Some(1) } else { settings.threads.filter(|n| *n > 0).map(|n| n as usize) };
+    if let Some(n) = threads
+        && n != rayon::current_num_threads()
+        && let Ok(pool) = rayon::ThreadPoolBuilder::new().num_threads(n).thread_name(|i| format!("redrob-film-export-{i}")).build()
+    {
+        return pool.install(|| export_on_pool(project, seq, settings, sources, progress));
+    }
+    export_on_pool(project, seq, settings, sources, progress)
+}
+
+fn export_on_pool(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
     settings.validate()?;
     if stepped(settings.format) {
         let mut ex = Exporter::new(project.clone(), seq, settings, progress)?;

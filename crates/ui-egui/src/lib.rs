@@ -1687,6 +1687,16 @@ impl FilmcraftApp {
                     self.ui.dock.activate(PanelKind::Source);
                 }
                 redrob_film_engine::Event::RevealInProject(item) => self.reveal_in_project(item),
+                redrob_film_engine::Event::OpenPath { path, reveal } => {
+                    if let Err(e) = crate::panels::menu_dialogs::open_path(self, &ctx, &path, reveal) {
+                        self.ui.status = e;
+                    }
+                }
+                redrob_film_engine::Event::Shutdown => {
+                    if let Err(e) = shut_down_computer() {
+                        self.ui.status = e;
+                    }
+                }
                 redrob_film_engine::Event::Toast { message, .. } => self.toast = Some((message, ctx.input(|i| i.time))),
                 redrob_film_engine::Event::ProjectChanged { .. } => {}
             }
@@ -2071,6 +2081,32 @@ impl eframe::App for FilmcraftApp {
         }
     }
 }
+/// Export ▸ Shut down computer after renderings: ask the operating system to power off (one
+/// minute's grace on Windows; the desktop session's own power-off elsewhere).
+fn shut_down_computer() -> Result<(), String> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        Err("shutting down is not available in the browser".into())
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let mut cmd = if cfg!(target_os = "windows") {
+            let mut c = std::process::Command::new("shutdown");
+            c.args(["/s", "/t", "60"]);
+            c
+        } else if cfg!(target_os = "macos") {
+            let mut c = std::process::Command::new("osascript");
+            c.args(["-e", "tell application \"System Events\" to shut down"]);
+            c
+        } else {
+            let mut c = std::process::Command::new("systemctl");
+            c.arg("poweroff");
+            c
+        };
+        cmd.spawn().map(|_| ()).map_err(|e| format!("can't shut down: {e}"))
+    }
+}
+
 
 /// Effective sample rate for shuttle playback. The audio device still runs at `device_rate`,
 /// so at 2x its output samples represent twice the timeline duration. Reverse and

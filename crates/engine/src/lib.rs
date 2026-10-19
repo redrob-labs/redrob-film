@@ -42,6 +42,7 @@ pub mod project_tools;
 pub mod proxies;
 pub mod relink;
 pub mod remix;
+pub mod render_jobs;
 pub mod scene_detect;
 pub mod scopes;
 pub mod sequence_extras;
@@ -341,6 +342,15 @@ pub enum Event {
     OpenSource(ItemId),
     /// Show this item in the Project panel (Reveal in Project).
     RevealInProject(ItemId),
+    /// Hand a file to the operating system: open it in its default application, or reveal it in
+    /// the file manager (after an export, a finished queue item).
+    OpenPath {
+        path: String,
+        reveal: bool,
+    },
+    /// Every export with "shut down after rendering" has finished: the host shuts the computer
+    /// down.
+    Shutdown,
 }
 
 pub struct Session {
@@ -411,6 +421,10 @@ pub struct Session {
     pub media_stamps: std::collections::HashMap<String, media_watch::Stamp>,
     /// The stamps being taken on a worker thread ([`Session::start_media_scan`]).
     pub media_scan: Option<media_watch::MediaScan>,
+    /// Export jobs whose after-export actions (open, play, add, log) run when they end.
+    pub post_exports: Vec<render_jobs::PostExport>,
+    /// An export asked to shut the computer down once every export has finished.
+    pub shutdown_armed: bool,
 }
 
 /// An export advanced a batch at a time on the host's thread ([`Session::pump_jobs`]).
@@ -502,6 +516,8 @@ impl Session {
             exec_depth: 0,
             media_stamps: Default::default(),
             media_scan: None,
+            post_exports: Vec::new(),
+            shutdown_armed: false,
         }
     }
 
@@ -588,6 +604,7 @@ impl Session {
         masks::poll(self);
         scene_detect::poll(self);
         export_tools::pump_queue(self, false);
+        render_jobs::poll(self);
         panels::log_jobs(self);
         let Some(p) = self.persistence.as_mut() else { return };
         for ev in p.drain_events() {

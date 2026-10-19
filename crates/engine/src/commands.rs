@@ -2943,6 +2943,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::masks::commands());
     v.extend(crate::presets::commands());
     v.extend(crate::export_tools::commands());
+    v.extend(crate::render_jobs::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
     v.extend(crate::scopes::commands());
