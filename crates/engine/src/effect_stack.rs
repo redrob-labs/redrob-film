@@ -63,6 +63,12 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             shift_keyframes,
         ),
         spec(
+            "masks.trackToMotion",
+            "Copy Mask Track to Position",
+            r#"{"clip":id,"effect":index|id,"mask":n,"stabilize":bool? (move against the track, to hold the subject still)}"#,
+            track_to_motion,
+        ),
+        spec(
             "effects.applyValueToKeyframes",
             "Apply Value to Keyframes",
             r#"{"clip":id,"effect":str|index,"param":str,"mask":n?,"mediaTimes":[ticks],"value":any? (default: the value at the playhead)}"#,
@@ -332,6 +338,57 @@ fn shift_keyframes(s: &mut Session, p: &Value) -> Result<Value> {
         Ok(n)
     })?;
     Ok(json!({"moved": n}))
+}
+
+/// Kdenlive's "copy the tracker's keyframes into Transform": the clip's Motion Position follows
+/// the centre of a tracked mask (one Position keyframe per mask path keyframe, moved by how far the
+/// mask's centre moved since its first keyframe, in sequence pixels at the clip's scale), or moves
+/// against it to hold the subject still (`stabilize`).
+fn track_to_motion(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "masks.trackToMotion";
+    let c = clip_p(p, "clip").ok_or_else(|| bad(CMD, "need `clip`"))?;
+    let eff = p.get("effect").cloned().unwrap_or(json!("opacity"));
+    let mi = u64_p(p, "mask").ok_or_else(|| bad(CMD, "need `mask`"))? as usize;
+    let stabilize = bool_p(p, "stabilize").unwrap_or(false);
+    let (fw, fh) = s.active_sequence().map(|q| (q.settings.width as f64, q.settings.height as f64)).unwrap_or((1920.0, 1080.0));
+    let n = s.edit_sequence("Copy Mask Track to Position", |q, _, _| {
+        let (_, it) = q.find_item_mut(c).ok_or(redrob_film_edit::EditError::NoItem(c))?;
+        let e = effect_mut(it, &eff).ok_or_else(|| bad(CMD, "no such effect"))?;
+        let mask = e.masks.get(mi).ok_or_else(|| bad(CMD, format!("no mask {mi}")))?;
+        let centres: Vec<(Tick, redrob_film_geom::Vec2)> = mask
+            .path
+            .keyframes
+            .iter()
+            .filter_map(|k| {
+                let path = k.value.as_path()?;
+                let n = path.vertices.len().max(1) as f64;
+                let (x, y) = path.vertices.iter().fold((0.0, 0.0), |(x, y), v| (x + v.p.x, y + v.p.y));
+                Some((k.time, redrob_film_geom::Vec2::new(x / n, y / n)))
+            })
+            .collect();
+        if centres.len() < 2 {
+            return Err(bad(CMD, "track the mask first (it needs path keyframes)"));
+        }
+        let motion = it.effects.iter_mut().find(|e| e.effect == "motion").ok_or_else(|| bad(CMD, "the clip has no Motion"))?;
+        let scale_at = |m: &EffectInstance, t: Tick| m.f64_at("scale", t) / 100.0;
+        let (t0, c0) = centres[0];
+        let base = motion.vec2_at("position", t0);
+        let base = redrob_film_geom::Vec2::new(if base.x.is_finite() { base.x } else { fw / 2.0 }, if base.y.is_finite() { base.y } else { fh / 2.0 });
+        let sign = if stabilize { -1.0 } else { 1.0 };
+        let moves: Vec<(Tick, redrob_film_geom::Vec2)> = centres
+            .iter()
+            .map(|(t, cc)| {
+                let k = scale_at(motion, *t) * sign;
+                (*t, redrob_film_geom::Vec2::new(base.x + (cc.x - c0.x) * k, base.y + (cc.y - c0.y) * k))
+            })
+            .collect();
+        let prm = motion.params.entry("position".to_string()).or_insert_with(|| redrob_film_project::Param::new(ParamValue::Vec2(base)));
+        for (t, v) in &moves {
+            prm.put_keyframe(*t, ParamValue::Vec2(*v));
+        }
+        Ok(moves.len())
+    })?;
+    Ok(json!({"keyframes": n}))
 }
 
 fn apply_value(s: &mut Session, p: &Value) -> Result<Value> {

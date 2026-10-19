@@ -3677,3 +3677,6 @@
 	Pattern name	图案名称
 	Save Selected Layers	保存所选图层
 	Add as New Source Graphic	添加为新的源图形
+	Copy Track to Position	将跟踪复制到位置
+	Stabilize Position with Track	用跟踪稳定位置
+	Copy Mask Track to Position	将蒙版跟踪复制到位置

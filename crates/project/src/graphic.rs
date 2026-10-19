@@ -208,6 +208,9 @@ pub struct LayerTransform {
     pub position: Vec2,
     pub anchor: Vec2,
     pub scale: Vec2,
+    /// Foreshortening from Rotation Y (x) and Rotation X (y): the cosines of the turns, applied
+    /// with the scale (1, 1 = flat on).
+    pub tilt: Vec2,
     pub rotation: f64,
     pub opacity: f32,
 }
@@ -366,11 +369,11 @@ pub fn eval_layer(e: &EffectInstance, t: Tick, frame: (u32, u32)) -> Option<Laye
     let s = ff(e, "scale", t) as f64 / 100.0;
     let sw = if bb(e, "uniform_scale", t) { s } else { ff(e, "scale_width", t) as f64 / 100.0 };
     // Rotation X / Y foreshorten the card (never quite flat, so the transform stays invertible)
-    let tilt = |deg: f32| {
+    let foreshorten = |deg: f32| {
         let c = (deg as f64).to_radians().cos();
         if c.abs() < 1e-3 { 1e-3f64.copysign(c) } else { c }
     };
-    let (sw, s) = (sw * tilt(ff(e, "rotation_y", t)), s * tilt(ff(e, "rotation_x", t)));
+    let tilt = Vec2::new(foreshorten(ff(e, "rotation_y", t)), foreshorten(ff(e, "rotation_x", t)));
     Some(LayerSpec {
         name: ss(e, "name", t),
         enabled: e.enabled,
@@ -392,6 +395,7 @@ pub fn eval_layer(e: &EffectInstance, t: Tick, frame: (u32, u32)) -> Option<Laye
             position,
             anchor: vv(e, "anchor", t),
             scale: Vec2::new(sw, s),
+            tilt,
             rotation: ff(e, "rotation", t) as f64,
             opacity: (ff(e, "opacity", t) / 100.0).clamp(0.0, 1.0),
         },

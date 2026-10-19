@@ -242,16 +242,26 @@ fn param_entry<'a>(e: &'a mut EffectInstance, id: &str) -> Option<&'a mut Param>
 /// Set properties `props` on layer `e` (keyframe-aware at media time `mt`). Changing the text
 /// keeps per-character styles on their characters.
 fn apply_props(e: &mut EffectInstance, props: &serde_json::Map<String, Value>, mt: Tick) -> Result<()> {
+    // `__keyframe` (graphics.set's `keyframe`): animatable properties get a keyframe at `mt`
+    let keyframe = props.get("__keyframe").and_then(Value::as_bool).unwrap_or(false);
     for (k, v) in props {
+        if k == "__keyframe" {
+            continue;
+        }
         if k == "enabled" {
             e.enabled = v.as_bool().unwrap_or(true);
             continue;
         }
         let id = param_id(k);
+        let animatable = redrob_film_project::find_effect(&e.effect).and_then(|d| d.param(id)).is_some_and(|d| d.animatable);
         let prm = param_entry(e, id).ok_or_else(|| bad("graphics.set", format!("no property `{k}`")))?;
         let pv = to_param(&prm.value, id, v).ok_or_else(|| bad("graphics.set", format!("`{k}`: value has the wrong type")))?;
         let old = prm.value_at(mt);
-        prm.set_at(mt, pv.clone());
+        if keyframe && animatable {
+            prm.put_keyframe(mt, pv.clone());
+        } else {
+            prm.set_at(mt, pv.clone());
+        }
         if let (ParamValue::Text(a), ParamValue::Text(b), "text") = (&old, &pv, id)
             && let Some(x) = e.layer.as_mut()
         {
@@ -1116,12 +1126,16 @@ pub fn commands() -> Vec<CommandSpec> {
             "Set Graphic Properties",
             &[],
             None,
-            r##"{"clip":id?,"layer":n|name?,"props":{"font":"Inter","font_style":"Bold","size":120,"align":"center","tracking":50,"leading":0,"fill_color":"#ffcc00","stroke":true,"stroke_width":6,"background":true,"shadow":true,"position":[x,y],"scale":100,"rotation":0,"opacity":100,…},"time":ticks?,"merge":bool?,"begin":bool?}"##,
+            r##"{"clip":id?,"layer":n|name?,"props":{"font":"Inter","font_style":"Bold","size":120,"align":"center","tracking":50,"leading":0,"fill_color":"#ffcc00","stroke":true,"stroke_width":6,"background":true,"shadow":true,"position":[x,y],"scale":100,"rotation":0,"opacity":100,…},"time":ticks?,"keyframe":bool?,"merge":bool?,"begin":bool?}"##,
             has_graphic,
             |s, p| {
                 let clip = target_clip(s, p).ok_or_else(|| bad("graphics.set", "no graphic clip"))?;
                 let (_, ei) = layer_effect_index(s, clip, p)?;
-                let props = p.get("props").and_then(Value::as_object).ok_or_else(|| bad("graphics.set", "need `props`"))?.clone();
+                let mut props = p.get("props").and_then(Value::as_object).ok_or_else(|| bad("graphics.set", "need `props`"))?.clone();
+                // `keyframe`: write keyframes at `time` (automatic keyframes while playing)
+                if bool_p(p, "keyframe") == Some(true) {
+                    props.insert("__keyframe".into(), Value::Bool(true));
+                }
                 let tl = time_p(s, p, "").unwrap_or_else(|| s.playhead());
                 // `merge`: a drag of a property is one undo step; `begin` starts a new one (#201)
                 let merge = bool_p(p, "merge").unwrap_or(false).then(|| format!("graphics.set:{}:{ei}", clip.0));

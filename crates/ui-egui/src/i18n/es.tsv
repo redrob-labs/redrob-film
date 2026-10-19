@@ -3696,3 +3696,6 @@
 	Pattern name	Nombre del patrón
 	Save Selected Layers	Guardar capas seleccionadas
 	Add as New Source Graphic	Añadir como nuevo gráfico de origen
+	Copy Track to Position	Copiar seguimiento a la posición
+	Stabilize Position with Track	Estabilizar la posición con el seguimiento
+	Copy Mask Track to Position	Copiar seguimiento de máscara a la posición

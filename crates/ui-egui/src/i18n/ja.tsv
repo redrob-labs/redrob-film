@@ -3684,3 +3684,6 @@
 	Pattern name	パターン名
 	Save Selected Layers	選択したレイヤーを保存
 	Add as New Source Graphic	新しいソースグラフィックとして追加
+	Copy Track to Position	トラッキングを位置にコピー
+	Stabilize Position with Track	トラッキングで位置を安定化
+	Copy Mask Track to Position	マスクのトラッキングを位置にコピー

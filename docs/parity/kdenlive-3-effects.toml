@@ -2333,7 +2333,7 @@ group = "Effects / Effects tab"
 feature = "Favorite effects (+ timeline toolbar list)"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effects-tab"
 film = "full"
-evidence = "crates/ui-egui/src/panels/effect_stack.rs:127 (Add to/Remove from Favorites); crates/ui-egui/src/panels/effects.rs:146 (Favorites folder, star badge); crates/ui-egui/src/panels/effect_stack.rs:182 (clip menu Insert an Effect ▸ favourites)"
+evidence = "crates/ui-egui/src/panels/effect_stack.rs:151 (Add to/Remove from Favorites); crates/ui-egui/src/panels/effects.rs:146 (Favorites folder, star badge); crates/ui-egui/src/panels/effect_stack.rs:206 (clip menu Insert an Effect ▸ favourites)"
 gap = "none"
 
 [[row]]
@@ -2351,7 +2351,7 @@ group = "Effects / Effects tab"
 feature = "Only show reviewed assets / 10-bit compatible filter"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effects-tab"
 film = "full"
-evidence = "crates/ui-egui/src/panels/effects.rs:187 (filter toggles: accelerated / 32-bit high bit depth / YUV only); effect_stack.rs passes_filters"
+evidence = "crates/ui-egui/src/panels/effects.rs:242 (filter toggles: accelerated / 32-bit high bit depth / YUV only); effect_stack.rs passes_filters"
 gap = "none"
 
 [[row]]
@@ -2360,7 +2360,7 @@ group = "Effects / Effects tab"
 feature = "Effect description pane with doc link"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effects-tab"
 film = "partial"
-evidence = "crates/ui-egui/src/panels/effect_stack.rs:145 (description pane: folder, badges, controls, keyframable count; ⓘ toggle in effects.rs:187)"
+evidence = "crates/ui-egui/src/panels/effect_stack.rs:169 (description pane: folder, badges, controls, keyframable count; ⓘ toggle in effects.rs:242)"
 gap = "the pane is generated from the effect's definition; there is no hand-written prose description or per-effect documentation page to link to"
 
 [[row]]
@@ -2396,7 +2396,7 @@ group = "Effects / Effect stack"
 feature = "Enable/disable whole stack (strike-through on clip)"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-composition-stack-functions"
 film = "full"
-evidence = "effects.toggleStack (crates/engine/src/effect_stack.rs:110); effect_controls.rs:1136 (eye switch on the clip heading); effect_stack.rs:182 (clip menu Effects Enabled); timeline.rs:790 (fx badge struck through)"
+evidence = "effects.toggleStack (crates/engine/src/effect_stack.rs:116); effect_controls.rs:1136 (eye switch on the clip heading); effect_stack.rs:206 (clip menu Effects Enabled); timeline.rs:793 (fx badge struck through)"
 gap = "none"
 
 [[row]]
@@ -2451,7 +2451,7 @@ feature = "Open effect documentation"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
 film = "none"
 evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
-gap = "no per-effect documentation pages exist to open (offline product); the Effects panel's description pane (effect_stack.rs:145) is the in-app help"
+gap = "no per-effect documentation pages exist to open (offline product); the Effects panel's description pane (effect_stack.rs:169) is the in-app help"
 
 [[row]]
 id = "K3-273"
@@ -2459,7 +2459,7 @@ group = "Effects / Effect functions"
 feature = "Move effect up/down in stack"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
 film = "full"
-evidence = "effects.move (crates/engine/src/effect_stack.rs:87); effect_controls.rs:1234 (right-click ▸ Move Effect Up / Down)"
+evidence = "effects.move (crates/engine/src/effect_stack.rs:93); effect_controls.rs:1234 (right-click ▸ Move Effect Up / Down)"
 gap = "none"
 
 [[row]]
@@ -2477,7 +2477,7 @@ group = "Effects / Effect functions"
 feature = "Math expressions in value fields"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
 film = "full"
-evidence = "crates/ui-egui/src/panels/effect_stack.rs:511 (eval_expr: + - * / ( )); widgets.rs hot_number commits typed expressions"
+evidence = "crates/ui-egui/src/panels/effect_stack.rs:802 (eval_expr: + - * / ( )); widgets.rs hot_number commits typed expressions"
 gap = "none"
 
 [[row]]
@@ -2495,7 +2495,7 @@ group = "Effects / Effect functions"
 feature = "Timecode field relative entry (+/- hh:mm:ss:ff short forms)"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
 film = "full"
-evidence = "crates/ui-egui/src/panels/effect_stack.rs:610 (relative_frames: +1:: / -2: / +12. / +2:.9); widgets.rs:107 (timecode_field); +hh:mm:ss:ff and +frames via parse_timecode"
+evidence = "crates/ui-egui/src/panels/effect_stack.rs:901 (relative_frames: +1:: / -2: / +12. / +2:.9); widgets.rs:107 (timecode_field); +hh:mm:ss:ff and +frames via parse_timecode"
 gap = "none"
 
 [[row]]
@@ -2514,7 +2514,7 @@ feature = "Effect on a Project Bin clip (all instances)"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#where-to-apply-an-effect"
 film = "none"
 evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
-gap = "no source/bin-clip effects"
+gap = "effects live on timeline clips (Paste Attributes and effect presets carry one setup to many clips); a project-item effect stack that every instance renders would need its own target in the render path and in every effects.* command, not done this round"
 
 [[row]]
 id = "K3-280"
@@ -2549,7 +2549,7 @@ group = "Effects / Applying"
 feature = "Sequence menu ▸ Add Effect"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#how-to-apply-an-effect"
 film = "full"
-evidence = "sequence.addEffectDialog (crates/ui-egui/src/menus.rs:49, Sequence ▸ Add Effect…); effect_stack.rs:382 (dialog by folder, favourites first, applies to the selection)"
+evidence = "sequence.addEffectDialog (crates/ui-egui/src/menus.rs:49, Sequence ▸ Add Effect…); effect_stack.rs:673 (dialog by folder, favourites first, applies to the selection)"
 gap = "none"
 
 [[row]]
@@ -2568,7 +2568,7 @@ feature = "Track effect (video track)"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#track-effect"
 film = "partial"
 evidence = "crates/project/src/lib.rs:759 (audio Track.effects); crates/project/src/lib.rs:279 (AdjustmentLayer)"
-gap = "video tracks carry no effects; workaround is an adjustment layer above"
+gap = "video tracks carry no effect stack (track effects are audio mixer inserts); an adjustment layer over the track is the way, since a video track effect needs a per-track composite the CPU and GPU compositors do not make"
 
 [[row]]
 id = "K3-286"
@@ -2586,7 +2586,7 @@ feature = "Master effect (video)"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#master-effect"
 film = "partial"
 evidence = "crates/project/src/lib.rs:279 (AdjustmentLayer)"
-gap = "no master video stack; an adjustment layer over all tracks is the workaround"
+gap = "no master video effect stack; an adjustment layer over all tracks applies to the whole output (the compositors have no post-composite effect stage)"
 
 [[row]]
 id = "K3-288"
@@ -2604,7 +2604,7 @@ feature = "Track effect zone"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-zones"
 film = "partial"
 evidence = "crates/project/src/lib.rs:279 (AdjustmentLayer duration)"
-gap = "zone emulated by trimming an adjustment layer; no zone bar on track effects"
+gap = "with no video track effect stack there is no track zone: an adjustment layer trimmed to the stretch is the zone (clip effects have zones, K3-291)"
 
 [[row]]
 id = "K3-290"
@@ -2613,7 +2613,7 @@ feature = "Master (timeline) effect zone"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-zones"
 film = "partial"
 evidence = "crates/project/src/lib.rs:279"
-gap = "same: adjustment layer, no master zone bar"
+gap = "same as the master effect: an adjustment layer trimmed to the stretch over all tracks; no master zone bar"
 
 [[row]]
 id = "K3-291"
@@ -2621,7 +2621,7 @@ group = "Effects / Effect zones"
 feature = "Clip effect zone (Use effect zone)"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
 film = "full"
-evidence = "effects.setZone (crates/engine/src/effect_stack.rs:135); EffectInstance.zone (crates/project/src/effect.rs:130, saved in the project); render/src/effects.rs:90 + gpufx.rs eval skip outside the zone; effect_controls.rs:1234 (Use Effect Zone / Set In / Set Out) and :1212 (zone shown on the lane)"
+evidence = "effects.setZone (crates/engine/src/effect_stack.rs:141); EffectInstance.zone (crates/project/src/effect.rs:130, saved in the project); render/src/effects.rs:90 + gpufx.rs eval skip outside the zone; effect_controls.rs:1234 (Use Effect Zone / Set In / Set Out) and :1212 (zone shown on the lane)"
 gap = "none"
 
 [[row]]
@@ -2665,9 +2665,9 @@ id = "K3-296"
 group = "Effects / Tracking"
 feature = "Track object, copy tracker keyframes into Transform"
 manual = "https://docs.kdenlive.org/en/compositing/masking_and_tracking/tracking.html"
-film = "partial"
-evidence = "crates/engine/src/masks.rs:576; crafts/effectcraft/crates/effects/src/camera_tracker.rs:32 (ec.perspective.cameratracker, Effects mode)"
-gap = "tracked data stays on the mask; no keyframe export to Motion/Transform"
+film = "full"
+evidence = "masks.trackToMotion (crates/engine/src/effect_stack.rs track_to_motion: Motion Position keyframes follow the tracked mask's centre, or stabilize against it); mask row ▸ tracking menu ▸ Copy Track to Position / Stabilize Position with Track (crates/ui-egui/src/panels/masks.rs)"
+gap = "none"
 
 [[row]]
 id = "K3-297"
@@ -2738,7 +2738,7 @@ group = "Effects / Keyframes"
 feature = "Copy/paste keyframes (Ctrl+C/V)"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframe-ruler"
 film = "full"
-evidence = "crates/ui-egui/src/panels/effect_stack.rs:248 / :285 (Ctrl+C / Ctrl+V of selected keyframes in Effect Controls, across effects and clips); effects.pasteKeyframes"
+evidence = "crates/ui-egui/src/panels/effect_stack.rs:343 / :380 (Ctrl+C / Ctrl+V of selected keyframes in Effect Controls, across effects and clips); effects.pasteKeyframes"
 gap = "none"
 
 [[row]]
@@ -2755,9 +2755,9 @@ id = "K3-306"
 group = "Effects / Keyframes"
 feature = "Automatic keyframes while playing"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#automatic-keyframe-generation"
-film = "partial"
-evidence = "crates/ui-egui/src/panels/effect_stack.rs:343 (auto_keyframe: value changes while playing write keyframes at the playhead; Effect Controls ▸ Options ▸ Automatic Keyframes)"
-gap = "records changes made in Effect Controls and Properties while playing; dragging Program-monitor handles during playback is not recorded yet"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effect_stack.rs auto_keyframe (Effect Controls / Properties values) and auto_keyframe_graphics (graphic layers dragged on the Program monitor, graphics.set keyframe); Effect Controls ▸ Options ▸ Automatic Keyframes"
+gap = "none"
 
 [[row]]
 id = "K3-307"
@@ -2765,7 +2765,7 @@ group = "Effects / Keyframes"
 feature = "Limit automatic keyframe interval"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#automatic-keyframe-generation"
 film = "full"
-evidence = "crates/ui-egui/src/panels/effect_stack.rs:80 (AUTO_KEYFRAME_FRAMES = 10; Options ▸ Limit Automatic Keyframes)"
+evidence = "crates/ui-egui/src/panels/effect_stack.rs:104 (AUTO_KEYFRAME_FRAMES = 10; Options ▸ Limit Automatic Keyframes)"
 gap = "none"
 
 [[row]]
@@ -2792,7 +2792,7 @@ group = "Effects / Keyframes"
 feature = "Apply current value to selected keyframes"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#working-with-keyframes-in-the-effect-stack"
 film = "full"
-evidence = "effects.applyValueToKeyframes (crates/engine/src/effect_stack.rs:337); effect_controls.rs:817 (Apply Current Value to Selected Keyframes)"
+evidence = "effects.applyValueToKeyframes (crates/engine/src/effect_stack.rs:394); effect_controls.rs:817 (Apply Current Value to Selected Keyframes)"
 gap = "none"
 
 [[row]]
@@ -2810,7 +2810,7 @@ group = "Effects / Keyframes"
 feature = "Move multiple keyframes at once"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#working-with-keyframes-in-the-effect-stack"
 film = "full"
-evidence = "crates/ui-egui/src/panels/effect_controls.rs:734 (dragging a selected keyframe moves them all); effects.shiftKeyframes (crates/engine/src/effect_stack.rs:291)"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs:734 (dragging a selected keyframe moves them all); effects.shiftKeyframes (crates/engine/src/effect_stack.rs:297)"
 gap = "none"
 
 [[row]]
@@ -2828,7 +2828,7 @@ group = "Effects / Keyframes"
 feature = "Export keyframes to clipboard"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#exchanging-keyframes-across-effects"
 film = "full"
-evidence = "effects.exportKeyframes (crates/engine/src/effect_stack.rs:184); keyframe menu ▸ Copy Keyframes to Clipboard (effect_stack.rs export_param)"
+evidence = "effects.exportKeyframes (crates/engine/src/effect_stack.rs:190); keyframe menu ▸ Copy Keyframes to Clipboard (effect_stack.rs export_param)"
 gap = "none"
 
 [[row]]
@@ -2837,7 +2837,7 @@ group = "Effects / Keyframes"
 feature = "Import keyframes with mapping/offset"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#exchanging-keyframes-across-effects"
 film = "full"
-evidence = "crates/ui-egui/src/panels/effect_stack.rs:445 (Import Keyframes dialog: paste, clip times or playhead, time offset, value offset, X/Y component mapping); effects.pasteKeyframes"
+evidence = "crates/ui-egui/src/panels/effect_stack.rs:736 (Import Keyframes dialog: paste, clip times or playhead, time offset, value offset, X/Y component mapping); effects.pasteKeyframes"
 gap = "none"
 
 [[row]]
@@ -2855,7 +2855,7 @@ group = "Compositions / Tab"
 feature = "Compositions tab (lumas only / transitions only / favourites)"
 manual = "https://docs.kdenlive.org/en/compositing/compositions.html"
 film = "full"
-evidence = "crates/ui-egui/src/panels/effects.rs:187 (filters) and the Favorites folder (effects.rs, favourites hold transitions too); luma wipes are one transition, Luma Wipe (crates/project/src/vtransition.rs:316), with its methods"
+evidence = "crates/ui-egui/src/panels/effects.rs:242 (filters) and the Favorites folder (effects.rs, favourites hold transitions too); luma wipes are one transition, Luma Wipe (crates/project/src/vtransition.rs:316), with its methods"
 gap = "none"
 
 [[row]]
@@ -2891,7 +2891,7 @@ group = "Compositions / Adding"
 feature = "Insert composition from clip context menu"
 manual = "https://docs.kdenlive.org/en/compositing/compositions.html"
 film = "full"
-evidence = "crates/ui-egui/src/panels/effect_stack.rs:216 (clip menu ▸ Insert a Transition ▸ default or favourite ▸ At Clip Start / End; over the tracks below where no clip touches)"
+evidence = "crates/ui-egui/src/panels/effect_stack.rs:240 (clip menu ▸ Insert a Transition ▸ default or favourite ▸ At Clip Start / End; over the tracks below where no clip touches)"
 gap = "none"
 
 [[row]]
@@ -2910,7 +2910,7 @@ feature = "Composition track (choose base track below)"
 manual = "https://docs.kdenlive.org/en/compositing/compositions.html"
 film = "partial"
 evidence = "crates/project/src/effect.rs:707 (track_matte, Track selector)"
-gap = "tracks always composite top-down; no per-composition base track"
+gap = "a clip composites over everything below it; choosing a lower base track would need per-composition track routing in the compositors (Track Matte Key reads a chosen track as a matte)"
 
 [[row]]
 id = "K3-324"
@@ -3548,7 +3548,7 @@ group = "Titles / Text"
 feature = "Unicode character picker"
 manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_text.html"
 film = "full"
-evidence = "Graphics and Titles ▸ Insert Special Character… (crates/ui-egui/src/panels/effect_stack.rs:608: symbol grid + any Unicode code point, inserted at the text caret or the selected text layer's end)"
+evidence = "Graphics and Titles ▸ Insert Special Character… (crates/ui-egui/src/panels/effect_stack.rs:630: symbol grid + any Unicode code point, inserted at the text caret or the selected text layer's end)"
 gap = "none"
 
 [[row]]
@@ -3647,7 +3647,7 @@ group = "Titles / Workspace"
 feature = "Grid / guides with line count and colour"
 manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_manage_workspace.html"
 film = "full"
-evidence = "View ▸ Grid… (crates/ui-egui/src/panels/effect_stack.rs:537: line count, colour, snapping); monitor_view.rs:546 draws it, snap_move snaps to it"
+evidence = "View ▸ Grid… (crates/ui-egui/src/panels/effect_stack.rs:559: line count, colour, snapping); monitor_view.rs:546 draws it, snap_move snaps to it"
 gap = "none"
 
 [[row]]
@@ -3710,7 +3710,7 @@ group = "Titles / Patterns"
 feature = "Patterns (save object groups, insert into titles)"
 manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_patterns.html"
 film = "full"
-evidence = "Graphics and Titles ▸ Patterns… (crates/ui-egui/src/panels/effect_stack.rs:480: save the selected layers as a named pattern, insert it into any graphic, delete)"
+evidence = "Graphics and Titles ▸ Patterns… (crates/ui-egui/src/panels/effect_stack.rs:502: save the selected layers as a named pattern, insert it into any graphic, delete)"
 gap = "none"
 
 [[row]]

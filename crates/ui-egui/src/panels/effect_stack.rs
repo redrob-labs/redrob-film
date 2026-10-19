@@ -467,6 +467,28 @@ pub fn auto_keyframe(app: &mut FilmcraftApp, p: &mut Value) {
     app.ui.fx.last_auto.push((key, at.0));
 }
 
+/// Automatic keyframes for a `graphics.set` made while playing (a layer dragged on the Program
+/// monitor): its animatable properties get keyframes at the playhead, with the same limit.
+pub fn auto_keyframe_graphics(app: &mut FilmcraftApp, p: &mut Value) {
+    if !app.ui.fx.auto_keyframes || !app.playback.playing {
+        return;
+    }
+    let key = format!("gfx:{}:{}", p["clip"], p["layer"]);
+    let rate = app.session.sequence_rate();
+    let ph = app.session.playhead();
+    let mut at = ph;
+    if app.ui.fx.limit_auto_keyframes
+        && let Some((_, last)) = app.ui.fx.last_auto.iter().find(|(k, _)| *k == key)
+        && (ph.0 - last).abs() < rate.tick_of(AUTO_KEYFRAME_FRAMES).0
+    {
+        at = Tick(*last);
+    }
+    p["keyframe"] = json!(true);
+    p["time"] = json!(at.0);
+    app.ui.fx.last_auto.retain(|(k, _)| *k != key);
+    app.ui.fx.last_auto.push((key, at.0));
+}
+
 pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
     add_effect_dialog(app, ctx);
     import_dialog(app, ctx);

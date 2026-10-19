@@ -916,11 +916,14 @@ pub fn monitor_overlay(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect, fra
         });
     }
     // ---- run
-    for (cmd, p) in actions {
+    for (cmd, mut p) in actions {
         let (cmd, then_edit) = match cmd.strip_suffix("#edit") {
             Some(c) => (c.to_string(), true),
             None => (cmd, false),
         };
+        if cmd == "graphics.set" {
+            crate::panels::effect_stack::auto_keyframe_graphics(app, &mut p);
+        }
         match app.session.execute(&cmd, p) {
             Ok(r) => {
                 if then_edit && let (Some(c), Some(l)) = (r["clip"].as_u64(), r["layer"].as_u64()) {

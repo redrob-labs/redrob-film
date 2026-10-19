@@ -3685,3 +3685,6 @@
 	Pattern name	Nom du motif
 	Save Selected Layers	Enregistrer les calques sélectionnés
 	Add as New Source Graphic	Ajouter comme nouveau graphique source
+	Copy Track to Position	Copier le suivi vers la position
+	Stabilize Position with Track	Stabiliser la position avec le suivi
+	Copy Mask Track to Position	Copier le suivi du masque vers la position

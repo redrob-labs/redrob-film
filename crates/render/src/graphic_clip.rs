@@ -31,7 +31,7 @@ pub fn xform(a: &Affine) -> Xform {
 /// Layer pixels → graphic canvas pixels (position / anchor / scale / rotation).
 pub fn layer_matrix(spec: &LayerSpec) -> Affine {
     let t = &spec.transform;
-    Affine::motion(t.position, t.scale, t.rotation, t.anchor)
+    Affine::motion(t.position, Vec2::new(t.scale.x * t.tilt.x, t.scale.y * t.tilt.y), t.rotation, t.anchor)
 }
 
 /// Text style + paragraph style of a text layer.
