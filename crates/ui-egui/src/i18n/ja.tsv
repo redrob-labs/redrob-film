@@ -4387,3 +4387,317 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	キャッシュ
 	ClipJobs	クリップジョブ
+
+# More Video Effects: Kdenlive alpha / keying, utility scopes, VR360, motion and border effects
+	Alpha, Mask and Keying	アルファ、マスク、キーイング
+	VR360 and 3D	VR360 と 3D
+	Transform, Distort and Perspective	トランスフォーム、ゆがみ、遠近
+	Write on Clear	透明部に書き込み
+	Min	最小
+	Max	最大
+	Alpha as Gray	アルファをグレーで表示
+	Gray + Red	グレー + 赤
+	Selection on Black	黒の上に選択範囲
+	Selection on Gray	グレーの上に選択範囲
+	Selection on White	白の上に選択範囲
+	Selection on Checkers	市松模様の上に選択範囲
+	No Op	処理なし
+	Shave	毛羽取り
+	Shrink Hard	縮小（ハード）
+	Shrink Soft	縮小（ソフト）
+	Grow Hard	拡張（ハード）
+	Grow Soft	拡張（ソフト）
+	Edge Inwards	内側のエッジ
+	Edge Outwards	外側のエッジ
+	De-Key	キー色を除去
+	Target	ターゲット
+	Luma Adjust	輝度調整
+	Arrow	矢印
+	Median Blur	メディアンブラー
+	Pixelate	ピクセル化
+	Opaque Fill	不透明塗りつぶし
+	Nearest-Neighbor	ニアレストネイバー
+	Side by Side Parallel	サイドバイサイド（平行法）
+	Side by Side Crosseye	サイドバイサイド（交差法）
+	Above-Below (Left Above)	上下（左目が上）
+	Above-Below (Right Above)	上下（右目が上）
+	Interleaved Rows (Left Top)	行インターリーブ（左目が先頭）
+	Interleaved Rows (Right Top)	行インターリーブ（右目が先頭）
+	Interleaved Columns (Left First)	列インターリーブ（左目が先）
+	Interleaved Columns (Right First)	列インターリーブ（右目が先）
+	Anaglyph Red/Blue Gray	アナグリフ 赤/青 グレー
+	Anaglyph Red/Green Gray	アナグリフ 赤/緑 グレー
+	Anaglyph Red/Cyan Gray	アナグリフ 赤/シアン グレー
+	Anaglyph Red/Cyan Half Colored	アナグリフ 赤/シアン ハーフカラー
+	Anaglyph Red/Cyan Color	アナグリフ 赤/シアン カラー
+	Anaglyph Red/Cyan Dubois	アナグリフ 赤/シアン Dubois
+	Anaglyph Green/Magenta Gray	アナグリフ 緑/マゼンタ グレー
+	Anaglyph Green/Magenta Half Colored	アナグリフ 緑/マゼンタ ハーフカラー
+	Anaglyph Green/Magenta Colored	アナグリフ 緑/マゼンタ カラー
+	Anaglyph Green/Magenta Dubois	アナグリフ 緑/マゼンタ Dubois
+	Anaglyph Yellow/Blue Gray	アナグリフ 黄/青 グレー
+	Anaglyph Yellow/Blue Half Colored	アナグリフ 黄/青 ハーフカラー
+	Anaglyph Yellow/Blue Colored	アナグリフ 黄/青 カラー
+	Anaglyph Yellow/Blue Dubois	アナグリフ 黄/青 Dubois
+	Mono Output Left	モノ出力（左）
+	Mono Output Right	モノ出力（右）
+	Checkerboard (Left First)	チェッカーボード（左目が先）
+	Checkerboard (Right First)	チェッカーボード（右目が先）
+	HDMI Frame Pack	HDMI フレームパッキング
+	Smear	引き伸ばし
+	Reflect	反射
+	Wrap	ラップ
+	Margins	マージン
+	EBU	EBU
+	SMPTE	SMPTE
+	Apple	Apple
+	Wide RGB	ワイド RGB
+	CIE 1931	CIE 1931
+	Rec. 2020	Rec. 2020
+	DCI-P3	DCI-P3
+	xyY	xyY
+	UCS	UCS
+	LUV	LUV
+	PAL SD	PAL SD
+	NTSC SD	NTSC SD
+	720 HD	720 HD
+	1080 Full HD	1080 Full HD
+	2K	2K
+	4K	4K
+	Color2	カラー2
+	Hex	16 進
+	Dec	10 進
+	White on Black	黒地に白
+	Black on White	白地に黒
+	White on Gray	グレー地に白
+	Black on Gray	グレー地に黒
+	Color on Black	黒地にカラー
+	Color on White	白地にカラー
+	Color on Gray	グレー地にカラー
+	R	R
+	G	G
+	B	B
+	Y'	Y'
+	Pr	Pr
+	Pb	Pb
+	CCIR Rec. 601	CCIR Rec. 601
+	CCIR Rec. 709	CCIR Rec. 709
+	Gray	グレー
+	Color 5	カラー 5
+	U	U
+	V	V
+	Instant	瞬時
+	Peak	ピーク
+	Peak+Instant	ピーク + 瞬時
+	BT.601	BT.601
+	BT.709	BT.709
+	Y'PbPr - Rec.601	Y'PbPr - Rec.601
+	Y'PbPr - Rec.709	Y'PbPr - Rec.709
+	HSV	HSV
+	HSL	HSL
+	Row	行
+	Column	列
+	Flat	フラット
+	Aflat	Aflat
+	Xflat	Xflat
+	Yflat	Yflat
+	Acolor	Acolor
+	Orange	オレンジ
+	Show Numbers	数値を表示
+	Draw Dots	点で描画
+	Digital	デジタル
+	Millivolts	ミリボルト
+	IRE	IRE
+	Image or Video Resource	画像またはビデオのファイル
+	Use Luma	輝度を使用
+	Use Threshold	しきい値を使用
+	Out	アウト
+	End	終了
+	Blend In	内側へブレンド
+	Blend Out	外側へブレンド
+	Blur Width at Start	開始時のブラー幅
+	Blur Width at End	終了時のブラー幅
+	Blur Height at Start	開始時のブラー高さ
+	Blur Height at End	終了時のブラー高さ
+	Alpha Gradient	アルファグラデーション
+	Operation	演算
+	Transition Width	トランジション幅
+	Transparency Top	上端の透明度
+	Transparency Bottom	下端の透明度
+	Alpha Operations	アルファ操作
+	Display	表示
+	Display Input Alpha	入力アルファを表示
+	Shrink/Grow/Blur	縮小/拡張/ブラー
+	Alpha Strobing	アルファストロボ
+	Interval	間隔
+	Backgroundkey	Backgroundkey
+	HSV Keying	HSV キーイング
+	Key Spill Mop Up	キースピル除去
+	Mask Type	マスクの種類
+	Operation 1	演算 1
+	Operation 2	演算 2
+	Mask to Alpha	マスクをアルファに
+	Hue Gate	色相ゲート
+	Saturation Threshold	彩度しきい値
+	Amount 1	適用量 1
+	Amount 2	適用量 2
+	Frame Shape	枠の形
+	Shape Width	枠の太さ
+	Shape Color	枠の色
+	Blur Type	ブラーの種類
+	Motion Tracker	モーショントラッカー
+	Premultiply or Unpremultiply	乗算済み / 乗算解除
+	Unpremultiply	乗算解除
+	Secondary Color Correction Area Selection (Mask)	セカンダリカラー補正の範囲選択（マスク）
+	Invert Selection	選択範囲を反転
+	Shape Alpha	シェイプアルファ
+	Shape Alpha (Mask)	シェイプアルファ（マスク）
+	Mask Apply	マスクを適用
+	Spot Remover	スポット除去
+	Gate Weave	ゲートウィーブ
+	Maximum Horizontal Movement	水平方向の最大移動量
+	Maximum Vertical Movement	垂直方向の最大移動量
+	Glitching (Rows and Color)	グリッチ（行とカラー）
+	Glitch Frequency	グリッチの頻度
+	Shift Intensity	ずれの強さ
+	Color Glitching Intensity	カラーグリッチの強さ
+	Glitching (Rows Only)	グリッチ（行のみ）
+	Minimum Block Height	ブロックの最小高さ
+	Maximum Block Height	ブロックの最大高さ
+	Lag Fun	Lag Fun
+	Nervous	ナーバス
+	Vertigo	めまい
+	Phase Increment	位相の増分
+	Zoom Rate	ズーム率
+	Elastic Scale	エラスティックスケール
+	Linear Width	線形領域の幅
+	Linear Scale Factor	線形スケール係数
+	Non-Linear Scale Factor	非線形スケール係数
+	Fill Borders	境界を塗りつぶし
+	Letter-boxing	レターボックス
+	Nosync0r (Broken TV)	Nosync0r（壊れたテレビ）
+	HSync	HSync
+	Pillar Echo	ピラーエコー
+	CIE Scope	CIE ダイアグラム
+	Color System	カラーシステム
+	CIE System	CIE 表色系
+	Gamuts to Draw	描画する色域
+	Display Correct Gamma	正しいガンマで表示
+	Show White Point	白色点を表示
+	Input Gamma	入力ガンマ
+	Fill with CIE Colors	CIE カラーで塗りつぶし
+	Data Scope	データスコープ
+	X Offset	X オフセット
+	Y Offset	Y オフセット
+	Components	成分
+	Show Axis	軸を表示
+	Level Height	レベルの高さ
+	Components to Display	表示する成分
+	Foreground Opacity	前景の不透明度
+	Colors Mode	配色モード
+	Nikon D90 Stairstepping Fix	Nikon D90 階段状ノイズ補正
+	Oscilloscope (Simple)	オシロスコープ（シンプル）
+	Draw Scope Grid	グリッドを描画
+	Print Statistics	統計を表示
+	Draw Trace Profile Line	プロファイル線を描画
+	Trace X Position	トレースの X 位置
+	Trace Y Position	トレースの Y 位置
+	Scope X Position	スコープの X 位置
+	Scope Y Position	スコープの Y 位置
+	Scope Width	スコープの幅
+	Scope Height	スコープの高さ
+	Oscilloscope (Advanced)	オシロスコープ（詳細）
+	R / G / B Trace	R / G / B トレース
+	Y / Pr / Pb Trace	Y / Pr / Pb トレース
+	Alpha Trace	アルファトレース
+	Display Average	平均を表示
+	Display RMS	RMS を表示
+	Display Minimum / Maximum	最小 / 最大を表示
+	256 Scale	256 スケール
+	Marker 1	マーカー 1
+	Marker 2	マーカー 2
+	Crosshair Color	十字線の色
+	RGB Parade	RGB パレード
+	Timeout Indicator	残り時間インジケーター
+	Indicator Color	インジケーターの色
+	Vectorscope	ベクトルスコープ
+	Vectorscope (Advanced)	ベクトルスコープ（詳細）
+	Tint 1	色合い 1
+	Tint 2	色合い 2
+	Envelope	エンベロープ
+	Graticule	目盛り
+	Graticule Opacity	目盛りの不透明度
+	Graticule Flags	目盛りのオプション
+	Low Threshold	下限しきい値
+	High Threshold	上限しきい値
+	Video Values	ビデオ値
+	Measurement	測定
+	256-Scale	256 スケール
+	Show Alpha	アルファを表示
+	Big Window	大きいウィンドウ
+	X Position	X 位置
+	Y Position	Y 位置
+	X Size	X サイズ
+	Y Size	Y サイズ
+	Video Waveform Monitor	波形モニター
+	Flags	オプション
+	Stereoscopic 3D	ステレオスコピック 3D
+	Input Format	入力形式
+	Output Format	出力形式
+	VR360 Cap Top and Bottom	VR360 天頂と天底を埋める
+	VR360 Equirectangular to Rectilinear	VR360 正距円筒から直線投影へ
+	Yaw	ヨー
+	Pitch	ピッチ
+	FOV	視野角
+	Fisheye	魚眼
+	VR360 Equirectangular to Stereo	VR360 正距円筒から平射投影へ
+	VR360 Equirectangular Mask	VR360 正距円筒マスク
+	Horizontal Start	水平方向の開始
+	Horizontal End	水平方向の終了
+	Vertical Start	垂直方向の開始
+	Vertical End	垂直方向の終了
+	VR360 Hemispherical to Equirectangular	VR360 半球から正距円筒へ
+	Projection	投影
+	Equidistant Fisheye	等距離魚眼
+	Alignment Yaw	位置合わせのヨー
+	Alignment Pitch	位置合わせのピッチ
+	Alignment Roll	位置合わせのロール
+	Lens FOV	レンズの視野角
+	Lens Radius	レンズの半径
+	Front X	前面 X
+	Front	前面
+	Front Y	前面 Y
+	Front Up	前面の上方向
+	Back X	背面 X
+	Back	背面
+	Back Y	背面 Y
+	Back Up	背面の上方向
+	Nadir Radius	天底の半径
+	Nadir Start	天底の開始
+	Lens Distortion A	レンズ歪み A
+	Lens Distortion B	レンズ歪み B
+	Lens Distortion C	レンズ歪み C
+	Lens Distortion Radius	レンズ歪みの半径
+	Lens Vignetting A	レンズ周辺減光 A
+	Lens Vignetting	レンズ周辺減光
+	Lens Vignetting B	レンズ周辺減光 B
+	Lens Vignetting C	レンズ周辺減光 C
+	Lens Vignetting D	レンズ周辺減光 D
+	Lens Vignetting Radius	レンズ周辺減光の半径
+	VR360 Stabilize	VR360 スタビライズ
+	Analysis Sample Radius	解析のサンプル半径
+	Analysis Search Radius	解析の探索半径
+	Analysis Offset	解析点の間隔
+	Use Backwards-Facing Track Point	後方のトラックポイントを使用
+	Yaw Amount	ヨーの適用量
+	Pitch Amount	ピッチの適用量
+	Roll Amount	ロールの適用量
+	Yaw Smoothing	ヨーのスムージング
+	Pitch Smoothing	ピッチのスムージング
+	Roll Smoothing	ロールのスムージング
+	Yaw Time Bias	ヨーの時間バイアス
+	Pitch Time Bias	ピッチの時間バイアス
+	Roll Time Bias	ロールの時間バイアス
+	VR360 Wrap	VR360 ラップ
+	Blur Start	ブラーの開始
+	Blur End	ブラーの終了
