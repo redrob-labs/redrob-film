@@ -1336,10 +1336,11 @@ pub(super) fn mcdeint(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     let qp = fv(e, "qp", cx).round().clamp(0.0, 60.0) as usize;
     let d = Disp::of(img);
     let (w, h) = (d.w, d.h);
+    let here: &Image = img;
     let refs: Vec<Disp> = [Some(-1.0), (mode == 3).then_some(1.0)]
         .into_iter()
         .flatten()
-        .filter_map(|dt| neighbour(img, e, cx, dt).map(|f| Disp::of(&f)))
+        .filter_map(|dt| neighbour(here, e, cx, dt).map(|f| Disp::of(&f)))
         .collect();
     let spatial = |x: usize, y: usize| {
         let (u, dn) = (d.get(x as isize, y as isize - 1), d.get(x as isize, y as isize + 1));
