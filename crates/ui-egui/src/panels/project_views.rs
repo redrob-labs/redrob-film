@@ -908,7 +908,8 @@ fn list_bin(app: &mut FilmcraftApp, ui: &mut egui::Ui, bin: &Bin, depth: usize, 
                 let stars = Rect::from_min_size(pos2(cr.min.x + 4.0, cr.center().y - 6.0), vec2(60.0, 12.0)).intersect(cr);
                 for k in 0..5u8 {
                     let on = k < it.rating;
-                    paint_star(&p, pos2(stars.min.x + 6.0 + k as f32 * 12.0, stars.center().y), 5.0, if on { STAR_ON } else { t.text_faint.gamma_multiply(0.6) });
+                    let c = if on { STAR_ON } else { t.text_faint.gamma_multiply(0.6) };
+                    paint_star(&p, pos2(stars.min.x + 6.0 + k as f32 * 12.0, stars.center().y), 5.0, c);
                 }
                 let sresp = ui.interact(stars, egui::Id::new((&v.prefix, "rate", id.0)), Sense::click()).on_hover_text(tl!("Rating"));
                 app.auto.add(&format!("{}.item.{}.rating", v.prefix, id.0), stars, &rating_label(it.rating));

@@ -553,7 +553,11 @@ fn filter_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, pre: &str, actions: &m
         app.auto.add(&format!("{pre}.filter.tag.{}", tag.id), r.rect, &tag.name);
         if r.changed() {
             let mut v = f.tags.clone();
-            if on { v.push(tag.id) } else { v.retain(|x| *x != tag.id) }
+            if on {
+                v.push(tag.id);
+            } else {
+                v.retain(|x| *x != tag.id);
+            }
             actions.push(("project.filter.set".into(), json!({"tags": v})));
         }
     }
@@ -566,7 +570,11 @@ fn filter_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, pre: &str, actions: &m
         app.auto.add(&format!("{pre}.filter.rating.{r}"), resp.rect, &label);
         if resp.changed() {
             let mut v = f.ratings.clone();
-            if on { v.push(r) } else { v.retain(|x| *x != r) }
+            if on {
+                v.push(r);
+            } else {
+                v.retain(|x| *x != r);
+            }
             actions.push(("project.filter.set".into(), json!({"ratings": v})));
         }
     }
@@ -578,7 +586,11 @@ fn filter_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, pre: &str, actions: &m
         app.auto.add(&format!("{pre}.filter.type.{key}"), resp.rect, label);
         if resp.changed() {
             let mut v = f.types.clone();
-            if on { v.push(key.to_string()) } else { v.retain(|x| x != key) }
+            if on {
+                v.push(key.to_string());
+            } else {
+                v.retain(|x| x != key);
+            }
             actions.push(("project.filter.set".into(), json!({"types": v})));
         }
     }
@@ -590,7 +602,11 @@ fn filter_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, pre: &str, actions: &m
         app.auto.add(&format!("{pre}.filter.usage.{key}"), resp.rect, label);
         if resp.changed() {
             let mut v = f.usage.clone();
-            if on { v.push(key.to_string()) } else { v.retain(|x| x != key) }
+            if on {
+                v.push(key.to_string());
+            } else {
+                v.retain(|x| x != key);
+            }
             actions.push(("project.filter.set".into(), json!({"usage": v})));
         }
     }
@@ -914,7 +930,20 @@ pub fn new_item_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, pre: &str, actio
 fn sort_icons_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, pre: &str, actions: &mut Actions) {
     let cur = app.session.prefs.project_panel.view.icon_sort.clone();
     let mut entries: Vec<(String, String)> = vec![("".into(), tl!("User Order").into())];
-    for c in ["Name", "Label", "Rating", "Media Type", "Frame Rate", "Media Start", "Media End", "Media Duration", "Video Info", "Audio Info", "Date Created", "Insert Order"] {
+    for c in [
+        "Name",
+        "Label",
+        "Rating",
+        "Media Type",
+        "Frame Rate",
+        "Media Start",
+        "Media End",
+        "Media Duration",
+        "Video Info",
+        "Audio Info",
+        "Date Created",
+        "Insert Order",
+    ] {
         entries.push((c.into(), crate::i18n::t(c).into()));
     }
     for (col, label) in entries {

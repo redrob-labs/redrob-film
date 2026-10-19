@@ -82,7 +82,16 @@ pub struct Slideshow {
 
 impl Default for Slideshow {
     fn default() -> Self {
-        Slideshow { image_frames: 25, looped: false, crop: false, dissolve_frames: 0, wipe: SlideWipe::Dissolve, softness: 0.2, ken_burns: false, low_pass: false }
+        Slideshow {
+            image_frames: 25,
+            looped: false,
+            crop: false,
+            dissolve_frames: 0,
+            wipe: SlideWipe::Dissolve,
+            softness: 0.2,
+            ken_burns: false,
+            low_pass: false,
+        }
     }
 }
 

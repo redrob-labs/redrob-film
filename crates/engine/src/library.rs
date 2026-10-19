@@ -196,7 +196,8 @@ fn add_to_project(s: &mut Session, p: &Value) -> Result<Value> {
     let lib = load(s, &rel, CMD)?;
     let name = lib.name.clone();
     // top-level sequences: those no other sequence of the item nests
-    let nested: BTreeSet<ItemId> = lib.sequences().filter_map(|q| q.as_sequence()).flat_map(|q| q.all_tracks().flat_map(|t| t.items.iter().map(|i| i.item))).collect();
+    let nested: BTreeSet<ItemId> =
+        lib.sequences().filter_map(|q| q.as_sequence()).flat_map(|q| q.all_tracks().flat_map(|t| t.items.iter().map(|i| i.item))).collect();
     let sequences: Vec<ItemId> = lib.sequences().map(|q| q.id).filter(|id| !nested.contains(id)).collect();
     let parent = u64_p(p, "bin").map(redrob_film_project::BinId);
     let fragment = redrob_film_interchange::Imported { project: lib, sequences };

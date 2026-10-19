@@ -457,7 +457,9 @@ pub fn render(g: &Generator, w: u32, h: u32, t: f32, frame: i64, rate: FrameRate
                 }
             });
         }
-        Generator::Counter { count_up, no_background, style, seconds, .. } => counter(&mut px, wu, hu, frame, rate, *count_up, *no_background, *style, *seconds),
+        Generator::Counter { count_up, no_background, style, seconds, .. } => {
+            counter(&mut px, wu, hu, frame, rate, *count_up, *no_background, *style, *seconds)
+        }
         Generator::Demo(scene) => {
             let scene = *scene;
             px.par_chunks_mut(wu * 4).enumerate().for_each(|(y, row)| {
