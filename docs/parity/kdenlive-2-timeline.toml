@@ -1,0 +1,458 @@
+# Kdenlive 26.08 parity inventory, area 2: timeline editing.
+# Source: the user manual at docs.kdenlive.org only (clean room, see PARITY-RULES.md).
+# film = full | partial | none, judged against OUR code (evidence = file:line or command id).
+# Inventory only: no code was changed for this file.
+
+# ---------------------------------------------------------------- tools
+[[row]]
+id = "K2-001"
+group = "tools"
+feature = "Selection tool (select/move clips, Esc returns to it)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#selection-tool"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:12 Tool::Selection (V); tool.selection"
+gap = "Default key is V (Premiere map), Kdenlive uses S; Esc-to-selection not verified"
+
+[[row]]
+id = "K2-002"
+group = "tools"
+feature = "Razor tool (click to cut; Shift-click cuts all tracks)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#razor-tool"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:19 Tool::Razor (C); crates/engine/src/commands.rs:2466 timeline.razor; crates/ui-egui/src/lib.rs:1831"
+gap = "Key is C, Kdenlive X"
+
+[[row]]
+id = "K2-003"
+group = "tools"
+feature = "Spacer tool (temporarily group everything after a point and drag to open/close space)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#spacer-tool"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:14 Tool::TrackSelectForward / TrackSelectBackward (A / Shift+A)"
+gap = "Same behaviour under Premiere's Track Select name; Kdenlive key M"
+
+[[row]]
+id = "K2-004"
+group = "tools"
+feature = "Slip tool (shift In/Out together, keep duration) by mouse"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#slip-tool"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:20 Tool::Slip; crates/engine/src/commands.rs:2418 timeline.slip; crates/edit/src/lib.rs:910"
+gap = ""
+
+[[row]]
+id = "K2-005"
+group = "tools"
+feature = "Slip several selected clips at once"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#slip-tool"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:2418 timeline.slip takes one `clip`; keyboard slip acts on selection crates/engine/src/keyboard.rs:729"
+gap = "Mouse slip with the tool moves one clip only"
+
+[[row]]
+id = "K2-006"
+group = "tools"
+feature = "Slip with arrow keys and monitor toolbar buttons"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#slip-tool"
+film = "full"
+evidence = "crates/engine/src/keyboard.rs:729 timeline.slipLeft/Right(5); crates/ui-egui/src/panels/trim_monitor.rs"
+gap = ""
+
+[[row]]
+id = "K2-007"
+group = "tools"
+feature = "Ripple tool (trim and shift following clips)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#ripple-tool"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:15 Tool::Ripple; crates/ui-egui/src/panels/timeline_hit.rs:271; crates/edit/src/lib.rs:760 ripple_trim_group"
+gap = ""
+
+[[row]]
+id = "K2-008"
+group = "tools"
+feature = "Roll edit (move a cut between two clips)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#timeline-toolbar"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:16 Tool::Rolling; crates/engine/src/commands.rs:2404 timeline.roll"
+gap = ""
+
+[[row]]
+id = "K2-009"
+group = "tools"
+feature = "Slide edit (move clip between neighbours keeping its content)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#timeline-toolbar"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:21 Tool::Slide; crates/engine/src/commands.rs:2434 timeline.slide; crates/engine/src/keyboard.rs:733"
+gap = ""
+
+[[row]]
+id = "K2-010"
+group = "tools"
+feature = "Ripple trim to playhead: ( and ) cut and close space on the active track"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#ripple-trim-to-playhead"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2388 trim.ripplePrevious (Q), :2392 trim.rippleNext (W)"
+gap = "Keys Q/W instead of ( )"
+
+[[row]]
+id = "K2-011"
+group = "tools"
+feature = "Resize Item Start / End to playhead (trim without ripple)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#timeline"
+film = "full"
+evidence = "crates/engine/src/keyboard.rs trim.extendPreviousEdit / trim.extendNextEdit (Shift+Q/W); crates/engine/src/commands.rs:2387 trim.extendToPlayhead"
+gap = ""
+
+[[row]]
+id = "K2-012"
+group = "tools"
+feature = "Multicam tool: cut between tracks with number keys while playing"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#multicam-tool"
+film = "partial"
+evidence = "crates/engine/src/multicam.rs:13 multicam.cutToCamera1-9, :11 recordStart/cut/recordStop; crates/ui-egui/src/panels/multicam.rs"
+gap = "Ours switches angles inside a multicam source clip; Kdenlive lifts the other stacked timeline tracks directly, no multicam clip needed"
+
+[[row]]
+id = "K2-013"
+group = "tools"
+feature = "Multicam tool turns on Multitrack View in the project monitor and click-to-pick track"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#multicam-tool"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:93 multicam.toggleView; view.display.multicam"
+gap = "Grid shows angles of a multicam clip, not every video track of the sequence (F12 Multitrack View)"
+
+[[row]]
+id = "K2-014"
+group = "tools"
+feature = "Speed change by Ctrl+drag on a clip edge (applies to all selected clips)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#change-speed-of-clips"
+film = "partial"
+evidence = "crates/ui-egui/src/state.rs:17 Tool::RateStretch (R); crates/engine/src/commands.rs:2447 timeline.rateStretch; crates/edit/src/lib.rs:1003"
+gap = "Needs the Rate Stretch tool, no Ctrl modifier on the selection tool; one clip per drag"
+
+[[row]]
+id = "K2-015"
+group = "tools"
+feature = "Hand / Zoom tools (pan and zoom the timeline)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#scrolling-and-panning"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:24 Tool::Hand, :25 Tool::Zoom"
+gap = "Kdenlive pans with Ctrl+LMB or middle-button drag instead of a tool; middle-drag not found in timeline.rs"
+
+# ---------------------------------------------------------------- edit modes, insert/overwrite
+[[row]]
+id = "K2-016"
+group = "edit-modes"
+feature = "Normal edit mode (drop refuses to overlap clips on the same track)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#normal-mode"
+film = "none"
+evidence = "crates/ui-egui/src/panels/timeline.rs:2355 timeline.move insert=mods.command else overwrite"
+gap = "Drops always overwrite (Premiere model); no non-overlapping Normal mode"
+
+[[row]]
+id = "K2-017"
+group = "edit-modes"
+feature = "Overwrite edit mode (drag overwrites what is under it)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#overwrite-mode"
+film = "full"
+evidence = "crates/edit/src/lib.rs:502 move_items(insert_mode=false), :251 overwrite"
+gap = ""
+
+[[row]]
+id = "K2-018"
+group = "edit-modes"
+feature = "Insert edit mode (drag inserts and shifts the destination track)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#insert-mode"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:2355 insert while Cmd held; crates/edit/src/lib.rs:269 insert"
+gap = "Modifier per drag, not a sticky Tool-menu mode; no mode indicator in a status bar"
+
+[[row]]
+id = "K2-019"
+group = "insert-overwrite"
+feature = "Insert Clip Zone in Timeline (V)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2179 source.insert"
+gap = "Key is , (Premiere), Kdenlive V"
+
+[[row]]
+id = "K2-020"
+group = "insert-overwrite"
+feature = "Overwrite Clip Zone in Timeline (B)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2180 source.overwrite"
+gap = "Key is ., Kdenlive B"
+
+[[row]]
+id = "K2-021"
+group = "insert-overwrite"
+feature = "Use / do not use timeline zone toggle for insert and overwrite"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:2179 source.insert honours sequence In/Out when set (three-point)"
+gap = "No explicit toggle to ignore a set zone"
+
+[[row]]
+id = "K2-022"
+group = "insert-overwrite"
+feature = "Lift Timeline Zone (Z)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:294 sequence.lift; crates/edit/src/lib.rs:334"
+gap = ""
+
+[[row]]
+id = "K2-023"
+group = "insert-overwrite"
+feature = "Extract Timeline Zone (Shift+X), unlocked tracks, playhead to In"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#cutting-footage-from-multiple-aligned-tracks-ripple-delete"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:295 sequence.extract; crates/edit/src/lib.rs:346"
+gap = ""
+
+[[row]]
+id = "K2-024"
+group = "insert-overwrite"
+feature = "Extract Clip (Shift+Del): delete clip and close its gap"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1343 edit.rippleDelete; crates/edit/src/lib.rs:434"
+gap = ""
+
+[[row]]
+id = "K2-025"
+group = "insert-overwrite"
+feature = "Delete in Insert mode ripples automatically"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#cutting-footage-from-multiple-aligned-tracks-ripple-delete"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:1319 edit.clear vs :1343 edit.rippleDelete"
+gap = "No sticky Insert mode that changes what Delete does"
+
+[[row]]
+id = "K2-026"
+group = "insert-overwrite"
+feature = "Adjust timeline zone to selected clips (Shift+Z)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#adjust-timeline-zone"
+film = "full"
+evidence = "crates/engine/src/sequence_tools.rs:140 markers.markSelection"
+gap = ""
+
+[[row]]
+id = "K2-027"
+group = "insert-overwrite"
+feature = "Timeline zone bar on the ruler: drag middle to move, edges to resize"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#timeline-ruler"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1351 In/Out band painted on ruler; markers.markIn/markOut"
+gap = "Band is display-only; no drag handles to move or resize it"
+
+# ---------------------------------------------------------------- three-point editing / tracks targeting
+[[row]]
+id = "K2-028"
+group = "three-point"
+feature = "Source connectors (green) per track for the bin clip"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#source"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1108 timeline.setTargeting sourcePatch"
+gap = ""
+
+[[row]]
+id = "K2-029"
+group = "three-point"
+feature = "Target tracks (yellow) react to edits even without a source"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#target"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1136 timeline.setTargeting targeted; crates/engine/src/commands.rs:2520"
+gap = ""
+
+[[row]]
+id = "K2-030"
+group = "three-point"
+feature = "Toggle track active (A), all tracks active (Shift+A), switch all (Alt+Shift+A)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#active-track"
+film = "partial"
+evidence = "crates/engine/src/keyboard.rs:738 timeline.toggleAllVideoTargets/AudioTargets, timeline.toggleTargetV1..A8"
+gap = "Video and audio toggled separately; no single toggle-all/invert-all; toggleTarget per track has no default key"
+
+[[row]]
+id = "K2-031"
+group = "three-point"
+feature = "Toggle track target/source on the selected track (Shift+T)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#timeline"
+film = "partial"
+evidence = "crates/engine/src/keyboard.rs:740 timeline.toggleAllSourceVideo/Audio"
+gap = "No notion of a keyboard-selected track; source patch toggled by click or all at once"
+
+[[row]]
+id = "K2-032"
+group = "three-point"
+feature = "Select video track 1-9 / audio track Alt+1-9 / Up-Down to change track"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#timeline"
+film = "none"
+evidence = "no track-focus state found; number keys go to multicam crates/engine/src/multicam.rs:10"
+gap = "No current-track selection by keyboard"
+
+[[row]]
+id = "K2-033"
+group = "three-point"
+feature = "Select Target 1-9 (Ctrl+1..9)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#editing"
+film = "partial"
+evidence = "crates/engine/src/keyboard.rs timeline.toggleTargetV1..V8 (no default key)"
+gap = "Ctrl+1..9 bound to multicam cuts; target commands unbound"
+
+[[row]]
+id = "K2-034"
+group = "three-point"
+feature = "Switch track target audio stream (')"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#timeline"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:2520 timeline.setTargeting sourcePatch per audio track"
+gap = "No key that cycles which source audio stream feeds the target"
+
+[[row]]
+id = "K2-035"
+group = "three-point"
+feature = "Double-click empty track area makes it active and moves the playhead"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#active-track"
+film = "none"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1978 interact: no double-click on empty track"
+gap = "No active-track concept for paste target"
+
+# ---------------------------------------------------------------- cut / resize / duration
+[[row]]
+id = "K2-036"
+group = "cut-resize"
+feature = "Cut Clip at playhead on the active track (Shift+R)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#cutting-a-clip"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:288 sequence.addEdit (Cmd+K)"
+gap = "Targeted tracks instead of one active track"
+
+[[row]]
+id = "K2-037"
+group = "cut-resize"
+feature = "Cut All Clips at playhead (Ctrl+Shift+R), skips locked tracks"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#timeline"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:289 sequence.addEditAllTracks"
+gap = ""
+
+[[row]]
+id = "K2-038"
+group = "cut-resize"
+feature = "Resize a clip by dragging its edges"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#resizing-a-clip"
+film = "full"
+evidence = "crates/edit/src/lib.rs:705 trim; crates/engine/src/commands.rs timeline.trim"
+gap = ""
+
+[[row]]
+id = "K2-039"
+group = "cut-resize"
+feature = "Clip Duration dialog on double-click (position, in, duration, out)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#resizing-a-clip"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:1432 clip.speedDuration (Speed/Duration dialog)"
+gap = "Duration only, no editable position/source-in/source-out fields; double-click opens the source monitor, not the dialog"
+
+[[row]]
+id = "K2-040"
+group = "cut-resize"
+feature = "Apply duration to all selected items, with and without ripple"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#resizing-multiple-timeline-items"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1432 clip.speedDuration on selection; crates/edit/src/lib.rs:1037 set_speed_group(ripple)"
+gap = "Changes speed to fit, not a pure duration trim"
+
+[[row]]
+id = "K2-041"
+group = "cut-resize"
+feature = "Shift+resize trims only the audio or video half of an A/V clip"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#resizing-a-clip"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:2186 Alt selects one side of a link; sequence.linkedSelection toggle"
+gap = "Alt modifier (Premiere) instead of Shift"
+
+[[row]]
+id = "K2-042"
+group = "cut-resize"
+feature = "Alt+move moves only the audio or video part to another track"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#resizing-a-clip"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:2186 alt-click picks one side; :2195 but alt drag sets copy=true"
+gap = "Alt-drag duplicates instead of moving the single part"
+
+[[row]]
+id = "K2-043"
+group = "cut-resize"
+feature = "Clip monitor shows a yellow indicator of the original length while resizing"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#resizing-a-clip"
+film = "none"
+evidence = "no resize overlay in crates/ui-egui/src/panels/monitor.rs"
+gap = "Trim monitor shows frames, not a length indicator in the source monitor"
+
+[[row]]
+id = "K2-044"
+group = "cut-resize"
+feature = "Double-click an animation clip opens it in Glaxnimate"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#edit-an-animation"
+film = "none"
+evidence = "edit.editOriginal crates/engine/src/commands.rs opens the media in the system app"
+gap = "No vector animation clip type or editor round-trip"
+
+[[row]]
+id = "K2-045"
+group = "cut-resize"
+feature = "Remove Space (gap) on one track via right-click"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#removing-space-between-clips"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:296 sequence.closeGap; crates/ui-egui/src/panels/timeline.rs:1853 gap_menu Ripple Delete"
+gap = ""
+
+[[row]]
+id = "K2-046"
+group = "cut-resize"
+feature = "Remove Space in All Tracks"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#empty-space-in-timeline"
+film = "partial"
+evidence = "crates/engine/src/project_tools.rs:296 sequence.closeGap (one track); sync lock ripples others"
+gap = "No explicit all-tracks remove-space action"
+
+[[row]]
+id = "K2-047"
+group = "cut-resize"
+feature = "Remove All Spaces After Cursor (current track)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#removing-space-between-clips"
+film = "none"
+evidence = "no command found (grep closeAllGaps/removeAllSpaces)"
+gap = "Only one gap at a time"
+
+[[row]]
+id = "K2-048"
+group = "cut-resize"
+feature = "Remove All Clips After Cursor (A/V as one element)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "partial"
+evidence = "Track Select Forward tool + Delete (crates/ui-egui/src/state.rs:14)"
+gap = "Two steps; no single menu command"
+
+[[row]]
+id = "K2-049"
+group = "cut-resize"
+feature = "Insert Space dialog (blank space of given length on one track)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#empty-space-in-timeline"
+film = "none"
+evidence = "crates/edit/src/lib.rs:169 insert_track_gap exists but no command/dialog uses it alone"
+gap = "No Insert Space command"
+
+[[row]]
+id = "K2-050"
+group = "cut-resize"
+feature = "Identify Gaps: range markers at every gap (all tracks or selected track)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#identify-timeline-gaps"
+film = "partial"
+evidence = "crates/engine/src/project_tools.rs:297 sequence.goToNextGap/PrevGap(InTrack); timeline.selectGap"
+gap = "Navigates to gaps but does not create markers for them"
