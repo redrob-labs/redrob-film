@@ -428,7 +428,9 @@ fn hostile_documents_never_panic() {
                 let at = (next() as usize) % m.len();
                 let len = ((next() as usize) % 64).min(m.len() - at);
                 let chunk = m[at..at + len].to_vec();
-                m.splice(at..at, chunk);
+                let tail = m.split_off(at);
+                m.extend_from_slice(&chunk);
+                m.extend_from_slice(&tail);
             }
         }
         let r = catch_unwind(AssertUnwindSafe(|| {
