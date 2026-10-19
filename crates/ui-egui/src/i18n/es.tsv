@@ -4399,3 +4399,205 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	Caché
 	ClipJobs	Tareas de clip
+	Color and Image Correction	Corrección de color e imagen
+	Image Adjustments	Ajustes de imagen
+	Blur and Sharpen	Desenfocar y enfocar
+	BT.709	BT.709
+	FCC	FCC
+	BT.601	BT.601
+	BT.470	BT.470
+	BT.470BG	BT.470BG
+	SMPTE 170M	SMPTE 170M
+	SMPTE 240M	SMPTE 240M
+	BT.2020	BT.2020
+	BT.470M	BT.470M
+	BT.601-6 525	BT.601-6 525
+	BT.601-6 625	BT.601-6 625
+	YCgCo	YCgCo
+	BT.2020 NCL	BT.2020 NCL
+	Gamma 2.2	Gamma 2.2
+	Gamma 2.8	Gamma 2.8
+	sRGB	sRGB
+	xvYCC	xvYCC
+	BT.2020 10-bit	BT.2020 10 bits
+	BT.2020 12-bit	BT.2020 12 bits
+	Film	Película
+	SMPTE 431	SMPTE 431
+	SMPTE 432	SMPTE 432
+	JEDEC P22	JEDEC P22
+	TV (Limited)	TV (limitado)
+	PC (Full)	PC (completo)
+	YUV 4:2:0 8-bit	YUV 4:2:0 8 bits
+	YUV 4:2:0 10-bit	YUV 4:2:0 10 bits
+	YUV 4:2:0 12-bit	YUV 4:2:0 12 bits
+	YUV 4:2:2 8-bit	YUV 4:2:2 8 bits
+	YUV 4:2:2 10-bit	YUV 4:2:2 10 bits
+	YUV 4:2:2 12-bit	YUV 4:2:2 12 bits
+	YUV 4:4:4 8-bit	YUV 4:4:4 8 bits
+	YUV 4:4:4 10-bit	YUV 4:4:4 10 bits
+	YUV 4:4:4 12-bit	YUV 4:4:4 12 bits
+	Deinterleave	Desintercalar
+	Interleave	Intercalar
+	Delay the Top Field	Retrasar el campo superior
+	Delay the Bottom Field	Retrasar el campo inferior
+	Keep the Field Order	Mantener el orden de campos
+	Auto (Field Flags), Transfer Opposite	Automático (indicadores de campo), transferencia opuesta
+	Unknown Capture, Transfer Opposite	Captura desconocida, transferencia opuesta
+	Top-first Capture, Unknown Transfer	Captura superior primero, transferencia desconocida
+	Bottom-first Capture, Unknown Transfer	Captura inferior primero, transferencia desconocida
+	Auto (Field Flags), Unknown Transfer	Automático (indicadores de campo), transferencia desconocida
+	Both Unknown	Ambos desconocidos
+	Correction Method	Método de corrección
+	Absolute	Absoluto
+	Relative	Relativo
+	Reds	Rojos
+	Yellows	Amarillos
+	Cyans	Cianes
+	Magentas	Magentas
+	Neutrals	Neutros
+	Number of Stops	Número de paradas
+	Stop 1	Parada 1
+	Stop 2	Parada 2
+	Stop 3	Parada 3
+	Stop 4	Parada 4
+	Stop 5	Parada 5
+	Stop 6	Parada 6
+	Stop 7	Parada 7
+	Stop 8	Parada 8
+	Average Blur	Desenfoque promedio
+	X Size	Tamaño X
+	Y Size	Tamaño Y
+	Bilateral	Bilateral
+	Spatial Sigma	Sigma espacial
+	Range Sigma	Sigma de rango
+	BoxBlur	BoxBlur
+	Preserve Alpha	Conservar alfa
+	Horizontal Multiplicator	Multiplicador horizontal
+	Vertical Multiplicator	Multiplicador vertical
+	Contrast Adaptive Sharpen (CAS)	Enfoque adaptativo al contraste (CAS)
+	Planes Blur	Desenfoque de planos
+	Luma Radius	Radio de luma
+	Chroma Radius	Radio de croma
+	Alpha Radius	Radio de alfa
+	Luma Power	Potencia de luma
+	Chroma Power	Potencia de croma
+	Alpha Power	Potencia de alfa
+	Shape Adaptive Blur	Desenfoque adaptativo a la forma
+	Luma Pre-filter Radius	Radio de prefiltro de luma
+	Luma Strength	Intensidad de luma
+	Chroma Pre-filter Radius	Radio de prefiltro de croma
+	Chroma Strength	Intensidad de croma
+	Smartblur	Smartblur
+	Luma Threshold	Umbral de luma
+	Chroma Threshold	Umbral de croma
+	Square Blur	Desenfoque cuadrado
+	Kernel Size	Tamaño del núcleo
+	3-Point Balance	Balance de 3 puntos
+	Black Color	Color negro
+	Gray Color	Color gris
+	White Color	Color blanco
+	Split Preview	Vista previa dividida
+	Source Image on Left Side	Imagen de origen a la izquierda
+	CMYK Adjust	Ajuste CMYK
+	Color Contrast	Contraste de color
+	Red-Cyan Contrast	Contraste rojo-cian
+	Green-Magenta Contrast	Contraste verde-magenta
+	Blue-Yellow Contrast	Contraste azul-amarillo
+	Red-Cyan Weight	Peso rojo-cian
+	Green-Magenta Weight	Peso verde-magenta
+	Blue-Yellow Weight	Peso azul-amarillo
+	Preserve Lightness	Conservar luminosidad
+	Color Overlay	Superposición de color
+	Lightness	Luminosidad
+	Equaliz0r	Equaliz0r
+	FFT-based FIR	FIR basado en FFT
+	Gain in Y Plane	Ganancia en el plano Y
+	Gain in U Plane	Ganancia en el plano U
+	Gain in V Plane	Ganancia en el plano V
+	Luminance Y Plane	Peso del plano Y
+	Luminance U Plane	Peso del plano U
+	Luminance V Plane	Peso del plano V
+	Evaluate	Evaluar
+	Init	Al inicio
+	Gradient Map	Mapa de degradado
+	Grayworld	Grayworld
+	Histogram Equalizer	Ecualizador de histograma
+	Antibanding Level	Nivel antibandas
+	Weak	Débil
+	Strong	Fuerte
+	Normaliz0r	Normaliz0r
+	BlackPt	Punto negro
+	WhitePt	Punto blanco
+	Smoothing	Suavizado
+	Independence	Independencia
+	Normalize RGB Video	Normalizar vídeo RGB
+	Output Darkest Input Color	Color de salida para la entrada más oscura
+	Output Brightest Input Color	Color de salida para la entrada más brillante
+	Swapuv	Swapuv
+	Technicolor	Technicolor
+	Blue/Yellow Axis	Eje azul/amarillo
+	Red/Green Axis	Eje rojo/verde
+	White Balance (LMS)	Balance de blancos (LMS)
+	Neutral Color	Color neutro
+	Color Temperature	Temperatura de color
+	Color Matrix	Matriz de color
+	Source Color Matrix	Matriz de color de origen
+	Destination Color Matrix	Matriz de color de destino
+	Color Properties	Propiedades de color
+	Output Color Space	Espacio de color de salida
+	Output Transfer Characteristics	Características de transferencia de salida
+	Output Color Primaries	Primarios de color de salida
+	Output Color Range	Rango de color de salida
+	Output Color Format	Formato de color de salida
+	Fast Conversion	Conversión rápida
+	Dithering Mode	Modo de tramado
+	Floyd-Steinberg	Floyd-Steinberg
+	Whitepoint Adaptation	Adaptación del punto blanco
+	Identity	Identidad
+	Bradford	Bradford
+	von Kries	von Kries
+	Override All Input Properties	Reemplazar todas las propiedades de entrada
+	Input	Entrada
+	Override Input Color Space	Reemplazar el espacio de color de entrada
+	Override Input Color Primaries	Reemplazar los primarios de entrada
+	Override Input Transfer Characteristics	Reemplazar las características de transferencia de entrada
+	Override Input Color Range	Reemplazar el rango de color de entrada
+	Deband	Eliminar bandas
+	1st Plane Threshold	Umbral del 1.er plano
+	2nd Plane Threshold	Umbral del 2.º plano
+	3rd Plane Threshold	Umbral del 3.er plano
+	4th Plane Threshold	Umbral del 4.º plano
+	Coupling	Acoplamiento
+	Dilation	Dilatación
+	Coordinates	Coordenadas
+	Erosion	Erosión
+	EPX Scaler	Escalador EPX
+	Scale Factor	Factor de escala
+	HQ*X Interpolator	Interpolador HQ*X
+	Super2xSaI	Super2xSaI
+	XBR Interpolator	Interpolador XBR
+	Scaling Dimension	Dimensión de escala
+	2xBR	2xBR
+	3xBR	3xBR
+	4xBR	4xBR
+	Interleave - Deinterleave	Intercalar - Desintercalar
+	Luma Mode	Modo de luma
+	Chroma Mode	Modo de croma
+	Alpha Mode	Modo de alfa
+	Swap Luma Fields	Intercambiar campos de luma
+	Swap Chroma Fields	Intercambiar campos de croma
+	Swap Alpha Fields	Intercambiar campos de alfa
+	Kernel Deinterlacer	Desentrelazador por núcleo
+	Paint in White Pixels Exceeding the Threshold	Pintar de blanco los píxeles que superan el umbral
+	Swap Fields	Intercambiar campos
+	Enable Additional Sharpening	Activar enfoque adicional
+	Enable Two-way Sharpening	Activar enfoque bidireccional
+	Motion Compensation Deinterlacer	Desentrelazador con compensación de movimiento
+	Extra Slow	Muy lento
+	Picture Field Parity	Paridad de campos de la imagen
+	Top Field First	Campo superior primero
+	QP	QP
+	Phase	Fase
+	Set Range	Establecer rango
+	Unspecified	Sin especificar
+	Limited	Limitado

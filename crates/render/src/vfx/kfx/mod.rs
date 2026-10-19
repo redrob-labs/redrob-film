@@ -10,6 +10,7 @@
 //! effect would (or unchanged) without one.
 
 mod gps;
+mod kcolor;
 mod noise;
 mod stylize;
 mod temporal;
@@ -25,6 +26,7 @@ use crate::image::Image;
 /// Effects here that read other frames (skipped when another frame is rendered for one of them).
 pub fn is_temporal(id: &str) -> bool {
     matches!(id, "k_analog_echo" | "k_burning_tv" | "k_light_graffiti" | "k_photosensitivity" | "k_hqdn3d" | "k_hqdn3d_legacy" | "k_denoiser" | "k_fft_denoise")
+        || matches!(id, "k_normaliz0r" | "k_normalize" | "k_mcdeint" | "k_phase")
 }
 
 /// Apply `e` if it belongs to this bin; `false` for any other id.
@@ -98,6 +100,45 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
             let v = (fv(e, "vert", cx) * cx.px_scale).round().max(0.0) as usize;
             box_blur(img, h, v);
         }
+        // Blur and Sharpen
+        "k_avgblur" => kcolor::avgblur(img, e, cx),
+        "k_bilateral" => kcolor::bilateral(img, e, cx),
+        "k_boxblur" => kcolor::boxblur(img, e, cx),
+        "k_cas" => kcolor::cas(img, e, cx),
+        "k_planes_blur" => kcolor::planes_blur(img, e, cx),
+        "k_sab" => kcolor::sab(img, e, cx),
+        "k_smartblur" => kcolor::smartblur(img, e, cx),
+        "k_squareblur" => kcolor::squareblur(img, e, cx),
+        // Color and Image Correction
+        "k_three_point" => kcolor::three_point(img, e, cx),
+        "k_cmyk_adjust" => kcolor::cmyk_adjust(img, e, cx),
+        "k_color_contrast" => kcolor::color_contrast(img, e, cx),
+        "k_color_overlay" => kcolor::color_overlay(img, e, cx),
+        "k_colorize" => kcolor::colorize(img, e, cx),
+        "k_equaliz0r" => kcolor::equaliz0r(img),
+        "k_fftfilt" => kcolor::fftfilt(img, e, cx),
+        "k_gradient_map" => kcolor::gradient_map(img, e, cx),
+        "k_grayworld" => kcolor::grayworld(img),
+        "k_histeq" => kcolor::histeq(img, e, cx),
+        "k_normaliz0r" | "k_normalize" => kcolor::normalize(img, e, cx),
+        "k_swapuv" => kcolor::swapuv(img),
+        "k_technicolor" => kcolor::technicolor(img, e, cx),
+        "k_wb_lms" => kcolor::wb_lms(img, e, cx),
+        // Image Adjustments
+        "k_colormatrix" => kcolor::colormatrix(img, e),
+        "k_colorspace" => kcolor::colorspace(img, e),
+        "k_deband" => kcolor::deband(img, e, cx),
+        "k_dilation" => kcolor::morph(img, e, cx, true),
+        "k_erosion" => kcolor::morph(img, e, cx, false),
+        "k_epx" => kcolor::pixel_scaler(img, e, kcolor::Scaler::Epx),
+        "k_hqx" => kcolor::pixel_scaler(img, e, kcolor::Scaler::Hqx),
+        "k_super2xsai" => kcolor::pixel_scaler(img, e, kcolor::Scaler::Sai),
+        "k_xbr" => kcolor::pixel_scaler(img, e, kcolor::Scaler::Xbr),
+        "k_interleave" => kcolor::interleave(img, e),
+        "k_kerndeint" => kcolor::kerndeint(img, e, cx),
+        "k_mcdeint" => kcolor::mcdeint(img, e, cx),
+        "k_phase" => kcolor::phase(img, e, cx),
+        "k_setrange" => kcolor::setrange(img, e),
         _ => return false,
     }
     true

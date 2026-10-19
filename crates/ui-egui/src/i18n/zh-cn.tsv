@@ -4380,3 +4380,205 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	缓存
 	ClipJobs	剪辑任务
+	Color and Image Correction	色彩与图像校正
+	Image Adjustments	图像调整
+	Blur and Sharpen	模糊与锐化
+	BT.709	BT.709
+	FCC	FCC
+	BT.601	BT.601
+	BT.470	BT.470
+	BT.470BG	BT.470BG
+	SMPTE 170M	SMPTE 170M
+	SMPTE 240M	SMPTE 240M
+	BT.2020	BT.2020
+	BT.470M	BT.470M
+	BT.601-6 525	BT.601-6 525
+	BT.601-6 625	BT.601-6 625
+	YCgCo	YCgCo
+	BT.2020 NCL	BT.2020 NCL
+	Gamma 2.2	Gamma 2.2
+	Gamma 2.8	Gamma 2.8
+	sRGB	sRGB
+	xvYCC	xvYCC
+	BT.2020 10-bit	BT.2020 10 位
+	BT.2020 12-bit	BT.2020 12 位
+	Film	胶片
+	SMPTE 431	SMPTE 431
+	SMPTE 432	SMPTE 432
+	JEDEC P22	JEDEC P22
+	TV (Limited)	TV（有限）
+	PC (Full)	PC（完整）
+	YUV 4:2:0 8-bit	YUV 4:2:0 8 位
+	YUV 4:2:0 10-bit	YUV 4:2:0 10 位
+	YUV 4:2:0 12-bit	YUV 4:2:0 12 位
+	YUV 4:2:2 8-bit	YUV 4:2:2 8 位
+	YUV 4:2:2 10-bit	YUV 4:2:2 10 位
+	YUV 4:2:2 12-bit	YUV 4:2:2 12 位
+	YUV 4:4:4 8-bit	YUV 4:4:4 8 位
+	YUV 4:4:4 10-bit	YUV 4:4:4 10 位
+	YUV 4:4:4 12-bit	YUV 4:4:4 12 位
+	Deinterleave	解交织
+	Interleave	交织
+	Delay the Top Field	延迟顶场
+	Delay the Bottom Field	延迟底场
+	Keep the Field Order	保持场序
+	Auto (Field Flags), Transfer Opposite	自动（场标志），反向传输
+	Unknown Capture, Transfer Opposite	未知采集，反向传输
+	Top-first Capture, Unknown Transfer	顶场优先采集，未知传输
+	Bottom-first Capture, Unknown Transfer	底场优先采集，未知传输
+	Auto (Field Flags), Unknown Transfer	自动（场标志），未知传输
+	Both Unknown	两者皆未知
+	Correction Method	校正方法
+	Absolute	绝对
+	Relative	相对
+	Reds	红色
+	Yellows	黄色
+	Cyans	青色
+	Magentas	洋红
+	Neutrals	中性色
+	Number of Stops	色标数
+	Stop 1	色标 1
+	Stop 2	色标 2
+	Stop 3	色标 3
+	Stop 4	色标 4
+	Stop 5	色标 5
+	Stop 6	色标 6
+	Stop 7	色标 7
+	Stop 8	色标 8
+	Average Blur	平均模糊
+	X Size	X 大小
+	Y Size	Y 大小
+	Bilateral	双边
+	Spatial Sigma	空间 Sigma
+	Range Sigma	范围 Sigma
+	BoxBlur	BoxBlur
+	Preserve Alpha	保留 Alpha
+	Horizontal Multiplicator	水平倍数
+	Vertical Multiplicator	垂直倍数
+	Contrast Adaptive Sharpen (CAS)	对比度自适应锐化 (CAS)
+	Planes Blur	平面模糊
+	Luma Radius	亮度半径
+	Chroma Radius	色度半径
+	Alpha Radius	Alpha 半径
+	Luma Power	亮度次数
+	Chroma Power	色度次数
+	Alpha Power	Alpha 次数
+	Shape Adaptive Blur	形状自适应模糊
+	Luma Pre-filter Radius	亮度预滤波半径
+	Luma Strength	亮度强度
+	Chroma Pre-filter Radius	色度预滤波半径
+	Chroma Strength	色度强度
+	Smartblur	Smartblur
+	Luma Threshold	亮度阈值
+	Chroma Threshold	色度阈值
+	Square Blur	方形模糊
+	Kernel Size	核大小
+	3-Point Balance	三点平衡
+	Black Color	黑色
+	Gray Color	灰色
+	White Color	白色
+	Split Preview	分屏预览
+	Source Image on Left Side	源图像在左侧
+	CMYK Adjust	CMYK 调整
+	Color Contrast	色彩对比度
+	Red-Cyan Contrast	红-青对比度
+	Green-Magenta Contrast	绿-洋红对比度
+	Blue-Yellow Contrast	蓝-黄对比度
+	Red-Cyan Weight	红-青权重
+	Green-Magenta Weight	绿-洋红权重
+	Blue-Yellow Weight	蓝-黄权重
+	Preserve Lightness	保留明度
+	Color Overlay	颜色叠加
+	Lightness	明度
+	Equaliz0r	Equaliz0r
+	FFT-based FIR	基于 FFT 的 FIR
+	Gain in Y Plane	Y 平面增益
+	Gain in U Plane	U 平面增益
+	Gain in V Plane	V 平面增益
+	Luminance Y Plane	Y 平面权重
+	Luminance U Plane	U 平面权重
+	Luminance V Plane	V 平面权重
+	Evaluate	求值
+	Init	初始化时
+	Gradient Map	渐变映射
+	Grayworld	Grayworld
+	Histogram Equalizer	直方图均衡
+	Antibanding Level	抗色带级别
+	Weak	弱
+	Strong	强
+	Normaliz0r	Normaliz0r
+	BlackPt	黑点
+	WhitePt	白点
+	Smoothing	平滑
+	Independence	独立性
+	Normalize RGB Video	归一化 RGB 视频
+	Output Darkest Input Color	最暗输入的输出颜色
+	Output Brightest Input Color	最亮输入的输出颜色
+	Swapuv	Swapuv
+	Technicolor	特艺色
+	Blue/Yellow Axis	蓝/黄轴
+	Red/Green Axis	红/绿轴
+	White Balance (LMS)	白平衡 (LMS)
+	Neutral Color	中性色彩
+	Color Temperature	色温
+	Color Matrix	色彩矩阵
+	Source Color Matrix	源色彩矩阵
+	Destination Color Matrix	目标色彩矩阵
+	Color Properties	色彩属性
+	Output Color Space	输出色彩空间
+	Output Transfer Characteristics	输出传输特性
+	Output Color Primaries	输出色彩原色
+	Output Color Range	输出色彩范围
+	Output Color Format	输出色彩格式
+	Fast Conversion	快速转换
+	Dithering Mode	抖动模式
+	Floyd-Steinberg	Floyd-Steinberg
+	Whitepoint Adaptation	白点适应
+	Identity	恒等
+	Bradford	Bradford
+	von Kries	von Kries
+	Override All Input Properties	覆盖全部输入属性
+	Input	输入
+	Override Input Color Space	覆盖输入色彩空间
+	Override Input Color Primaries	覆盖输入色彩原色
+	Override Input Transfer Characteristics	覆盖输入传输特性
+	Override Input Color Range	覆盖输入色彩范围
+	Deband	去色带
+	1st Plane Threshold	第 1 平面阈值
+	2nd Plane Threshold	第 2 平面阈值
+	3rd Plane Threshold	第 3 平面阈值
+	4th Plane Threshold	第 4 平面阈值
+	Coupling	耦合
+	Dilation	膨胀
+	Coordinates	坐标
+	Erosion	腐蚀
+	EPX Scaler	EPX 缩放
+	Scale Factor	缩放倍数
+	HQ*X Interpolator	HQ*X 插值
+	Super2xSaI	Super2xSaI
+	XBR Interpolator	XBR 插值
+	Scaling Dimension	缩放尺寸
+	2xBR	2xBR
+	3xBR	3xBR
+	4xBR	4xBR
+	Interleave - Deinterleave	交织 - 解交织
+	Luma Mode	亮度模式
+	Chroma Mode	色度模式
+	Alpha Mode	Alpha 模式
+	Swap Luma Fields	交换亮度场
+	Swap Chroma Fields	交换色度场
+	Swap Alpha Fields	交换 Alpha 场
+	Kernel Deinterlacer	核去隔行
+	Paint in White Pixels Exceeding the Threshold	将超出阈值的像素涂成白色
+	Swap Fields	交换场
+	Enable Additional Sharpening	启用额外锐化
+	Enable Two-way Sharpening	启用双向锐化
+	Motion Compensation Deinterlacer	运动补偿去隔行
+	Extra Slow	极慢
+	Picture Field Parity	画面场奇偶性
+	Top Field First	顶场优先
+	QP	QP
+	Phase	相位
+	Set Range	设置范围
+	Unspecified	未指定
+	Limited	有限
