@@ -1311,6 +1311,15 @@ impl FilmcraftApp {
                 let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
                 self.session.execute("file.openArchive", json!({"path": path})).map_err(|e| e.to_string())
             }
+            // Project panel ▸ Replace Audio / Video Part…: the file whose part replaces the clip's
+            "clip.replacePart" => {
+                let exts: Vec<&str> = redrob_film_media::VIDEO_EXTENSIONS.iter().chain(redrob_film_media::AUDIO_EXTENSIONS).copied().collect();
+                let paths = self.hooks.pick_files.as_mut().map(|f| f(&exts)).unwrap_or_default();
+                let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
+                let mut p = params.clone();
+                p["path"] = json!(path);
+                self.session.execute("clip.replacePart", p).map_err(|e| e.to_string())
+            }
             "graphics.newFromFile" => {
                 let exts: Vec<&str> = redrob_film_media::STILL_EXTENSIONS.iter().chain(redrob_film_media::VIDEO_EXTENSIONS).copied().collect();
                 let paths = self.hooks.pick_files.as_mut().map(|f| f(&exts)).unwrap_or_default();

@@ -576,6 +576,9 @@ pub struct UiState {
     /// `panels::menu_dialogs`.
     #[serde(default)]
     pub extras: crate::panels::menu_dialogs::Extras,
+    /// The clip job dialogs (speed change, transcode, custom jobs). See `panels::clip_jobs`.
+    #[serde(default)]
+    pub clip_jobs: crate::panels::clip_jobs::ClipJobsUi,
     /// Essential Graphics ▸ Browse and the graphics template / Replace Fonts dialogs. See
     /// `panels::graphics_templates`.
     #[serde(default)]
@@ -1007,6 +1010,7 @@ impl Default for UiState {
             workspace_dialog: None,
             clip_dialog: None,
             extras: Default::default(),
+            clip_jobs: Default::default(),
             gfx_templates: Default::default(),
             panels: Default::default(),
             keys: Default::default(),

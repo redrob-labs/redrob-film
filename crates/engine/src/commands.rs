@@ -2943,6 +2943,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::archive::commands());
     v.extend(crate::backups::commands());
     v.extend(crate::cache_manager::commands());
+    v.extend(crate::clip_jobs::commands());
     v.extend(crate::masks::commands());
     v.extend(crate::presets::commands());
     v.extend(crate::export_tools::commands());

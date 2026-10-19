@@ -16,6 +16,7 @@ pub mod backups;
 pub mod cache_manager;
 pub mod autosave;
 pub mod captions;
+pub mod clip_jobs;
 pub mod clip_ops;
 pub mod color;
 pub mod commands;
@@ -432,6 +433,8 @@ pub struct Session {
     pub ui_layout: Option<Value>,
     /// The layout of a project just opened, for the frontend to apply (it takes it).
     pub restored_layout: Option<Value>,
+    /// Clip jobs (stabilize, speed change, transcode, custom) whose outputs are added when done.
+    pub clip_jobs: Vec<clip_jobs::PendingClipJob>,
 }
 
 /// An export advanced a batch at a time on the host's thread ([`Session::pump_jobs`]).
@@ -527,6 +530,7 @@ impl Session {
             shutdown_armed: false,
             ui_layout: None,
             restored_layout: None,
+            clip_jobs: Vec::new(),
         }
     }
 
@@ -614,6 +618,7 @@ impl Session {
         scene_detect::poll(self);
         export_tools::pump_queue(self, false);
         render_jobs::poll(self);
+        clip_jobs::poll(self);
         panels::log_jobs(self);
         let Some(p) = self.persistence.as_mut() else { return };
         for ev in p.drain_events() {
