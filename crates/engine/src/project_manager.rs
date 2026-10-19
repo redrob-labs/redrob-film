@@ -198,6 +198,18 @@ pub fn run(s: &mut Session, p: &Value) -> Result<Value> {
         return Err(EngineError::Other(format!("{project_path} already exists")));
     }
     std::fs::create_dir_all(&dest_dir).map_err(|e| EngineError::Other(format!("{dest}: {e}")))?;
+    // Archive Project: pack the copy into one .tar.gz / .zip next to the folder
+    let archive = match str_p(p, "archive").filter(|a| !a.is_empty() && *a != "none") {
+        Some(a) => Some(crate::archive::Kind::from_name(a).ok_or_else(|| bad("file.projectManager", "archive: tarGz | zip"))?),
+        None => None,
+    };
+    let archive_path = archive.map(|k| {
+        let n = dest_dir.file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_else(|| name.clone());
+        dest_dir.with_file_name(format!("{n}.{}", k.extension()))
+    });
+    let pack_dir = dest_dir.clone();
+    let project_file = format!("{name}.rfilm");
+    let archive_path_json = archive_path.as_ref().map(|p| p.to_string_lossy().into_owned());
 
     // ---- the job
     let sources: BTreeMap<ItemId, redrob_film_media::SharedSource> =
@@ -219,9 +231,17 @@ pub fn run(s: &mut Session, p: &Value) -> Result<Value> {
     let run = move || {
         let t0 = web_time::Instant::now();
         let r = execute(proj, work, sources, previews.map(|d| (d, prev_dst)), &project_path, pr, &prog, &*services);
+        // Archive: the folder becomes one file (the folder itself is left as the uncompressed copy)
+        let (r, out_path) = match (r, archive, &archive_path) {
+            (Ok(_), Some(k), Some(ap)) => {
+                *prog.status.lock().unwrap_or_else(|e| e.into_inner()) = format!("Compressing {}", ap.display());
+                (crate::archive::pack(&pack_dir, &project_file, ap, k), ap.to_string_lossy().into_owned())
+            }
+            (r, _, _) => (r, project_path.clone()),
+        };
         let secs = t0.elapsed().as_secs_f64();
         let r = r.map(|bytes| redrob_film_export::Report {
-            path: project_path.clone(),
+            path: out_path.clone(),
             frames: prog.done.load(Ordering::Relaxed),
             seconds: secs,
             bytes,
@@ -247,6 +267,9 @@ pub fn run(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let mut out = summary;
     out["job"] = json!(id);
+    if let Some(ap) = &archive_path_json {
+        out["archive"] = json!(ap);
+    }
     Ok(out)
 }
 
@@ -358,7 +381,7 @@ pub fn commands() -> Vec<CommandSpec> {
         label: "Project Manager…",
         menu: &["File"],
         shortcut: None,
-        params: r#"{"destination":str,"mode":"collect|consolidate","sequences":[id]?,"excludeUnused":bool=true,"handles":frames=30,"preset":"prores_lt|prores_hq|h264|…","includeProxies":bool,"includePreviews":bool=false,"projectName":str?,"dryRun":bool=false,"overwrite":bool=false,"wait":bool=false}"#,
+        params: r#"{"destination":str,"mode":"collect|consolidate","sequences":[id]?,"excludeUnused":bool=true,"handles":frames=30,"preset":"prores_lt|prores_hq|h264|…","includeProxies":bool,"includePreviews":bool=false,"projectName":str?,"archive":"tarGz|zip"?,"dryRun":bool=false,"overwrite":bool=false,"wait":bool=false}"#,
         enabled: |s| if s.project.sequences().next().is_some() { Ok(()) } else { Err("the project has no sequences".into()) },
         run,
         journal: false,

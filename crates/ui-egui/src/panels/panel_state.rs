@@ -2,7 +2,7 @@
 //! (`UiState::panels`). Plain serde, so agents read it with `ui.inspect` (`ui.panels`) and change
 //! it with `ui.set {"panels": {"scopes": {...}, "timecode": {...}, ...}}` (fields merged).
 
-use redrob_film_scopes::{Brightness, ColorSpace, ParadeType, Scale, ScopeKind, Targets, WaveformType};
+use redrob_film_scopes::{Brightness, ColorSpace, PaintMode, ParadeType, Scale, ScopeKind, Targets, WaveformType};
 use redrob_film_time::TimeDisplay;
 use serde::{Deserialize, Serialize};
 
@@ -34,7 +34,63 @@ pub struct ScopesState {
     pub targets: Targets,
     /// The preset last applied ("" = custom).
     pub preset: String,
+    /// Histogram components drawn: Y (luma), Sum (R + G + B), R, G, B.
+    pub hist_luma: bool,
+    pub hist_sum: bool,
+    pub hist_red: bool,
+    pub hist_green: bool,
+    pub hist_blue: bool,
+    /// Histogram Unscaled: 256 px wide whatever the cell's width (narrower cells still shrink it).
+    pub hist_unscaled: bool,
+    /// Waveform / parade Paint Mode.
+    pub paint_mode: PaintMode,
+    /// Parade: the bottom-left to top-right reference line (a black-to-white gradient's trace).
+    pub gradient_line: bool,
+    /// YUV vectorscope: the I and Q lines.
+    pub iq_lines: bool,
+    /// YUV vectorscope colour model: analogue YUV instead of YPbPr.
+    pub analog_yuv: bool,
+    /// Vectorscope gain (1, 2, 3, 5 or 10 ×).
+    pub vector_gain: f32,
+    /// Auto Refresh: follow the monitor's frame; off = only when the scopes are clicked.
+    pub auto_refresh: bool,
+    /// Realtime: analyse a decimated quarter-resolution frame; off = the full frame.
+    pub realtime: bool,
+    /// Which monitor the scopes read.
+    pub source: ScopeSource,
 }
+
+/// The monitor the Lumetri Scopes analyse.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ScopeSource {
+    /// The Source monitor while it has focus, else the Program monitor.
+    #[default]
+    Active,
+    Program,
+    Source,
+}
+
+impl ScopeSource {
+    pub const ALL: [ScopeSource; 3] = [ScopeSource::Active, ScopeSource::Program, ScopeSource::Source];
+    pub fn name(self) -> &'static str {
+        match self {
+            ScopeSource::Active => "active",
+            ScopeSource::Program => "program",
+            ScopeSource::Source => "source",
+        }
+    }
+    pub fn label(self) -> &'static str {
+        match self {
+            ScopeSource::Active => "Active Monitor",
+            ScopeSource::Program => "Program Monitor",
+            ScopeSource::Source => "Source Monitor",
+        }
+    }
+}
+
+/// The Vectorscope Gain choices.
+pub const VECTOR_GAINS: [f32; 5] = [1.0, 2.0, 3.0, 5.0, 10.0];
 
 impl Default for ScopesState {
     fn default() -> Self {
@@ -48,6 +104,20 @@ impl Default for ScopesState {
             clamp: true,
             targets: Targets::Percent75,
             preset: String::new(),
+            hist_luma: true,
+            hist_sum: false,
+            hist_red: true,
+            hist_green: true,
+            hist_blue: true,
+            hist_unscaled: false,
+            paint_mode: PaintMode::Color,
+            gradient_line: false,
+            iq_lines: true,
+            analog_yuv: false,
+            vector_gain: 1.0,
+            auto_refresh: true,
+            realtime: true,
+            source: ScopeSource::Active,
         }
     }
 }

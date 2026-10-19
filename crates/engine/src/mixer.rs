@@ -653,8 +653,15 @@ fn set_strip(s: &mut Session, p: &Value) -> Result<Value> {
             }
         }
     };
+    // Kdenlive: a plain click on Solo is exclusive (the other strips are un-soloed in the same step)
+    let exclusive = bool_p(p, "exclusive").unwrap_or(false) && bool_p(p, "solo") == Some(true);
     let p = p.clone();
     s.edit_sequence("Track Mixer Settings", move |q, _, _| {
+        if exclusive {
+            for t in q.audio_tracks.iter_mut().chain(q.submix_tracks.iter_mut()).filter(|t| t.id != id) {
+                t.solo = false;
+            }
+        }
         q.with_strip_mut(id, |t| {
             if let Some(v) = str_p(&p, "name") {
                 t.name = v.to_string();
@@ -1187,7 +1194,7 @@ pub fn commands() -> Vec<CommandSpec> {
             "Track Mixer Settings",
             &[],
             None,
-            r#"{"strip":"A1"|"S1"|"Mix"|id,"name":str?,"volumeDb":f64?,"pan":f64?,"muted":bool?,"solo":bool?,"recordArm":bool?,"soloSafe":bool?,"mode":"Off|Read|Latch|Touch|Write"?,"output":"Mix"|"S1"?,"inputMap":"Stereo|Left|Right|Swap|Mono"?,"channels":"Mono|Stereo|5.1"?}"#,
+            r#"{"strip":"A1"|"S1"|"Mix"|id,"name":str?,"volumeDb":f64?,"pan":f64?,"muted":bool?,"solo":bool?,"exclusive":bool?,"recordArm":bool?,"soloSafe":bool?,"mode":"Off|Read|Latch|Touch|Write"?,"output":"Mix"|"S1"?,"inputMap":"Stereo|Left|Right|Swap|Mono"?,"channels":"Mono|Stereo|5.1"?}"#,
             has_seq,
             set_strip,
             true,

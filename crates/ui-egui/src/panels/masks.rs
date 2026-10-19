@@ -598,6 +598,17 @@ pub fn path_value(app: &mut FilmcraftApp, ui: &mut egui::Ui, clip: ClipId, effec
                 actions.push(("masks.set".into(), json!({"clip": clip.0, "effect": effect, "mask": k, "trackMethod": tm.label()})));
             }
         }
+        // Kdenlive: the tracker's result drives the clip's transform
+        ui.separator();
+        let has_track = m.path.keyframes.len() > 1;
+        for (label, stabilize, id) in [(tl!("Copy Track to Position"), false, "toPosition"), (tl!("Stabilize Position with Track"), true, "stabilize")] {
+            let b = ui.add_enabled(has_track, egui::Button::new(label));
+            app.auto.add(&format!("{base}.track.{id}"), b.rect, label);
+            if b.clicked() {
+                actions.push(("masks.trackToMotion".into(), json!({"clip": clip.0, "effect": effect, "mask": k, "stabilize": stabilize})));
+                ui.close();
+            }
+        }
     });
     if let Some(job) = running
         && let Some(j) = app.session.jobs.iter().find(|j| j.id == job)

@@ -137,7 +137,7 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
             Some(a) => (a[0].as_u64().unwrap(), a[1].as_u64().unwrap()),
             None => (1920, 1080),
         };
-        if matches!(fmt.as_str(), "png" | "tiff" | "bmp" | "jpg" | "tga" | "dpx" | "exr") {
+        if matches!(fmt.as_str(), "png" | "tiff" | "bmp" | "jpg" | "tga" | "dpx" | "exr" | "ppm" | "webp") {
             let files = files_in(&sub);
             let ext = Path::new(&out).extension().unwrap().to_string_lossy().to_string();
             assert_eq!(frames, 7, "frames 23..=29 at 23.976 fps");
@@ -152,6 +152,8 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                     "tga" => "targa",
                     "dpx" => "dpx",
                     "exr" => "exr",
+                    "ppm" => "ppm",
+                    "webp" => "webp",
                     _ => "bmp",
                 };
                 assert_eq!(v["codec_name"], codec, "{name}");
@@ -185,6 +187,14 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert_eq!(j["streams"].as_array().unwrap().len(), 1, "{name}");
                 let a = stream(&j, "audio").unwrap();
                 assert_eq!((a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("aac"), Some("48000"), Some(2)), "{name}");
+                assert!((num(&j["format"]["duration"]) - 0.25).abs() < 0.03, "{name}: {}", j["format"]["duration"]);
+                continue;
+            }
+            "flac" => {
+                // FLAC: lossless audio, sound only
+                assert_eq!(j["streams"].as_array().unwrap().len(), 1, "{name}");
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!((a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("flac"), Some("48000"), Some(2)), "{name}");
                 assert!((num(&j["format"]["duration"]) - 0.25).abs() < 0.03, "{name}: {}", j["format"]["duration"]);
                 continue;
             }

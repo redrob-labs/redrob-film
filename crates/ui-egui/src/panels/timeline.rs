@@ -22,7 +22,7 @@ use crate::icons::{self, Icon};
 use crate::state::{ThumbnailMode, TimelineView, Tool};
 use crate::theme::Tokens;
 
-use super::timeline_hit::{EdgeKind, Grab, edge_geometry, grab_at, marker_at, marker_rect};
+use super::timeline_hit::{EdgeKind, Grab, edge_geometry, grab_at, marker_at, marker_id_at, marker_rect};
 pub use super::timeline_hit::{Hit, ROLL_PX, hit, selection_trim_kind};
 
 const TOP_H: f32 = 58.0; // timecode + toolbar (left) / ruler (right)
@@ -58,6 +58,13 @@ pub struct TlState {
     /// display gain: scanning the whole source per clip per frame cost more than drawing.
     peak_max: HashMap<PeakKey, (usize, f32)>,
     zoom_anchor: Option<(f64, f32)>,
+    /// Peaks of every channel of a stream, for Separate Audio Channels (made on demand).
+    channel_peaks: Arc<Mutex<HashMap<PeakKey, Arc<Vec<Vec<(f32, f32)>>>>>>,
+    channel_pending: Arc<Mutex<Vec<PeakKey>>>,
+    /// A track header's name being edited (click the name to rename): the track and the text.
+    pub renaming: Option<(TrackId, String)>,
+    /// Heights of the video and audio track areas last frame (Fit Tracks to View).
+    pub fit_areas: (f32, f32),
 }
 
 impl TlState {
@@ -70,6 +77,8 @@ impl TlState {
         self.seq_peak_keys = Default::default();
         self.seq_keys_seen.clear();
         self.peak_max.clear();
+        self.channel_peaks = Default::default();
+        self.channel_pending = Default::default();
     }
 }
 
@@ -315,7 +324,12 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         let ph = app.session.playhead().seconds();
         let w = content.width() as f64;
         let px = (ph - v.scroll) * v.pps;
-        if auto_scroll == "smoothScroll" {
+        if auto_scroll == "centeredPlayhead" {
+            // Fixed Centered Playhead: the playhead stays in the middle and the clips move under it
+            // (at the start of the sequence, until there is half a view of time before it)
+            v.target_scroll = (ph - w * 0.5 / v.pps).max(0.0);
+            v.scroll = v.target_scroll;
+        } else if auto_scroll == "smoothScroll" {
             // the playhead stays in the middle once it gets there
             if px > w * 0.5 || px < 0.0 {
                 v.target_scroll = (ph - w * 0.5 / v.pps).max(0.0);
@@ -349,27 +363,37 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let split_y = tracks_area.min.y + (tracks_area.height() - DIVIDER_H) * app.ui.timeline.split;
     let video_area = Rect::from_min_max(pos2(rect.min.x, tracks_area.min.y), pos2(content.max.x, split_y));
     let audio_area = Rect::from_min_max(pos2(rect.min.x, split_y + DIVIDER_H), pos2(content.max.x, tracks_area.max.y - MASTER_H));
-    let vh = app.ui.timeline.video_track_h;
-    let ah = app.ui.timeline.audio_track_h;
+    app.tl.fit_areas = (video_area.height(), audio_area.height());
+    // each track's own height (a header edge dragged alone), else its kind's
+    let video_h: Vec<f32> = seq.video_tracks.iter().map(|tr| app.ui.timeline.track_h(tr.id.0, TrackKind::Video)).collect();
+    let audio_h: Vec<f32> = seq.audio_tracks.iter().map(|tr| app.ui.timeline.track_h(tr.id.0, TrackKind::Audio)).collect();
     let mut rows = Vec::new();
     // Video: V1 at the bottom of the video area, stacking upward; v_scroll shifts up.
     let nv = seq.video_tracks.len();
-    let video_total = nv as f32 * vh;
+    let video_total: f32 = video_h.iter().sum();
     let v_off = (video_area.height() - video_total).max(0.0);
     let max_vs = (video_total - video_area.height()).max(0.0);
     app.ui.timeline.v_scroll = app.ui.timeline.v_scroll.clamp(0.0, max_vs);
-    for (i, tr) in seq.video_tracks.iter().enumerate() {
-        let top = video_area.min.y + v_off + (nv - 1 - i) as f32 * vh - (max_vs - app.ui.timeline.v_scroll);
-        let rect = Rect::from_min_max(pos2(content.min.x, top), pos2(content.max.x, top + vh));
-        rows.push(Row { track: tr.id, kind: TrackKind::Video, index: i, rect, lane: false });
+    {
+        // from the top video track down to V1
+        let mut top = video_area.min.y + v_off - (max_vs - app.ui.timeline.v_scroll);
+        let mut vrows = Vec::with_capacity(nv);
+        for (i, tr) in seq.video_tracks.iter().enumerate().rev() {
+            let rect = Rect::from_min_max(pos2(content.min.x, top), pos2(content.max.x, top + video_h[i]));
+            vrows.push(Row { track: tr.id, kind: TrackKind::Video, index: i, rect, lane: false });
+            top += video_h[i];
+        }
+        vrows.reverse();
+        rows.extend(vrows);
     }
-    let na = seq.audio_tracks.len();
-    let max_as = (na as f32 * ah - audio_area.height()).max(0.0);
+    let audio_total: f32 = audio_h.iter().sum();
+    let max_as = (audio_total - audio_area.height()).max(0.0);
     app.ui.timeline.a_scroll = app.ui.timeline.a_scroll.clamp(0.0, max_as);
+    let mut top = audio_area.min.y - app.ui.timeline.a_scroll;
     for (i, tr) in seq.audio_tracks.iter().enumerate() {
-        let top = audio_area.min.y + i as f32 * ah - app.ui.timeline.a_scroll;
-        let rect = Rect::from_min_max(pos2(content.min.x, top), pos2(content.max.x, top + ah));
+        let rect = Rect::from_min_max(pos2(content.min.x, top), pos2(content.max.x, top + audio_h[i]));
         rows.push(Row { track: tr.id, kind: TrackKind::Audio, index: i, rect, lane: app.ui.timeline.track_lanes.contains_key(&tr.id.0) });
+        top += audio_h[i];
     }
     let mut layout = Layout { content, ruler, rows: rows.clone(), pps, scroll, split_y, playhead_x: None };
     layout.playhead_x = Some(layout.x_of(app.session.playhead()));
@@ -434,6 +458,15 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                 p.rect_filled(gap, 0.0, GAP_FILL);
                 app.auto.add("timeline.gap", gap.intersect(content), "Selected gap");
             }
+        }
+        // the voice-over take being recorded on this track, drawn live
+        if r.kind == TrackKind::Audio
+            && !r.lane
+            && app.session.voiceover.rec.as_ref().is_some_and(|x| x.track == r.track && Some(x.seq) == app.session.state.active_sequence)
+        {
+            draw_recording(app, &p, r.rect, &|tk: Tick| layout.x_of(tk), app.session.playhead());
+            app.auto.add("timeline.recording", r.rect.intersect(content), "Recording voice-over");
+            ctx.request_repaint();
         }
         for it in &tr.items {
             let it = edited.get(&it.id).unwrap_or(it);
@@ -707,7 +740,8 @@ fn draw_clip(
     t: &Tokens,
     rate: FrameRate,
 ) {
-    let base = label_color(app, it.label);
+    // the wrench menu's Show Clip Label Colors off: every clip in one neutral colour
+    let base = if app.ui.timeline.hide_clip_labels { Color32::from_gray(0x6e) } else { label_color(app, it.label) };
     let inr = in_range(app, it);
     let fill = if !it.enabled {
         t.disabled_clip_bg
@@ -759,11 +793,36 @@ fn draw_clip(
     }
     // waveform (audio): rectified, lower 40 %
     if kind == TrackKind::Audio && app.ui.timeline.show_waveforms && w > 3.0 {
-        draw_waveform(app, p, body, it, if inr { Color32::from_rgb(0xc7, 0xe9, 0xfa) } else { Color32::from_rgb(0x79, 0xc0, 0xf9) });
+        draw_waveform(app, p, body, it, inr);
     }
     let clip_p = p.with_clip_rect(body.shrink2(vec2(1.0, 0.0)).intersect(p.clip_rect()));
-    // name band
-    if w > 24.0 {
+    // clip markers (the media's markers inside the clip's source range): a tick on the clip's
+    // bottom edge in the marker colour, with its name (else comment) beside it when Settings ▸
+    // Timeline ▸ "Show clip marker comments on timeline clips" is on
+    if let Some(m) = app.session.project.item(it.item).and_then(|pi| pi.as_media()) {
+        let span = it.duration.0 as f64 * it.speed.abs().max(1e-9);
+        let comments = app.session.prefs.timeline.show_clip_marker_comments;
+        for mk in &m.markers {
+            let f = (mk.start.0 - it.source_in.0) as f64 / span.max(1.0);
+            if !(0.0..=1.0).contains(&f) {
+                continue;
+            }
+            let f = if it.reverse { 1.0 - f } else { f };
+            let x = body.min.x + (f as f32) * w;
+            let [r, g, b] = mk.color.marker_rgb();
+            let c = Color32::from_rgb(r, g, b);
+            let y = body.max.y - 1.0;
+            clip_p.add(egui::Shape::convex_polygon(vec![pos2(x - 3.5, y), pos2(x + 3.5, y), pos2(x, y - 6.0)], c, Stroke::NONE));
+            if comments && w > 24.0 {
+                let text = if mk.name.is_empty() { mk.comment.as_str() } else { mk.name.as_str() };
+                if !text.is_empty() {
+                    clip_p.text(pos2(x + 5.0, y - 3.0), Align2::LEFT_CENTER, text, Tokens::ui(9.0), t.text);
+                }
+            }
+        }
+    }
+    // name band (the wrench menu's Show Clip Names)
+    if w > 24.0 && !app.ui.timeline.hide_clip_names {
         let mut label = it.name.clone();
         if let Some(m) = it.multicam.filter(|m| m.enabled) {
             let cam = app.session.project.sequence(it.item).and_then(|q| q.cameras().cameras.get(m.angle as usize).map(|c| c.name.clone()));
@@ -782,14 +841,77 @@ fn draw_clip(
     }
     // fx badge right-aligned in the header (italic-ish "fx")
     if (it.has_standard_effects() || it.has_modified_intrinsics()) && w > 40.0 {
-        let col = if it.has_standard_effects() { Color32::from_rgb(0xe8, 0xc5, 0x4a) } else { Color32::from_rgb(0x91, 0xa2, 0xac) };
-        clip_p.text(
+        // dimmed when the clip's whole effect stack is switched off (click the badge)
+        let stack_off = it.has_standard_effects()
+            && !it.effects.iter().any(|e| e.enabled && e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e));
+        let col = if stack_off {
+            Color32::from_rgb(0x5c, 0x5c, 0x5c)
+        } else if it.has_standard_effects() {
+            Color32::from_rgb(0xe8, 0xc5, 0x4a)
+        } else {
+            Color32::from_rgb(0x91, 0xa2, 0xac)
+        };
+        let r = clip_p.text(
             pos2(body.max.x - 6.0, body.min.y + 8.5),
             Align2::RIGHT_CENTER,
             "fx",
             egui::FontId::new(11.0, egui::FontFamily::Name("semibold".into())),
             col,
         );
+        // the clip's effect stack is switched off (Effects Enabled): the badge is struck through
+        let standard = it.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e));
+        let mut standard = standard.peekable();
+        if standard.peek().is_some() && standard.all(|e| !e.enabled) {
+            clip_p.line_segment([pos2(r.min.x - 1.0, r.center().y), pos2(r.max.x + 1.0, r.center().y)], Stroke::new(1.5, col));
+        }
+    }
+    // the keyframes of the clip's effects (Effect Controls ▸ Options ▸ Show Keyframes in Timeline)
+    if app.ui.fx.show_clip_keyframes && w > 8.0 && body.height() > 20.0 {
+        let y = body.max.y - 6.0;
+        let dur = it.duration.0.max(1) as f64;
+        let speed = it.speed.abs().max(1e-6);
+        let hidden = &app.ui.kp.hidden_timeline_keyframes;
+        let mut times: Vec<Tick> = it
+            .effects
+            .iter()
+            .enumerate()
+            .filter(|(i, e)| e.enabled && !hidden.contains(&format!("{}:{}", it.id.0, i)))
+            .flat_map(|(_, e)| e.params.values().flat_map(|p| p.keyframes.iter().map(|k| k.time)))
+            .collect();
+        times.sort();
+        times.dedup();
+        for m in times {
+            let f = (((m - it.source_in).0 as f64 / speed) / dur) as f32;
+            if !(0.0..=1.0).contains(&f) {
+                continue;
+            }
+            let f = if it.reverse { 1.0 - f } else { f };
+            let x = body.min.x + f * w;
+            let s = 3.5;
+            let pts = vec![pos2(x, y - s), pos2(x + s, y), pos2(x, y + s), pos2(x - s, y)];
+            clip_p.add(egui::Shape::convex_polygon(pts, Color32::from_rgb(0xe0, 0xe0, 0xe0), Stroke::new(1.0, Color32::BLACK)));
+        }
+    }
+    // the markers of the clip's bin clip (Kdenlive): a flag at each, a bar over a range marker;
+    // dragging a flag moves the marker, dragging a range bar's right end resizes it
+    if w > 8.0 {
+        for (m, f0, f1) in clip_marker_spans(app, it) {
+            let x = body.min.x + f0 * w;
+            let c = m.color.marker_rgb();
+            let col = Color32::from_rgb(c[0], c[1], c[2]);
+            if f1 > f0 {
+                clip_p.rect_filled(Rect::from_min_max(pos2(x, body.min.y + 1.0), pos2(body.min.x + f1 * w, body.min.y + 5.0)), 0.0, col.gamma_multiply(0.7));
+            }
+            clip_p.line_segment([pos2(x, body.min.y + 1.0), pos2(x, body.max.y - 1.0)], Stroke::new(1.0, col.gamma_multiply(0.8)));
+            clip_p.add(egui::Shape::convex_polygon(
+                vec![pos2(x, body.min.y + 1.0), pos2(x + 6.0, body.min.y + 4.0), pos2(x, body.min.y + 7.0)],
+                col,
+                Stroke::NONE,
+            ));
+            if app.ui.timeline.show_marker_comments && !m.name.is_empty() {
+                clip_p.text(pos2(x + 7.0, body.min.y + 4.0), Align2::LEFT_CENTER, &m.name, Tokens::ui(9.5), Color32::WHITE);
+            }
+        }
     }
     // corner triangles where the clip reaches the media's first/last frame (no handles)
     let media_dur = app.session.project.item(it.item).map(|i| i.duration());
@@ -815,17 +937,9 @@ fn draw_clip(
     }
 }
 
-fn draw_waveform(app: &mut FilmcraftApp, p: &egui::Painter, body: Rect, it: &TrackItem, col: Color32) {
+fn draw_waveform(app: &mut FilmcraftApp, p: &egui::Painter, body: Rect, it: &TrackItem, inr: bool) {
     let Some(peaks) = request_peaks(app, it.item, it.audio_stream) else { return };
     let pkey = (it.item, it.audio_stream);
-    let spp = 256.0;
-    let sr = 48_000.0;
-    let zone_h = (body.height() * 0.42).max(8.0);
-    let area = Rect::from_min_max(pos2(body.min.x + 1.0, body.max.y - zone_h - 1.0), pos2(body.max.x - 1.0, body.max.y - 1.0));
-    let clip = p.clip_rect().intersect(area);
-    if clip.width() <= 0.0 {
-        return;
-    }
     let key = Arc::as_ptr(&peaks) as usize;
     let peak = match app.tl.peak_max.get(&pkey) {
         Some(&(k, v)) if k == key => v,
@@ -835,8 +949,67 @@ fn draw_waveform(app: &mut FilmcraftApp, p: &egui::Painter, body: Rect, it: &Tra
             v
         }
     };
-    let gain = waveform_display_gain(peak, it.gain_db);
+    // normalised (default) or at the recorded level, times the wrench menu's waveform zoom
+    let gain = if app.ui.timeline.waveform_raw { redrob_film_render::audio::db_to_gain(it.gain_db) } else { waveform_display_gain(peak, it.gain_db) }
+        * app.ui.timeline.waveform_zoom_factor();
     let dynamic = app.ui.extras.dynamic_waveforms;
+    // the waveform colour of each channel (timeline wrench menu), lighter on a selected clip
+    let colors = app.ui.timeline.waveform_colors.clone();
+    let color = |c: usize| {
+        let [r, g, b] = colors.get(c % colors.len().max(1)).copied().unwrap_or([0x79, 0xc0, 0xf9]);
+        if inr {
+            let up = |v: u8| v + ((255 - v) as f32 * 0.55) as u8;
+            Color32::from_rgb(up(r), up(g), up(b))
+        } else {
+            Color32::from_rgb(r, g, b)
+        }
+    };
+    // Separate Audio Channels: one lane per channel (media streams with more than one channel)
+    let lanes = if app.ui.timeline.separate_channels && app.session.project.sequence(it.item).is_none() {
+        request_channel_peaks(app, it.item, it.audio_stream).filter(|c| c.len() > 1)
+    } else {
+        None
+    };
+    match lanes {
+        Some(chs) => {
+            let n = chs.len().min(8);
+            let zone_h = (body.height() * 0.62).max(8.0);
+            let lane_h = zone_h / n as f32;
+            for (c, ch) in chs.iter().take(n).enumerate() {
+                let bottom = body.max.y - 1.0 - lane_h * (n - 1 - c) as f32;
+                let area = Rect::from_min_max(pos2(body.min.x + 1.0, bottom - lane_h), pos2(body.max.x - 1.0, bottom));
+                waveform_lane(p, body, area, it, ch, gain, dynamic, color(c));
+            }
+            if body.width() > 30.0 {
+                let cb = Rect::from_min_size(pos2(body.min.x + 3.0, body.max.y - 11.0), vec2(8.0, 9.0));
+                p.rect_filled(cb, 1.0, Color32::from_black_alpha(160));
+                p.text(cb.center(), Align2::CENTER_CENTER, format!("{n}"), Tokens::ui(7.5), Color32::from_rgb(0xd9, 0xd9, 0xd9));
+            }
+        }
+        None => {
+            let zone_h = (body.height() * 0.42).max(8.0);
+            let area = Rect::from_min_max(pos2(body.min.x + 1.0, body.max.y - zone_h - 1.0), pos2(body.max.x - 1.0, body.max.y - 1.0));
+            waveform_lane(p, body, area, it, &peaks, gain, dynamic, color(0));
+            // channel label box
+            let cb = Rect::from_min_size(pos2(body.min.x + 3.0, body.max.y - 11.0), vec2(8.0, 9.0));
+            if body.width() > 30.0 {
+                p.rect_filled(cb, 1.0, Color32::from_black_alpha(160));
+                p.text(cb.center(), Align2::CENTER_CENTER, "1", Tokens::ui(7.5), Color32::from_rgb(0xd9, 0xd9, 0xd9));
+            }
+        }
+    }
+}
+
+/// One rectified waveform of `peaks` (min, max per 256 samples at 48 kHz of source time) for the
+/// clip `it` drawn in `body`, filling `area` from its bottom.
+#[allow(clippy::too_many_arguments)]
+fn waveform_lane(p: &egui::Painter, body: Rect, area: Rect, it: &TrackItem, peaks: &[(f32, f32)], gain: f32, dynamic: bool, col: Color32) {
+    let spp = 256.0;
+    let sr = 48_000.0;
+    let clip = p.clip_rect().intersect(area);
+    if clip.width() <= 0.0 {
+        return;
+    }
     let mut mesh = egui::Mesh::default();
     let dur_px = body.width().max(1.0);
     for x in (clip.min.x.floor() as i32)..(clip.max.x.ceil() as i32) {
@@ -865,12 +1038,95 @@ fn draw_waveform(app: &mut FilmcraftApp, p: &egui::Painter, body: Rect, it: &Tra
         }
     }
     p.add(mesh);
-    // channel label box
-    let cb = Rect::from_min_size(pos2(body.min.x + 3.0, body.max.y - 11.0), vec2(8.0, 9.0));
-    if body.width() > 30.0 {
-        p.rect_filled(cb, 1.0, Color32::from_black_alpha(160));
-        p.text(cb.center(), Align2::CENTER_CENTER, "1", Tokens::ui(7.5), Color32::from_rgb(0xd9, 0xd9, 0xd9));
+}
+
+/// The live waveform of the voice-over take being recorded (Kdenlive draws it on the timeline
+/// as the take grows): a red clip from the record point to the playhead on the record track,
+/// with the captured samples rectified like a clip waveform.
+pub(crate) fn draw_recording(app: &FilmcraftApp, p: &egui::Painter, lane: Rect, x_of: &dyn Fn(Tick) -> f32, now: Tick) {
+    let Some(rec) = app.session.voiceover.rec.as_ref() else { return };
+    if now <= rec.record_start {
+        return;
     }
+    let (x0, x1) = (x_of(rec.record_start), x_of(now));
+    if x1 - x0 < 1.0 {
+        return;
+    }
+    let body = Rect::from_min_max(pos2(x0, lane.min.y + 1.0), pos2(x1, lane.max.y - 1.0));
+    let cp = p.with_clip_rect(body.intersect(p.clip_rect()));
+    cp.rect_filled(body, 2.0, Color32::from_rgba_unmultiplied(0xd8, 0x50, 0x3f, 150));
+    let samples = app.session.voiceover.captured();
+    let sr = rec.format.sample_rate.max(1) as f64;
+    let skip = ((rec.record_start - rec.capture_start).seconds() * sr).max(0.0) as usize;
+    let gain = 10f64.powf(app.session.prefs.voice_over.input_gain_db / 20.0) as f32;
+    let area = Rect::from_min_max(pos2(body.min.x, body.min.y + body.height() * 0.3), body.max);
+    let mut mesh = egui::Mesh::default();
+    let span = (now - rec.record_start).seconds().max(1e-6);
+    let clip = cp.clip_rect();
+    for x in (clip.min.x.floor().max(body.min.x) as i32)..(clip.max.x.ceil().min(body.max.x) as i32) {
+        let f0 = ((x as f32 - body.min.x) / body.width()) as f64;
+        let f1 = ((x as f32 + 1.0 - body.min.x) / body.width()) as f64;
+        let a = skip + (f0 * span * sr) as usize;
+        let b = (skip + (f1 * span * sr) as usize).max(a + 1);
+        let m = samples.get(a.min(samples.len())..b.min(samples.len())).map_or(0.0, |w| w.iter().fold(0f32, |m, v| m.max(v.abs()))) * gain;
+        let db = 20.0 * m.max(1e-5).log10();
+        let h = ((db + 48.0) / 48.0).clamp(0.0, 1.0) * area.height();
+        if h > 0.3 {
+            mesh.add_colored_rect(Rect::from_min_max(pos2(x as f32, area.max.y - h), pos2(x as f32 + 1.0, area.max.y)), Color32::from_rgb(0xff, 0xd8, 0xd0));
+        }
+    }
+    cp.add(mesh);
+}
+
+/// Waveform peaks of every channel of audio stream `stream` of media `item` (computed in the
+/// background on first use, like [`request_peaks`]).
+fn request_channel_peaks(app: &mut FilmcraftApp, item: ItemId, stream: usize) -> Option<Arc<Vec<Vec<(f32, f32)>>>> {
+    let pkey = (item, stream);
+    if let Some(p) = app.tl.channel_peaks.lock().unwrap_or_else(|e| e.into_inner()).get(&pkey) {
+        return Some(p.clone());
+    }
+    let src = app.session.source(item)?;
+    {
+        let mut pend = app.tl.channel_pending.lock().unwrap_or_else(|e| e.into_inner());
+        if pend.contains(&pkey) {
+            return None;
+        }
+        pend.push(pkey);
+    }
+    let peaks = app.tl.channel_peaks.clone();
+    let pending = app.tl.channel_pending.clone();
+    let dur = src.info().duration;
+    let run = move || {
+        let sr = 48_000u32;
+        let total = dur.to_units_floor(sr as i64).max(0) as usize;
+        let mut out: Vec<Vec<(f32, f32)>> = Vec::new();
+        let chunk = 48_000 * 4;
+        let mut s = 0usize;
+        while s < total {
+            let n = chunk.min(total - s);
+            match src.audio_stream(stream, s as i64, n, sr) {
+                Ok(buf) => {
+                    if out.len() < buf.channels.len().min(8) {
+                        out.resize(buf.channels.len().min(8), Vec::with_capacity(total / 256 + 1));
+                    }
+                    for (o, ch) in out.iter_mut().zip(&buf.channels) {
+                        for c in ch.chunks(256) {
+                            o.push(c.iter().fold((0f32, 0f32), |(l, h), v| (l.min(*v), h.max(*v))));
+                        }
+                    }
+                }
+                Err(_) => break,
+            }
+            s += n;
+        }
+        peaks.lock().unwrap_or_else(|e| e.into_inner()).insert(pkey, Arc::new(out));
+        pending.lock().unwrap_or_else(|e| e.into_inner()).retain(|i| *i != pkey);
+    };
+    #[cfg(not(target_arch = "wasm32"))]
+    std::thread::spawn(run);
+    #[cfg(target_arch = "wasm32")]
+    run();
+    None
 }
 
 /// Display gain for a clip's waveform: clip gain, plus normalisation of the source to full scale
@@ -1084,6 +1340,10 @@ fn draw_headers(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, rows:
     let tg = app.session.targeting();
     let mut actions: Vec<(String, Value)> = Vec::new();
     let mut vo_action = None;
+    let current = redrob_film_engine::timeline_ops::current_track(&app.session);
+    // header gestures that only change the view: (track, what)
+    let mut view_action: Option<(TrackId, TrackKind, &'static str)> = None;
+    let shift = ui.input(|i| i.modifiers.shift);
     for r in rows {
         let Some(tr) = seq.track(r.track) else { continue };
         let clip_rect = if r.kind == TrackKind::Video { vclip } else { aclip };
@@ -1094,6 +1354,68 @@ fn draw_headers(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, rows:
         }
         let p = ui.painter().with_clip_rect(visible);
         p.rect_filled(hrect, 0.0, t.tl_header_bg);
+        // the current (keyboard-selected) track: lighter, with an accent bar on its left edge
+        if current == Some(r.track) {
+            p.rect_filled(hrect, 0.0, t.hover);
+            p.rect_filled(Rect::from_min_max(hrect.min, pos2(hrect.min.x + 3.0, hrect.max.y)), 0.0, t.accent);
+        }
+        // the header under its buttons: click = current track, double-click = rename (on the name)
+        // or expand / collapse, right-click = the track menu
+        let bg = ui.interact(visible, egui::Id::new(("hdr-bg", r.track.0)), Sense::click());
+        let name_rect = if hrect.height() >= 40.0 {
+            Rect::from_min_max(pos2(hrect.min.x + 90.0, hrect.min.y + 26.0), pos2(hrect.max.x - 6.0, hrect.min.y + 42.0))
+        } else {
+            Rect::from_min_max(pos2(hrect.min.x + 90.0, hrect.min.y + 2.0), pos2(hrect.max.x - 6.0, hrect.max.y - 2.0))
+        };
+        if bg.clicked() || bg.secondary_clicked() {
+            actions.push(("timeline.selectTrack".into(), json!({"track": r.track.0})));
+        }
+        if bg.double_clicked() {
+            let on_name = bg.interact_pointer_pos().is_some_and(|q| name_rect.contains(q));
+            view_action = Some((
+                r.track,
+                r.kind,
+                if on_name {
+                    "rename"
+                } else if shift {
+                    "collapseAll"
+                } else {
+                    "collapse"
+                },
+            ));
+        }
+        let (idx, kind_tag) = (r.index + 1, if r.kind == TrackKind::Video { "V" } else { "A" });
+        let locked = tr.locked;
+        bg.context_menu(|ui| {
+            ui.set_min_width(200.0);
+            let mut cmd = |ui: &mut egui::Ui, text: &str, id: &str, params: Value| {
+                if ui.button(text).clicked() {
+                    actions.push((id.to_string(), params));
+                    ui.close();
+                }
+            };
+            let after = format!("{kind_tag}{idx}");
+            let insert = if r.kind == TrackKind::Video {
+                json!({"video": 1, "audio": 0, "videoAfter": after})
+            } else {
+                json!({"video": 0, "audio": 1, "audioAfter": after})
+            };
+            cmd(ui, tl!("Insert Track"), "sequence.addTracks", insert);
+            cmd(ui, tl!("Delete Track"), "sequence.deleteTrack", json!({"track": r.track.0}));
+            cmd(ui, tl!("Move Track Up"), "timeline.moveTrackUp", json!({"track": r.track.0}));
+            cmd(ui, tl!("Move Track Down"), "timeline.moveTrackDown", json!({"track": r.track.0}));
+            ui.separator();
+            cmd(ui, if locked { tl!("Unlock Track") } else { tl!("Lock Track") }, "timeline.setTrack", json!({"track": r.track.0, "locked": !locked}));
+            cmd(ui, tl!("Select All in Track"), "timeline.selectAllInTrack", json!({"track": r.track.0}));
+            cmd(ui, tl!("Identify Gaps"), "markers.identifyGaps", json!({"track": r.track.0}));
+            ui.separator();
+            for (text, what) in [(tl!("Rename Track"), "rename"), (tl!("Expand or Collapse Track"), "collapse"), (tl!("Fit Tracks to View"), "fit")] {
+                if ui.button(text).clicked() {
+                    view_action = Some((r.track, r.kind, what));
+                    ui.close();
+                }
+            }
+        });
         p.line_segment([pos2(hrect.min.x, hrect.max.y - 0.5), pos2(hrect.max.x, hrect.max.y - 0.5)], Stroke::new(1.0, t.separator));
         if r.kind == TrackKind::Video && r.index + 1 == seq.video_tracks.len() {
             p.line_segment([pos2(hrect.min.x, hrect.min.y + 0.5), pos2(hrect.max.x, hrect.min.y + 0.5)], Stroke::new(1.0, t.separator));
@@ -1196,31 +1518,83 @@ fn draw_headers(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, rows:
             let kr = small(x + 64.0, upper_y);
             super::timeline_automation::header_button(app, ui, seq, r, kr, visible, &label, t);
         }
-        // 5. name on the lower line (or inline when short)
-        if hrect.height() >= 40.0 {
+        // 5. name on the lower line (or inline when short); being renamed: a text field
+        let mut renamed: Option<String> = None;
+        if let Some((_, buf)) = app.tl.renaming.as_mut().filter(|x| x.0 == r.track) {
+            let te = ui.put(name_rect.intersect(visible), egui::TextEdit::singleline(buf).font(Tokens::ui(11.0)).desired_width(name_rect.width()));
+            app.auto.add(&format!("timeline.track.{label}.nameEdit"), te.rect, "Track name");
+            if te.lost_focus() {
+                renamed = Some(if ui.input(|i| i.key_pressed(egui::Key::Escape)) { String::new() } else { buf.trim().to_string() });
+            } else if !te.has_focus() {
+                te.request_focus();
+            }
+        } else if hrect.height() >= 40.0 {
             p.text(pos2(hrect.min.x + 94.0, hrect.min.y + 34.0), Align2::LEFT_CENTER, &tr.name, Tokens::ui(11.0), t.text_dim);
         }
+        if let Some(name) = renamed {
+            app.tl.renaming = None;
+            if !name.is_empty() && name != tr.name {
+                actions.push(("timeline.setTrack".into(), json!({"track": r.track.0, "name": name})));
+            }
+        }
         // resize track height by dragging the header's bottom edge
+        // (only this track; Shift: every track of its kind; double-click resets, Shift too)
         let edge = Rect::from_min_max(pos2(hrect.min.x, hrect.max.y - 3.0), pos2(hrect.max.x, hrect.max.y + 2.0)).intersect(visible);
         if edge.height() > 0.0 {
-            let eresp = ui.interact(edge, egui::Id::new(("trackh", r.track.0)), Sense::drag());
+            let eresp = ui.interact(edge, egui::Id::new(("trackh", r.track.0)), Sense::click_and_drag());
+            app.auto.add(&format!("timeline.track.{label}.heightEdge"), edge, "Track height");
             if eresp.hovered() || eresp.dragged() {
                 ui.ctx().set_cursor_icon(CursorIcon::ResizeVertical);
             }
             if eresp.dragged() {
                 let d = eresp.drag_delta().y * if r.kind == TrackKind::Video { -1.0 } else { 1.0 };
-                let h = if r.kind == TrackKind::Video { &mut app.ui.timeline.video_track_h } else { &mut app.ui.timeline.audio_track_h };
-                *h = (*h + d).clamp(22.0, 220.0);
+                let tv = &mut app.ui.timeline;
+                if shift {
+                    for o in seq.tracks(r.kind) {
+                        tv.track_heights.remove(&o.id.0);
+                    }
+                    let h = if r.kind == TrackKind::Video { &mut tv.video_track_h } else { &mut tv.audio_track_h };
+                    *h = (*h + d).clamp(22.0, 220.0);
+                } else {
+                    let h = (tv.track_h(r.track.0, r.kind) + d).clamp(22.0, 220.0);
+                    tv.track_heights.insert(r.track.0, h);
+                }
+            }
+            if eresp.double_clicked() {
+                view_action = Some((r.track, r.kind, if shift { "resetAll" } else { "reset" }));
             }
         }
-        let resp = ui.interact(
-            Rect::from_min_max(pos2(hrect.min.x + 90.0, hrect.min.y + 26.0), hrect.max).intersect(visible),
-            egui::Id::new(("hdr", r.track.0)),
-            Sense::click(),
-        );
-        if resp.double_clicked() {
-            let h = if r.kind == TrackKind::Video { &mut app.ui.timeline.video_track_h } else { &mut app.ui.timeline.audio_track_h };
-            *h = if *h < 50.0 { 64.0 } else { 30.0 };
+    }
+    if let Some((_, _, "fit")) = view_action {
+        fit_tracks(app);
+    } else if let Some((track, kind, what)) = view_action {
+        let tv = &mut app.ui.timeline;
+        let defaults = crate::state::TimelineView::default();
+        let kind_default = if kind == TrackKind::Video { defaults.video_track_h } else { defaults.audio_track_h };
+        match what {
+            "rename" => app.tl.renaming = seq.track(track).map(|tr| (track, tr.name.clone())),
+            "collapse" => {
+                let h = tv.track_h(track.0, kind);
+                tv.track_heights.insert(track.0, if h < 50.0 { 64.0 } else { 30.0 });
+            }
+            "collapseAll" => {
+                for o in seq.tracks(kind) {
+                    tv.track_heights.remove(&o.id.0);
+                }
+                let h = if kind == TrackKind::Video { &mut tv.video_track_h } else { &mut tv.audio_track_h };
+                *h = if *h < 50.0 { 64.0 } else { 30.0 };
+            }
+            "reset" => {
+                tv.track_heights.remove(&track.0);
+            }
+            "resetAll" => {
+                for o in seq.tracks(kind) {
+                    tv.track_heights.remove(&o.id.0);
+                }
+                let h = if kind == TrackKind::Video { &mut tv.video_track_h } else { &mut tv.audio_track_h };
+                *h = kind_default;
+            }
+            _ => {}
         }
     }
     // column separator
@@ -1235,6 +1609,65 @@ fn draw_headers(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, rows:
     }
 }
 
+/// Fit Tracks to View: every video track shares the video area and every audio track the audio
+/// area (single-track heights are dropped), scrolled to the top.
+pub fn fit_tracks(app: &mut FilmcraftApp) -> Value {
+    let Some(q) = app.session.active_sequence() else { return Value::Null };
+    let (nv, na) = (q.video_tracks.len().max(1) as f32, q.audio_tracks.len().max(1) as f32);
+    let (va, aa) = app.tl.fit_areas;
+    let tv = &mut app.ui.timeline;
+    tv.track_heights.clear();
+    if va > 0.0 {
+        tv.video_track_h = (va / nv).floor().clamp(22.0, 400.0);
+    }
+    if aa > 0.0 {
+        tv.audio_track_h = (aa / na).floor().clamp(22.0, 400.0);
+    }
+    tv.v_scroll = 0.0;
+    tv.a_scroll = 0.0;
+    json!({"videoTrackHeight": tv.video_track_h, "audioTrackHeight": tv.audio_track_h})
+}
+
+/// The timeline toolbar's Timeline Preview menu (Kdenlive): the Sequence ▸ Timeline Preview
+/// commands plus the render-files ones.
+fn preview_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
+    ui.set_min_width(220.0);
+    let auto = app.session.active_sequence().is_some_and(|q| q.auto_preview);
+    let items: [(&str, &str); 8] = [
+        ("sequence.startPreviewRender", tl!("Start Preview Render")),
+        ("sequence.stopPreviewRender", tl!("Stop Preview Render")),
+        ("sequence.addPreviewZone", tl!("Add Preview Zone")),
+        ("sequence.removePreviewZone", tl!("Remove Preview Zone")),
+        ("sequence.removeAllPreviewZones", tl!("Remove All Preview Zones")),
+        ("sequence.autoPreview", tl!("Automatic Preview")),
+        ("sequence.deleteRenderFilesInToOut", tl!("Delete Render Files In to Out")),
+        ("sequence.deleteRenderFiles", tl!("Delete Render Files")),
+    ];
+    let mut run = None;
+    for (i, (id, label)) in items.into_iter().enumerate() {
+        if i == 2 || i == 5 || i == 6 {
+            ui.separator();
+        }
+        let enabled = app.session.is_enabled(id);
+        let r = if id == "sequence.autoPreview" {
+            let mut on = auto;
+            ui.add_enabled(enabled, egui::Checkbox::new(&mut on, label))
+        } else {
+            ui.add_enabled(enabled, egui::Button::new(label))
+        };
+        app.auto.add(&format!("timeline.preview.{}", id.trim_start_matches("sequence.")), r.rect, label);
+        if r.clicked() {
+            run = Some(id);
+        }
+    }
+    if let Some(id) = run {
+        if let Err(e) = app.session.execute(id, json!({})) {
+            app.ui.status = e.to_string();
+        }
+        ui.close();
+    }
+}
+
 fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequence, layout: &Layout, t: &Tokens, seq_id: ItemId) {
     let p = ui.painter().clone();
     let rate = seq.settings.frame_rate;
@@ -1242,13 +1675,16 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
     let ruler = layout.ruler;
     // background of the whole top block
     p.rect_filled(Rect::from_min_max(rect.min, pos2(rect.max.x, ruler.max.y)), 0.0, t.panel_bg);
-    // current timecode: Premiere's big blue timecode
-    let tc = format_time(app.session.playhead(), rate, seq.settings.drop_frame, TimeDisplay::Timecode, seq.settings.sample_rate as i64);
+    // current timecode: Premiere's big blue timecode. Shown from the sequence's start timecode
+    // (Sequence Settings ▸ Start Time), in frames with the wrench menu's Show Time in Frames.
+    let disp = if app.ui.timeline.time_in_frames { TimeDisplay::Frames } else { TimeDisplay::Timecode };
+    let off = rate.tick_of(seq.start_timecode.max(0));
+    let tc = format_time(app.session.playhead() + off, rate, seq.settings.drop_frame, disp, seq.settings.sample_rate as i64);
     let tc_rect = Rect::from_min_size(pos2(rect.min.x + 14.0, rect.min.y + 4.0), vec2(hw - 20.0, 20.0));
     let tc_id = egui::Id::new(("timeline-tc", seq_id));
-    match crate::widgets::timecode_field(ui, tc_id, tc_rect, &tc, app.session.playhead(), Tick::ZERO, rate, seq.settings.drop_frame, t.timecode) {
+    match crate::widgets::timecode_field(ui, tc_id, tc_rect, &tc, app.session.playhead() + off, off, rate, seq.settings.drop_frame, t.timecode) {
         Some(Ok(time)) => {
-            if let Err(e) = app.session.execute("playhead.set", json!({"time": time.0})) {
+            if let Err(e) = app.session.execute("playhead.set", json!({"time": (time - off).0})) {
                 app.ui.status = e.to_string();
             }
         }
@@ -1259,16 +1695,24 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
     // toolbar: 30 × 30 buttons, "on" = #4b4b4b fill
     let mut x = rect.min.x + 12.0;
     let y = rect.min.y + 26.0;
-    let toggles: [(Icon, &str, bool, bool, &str); 6] = [
+    let mixer_shown = app.ui.dock.is_visible(crate::dock::PanelKind::AudioTrackMixer);
+    let auto_preview = seq.auto_preview;
+    let toggles: [(Icon, &str, bool, bool, &str); 8] = [
         (Icon::Nest, "nest", !app.session.state.sequences_as_clips, true, tl!("Insert and overwrite sequences as nests or individual clips")),
         (Icon::Magnet, "snap", app.session.state.snapping, true, tl!("Snap in Timeline (S)")),
         (Icon::Link, "linked", app.session.state.linked_selection, true, tl!("Linked Selection")),
         (Icon::Captions, "captions", false, false, tl!("Caption track options")),
         (Icon::Marker, "marker", false, false, tl!("Add Marker (M)")),
         (Icon::Wrench, "settings", false, false, tl!("Timeline Display Settings")),
+        // Kdenlive: the timeline toolbar's audio mixer button shows / hides the Audio Track Mixer
+        (Icon::Speaker, "mixer", mixer_shown, true, tl!("Show/Hide the Audio Track Mixer")),
+        // Kdenlive: the Timeline Preview menu (lit while Automatic Preview is on)
+        (Icon::Film, "preview", auto_preview, true, tl!("Timeline Preview")),
     ];
+    // the buttons share the track-header width (30 pt each when it is wide enough)
+    let step = ((hw - 16.0) / toggles.len() as f32).clamp(22.0, 30.0);
     for (icon, key, on, toggle, tip) in toggles {
-        let r = Rect::from_min_size(pos2(x, y), vec2(28.0, 28.0));
+        let r = Rect::from_min_size(pos2(x, y), vec2(step - 2.0, 28.0));
         let resp = ui.interact(r, egui::Id::new(("tl-toggle", key)), Sense::click()).on_hover_text(tip);
         app.auto.add(&format!("timeline.toggle.{key}"), r, tip);
         if toggle && on {
@@ -1283,8 +1727,19 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
                 "snap" => app.session.execute("sequence.snap", json!({})),
                 "linked" => app.session.execute("sequence.linkedSelection", json!({})),
                 "marker" => app.session.execute("markers.add", json!({})),
+                "mixer" => {
+                    if mixer_shown {
+                        app.ui.dock.close(crate::dock::PanelKind::AudioTrackMixer);
+                    } else {
+                        app.show_panel(crate::dock::PanelKind::AudioTrackMixer);
+                    }
+                    Ok(Value::Null)
+                }
                 _ => Ok(Value::Null),
             };
+        }
+        if key == "preview" {
+            egui::Popup::menu(&resp).show(|ui| preview_menu(app, ui));
         }
         if key == "settings" {
             egui::Popup::menu(&resp).show(|ui| {
@@ -1303,6 +1758,28 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
                     }
                 });
                 ui.checkbox(&mut app.ui.timeline.show_waveforms, tl!("Show Audio Waveform"));
+                // Kdenlive: separate audio channels in thumbnails, one colour per channel
+                let c = ui.checkbox(&mut app.ui.timeline.separate_channels, tl!("Separate Audio Channels"));
+                app.auto.add("timeline.settings.separateChannels", c.rect, "Separate Audio Channels");
+                ui.menu_button(tl!("Audio Waveform Colors"), |ui| {
+                    let colors = &mut app.ui.timeline.waveform_colors;
+                    let mut rects = Vec::new();
+                    for (k, rgb) in colors.iter_mut().enumerate() {
+                        let r = ui.horizontal(|ui| {
+                            ui.color_edit_button_srgb(rgb);
+                            ui.label(tlf!("Channel {n}", n = k + 1));
+                        });
+                        rects.push((k, r.response.rect));
+                    }
+                    let reset = ui.button(tl!("Reset Colors"));
+                    if reset.clicked() {
+                        *colors = crate::state::default_waveform_colors();
+                    }
+                    for (k, r) in rects {
+                        app.auto.add(&format!("timeline.settings.waveformColor.{}", k + 1), r, &format!("Channel {}", k + 1));
+                    }
+                    app.auto.add("timeline.settings.waveformColor.reset", reset.rect, "Reset Colors");
+                });
                 ui.separator();
                 let mut te = app.session.state.show_through_edits;
                 let c = ui.checkbox(&mut te, tl!("Show Through Edits"));
@@ -1310,18 +1787,89 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
                 if c.changed() {
                     let _ = app.session.execute("sequence.showThroughEdits", json!({"on": te}));
                 }
+                // waveform zoom and normalisation
+                ui.horizontal(|ui| {
+                    ui.label(tl!("Waveform Zoom"));
+                    for z in 0..4u8 {
+                        let r = ui.radio(app.ui.timeline.waveform_zoom == z, format!("\u{d7}{}", 1u8 << z));
+                        app.auto.add(&format!("timeline.settings.waveformZoom.{}", 1u8 << z), r.rect, "Waveform Zoom");
+                        if r.clicked() {
+                            app.ui.timeline.waveform_zoom = z;
+                        }
+                    }
+                });
+                let mut normalized = !app.ui.timeline.waveform_raw;
+                let c = ui.checkbox(&mut normalized, tl!("Normalize Audio Waveforms"));
+                app.auto.add("timeline.settings.normalizeWaveforms", c.rect, "Normalize Audio Waveforms");
+                if c.changed() {
+                    app.ui.timeline.waveform_raw = !normalized;
+                }
+                ui.separator();
+                let mut names = !app.ui.timeline.hide_clip_names;
+                let c = ui.checkbox(&mut names, tl!("Show Clip Names"));
+                app.auto.add("timeline.settings.showClipNames", c.rect, "Show Clip Names");
+                if c.changed() {
+                    app.ui.timeline.hide_clip_names = !names;
+                }
+                let mut colors = !app.ui.timeline.hide_clip_labels;
+                let c = ui.checkbox(&mut colors, tl!("Show Clip Label Colors"));
+                app.auto.add("timeline.settings.showClipLabels", c.rect, "Show Clip Label Colors");
+                if c.changed() {
+                    app.ui.timeline.hide_clip_labels = !colors;
+                }
+                let c = ui.checkbox(&mut app.ui.timeline.show_marker_comments, tl!("Show Marker Comments"));
+                app.auto.add("timeline.settings.showMarkerComments", c.rect, "Show Marker Comments");
+                ui.separator();
+                let c = ui.checkbox(&mut app.ui.timeline.zoom_on_playhead, tl!("Zoom Centered on Playhead"));
+                app.auto.add("timeline.settings.zoomOnPlayhead", c.rect, "Zoom Centered on Playhead");
+                let c = ui.checkbox(&mut app.ui.timeline.time_in_frames, tl!("Show Time in Frames"));
+                app.auto.add("timeline.settings.timeInFrames", c.rect, "Show Time in Frames");
+                ui.separator();
+                // the sequence's render switches (undoable, saved with the project)
+                let mut comp = !seq.timeline_options.no_track_compositing;
+                let c = ui.checkbox(&mut comp, crate::i18n::t("Track Compositing"));
+                app.auto.add("timeline.settings.trackCompositing", c.rect, "Track Compositing");
+                if c.changed()
+                    && let Err(e) = app.session.execute("sequence.trackCompositing", json!({"on": comp}))
+                {
+                    app.ui.status = e.to_string();
+                }
+                let mut fx_off = seq.timeline_options.effects_disabled;
+                let c = ui.checkbox(&mut fx_off, crate::i18n::t("Disable Timeline Effects"));
+                app.auto.add("timeline.settings.disableEffects", c.rect, "Disable Timeline Effects");
+                if c.changed()
+                    && let Err(e) = app.session.execute("sequence.disableTimelineEffects", json!({"on": fx_off}))
+                {
+                    app.ui.status = e.to_string();
+                }
+                ui.separator();
+                // edit mode (also Sequence ▸ Edit Mode)
+                for m in redrob_film_engine::timeline_ops::EditMode::ALL {
+                    let r = ui.radio(app.session.state.edit_mode == m, crate::i18n::t(m.label()));
+                    app.auto.add(&format!("timeline.settings.editMode.{}", m.name()), r.rect, m.label());
+                    if r.clicked() {
+                        let _ = app.session.execute("timeline.editMode", json!({"mode": m.name()}));
+                    }
+                }
                 ui.separator();
                 if ui.button(tl!("Expand All Tracks")).clicked() {
+                    app.ui.timeline.track_heights.clear();
                     app.ui.timeline.video_track_h = 64.0;
                     app.ui.timeline.audio_track_h = 64.0;
                 }
                 if ui.button(tl!("Minimize All Tracks")).clicked() {
+                    app.ui.timeline.track_heights.clear();
                     app.ui.timeline.video_track_h = 26.0;
                     app.ui.timeline.audio_track_h = 26.0;
                 }
+                let r = ui.button(tl!("Fit Tracks to View"));
+                app.auto.add("timeline.settings.fitTracks", r.rect, "Fit Tracks to View");
+                if r.clicked() {
+                    fit_tracks(app);
+                }
             });
         }
-        x += 30.0;
+        x += step;
     }
     // ----- ruler: markers row · labels · ticks · 2 pt render bar
     let clip = p.with_clip_rect(ruler);
@@ -1384,7 +1932,7 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
         let h = if major { 10.0 } else { 4.0 };
         clip.line_segment([pos2(x, tick_base - h), pos2(x, tick_base)], Stroke::new(1.0, t.tl_ruler_tick));
         if major {
-            let label = format_time(rate.tick_of(f), rate, seq.settings.drop_frame, TimeDisplay::Timecode, 48000);
+            let label = format_time(rate.tick_of(f) + off, rate, seq.settings.drop_frame, disp, 48000);
             clip.text(pos2(x + 1.0, label_y), Align2::CENTER_CENTER, label, Tokens::ui(11.0), t.tl_ruler_text);
         }
         f += minor;
@@ -1415,6 +1963,15 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
             });
         }
     }
+    // preview zones (Sequence ▸ Timeline Preview): a thin band just above the render bar
+    for (i, z) in seq.preview_zones.iter().enumerate() {
+        let r = Rect::from_min_max(pos2(layout.x_of(z.start), rb.min.y - 3.0), pos2(layout.x_of(z.end()), rb.min.y - 1.0)).intersect(ruler);
+        if r.width() <= 0.0 {
+            continue;
+        }
+        clip.rect_filled(r, 0.0, Color32::from_rgba_unmultiplied(0x6a, 0x9c, 0xff, 200));
+        app.auto.add(&format!("timeline.previewZone.{i}"), r.expand2(vec2(0.0, 2.0)), tl!("Preview zone"));
+    }
     // markers: 8 × 12 pt pentagons in the marker colour, on the top row
     for m in &seq.markers {
         let x = layout.x_of(m.start);
@@ -1426,6 +1983,13 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
             clip.rect_filled(Rect::from_min_max(pos2(x, marker_y), pos2(layout.x_of(m.start + m.duration), marker_y + 8.0)), 0.0, c.gamma_multiply(0.6));
         }
         clip.add(egui::Shape::convex_polygon(shape, c, Stroke::NONE));
+        // Show Marker Comments: the marker's name (else its comment) beside it
+        if app.ui.timeline.show_marker_comments {
+            let text = if m.name.is_empty() { m.comment.as_str() } else { m.name.as_str() };
+            if !text.is_empty() {
+                clip.text(pos2(x + 6.0, marker_y + 5.0), Align2::LEFT_CENTER, text, Tokens::ui(10.0), t.tl_ruler_text);
+            }
+        }
         let mr = marker_rect(layout, m.start);
         app.auto.add(&format!("timeline.marker.{}", m.id.0), mr, &m.name);
         if ui.rect_contains_pointer(mr) && !m.name.is_empty() {
@@ -1434,6 +1998,22 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
             });
         }
     }
+    // position readout (the time under the pointer, the sequence's length) and the edit mode
+    let hover = ui.ctx().pointer_hover_pos().filter(|q| layout.content.contains(*q) || ruler.contains(*q)).map(|q| layout.tick_at(q.x).max(Tick::ZERO));
+    let fmt = |x: Tick| format_time(x + off, rate, seq.settings.drop_frame, disp, seq.settings.sample_rate as i64);
+    let mut readout = match hover {
+        Some(h) => format!("{} / {}", fmt(h), format_time(seq.duration(), rate, seq.settings.drop_frame, disp, seq.settings.sample_rate as i64)),
+        None => format_time(seq.duration(), rate, seq.settings.drop_frame, disp, seq.settings.sample_rate as i64),
+    };
+    let mode = app.session.state.edit_mode;
+    if mode != redrob_film_engine::timeline_ops::EditMode::Overwrite {
+        readout = format!("{}   {readout}", crate::i18n::t(mode.label()));
+    }
+    let galley = p.layout_no_wrap(readout, Tokens::ui(10.0), t.tl_ruler_text);
+    let box_r = Rect::from_min_size(pos2(ruler.max.x - galley.size().x - 10.0, ruler.min.y + 1.0), galley.size() + vec2(8.0, 2.0));
+    p.rect_filled(box_r, 2.0, t.panel_bg.gamma_multiply(0.9));
+    p.galley(box_r.min + vec2(4.0, 1.0), galley, t.tl_ruler_text);
+    app.auto.add("timeline.position", box_r, "position");
     app.auto.add("timeline.ruler", ruler, "time ruler");
 }
 
@@ -1718,6 +2298,104 @@ fn shift_track(seq: &Sequence, tid: TrackId, delta: i32) -> Option<TrackId> {
 /// open their dialog through `menus::invoke`, like the same item in the Clip menu.
 /// The menu of a right-clicked Timeline marker (automation ids `timeline.markerMenu.<command>`);
 /// the marker is under the playhead, where Clear Selected Marker looks for it (#695).
+/// Whether `p` is on the fx badge of `clip` (the clip's standard effects; see `draw_clip`).
+fn fx_badge_hit(seq: &Sequence, layout: &Layout, track: TrackId, clip: ClipId, p: Pos2) -> bool {
+    let (Some(row), Some((_, it))) = (layout.rows.iter().find(|r| r.track == track), seq.find_item(clip)) else { return false };
+    if !it.has_standard_effects() {
+        return false;
+    }
+    let (x0, x1) = (layout.x_of(it.start), layout.x_of(it.end()));
+    x1 - x0 > 40.0 && Rect::from_min_max(pos2(x1 - 22.0, row.rect.min.y), pos2(x1, row.rect.min.y + 17.0)).contains(p)
+}
+
+/// The markers of a timeline clip's bin clip that fall inside the clip, as fractions of the
+/// clip's width: (marker, start, end); end == start for a point marker.
+pub(crate) fn clip_marker_spans(app: &FilmcraftApp, it: &TrackItem) -> Vec<(redrob_film_project::Marker, f32, f32)> {
+    let Some(redrob_film_project::ItemKind::Media(mc)) = app.session.project.item(it.item).map(|i| &i.kind) else { return Vec::new() };
+    let dur = it.duration.0.max(1) as f64;
+    let speed = it.speed.abs().max(1e-6);
+    let frac = |t: Tick| {
+        let f = (((t - it.source_in).0 as f64 / speed) / dur) as f32;
+        if it.reverse { 1.0 - f } else { f }
+    };
+    mc.markers
+        .iter()
+        .filter_map(|m| {
+            let (a, b) = (frac(m.start), frac(m.start + m.duration));
+            let (a, b) = if a <= b { (a, b) } else { (b, a) };
+            (0.0..=1.0).contains(&a).then(|| (m.clone(), a, b.min(1.0)))
+        })
+        .collect()
+}
+
+/// The keyframe strip at the bottom of a timeline clip (Effect Controls ▸ Show Keyframes in
+/// Timeline): the clip under `p` when `p` is on its strip, the media time there, and the media
+/// time of the keyframe diamond under `p` (if any).
+fn clip_keyframe_at(app: &FilmcraftApp, seq: &Sequence, layout: &Layout, p: Pos2) -> Option<(ClipId, Tick, Option<Tick>)> {
+    if !app.ui.fx.show_clip_keyframes {
+        return None;
+    }
+    let Hit::Clip { track, clip, .. } = hit(seq, layout, p) else { return None };
+    let row = layout.rows.iter().find(|r| r.track == track)?;
+    if p.y < row.rect.max.y - 13.0 || row.rect.height() <= 20.0 {
+        return None;
+    }
+    let (_, it) = seq.find_item(clip)?;
+    let (x0, x1) = (layout.x_of(it.start), layout.x_of(it.end()));
+    let w = (x1 - x0).max(1.0);
+    let dur = it.duration.0.max(1) as f64;
+    let speed = it.speed.abs().max(1e-6);
+    let x_of = |m: Tick| {
+        let f = (((m - it.source_in).0 as f64 / speed) / dur) as f32;
+        let f = if it.reverse { 1.0 - f } else { f };
+        x0 + f * w
+    };
+    let hidden = &app.ui.kp.hidden_timeline_keyframes;
+    let on = it
+        .effects
+        .iter()
+        .enumerate()
+        .filter(|(i, e)| e.enabled && !hidden.contains(&format!("{}:{}", it.id.0, i)))
+        .flat_map(|(_, e)| e.params.values().flat_map(|q| q.keyframes.iter().map(|k| k.time)))
+        .find(|m| (x_of(*m) - p.x).abs() <= 4.5);
+    let t = layout.tick_at(p.x).clamp(it.start, (it.end() - Tick(1)).max(it.start));
+    Some((clip, it.source_time_at(t), on))
+}
+
+/// The (effect index, param id) of the shown effects of `it` with a keyframe at media time `m`.
+fn keyframes_at(app: &FilmcraftApp, it: &TrackItem, m: Tick) -> Vec<(usize, String)> {
+    let hidden = &app.ui.kp.hidden_timeline_keyframes;
+    it.effects
+        .iter()
+        .enumerate()
+        .filter(|(i, e)| e.enabled && !hidden.contains(&format!("{}:{}", it.id.0, i)))
+        .flat_map(|(i, e)| e.params.iter().filter(move |(_, q)| q.keyframes.iter().any(|k| k.time == m)).map(move |(id, _)| (i, id.clone())))
+        .collect()
+}
+
+/// A press on a clip marker flag (or the right end of its range bar) on a timeline clip: the
+/// bin item, the marker and whether the press resizes the range.
+fn clip_marker_hit(app: &FilmcraftApp, seq: &Sequence, layout: &Layout, p: Pos2) -> Option<(ClipId, redrob_film_project::ItemId, u64, bool)> {
+    let Hit::Clip { track, clip, .. } = hit(seq, layout, p) else { return None };
+    let row = layout.rows.iter().find(|r| r.track == track)?;
+    if p.y > row.rect.min.y + 9.0 {
+        return None;
+    }
+    let (_, it) = seq.find_item(clip)?;
+    let (x0, x1) = (layout.x_of(it.start), layout.x_of(it.end()));
+    let w = x1 - x0;
+    clip_marker_spans(app, it).into_iter().rev().find_map(|(m, a, b)| {
+        let (xa, xb) = (x0 + a * w, x0 + b * w);
+        if b > a && (p.x - xb).abs() <= 3.0 {
+            Some((clip, it.item, m.id.0, true))
+        } else if p.x >= xa - 2.0 && p.x <= xa + 7.0 {
+            Some((clip, it.item, m.id.0, false))
+        } else {
+            None
+        }
+    })
+}
+
 fn marker_menu(app: &mut FilmcraftApp, ctx: &egui::Context, ui: &mut egui::Ui) {
     for (label, cmd) in [("Clear Selected Marker", "markers.clearCurrent"), ("Clear Markers", "markers.clearAll")] {
         let label = crate::i18n::t(label);
@@ -1740,11 +2418,14 @@ pub(crate) const CLIP_MENU: &[&[(&str, &str)]] = &[
         ("Remove Attributes…", "edit.removeAttributes"),
         ("Clear", "edit.clear"),
         ("Ripple Delete", "edit.rippleDelete"),
+        ("Duplicate Clip", "timeline.duplicateClip"),
     ],
     &[("Edit Original", "edit.editOriginal"), ("Replace With Clip From Source Monitor", "clip.replaceFromSource")],
     &[
         ("Enable", "clip.enable"),
         ("Link", "clip.link"),
+        ("Restore Audio", "clip.restoreAudio"),
+        ("Restore Video", "clip.restoreVideo"),
         ("Group", "clip.group"),
         ("Ungroup", "clip.ungroup"),
         ("Synchronize…", "clip.synchronize"),
@@ -1755,7 +2436,7 @@ pub(crate) const CLIP_MENU: &[&[(&str, &str)]] = &[
         ("Multi-Camera", "clip.multicam"),
     ],
     &[("Label", "edit.label")],
-    &[("Speed/Duration…", "clip.speedDuration")],
+    &[("Speed/Duration…", "clip.speedDuration"), ("Clip Duration…", "clip.setTiming")],
     &[
         ("Frame Hold Options…", "clip.frameHoldOptions"),
         ("Add Frame Hold", "clip.frameHold"),
@@ -1860,6 +2541,24 @@ fn gap_menu(app: &mut FilmcraftApp, ctx: &egui::Context, ui: &mut egui::Ui) {
         }
         ui.close();
     }
+    // Add Clip in the empty space (Kdenlive): a colour clip or a title filling it (video tracks)
+    let on_video =
+        app.session.state.gap_selection.is_some_and(|g| app.session.active_sequence().is_some_and(|q| q.video_tracks.iter().any(|t| t.id == g.track)));
+    ui.menu_button(tl!("Add Clip"), |ui| {
+        for (key, label, params) in [
+            ("color", tl!("Color Clip"), json!({"kind": "color", "color": "#000000"})),
+            ("title", tl!("Title Clip"), json!({"kind": "title", "text": tl!("Title")})),
+        ] {
+            let r = ui.add_enabled(on_video, egui::Button::new(label));
+            app.auto.add(&format!("timeline.gapMenu.addClip.{key}"), r.rect, label);
+            if r.clicked() {
+                if let Err(e) = crate::menus::invoke(app, ctx, "timeline.addClipInGap", params) {
+                    app.ui.status = e;
+                }
+                ui.close();
+            }
+        }
+    });
 }
 
 /// The clip menu's Multi-Camera submenu: Enable, Flatten, and the cameras of the selected nested
@@ -1912,9 +2611,9 @@ pub(crate) struct WheelInput {
     pub(crate) delta: egui::Vec2,
     /// Pinch factor (1 = none).
     pub(crate) pinch: f32,
-    command: bool,
-    alt: bool,
-    shift: bool,
+    pub(crate) command: bool,
+    pub(crate) alt: bool,
+    pub(crate) shift: bool,
 }
 
 /// The wheel events of this frame, read from the events themselves: egui turns Cmd + wheel into a
@@ -1949,7 +2648,6 @@ pub(crate) fn wheel_input(ctx: &egui::Context) -> WheelInput {
 /// A press on the ruler or the playhead handle: playback stops and the playhead goes to the press
 /// (onto the marker pressed, if any, #695).
 fn start_scrub(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, p: Pos2, mods: egui::Modifiers) {
-    app.stop();
     let rate = seq.settings.frame_rate;
     let mut tt = rate.snap_nearest(layout.tick_at(p.x).max(Tick::ZERO));
     if mods.shift || app.session.prefs.timeline.snap_playhead {
@@ -1959,12 +2657,17 @@ fn start_scrub(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, p: Pos2,
     if let Some(m) = marker_at(seq, layout, p) {
         tt = m.max(Tick::ZERO);
     }
-    app.session.set_playhead(tt);
+    // stops playback, unless Settings ▸ Timeline ▸ "Pause playback when seeking" is off
+    app.seek_program(tt);
 }
 
 /// The playhead follows a drag to screen `x`. Shift snaps; so does Settings ▸ Timeline ▸ "Snap
 /// playhead in Timeline when Snap is enabled".
 fn scrub_to(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, x: f32, mods: egui::Modifiers) {
+    // playback that carried on after the press keeps playing from the pressed position
+    if app.playback.playing {
+        return;
+    }
     let rate = seq.settings.frame_rate;
     let mut tt = rate.snap_nearest(layout.tick_at(x).max(Tick::ZERO));
     if mods.shift || app.session.prefs.timeline.snap_playhead {
@@ -1994,7 +2697,27 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
         && let Some(p) = ctx.input(|i| i.pointer.press_origin())
     {
         let grab = grab_at(seq, layout, p, tool, mods, roll_ripple);
-        if matches!(grab, Grab::Other(Hit::Ruler | Hit::Playhead)) && app.tl.drag.is_none() {
+        let on_marker = if layout.ruler.contains(p) { marker_id_at(seq, layout, p) } else { None };
+        let on_clip_marker = if on_marker.is_none() && tool == Tool::Selection { clip_marker_hit(app, seq, layout, p) } else { None };
+        let on_keyframe = if on_marker.is_none() && on_clip_marker.is_none() && tool == Tool::Selection {
+            clip_keyframe_at(app, seq, layout, p).and_then(|(c, _, k)| k.map(|k| (c, k)))
+        } else {
+            None
+        };
+        if let Some((clip, m)) = on_keyframe {
+            // a keyframe diamond on a timeline clip: drag moves it, dragging it off the clip deletes it (Kdenlive)
+            app.ui.kp.kf_drag = Some((clip.0, m));
+            app.tl.pressed = None;
+        } else if let Some((clip, item, marker, resize)) = on_clip_marker {
+            // a bin clip marker on a timeline clip drags (moves, or resizes its range) (Kdenlive)
+            app.ui.markers.clip_drag = Some((item, marker, clip, resize));
+            app.tl.pressed = None;
+        } else if on_marker.is_some() && app.tl.drag.is_none() && !redrob_film_engine::marker_tools::markers_locked(&app.session) {
+            // a press on a marker selects it (the playhead goes onto it) and drags it (Kdenlive)
+            start_scrub(app, seq, layout, p, mods);
+            crate::panels::marker_ui::ruler_drag(app, &ctx, on_marker, None);
+            app.tl.pressed = None;
+        } else if matches!(grab, Grab::Other(Hit::Ruler | Hit::Playhead)) && app.tl.drag.is_none() {
             // The playhead follows the press itself, not the release or egui's drag threshold:
             // a press anywhere on the ruler seeks, and the pointer is owned until the button comes
             // up, so the drag goes on when it leaves the ruler or the handle (feedback 2026-10-16).
@@ -2008,6 +2731,123 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
     // the playhead drag: driven by the pointer itself, so it starts on the press and goes on
     // wherever the pointer is, until the button comes up. Only movement moves the playhead: a
     // still press stays exactly where `start_scrub` put it (on a marker, #695).
+    // A marker being dragged on the ruler follows the pointer (snapped like the playhead) and
+    // lands on release; a ghost line shows where.
+    if app.ui.markers.drag.is_some() {
+        let to = ctx.pointer_interact_pos().map(|p| {
+            let t = rate.snap_nearest(layout.tick_at(p.x).max(Tick::ZERO));
+            snap_to(app, seq, layout, t, &[], false)
+        });
+        if let Some(t) = to {
+            let x = layout.x_of(t);
+            ui.painter().vline(x, layout.ruler.min.y..=layout.content.max.y, egui::Stroke::new(1.0, app.tokens.hot_text));
+            ctx.set_cursor_icon(CursorIcon::Grabbing);
+        }
+        crate::panels::marker_ui::ruler_drag(app, &ctx, None, to);
+    }
+    if let Some(p) = pos
+        && (layout.content.contains(p) || layout.ruler.contains(p))
+    {
+        app.ui.markers.hover_time = Some(rate.snap_nearest(layout.tick_at(p.x).max(Tick::ZERO)));
+    }
+    // a keyframe diamond dragged on its timeline clip: moves on release, or is deleted when
+    // dropped off the clip (more than a track height above or below it)
+    if let Some((clip, m)) = app.ui.kp.kf_drag
+        && let Some((tid, it)) = seq.find_item(ClipId(clip))
+    {
+        let it = it.clone();
+        let row = layout.rows.iter().find(|r| r.track == tid).map(|r| r.rect);
+        let ptr = ctx.pointer_interact_pos();
+        let off = ptr.zip(row).is_some_and(|(p, r)| p.y < r.min.y - 20.0 || p.y > r.max.y + 20.0);
+        let to = ptr.map(|p| rate.snap_nearest(layout.tick_at(p.x).clamp(it.start, (it.end() - Tick(1)).max(it.start))));
+        if let Some(t) = to {
+            let stroke = egui::Stroke::new(1.0, if off { Color32::from_rgb(0xe0, 0x50, 0x50) } else { app.tokens.hot_text });
+            ui.painter().vline(layout.x_of(t), row.map(|r| r.min.y..=r.max.y).unwrap_or(layout.content.min.y..=layout.content.max.y), stroke);
+            ctx.set_cursor_icon(if off { CursorIcon::NotAllowed } else { CursorIcon::Grabbing });
+        }
+        if ctx.input(|i| !i.pointer.primary_down()) {
+            app.ui.kp.kf_drag = None;
+            let keys = keyframes_at(app, &it, m);
+            let moved = ctx.input(|i| i.pointer.press_origin().zip(i.pointer.interact_pos()).is_some_and(|(a, b)| (a - b).length() > 3.0));
+            let r = if off {
+                keys.iter().try_for_each(|(e, prm)| {
+                    app.session.execute("effects.deleteKeyframe", json!({"clip": clip, "effect": e, "param": prm, "mediaTime": m.0})).map(|_| ())
+                })
+            } else if let Some(t) = to.filter(|_| moved) {
+                let delta = it.source_time_at(t) - m;
+                let refs: Vec<Value> = keys.iter().map(|(e, prm)| json!({"effect": e, "param": prm, "mediaTime": m.0})).collect();
+                app.session.execute("effects.shiftKeyframes", json!({"clip": clip, "keyframes": refs, "delta": delta.0})).map(|_| ())
+            } else {
+                Ok(())
+            };
+            if let Err(e) = r {
+                app.ui.status = e.to_string();
+            }
+        }
+    }
+    // a double-click on a clip's keyframe strip adds a keyframe there to its animated parameters
+    if resp.double_clicked()
+        && let Some(p) = resp.interact_pointer_pos()
+        && let Some((clip, _, None)) = clip_keyframe_at(app, seq, layout, p)
+        && let Some((_, it)) = seq.find_item(clip)
+    {
+        let t = rate.snap_nearest(layout.tick_at(p.x).clamp(it.start, (it.end() - Tick(1)).max(it.start)));
+        let hidden = app.ui.kp.hidden_timeline_keyframes.clone();
+        let targets: Vec<(usize, String)> = it
+            .effects
+            .iter()
+            .enumerate()
+            .filter(|(i, e)| e.enabled && !hidden.contains(&format!("{}:{}", it.id.0, i)))
+            .flat_map(|(i, e)| e.params.iter().filter(|(_, q)| q.is_animated()).map(move |(id, _)| (i, id.clone())))
+            .collect();
+        if targets.is_empty() {
+            app.ui.status = tl!("Turn on animation for a parameter in Effect Controls first").to_string();
+        }
+        app.session.set_playhead(t);
+        for (e, prm) in targets {
+            if let Err(err) = app.session.execute("effects.addKeyframe", json!({"clip": clip.0, "effect": e, "param": prm, "time": t.0})) {
+                app.ui.status = err.to_string();
+            }
+        }
+    }
+    // a clip marker dragged on its timeline clip: lands (in media time) on release
+    if let Some((item, marker, clip, resize)) = app.ui.markers.clip_drag
+        && let Some((_, it)) = seq.find_item(clip)
+    {
+        let it = it.clone();
+        let to = ctx.pointer_interact_pos().map(|p| rate.snap_nearest(layout.tick_at(p.x).clamp(it.start, it.end())));
+        if let Some(t) = to {
+            ui.painter().vline(layout.x_of(t), layout.content.min.y..=layout.content.max.y, egui::Stroke::new(1.0, app.tokens.hot_text));
+            ctx.set_cursor_icon(if resize { CursorIcon::ResizeHorizontal } else { CursorIcon::Grabbing });
+        }
+        if ctx.input(|i| !i.pointer.primary_down()) {
+            app.ui.markers.clip_drag = None;
+            let moved = ctx.input(|i| i.pointer.press_origin().zip(i.pointer.interact_pos()).is_some_and(|(a, b)| (a - b).length() > 3.0));
+            if let Some(t) = to.filter(|_| moved) {
+                // timeline time -> the bin clip's media time
+                let off = (t - it.start).0 as f64 * it.speed.abs().max(1e-6);
+                let media =
+                    if it.reverse { it.source_in + Tick((it.duration.0 as f64 * it.speed.abs() - off) as i64) } else { it.source_in + Tick(off as i64) };
+                let start =
+                    app.session.project.item(item).and_then(|pi| pi.as_media()).and_then(|m| m.markers.iter().find(|x| x.id.0 == marker)).map(|x| x.start);
+                let params = match (resize, start) {
+                    (true, Some(s)) => json!({"item": item.0, "marker": marker, "duration": (media - s).0.max(0)}),
+                    _ => json!({"item": item.0, "marker": marker, "time": media.0}),
+                };
+                if let Err(e) = app.session.execute("markers.moveClipMarker", params) {
+                    app.ui.status = e.to_string();
+                }
+            }
+        }
+    }
+    // a double-click on the ruler adds a marker there, or edits the marker clicked (Kdenlive)
+    if resp.double_clicked()
+        && let Some(p) = resp.interact_pointer_pos()
+        && layout.ruler.contains(p)
+    {
+        let t = rate.snap_nearest(layout.tick_at(p.x).max(Tick::ZERO));
+        crate::panels::marker_ui::ruler_double_click(app, &ctx, marker_id_at(seq, layout, p), t);
+    }
     if matches!(app.tl.drag, Some(Drag::Scrub)) {
         ctx.set_cursor_icon(CursorIcon::ResizeHorizontal);
         if ctx.input(|i| i.pointer.primary_down() && !i.pointer.primary_pressed() && i.pointer.delta() != egui::Vec2::ZERO)
@@ -2029,10 +2869,16 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
         let w = wheel_input(&ctx);
         if (w.pinch - 1.0).abs() > 1e-4 || (w.alt && w.delta.y != 0.0) {
             let f = if (w.pinch - 1.0).abs() > 1e-4 { w.pinch as f64 } else { (1.0_f64 + w.delta.y as f64 * 0.01).clamp(0.5, 2.0) };
-            let anchor_t = layout.tick_at(p.x).seconds();
+            // about the pointer, or about the playhead (wrench menu ▸ Zoom Centered on Playhead)
+            let ph_x = layout.x_of(app.session.playhead());
+            let (anchor_t, anchor_x) = if app.ui.timeline.zoom_on_playhead && (layout.content.min.x..=layout.content.max.x).contains(&ph_x) {
+                (app.session.playhead().seconds(), ph_x)
+            } else {
+                (layout.tick_at(p.x).seconds(), p.x)
+            };
             let v = &mut app.ui.timeline;
             v.target_pps = (v.target_pps * f).clamp(0.05, 24_000.0);
-            app.tl.zoom_anchor = Some((anchor_t, p.x));
+            app.tl.zoom_anchor = Some((anchor_t, anchor_x));
         } else if w.delta != egui::Vec2::ZERO {
             let wheel_sideways = (app.session.prefs.timeline.mouse_scrolling == "horizontal") != w.command;
             let sideways = if w.delta.x.abs() > w.delta.y.abs() {
@@ -2090,6 +2936,15 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
             let x = layout.x_of(t);
             ui.painter().line_segment([pos2(x, row.rect.min.y), pos2(x, row.rect.max.y)], Stroke::new(1.0, Color32::WHITE));
         }
+    }
+
+    // ---- the middle button pans the Timeline whatever the tool (Kdenlive)
+    if app.tl.drag.is_none()
+        && resp.drag_started_by(egui::PointerButton::Middle)
+        && let Some(p) = resp.interact_pointer_pos()
+    {
+        app.tl.drag = Some(Drag::Pan { last: p });
+        app.tl.pressed = None;
     }
 
     // ---- press: act on what was under the pointer when the button went down (#259)
@@ -2177,18 +3032,23 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
             }
             (Tool::Slip, Grab::Other(Hit::Clip { clip, .. })) => Some(Drag::Slip { clip, delta: Tick::ZERO }),
             (Tool::Slide, Grab::Other(Hit::Clip { clip, .. })) => Some(Drag::Slide { clip, delta: Tick::ZERO }),
+            // a click on a clip's fx badge switches its whole effect stack off or on
+            (Tool::Selection, Grab::Other(Hit::Clip { clip, track, edge: None })) if resp.clicked() && fx_badge_hit(seq, layout, track, clip, p) => {
+                if let Err(e) = app.session.execute("clip.toggleEffectStack", json!({"clips": [clip.0]})) {
+                    app.ui.status = e.to_string();
+                }
+                None
+            }
             (_, Grab::Other(Hit::Clip { clip, track, .. })) => {
-                // select (shift toggles; alt selects one side of a link)
+                // select (shift toggles; alt selects one side of a link, or one clip of a group)
                 let sel = &app.session.state.selection;
                 if mods.shift {
                     let _ = app.session.execute("timeline.select", json!({"clips": [clip.0], "toggle": true}));
+                } else if mods.alt {
+                    app.session.state.selection = vec![clip];
+                    app.session.state.transition_selection.clear();
                 } else if !sel.contains(&clip) {
-                    if mods.alt {
-                        app.session.state.selection = vec![clip];
-                        app.session.state.transition_selection.clear();
-                    } else {
-                        let _ = app.session.execute("timeline.select", json!({"clips": [clip.0]}));
-                    }
+                    let _ = app.session.execute("timeline.select", json!({"clips": [clip.0]}));
                 }
                 if resp.drag_started() {
                     let clips = app.session.state.selection.clone();
@@ -2218,7 +3078,8 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
             // the video and audio tracks, #683)
             (_, Grab::Other(hit @ (Hit::Empty { .. } | Hit::None))) if layout.content.contains(p) => {
                 if resp.drag_started() {
-                    Some(Drag::Marquee { start: p })
+                    // Ctrl / Cmd + drag on empty space pans (Kdenlive); a plain drag draws a marquee
+                    if mods.command { Some(Drag::Pan { last: p }) } else { Some(Drag::Marquee { start: p }) }
                 } else {
                     app.session.state.selection.clear();
                     app.session.state.edit_points.clear();
@@ -2352,19 +3213,36 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
                     .filter_map(|c| seq.find_item(*c).map(|(tid, it)| json!({"clip": c.0, "track": shift_track(seq, tid, track_delta).unwrap_or(tid).0, "time": (it.start + offset).max(Tick::ZERO).0})))
                     .collect();
                 // Option held while dropping copies (Premiere: Option-drag duplicates)
-                Some(app.session.execute("timeline.move", json!({"moves": moves, "insert": mods.command, "linked": false, "copy": copy || mods.alt})))
+                let insert = mods.command || app.session.state.edit_mode == redrob_film_engine::timeline_ops::EditMode::Insert;
+                Some(app.session.execute("timeline.move", json!({"moves": moves, "insert": insert, "linked": false, "copy": copy || mods.alt})))
             }
             Drag::Trim { clip, edge, mode, delta, .. } if delta != Tick::ZERO => Some(app.session.execute(
                 "timeline.trim",
                 json!({"clip": clip.0, "edge": if edge == redrob_film_edit::Edge::In {"in"} else {"out"}, "mode": if mode == redrob_film_edit::TrimMode::Ripple {"ripple"} else {"regular"}, "delta": delta.0}),
             )),
-            Drag::Stretch { clip, edge, delta, .. } if delta != Tick::ZERO => Some(app.session.execute("timeline.rateStretch", json!({"clip": clip.0, "edge": if edge == redrob_film_edit::Edge::In {"in"} else {"out"}, "delta": delta.0}))),
+            Drag::Stretch { clip, edge, delta, .. } if delta != Tick::ZERO => {
+                // a clip of a wider selection stretches the whole selection
+                let sel = &app.session.state.selection;
+                let mut q = json!({"clip": clip.0, "edge": if edge == redrob_film_edit::Edge::In {"in"} else {"out"}, "delta": delta.0});
+                if sel.len() > 1 && sel.contains(&clip) {
+                    q["clips"] = json!(sel.iter().map(|c| c.0).collect::<Vec<_>>());
+                }
+                Some(app.session.execute("timeline.rateStretch", q))
+            }
             Drag::Remix { clip, delta, .. } if delta != Tick::ZERO => {
                 let d = seq.find_item(clip).map(|(_, it)| it.duration + delta).unwrap_or(Tick::ZERO);
                 Some(app.session.execute("clip.remix", json!({"clip": clip.0, "duration": d.0})))
             }
             Drag::Roll { left, right, delta, .. } if delta != Tick::ZERO => Some(app.session.execute("timeline.roll", json!({"left": left.0, "right": right.0, "delta": delta.0}))),
-            Drag::Slip { clip, delta } if delta != Tick::ZERO => Some(app.session.execute("timeline.slip", json!({"clip": clip.0, "delta": delta.0}))),
+            Drag::Slip { clip, delta } if delta != Tick::ZERO => {
+                // a clip of a wider selection slips the whole selection
+                let sel = &app.session.state.selection;
+                let mut q = json!({"clip": clip.0, "delta": delta.0});
+                if sel.len() > 1 && sel.contains(&clip) {
+                    q["clips"] = json!(sel.iter().map(|c| c.0).collect::<Vec<_>>());
+                }
+                Some(app.session.execute("timeline.slip", q))
+            }
             Drag::Slide { clip, delta } if delta != Tick::ZERO => Some(app.session.execute("timeline.slide", json!({"clip": clip.0, "delta": delta.0}))),
             Drag::Transition { id, start, duration, .. } => {
                 let moved = seq.all_tracks().find_map(|tr| tr.transitions.iter().find(|x| x.id == id)).is_some_and(|x| (x.start, x.duration) != (start, duration));
@@ -2398,6 +3276,20 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
         app.tl.drag = None;
     }
 
+    // ---- double-click empty track space: that track becomes the current one and the playhead
+    // goes there (Kdenlive)
+    if resp.double_clicked()
+        && tool == Tool::Selection
+        && let Some(p) = resp.interact_pointer_pos()
+        && let Hit::Empty { track } = hit(seq, layout, p)
+    {
+        let _ = app.session.execute("timeline.selectTrack", json!({"track": track.0}));
+        let at = snap(app, seq, layout, rate.snap_nearest(layout.tick_at(p.x).max(Tick::ZERO)), &[]);
+        if let Err(e) = app.session.execute("playhead.set", json!({"time": at.0})) {
+            app.ui.status = e.to_string();
+        }
+    }
+
     // ---- double-click a transition: Set Transition Duration (Premiere)
     if resp.double_clicked()
         && tool == Tool::Selection
@@ -2407,11 +3299,29 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
         crate::panels::transition_controls::open_duration(app, id);
     }
 
+    // ---- double-click a cut between two clips (a clip's edge with a clip right against it): the
+    // default transition goes on the cut (Kdenlive's "add a mix")
+    if resp.double_clicked()
+        && tool == Tool::Selection
+        && let Some(p) = resp.interact_pointer_pos()
+        && let Hit::Clip { track, clip, edge: Some(edge) } = hit(seq, layout, p)
+        && let Some(tr) = seq.track(track)
+        && let Some((_, it)) = seq.find_item(clip)
+        && tr.items.iter().any(|o| o.id != clip && (if edge == redrob_film_edit::Edge::In { o.end() == it.start } else { o.start == it.end() }))
+    {
+        let side = if edge == redrob_film_edit::Edge::In { "in" } else { "out" };
+        let cmd = if tr.kind == TrackKind::Video { "sequence.applyVideoTransition" } else { "sequence.applyAudioTransition" };
+        if let Err(e) = app.session.execute(cmd, json!({"clip": clip.0, "edge": side})) {
+            app.ui.status = e.to_string();
+        }
+    }
+
     // ---- double-click a nested sequence clip: open it in its own Timeline tab
     if resp.double_clicked()
         && tool == Tool::Selection
         && let Some(p) = resp.interact_pointer_pos()
         && let Hit::Clip { clip, .. } = hit(seq, layout, p)
+        && clip_keyframe_at(app, seq, layout, p).is_none()
         && seq.find_item(clip).is_some_and(|(_, it)| app.session.project.sequence(it.item).is_some())
     {
         let _ = app.session.execute("timeline.select", json!({"clips": [clip.0]}));
@@ -2426,6 +3336,7 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
         && tool == Tool::Selection
         && let Some(p) = resp.interact_pointer_pos()
         && let Hit::Clip { clip, edge: None, .. } = hit(seq, layout, p)
+        && clip_keyframe_at(app, seq, layout, p).is_none()
         && seq
             .find_item(clip)
             .and_then(|(_, it)| app.session.project.item(it.item))
@@ -2455,8 +3366,10 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
             ctx.data_mut(|d| d.insert_temp::<Option<EditPointTarget>>(edit_point_menu_id, None));
         }
     }
-    // on a marker of the ruler, the marker menu instead (right-clicking a marker selects it first)
+    // on the ruler, the ruler menu (Kdenlive); on a marker it also has the marker's own entries
+    // (right-clicking a marker selects it first)
     let marker_menu_id = egui::Id::new("timeline.markerMenu.open");
+    let ruler_menu_id = egui::Id::new("timeline.rulerMenu.at");
     if resp.secondary_clicked()
         && let Some(p) = resp.interact_pointer_pos()
     {
@@ -2465,6 +3378,8 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
             app.session.set_playhead(m.max(Tick::ZERO));
         }
         ctx.data_mut(|d| d.insert_temp(marker_menu_id, marker.is_some()));
+        let on_ruler = layout.ruler.contains(p).then(|| (rate.snap_nearest(layout.tick_at(p.x).max(Tick::ZERO)), marker_id_at(seq, layout, p)));
+        ctx.data_mut(|d| d.insert_temp(ruler_menu_id, on_ruler));
     }
     if resp.secondary_clicked()
         && let Some(p) = resp.interact_pointer_pos()
@@ -2493,6 +3408,14 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
     }
     resp.context_menu(|ui| {
         ui.set_min_width(220.0);
+        if let Some((t, marker)) = ctx.data(|d| d.get_temp::<Option<(Tick, Option<u64>)>>(ruler_menu_id)).flatten() {
+            crate::panels::marker_ui::ruler_menu(app, &ctx, ui, t, marker);
+            if ctx.data(|d| d.get_temp::<bool>(marker_menu_id)).unwrap_or(false) {
+                ui.separator();
+                marker_menu(app, &ctx, ui);
+            }
+            return;
+        }
         if ctx.data(|d| d.get_temp::<bool>(marker_menu_id)).unwrap_or(false) {
             marker_menu(app, &ctx, ui);
             return;
@@ -2555,6 +3478,17 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
                 }
             }
         }
+        // Insert an Effect ▸ favourites, Effects Enabled (Kdenlive)
+        let fx_clips: Vec<(u64, redrob_film_project::TrackKind, bool, bool)> = sel
+            .iter()
+            .filter_map(|c| {
+                let (tid, it) = seq.find_item(*c)?;
+                let standard: Vec<&redrob_film_project::EffectInstance> =
+                    it.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e)).collect();
+                Some((c.0, seq.track(tid)?.kind, !standard.is_empty(), standard.iter().any(|e| e.enabled)))
+            })
+            .collect();
+        crate::panels::effect_stack::timeline_menu(app, ui, &fx_clips);
     });
 
     // ---- drops: project items and effects
@@ -2586,7 +3520,7 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
             let r = Rect::from_min_max(pos2(layout.x_of(t), band.min.y + 1.0), pos2(layout.x_of(t + dur), band.max.y - 1.0));
             ui.painter().rect_filled(r, 3.0, Color32::from_white_alpha(40));
             ui.painter().rect_stroke(r, 3.0, Stroke::new(1.5, Color32::WHITE), StrokeKind::Inside);
-            if mods.command {
+            if mods.command || app.session.state.edit_mode == redrob_film_engine::timeline_ops::EditMode::Insert {
                 ui.painter().text(r.left_top() + vec2(4.0, -2.0), Align2::LEFT_BOTTOM, tl!("Insert"), Tokens::ui(10.0), Color32::WHITE);
             }
         }
@@ -2603,7 +3537,8 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
         if ctx.input(|i| i.pointer.any_released())
             && let Some((vt, at)) = target
         {
-            let mut params = json!({"item": item.0, "track": vt, "audioTrack": at, "time": t.0, "insert": mods.command});
+            let insert = mods.command || app.session.state.edit_mode == redrob_film_engine::timeline_ops::EditMode::Insert;
+            let mut params = json!({"item": item.0, "track": vt, "audioTrack": at, "time": t.0, "insert": insert});
             if let Some(source) = source {
                 params["sourceIn"] = json!(source.range.start.0);
                 params["duration"] = json!(source.range.duration.0);

@@ -34,11 +34,14 @@ pub struct BinTab {
     pub icon_size: f32,
     /// A sub-bin opened in place inside this tab.
     pub nav: Option<u64>,
+    /// A floating panel in its own native window (Open in Separate Window), so it can go to
+    /// another screen; else it floats inside the main window.
+    pub detached: bool,
 }
 
 impl Default for BinTab {
     fn default() -> Self {
-        BinTab { bin: 0, floating: false, view: ViewMode::List, icon_size: 110.0, nav: None }
+        BinTab { bin: 0, floating: false, view: ViewMode::List, icon_size: 110.0, nav: None, detached: false }
     }
 }
 
@@ -77,6 +80,17 @@ pub enum ProjectDialog {
     FreeformOptions { options: redrob_film_engine::project_panel::FreeformOptions },
     /// Freeform ▸ Save Arrangement….
     SaveArrangement { name: String, bin: Option<u64> },
+    /// Tags bar ▸ Edit Tag…: a tag's name (description) and colour.
+    EditTag { tag: u32, name: String, color: [u8; 3] },
+    /// New Item ▸ Color Bars… / Counter…: the generator's options (`file.newColorBars`,
+    /// `file.newCounter`).
+    NewGenerator { command: String, pattern: String, count_up: bool, no_background: bool, style: String, sound: String, seconds: f64 },
+    /// Image sequence ▸ Slideshow…: `clip.slideshow` options (`on` false = one image per frame).
+    Slideshow { item: u64, on: bool, opts: redrob_film_media::slideshow::Slideshow },
+    /// Audio Sync Offset…: `clip.audioOffset` in milliseconds.
+    AudioOffset { items: Vec<u64>, ms: i32 },
+    /// Duration… of a still, colour clip, generator or adjustment layer (`clip.setDuration`).
+    SetDuration { item: u64, seconds: f64 },
 }
 
 /// Frontend state of the Project panel (`UiState::project_panel`).
@@ -214,16 +228,17 @@ pub fn open_bin(app: &mut FilmcraftApp, inst: Inst, bin: u64, how: Option<&str>,
             navigate(app, inst, Some(bin));
             Ok(json!({"opened": "inPlace", "bin": bin}))
         }
-        "openNewTab" | "openNewWindow" => {
-            let floating = how == "openNewWindow";
+        "openNewTab" | "openNewWindow" | "openSeparateWindow" => {
+            let floating = how != "openNewTab";
+            let detached = how == "openSeparateWindow";
             // an already open tab is brought forward
-            if let Some(k) = pp.tabs.iter().position(|t| t.bin == bin && t.floating == floating) {
+            if let Some(k) = pp.tabs.iter().position(|t| t.bin == bin && t.floating == floating && t.detached == detached) {
                 if !floating {
                     pp.active_tab = Some(k);
                 }
                 return Ok(json!({"opened": if floating { "window" } else { "tab" }, "bin": bin, "tab": k}));
             }
-            pp.tabs.push(BinTab { bin, floating, view, icon_size, nav: None });
+            pp.tabs.push(BinTab { bin, floating, view, icon_size, nav: None, detached });
             let k = pp.tabs.len() - 1;
             if !floating {
                 pp.active_tab = Some(k);
@@ -347,8 +362,32 @@ pub fn floating(app: &mut FilmcraftApp, ctx: &egui::Context) {
             close = Some(k);
             continue;
         };
-        let mut open = true;
         let root = app.ui.project_panel.tabs[k].bin == app.session.project.root.id.0;
+        if app.ui.project_panel.tabs[k].detached {
+            // its own native window (another screen); egui embeds it when the platform can't
+            let title = if root { tlf!("Project: {name}", name = app.session.project.name) } else { tlf!("Bin: {name}", name) };
+            let vid = egui::ViewportId::from_hash_of(("bin-viewport", app.ui.project_panel.tabs[k].bin));
+            let builder = egui::ViewportBuilder::default().with_title(title).with_inner_size([560.0, 400.0]).with_min_inner_size([320.0, 220.0]);
+            let mut closed = false;
+            ctx.show_viewport_immediate(vid, builder, |ui, _class| {
+                let r = ui.available_rect_before_wrap();
+                let r = Rect::from_min_size(r.min, vec2(r.width().max(320.0), r.height().max(220.0)));
+                ui.allocate_rect(r, Sense::hover());
+                let v = view_of(app, Inst::Tab(k));
+                app.auto.add(&format!("projectBin.{k}.window"), r, &name);
+                let mut child = ui.new_child(egui::UiBuilder::new().max_rect(r).id_salt(("bin-viewport-body", k)));
+                child.set_clip_rect(r);
+                body(app, &mut child, r, &v, &mut actions);
+                if ui.ctx().input(|i| i.viewport().close_requested()) {
+                    closed = true;
+                }
+            });
+            if closed {
+                close = Some(k);
+            }
+            continue;
+        }
+        let mut open = true;
         egui::Window::new(if root { tlf!("Project: {name}", name = app.session.project.name) } else { tlf!("Bin: {name}", name) })
             .id(egui::Id::new(("bin-window", k)))
             .open(&mut open)
@@ -436,14 +475,45 @@ fn body(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, v: &View, actions
     if fr.clicked() {
         actions.push(("edit.find".into(), json!({})));
     }
+    // Filter (tags, ratings, types, usage) and the Tags bar toggle
+    let filt = Rect::from_min_size(pos2(find.max.x + 4.0, row.min.y), vec2(24.0, 22.0));
+    let filtered = app.session.prefs.project_panel.filter.is_active();
+    let fresp = ui.interact(filt, egui::Id::new((&pre, "filter")), Sense::click()).on_hover_text(tl!("Filter"));
+    app.auto.add(&format!("{pre}.filter"), filt, if filtered { "Filter (on)" } else { "Filter" });
+    if filtered {
+        ui.painter().rect_filled(filt, 3.0, t.pressed);
+    } else if fresp.hovered() {
+        ui.painter().rect_filled(filt, 3.0, t.hover);
+    }
+    funnel(ui.painter(), filt.shrink(5.0), if filtered { t.accent } else { t.icon });
+    egui::Popup::menu(&fresp).close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside).show(|ui| filter_menu(app, ui, &pre, actions));
+    let show_tags = app.session.prefs.project_panel.show_tags;
+    let tagb = Rect::from_min_size(pos2(filt.max.x + 4.0, row.min.y), vec2(24.0, 22.0));
+    let tresp = ui.interact(tagb, egui::Id::new((&pre, "tagsBar")), Sense::click()).on_hover_text(tl!("Tags"));
+    app.auto.add(&format!("{pre}.tagsToggle"), tagb, "Tags");
+    if show_tags {
+        ui.painter().rect_filled(tagb, 3.0, t.pressed);
+    } else if tresp.hovered() {
+        ui.painter().rect_filled(tagb, 3.0, t.hover);
+    }
+    icons::paint(ui.painter(), tagb.shrink(5.0), Icon::Marker, if show_tags { t.icon_active } else { t.icon });
+    if tresp.clicked() {
+        actions.push(("project.view.set".into(), json!({"showTags": !show_tags})));
+    }
     let filter = app.ui.project_search.to_ascii_lowercase();
     let total = count_items(app, v.bin);
     let sel = app.session.state.project_selection.len();
     let count = if sel > 0 { tlf!("{sel} of {total} items selected", sel, total) } else { tlf!("{total} items", total) };
+    let count = if filtered { tlf!("{count} (filtered)", count) } else { count };
     ui.painter().text(pos2(row.max.x, row.center().y - 1.0), Align2::RIGHT_CENTER, &count, Tokens::ui(fs - 1.0), t.text_dim);
     app.auto.add(&format!("{pre}.count"), Rect::from_min_max(pos2(row.max.x - 160.0, row.min.y), row.max), &count);
 
     let mut y = row.max.y + 6.0;
+    if show_tags {
+        let tr = Rect::from_min_size(pos2(rect.min.x + 8.0, y), vec2(rect.width() - 16.0, 22.0));
+        tags_bar(app, ui, tr, &pre, actions);
+        y = tr.max.y + 4.0;
+    }
     if app.session.prefs.project_panel.preview_area {
         let pr = Rect::from_min_size(pos2(rect.min.x + 8.0, y), vec2(rect.width() - 16.0, PREVIEW_H));
         preview_area(app, ui, pr, &pre);
@@ -459,6 +529,197 @@ fn body(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, v: &View, actions
         ViewMode::Freeform => crate::panels::project_views::freeform_view(app, &mut cui, content, v, &filter, actions),
     }
     footer(app, ui, Rect::from_min_max(pos2(rect.min.x, rect.max.y - FOOTER_H), rect.max), v, actions);
+}
+
+/// A small funnel (the Filter button).
+fn funnel(p: &egui::Painter, r: Rect, c: Color32) {
+    let (l, rt, top) = (r.min.x, r.max.x, r.min.y + 1.0);
+    let mid = r.center().x;
+    let neck = r.min.y + r.height() * 0.5;
+    p.add(egui::Shape::convex_polygon(vec![pos2(l, top), pos2(rt, top), pos2(mid + 1.5, neck), pos2(mid - 1.5, neck)], c, Stroke::NONE));
+    p.rect_filled(Rect::from_min_max(pos2(mid - 1.5, neck), pos2(mid + 1.5, r.max.y)), 0.5, c);
+}
+
+/// Filter menu: tags, ratings, types and usage. Choices of one group are alternatives; the groups
+/// combine (`project.filter.set`).
+fn filter_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, pre: &str, actions: &mut Actions) {
+    use redrob_film_engine::project_panel::{FILTER_TYPES, FILTER_USAGE};
+    let f = app.session.prefs.project_panel.filter.clone();
+    ui.set_min_width(200.0);
+    ui.label(egui::RichText::new(tl!("Tags")).strong());
+    for tag in app.session.project.bin_tags() {
+        let mut on = f.tags.contains(&tag.id);
+        let r = ui.checkbox(&mut on, egui::RichText::new(format!("● {}", tag.name)).color(Color32::from_rgb(tag.color[0], tag.color[1], tag.color[2])));
+        app.auto.add(&format!("{pre}.filter.tag.{}", tag.id), r.rect, &tag.name);
+        if r.changed() {
+            let mut v = f.tags.clone();
+            if on {
+                v.push(tag.id);
+            } else {
+                v.retain(|x| *x != tag.id);
+            }
+            actions.push(("project.filter.set".into(), json!({"tags": v})));
+        }
+    }
+    ui.separator();
+    ui.label(egui::RichText::new(tl!("Rating")).strong());
+    for r in (0..=5u8).rev() {
+        let mut on = f.ratings.contains(&r);
+        let label = if r == 0 { tl!("Not Rated").to_string() } else { crate::panels::project_views::rating_label(r) };
+        let resp = ui.checkbox(&mut on, label.as_str());
+        app.auto.add(&format!("{pre}.filter.rating.{r}"), resp.rect, &label);
+        if resp.changed() {
+            let mut v = f.ratings.clone();
+            if on {
+                v.push(r);
+            } else {
+                v.retain(|x| *x != r);
+            }
+            actions.push(("project.filter.set".into(), json!({"ratings": v})));
+        }
+    }
+    ui.separator();
+    ui.label(egui::RichText::new(tl!("Type")).strong());
+    for (key, label) in FILTER_TYPES {
+        let mut on = f.types.iter().any(|x| x == key);
+        let resp = ui.checkbox(&mut on, crate::i18n::t(label));
+        app.auto.add(&format!("{pre}.filter.type.{key}"), resp.rect, label);
+        if resp.changed() {
+            let mut v = f.types.clone();
+            if on {
+                v.push(key.to_string());
+            } else {
+                v.retain(|x| x != key);
+            }
+            actions.push(("project.filter.set".into(), json!({"types": v})));
+        }
+    }
+    ui.separator();
+    ui.label(egui::RichText::new(tl!("Usage")).strong());
+    for (key, label) in FILTER_USAGE {
+        let mut on = f.usage.iter().any(|x| x == key);
+        let resp = ui.checkbox(&mut on, crate::i18n::t(label));
+        app.auto.add(&format!("{pre}.filter.usage.{key}"), resp.rect, label);
+        if resp.changed() {
+            let mut v = f.usage.clone();
+            if on {
+                v.push(key.to_string());
+            } else {
+                v.retain(|x| x != key);
+            }
+            actions.push(("project.filter.set".into(), json!({"usage": v})));
+        }
+    }
+    ui.separator();
+    let r = ui.add_enabled(f.is_active(), egui::Button::new(tl!("Clear Filters")));
+    app.auto.add(&format!("{pre}.filter.clear"), r.rect, "Clear Filters");
+    if r.clicked() {
+        actions.push(("project.filter.set".into(), json!({"clear": true})));
+        ui.close();
+    }
+}
+
+/// Tags bar: the project's tags. Click a tag to add it to (or remove it from) the selected items;
+/// right-click to edit, filter by or delete it; drag to reorder; + adds a tag.
+fn tags_bar(app: &mut FilmcraftApp, ui: &mut egui::Ui, r: Rect, pre: &str, actions: &mut Actions) {
+    let t = app.tokens;
+    let tags = app.session.project.bin_tags();
+    let sel = app.session.state.project_selection.clone();
+    let p = &app.session.project;
+    let has = |tag: u32| !sel.is_empty() && sel.iter().all(|i| p.item(*i).is_some_and(|it| it.tags.contains(&tag)));
+    let on: Vec<bool> = tags.iter().map(|tag| has(tag.id)).collect();
+    let filter_tags = app.session.prefs.project_panel.filter.tags.clone();
+    let painter = ui.painter().with_clip_rect(r.intersect(ui.clip_rect()));
+    let mut x = r.min.x;
+    let mut rects: Vec<(u32, Rect)> = Vec::new();
+    let mut dropped: Option<u32> = None;
+    let mut dragging: Option<u32> = None;
+    for (k, tag) in tags.iter().enumerate() {
+        let col = Color32::from_rgb(tag.color[0], tag.color[1], tag.color[2]);
+        let g = painter.layout_no_wrap(tag.name.clone(), Tokens::ui(11.0), t.text);
+        let w = g.size().x + 24.0;
+        let cr = Rect::from_min_size(pos2(x, r.min.y + 1.0), vec2(w, r.height() - 2.0));
+        let resp = ui
+            .interact(cr, egui::Id::new((pre, "tag", tag.id)), Sense::click_and_drag())
+            .on_hover_text(tl!("Click to tag the selected items; right-click to edit; drag to reorder"));
+        app.auto.add(&format!("{pre}.tag.{}", tag.id), cr, &tag.name);
+        painter.rect_filled(
+            cr,
+            9.0,
+            if on[k] {
+                t.pressed
+            } else if resp.hovered() {
+                t.hover
+            } else {
+                t.panel_bg
+            },
+        );
+        if filter_tags.contains(&tag.id) {
+            painter.rect_stroke(cr, 9.0, Stroke::new(1.2, t.accent), egui::StrokeKind::Inside);
+        }
+        painter.circle_filled(pos2(cr.min.x + 10.0, cr.center().y), 4.5, col);
+        painter.galley(pos2(cr.min.x + 18.0, cr.center().y - g.size().y / 2.0), g, if on[k] { t.text } else { t.text_dim });
+        if resp.clicked() {
+            if sel.is_empty() {
+                app.ui.status = tl!("Select items to tag").into();
+            } else {
+                actions.push(("clip.toggleTag".into(), json!({"tag": tag.id})));
+            }
+        }
+        if resp.dragged() {
+            dragging = Some(tag.id);
+        }
+        if resp.drag_stopped() {
+            dropped = Some(tag.id);
+        }
+        resp.context_menu(|ui| {
+            let b = ui.button(tl!("Edit Tag…"));
+            app.auto.add(&format!("{pre}.tag.{}.edit", tag.id), b.rect, "Edit Tag…");
+            if b.clicked() {
+                app.ui.project_panel.dialog = Some(ProjectDialog::EditTag { tag: tag.id, name: tag.name.clone(), color: tag.color });
+                ui.close();
+            }
+            let b = ui.button(tl!("Filter by This Tag"));
+            app.auto.add(&format!("{pre}.tag.{}.filter", tag.id), b.rect, "Filter by This Tag");
+            if b.clicked() {
+                actions.push(("project.filter.set".into(), json!({"tags": [tag.id]})));
+                ui.close();
+            }
+            let b = ui.button(tl!("Delete Tag"));
+            app.auto.add(&format!("{pre}.tag.{}.delete", tag.id), b.rect, "Delete Tag");
+            if b.clicked() {
+                actions.push(("project.tags.delete".into(), json!({"tag": tag.id})));
+                ui.close();
+            }
+        });
+        rects.push((tag.id, cr));
+        x = cr.max.x + 4.0;
+    }
+    // reorder by dragging: the insertion point follows the pointer
+    let pointer = ui.ctx().pointer_latest_pos();
+    let slot = |id: u32, px: f32| rects.iter().filter(|(tid, rr)| *tid != id && rr.center().x < px).count();
+    if let (Some(id), Some(pp)) = (dragging, pointer) {
+        let k = slot(id, pp.x);
+        let others: Vec<&(u32, Rect)> = rects.iter().filter(|(tid, _)| *tid != id).collect();
+        let lx = others.get(k).map(|(_, rr)| rr.min.x - 2.0).or_else(|| others.last().map(|(_, rr)| rr.max.x + 2.0)).unwrap_or(r.min.x);
+        painter.line_segment([pos2(lx, r.min.y), pos2(lx, r.max.y)], Stroke::new(2.0, t.accent));
+    }
+    if let (Some(id), Some(pp)) = (dropped, pointer) {
+        let to = slot(id, pp.x);
+        if tags.iter().position(|tg| tg.id == id) != Some(to) {
+            actions.push(("project.tags.move".into(), json!({"tag": id, "to": to})));
+        }
+    }
+    let add = Rect::from_min_size(pos2(x, r.min.y + 1.0), vec2(22.0, r.height() - 2.0));
+    let resp = ui.interact(add, egui::Id::new((pre, "tag-add")), Sense::click()).on_hover_text(tl!("Add Tag"));
+    app.auto.add(&format!("{pre}.tag.add"), add, "Add Tag");
+    if resp.hovered() {
+        painter.rect_filled(add, 9.0, t.hover);
+    }
+    icons::paint(&painter, add.shrink(5.0), Icon::Plus, t.icon);
+    if resp.clicked() {
+        actions.push(("project.tags.add".into(), json!({})));
+    }
 }
 
 fn bin_path(root: &redrob_film_project::Bin, target: BinId) -> Vec<String> {
@@ -638,13 +899,16 @@ fn footer(app: &mut FilmcraftApp, ui: &mut egui::Ui, bar: Rect, v: &View, action
     }
 }
 
-pub const NEW_ITEMS: [(&str, &str); 8] = [
+pub const NEW_ITEMS: [(&str, &str); 11] = [
     ("Sequence…", "file.newSequence"),
     ("Adjustment Layer…", "file.newAdjustmentLayer"),
     ("Bars and Tone…", "file.newBarsAndTone"),
     ("Black Video…", "file.newBlackVideo"),
     ("Color Matte…", "file.newColorMatte"),
     ("Universal Counting Leader…", "file.newCountingLeader"),
+    ("Color Bars…", "file.newColorBars"),
+    ("Counter…", "file.newCounter"),
+    ("White Noise…", "file.newWhiteNoise"),
     ("Transparent Video…", "file.newTransparentVideo"),
     ("Demo Footage", "file.importDemoFootage"),
 ];
@@ -654,7 +918,20 @@ pub fn new_item_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, pre: &str, actio
         let b = ui.button(crate::i18n::t(label));
         app.auto.add(&format!("{pre}.newItem.{c}"), b.rect, label);
         if b.clicked() {
-            actions.push((c.into(), json!({})));
+            if matches!(c, "file.newColorBars" | "file.newCounter") {
+                // these ask for their options first
+                app.ui.project_panel.dialog = Some(ProjectDialog::NewGenerator {
+                    command: c.to_string(),
+                    pattern: "smpte".into(),
+                    count_up: false,
+                    no_background: false,
+                    style: "secondsTo1".into(),
+                    sound: "silent".into(),
+                    seconds: if c == "file.newCounter" { 10.0 } else { 5.0 },
+                });
+            } else {
+                actions.push((c.into(), json!({})));
+            }
             ui.close();
         }
     }
@@ -663,7 +940,20 @@ pub fn new_item_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, pre: &str, actio
 fn sort_icons_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, pre: &str, actions: &mut Actions) {
     let cur = app.session.prefs.project_panel.view.icon_sort.clone();
     let mut entries: Vec<(String, String)> = vec![("".into(), tl!("User Order").into())];
-    for c in ["Name", "Label", "Media Type", "Frame Rate", "Media Start", "Media End", "Media Duration", "Video Info", "Audio Info", "Date Created"] {
+    for c in [
+        "Name",
+        "Label",
+        "Rating",
+        "Media Type",
+        "Frame Rate",
+        "Media Start",
+        "Media End",
+        "Media Duration",
+        "Video Info",
+        "Audio Info",
+        "Date Created",
+        "Insert Order",
+    ] {
         entries.push((c.into(), crate::i18n::t(c).into()));
     }
     for (col, label) in entries {
@@ -862,6 +1152,7 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, op: &str, params: &Val
                 "inPlace" => "openInPlace",
                 "newTab" | "tab" => "openNewTab",
                 "newWindow" | "window" => "openNewWindow",
+                "separateWindow" | "screen" => "openSeparateWindow",
                 other => other,
             });
             // no `how`: as a double-click with these modifiers (Settings ▸ General ▸ Bins)
@@ -920,7 +1211,7 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, op: &str, params: &Val
             // a second Project panel: the project's root in a floating panel
             let root = app.session.project.root.id.0;
             let pp = &mut app.ui.project_panel;
-            pp.tabs.push(BinTab { bin: root, floating: true, view: app.session.prefs.project_panel.view.mode, icon_size: 110.0, nav: None });
+            pp.tabs.push(BinTab { bin: root, floating: true, view: app.session.prefs.project_panel.view.mode, icon_size: 110.0, nav: None, detached: false });
             Ok(json!({"tab": pp.tabs.len() - 1}))
         }
         _ => return None,

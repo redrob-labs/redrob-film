@@ -195,7 +195,7 @@ fn fft_filter() -> Vec<ParamDef> {
 
 /// All audio effect definitions, in Effects-panel order.
 pub(super) fn defs() -> Vec<EffectDef> {
-    vec![
+    let mut v = vec![
         // ---- Amplitude and Compression ----
         audio("amplify", "Amplify", A_AMP, vec![fs("gain", "Gain", 0.0, (-96.0, 24.0), (-24.0, 24.0), "dB", 1)]),
         audio(
@@ -560,6 +560,297 @@ pub(super) fn defs() -> Vec<EffectDef> {
         audio("balance_a", "Balance", A_ROOT, vec![num("balance", "Balance", 0.0, -100.0, 100.0, "", 1)]),
         audio("mute", "Mute", A_ROOT, vec![mute_param()]),
         audio("volume_a", "Volume", A_ROOT, vec![b("bypass", "Bypass", false), fs("level", "Level", 0.0, (-96.0, 15.0), (-60.0, 15.0), "dB", 1)]),
+    ];
+    v.extend(kdenlive_defs());
+    v
+}
+
+/// Kdenlive's On Master audio visualisations: video effects drawn from the sequence's audio at
+/// the frame's time (the render reads the Mix around each frame). Applied to any clip, usually
+/// one that spans the sequence (a colour matte, or the picture itself).
+pub(super) fn visualization_defs() -> Vec<EffectDef> {
+    use super::{col, video};
+    const VIZ: &[&str] = &["Audio Visualization"];
+    const BANDS: &[&str] = &["Full", "Low", "Mid", "High", "Custom Range"];
+    const WAVE_CHANNELS: &[&str] = &["All", "Merge", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
+    let frame = |x: f64, y: f64, w: f64, h: f64| {
+        vec![
+            f("x", "Position X", x, 0.0, 100.0, "%"),
+            f("y", "Position Y", y, 0.0, 100.0, "%"),
+            f("width", "Width", w, 1.0, 100.0, "%"),
+            f("height", "Height", h, 1.0, 100.0, "%"),
+        ]
+    };
+    // shared by the three meters: frame background and rotation of the drawing
+    let look = |v: &mut Vec<ParamDef>| {
+        v.push(col("bg_color", "Background Color", [0.0, 0.0, 0.0, 0.0]));
+        v.push(f("angle", "Angle", 0.0, -360.0, 360.0, "°"));
+    };
+    // shared by Dance and Light Show: the part of the sound that drives them
+    let drive = |v: &mut Vec<ParamDef>| {
+        v.push(hz("low_freq", "Low Frequency", 20.0, 20.0, 20000.0));
+        v.push(hz("high_freq", "High Frequency", 20000.0, 20.0, 20000.0));
+        v.push(db("threshold", "Level Threshold", -60.0, -100.0, 0.0));
+        v.push(fs("oscillation", "Oscillation", 0.0, (0.0, 50.0), (0.0, 10.0), "Hz", 1));
+        v.push(fixed(num("window", "Window Size", 2048.0, 256.0, 16384.0, "", 0)));
+    };
+    let mut levels = vec![ch("orientation", "Orientation", &["Vertical", "Horizontal"], 0)];
+    levels.extend(frame(92.0, 50.0, 4.0, 60.0));
+    levels.extend([
+        col("color", "Gradient Color 3 (Bottom)", [0.35, 0.85, 0.35, 1.0]),
+        col("peak_color", "Gradient Color 1 (Top)", [0.9, 0.25, 0.25, 1.0]),
+        f("opacity", "Opacity", 100.0, 0.0, 100.0, "%"),
+        col("mid_color", "Gradient Color 2 (Middle)", [0.95, 0.85, 0.25, 1.0]),
+        ch("graph_type", "Graph Type", &["Bar", "Segment"], 0),
+        b("mirror", "Mirror", false),
+        b("reverse", "Reverse", false),
+        ch("gradient", "Gradient Orientation", &["Vertical", "Horizontal"], 0),
+        num("thickness", "Line Thickness", 0.0, 0.0, 400.0, "px", 0),
+        fixed(num("channels", "Channels", 2.0, 1.0, 8.0, "", 0)),
+        num("segment_gap", "Segment Gap", 2.0, 0.0, 50.0, "px", 0),
+    ]);
+    look(&mut levels);
+    let mut spectrum = vec![fixed(num("bands", "Points", 32.0, 4.0, 128.0, "", 0))];
+    spectrum.extend(frame(50.0, 80.0, 80.0, 30.0));
+    spectrum.extend([
+        hz("low_freq", "Low Frequency", 40.0, 20.0, 1000.0),
+        hz("high_freq", "High Frequency", 16000.0, 1000.0, 20000.0),
+        db("floor", "Level Threshold", -60.0, -96.0, -20.0),
+        col("color", "Foreground Color", [0.3, 0.7, 1.0, 1.0]),
+        f("opacity", "Opacity", 100.0, 0.0, 100.0, "%"),
+        ch("graph_type", "Graph Type", &["Line", "Bar"], 1),
+        b("fill", "Fill", false),
+        b("mirror", "Mirror", false),
+        b("reverse", "Reverse", false),
+        num("thickness", "Line Thickness", 0.0, 0.0, 100.0, "px", 0),
+        num("tension", "Line Tension", 40.0, -50.0, 150.0, "", 0),
+    ]);
+    look(&mut spectrum);
+    let mut wave = vec![ch("style", "Style", &["Line", "Filled", "Mirrored"], 0)];
+    wave.extend(frame(50.0, 50.0, 90.0, 30.0));
+    wave.extend([
+        ms("window", "Window", 40.0, 5.0, 500.0),
+        f("thickness", "Thickness", 2.0, 1.0, 20.0, "px"),
+        col("color", "Foreground Color", [1.0, 1.0, 1.0, 1.0]),
+        f("opacity", "Opacity", 100.0, 0.0, 100.0, "%"),
+        ch("channel", "Channel to Draw", WAVE_CHANNELS, 0),
+    ]);
+    look(&mut wave);
+    let mut dance = vec![
+        ch("band", "Frequency Band", BANDS, 1),
+        f("scale", "Zoom", 20.0, -100.0, 100.0, "%"),
+        f("move_x", "Right", 0.0, 0.0, 50.0, "%"),
+        f("move_y", "Up", 5.0, 0.0, 50.0, "%"),
+        f("sensitivity", "Sensitivity", 100.0, 10.0, 400.0, "%"),
+        f("move_left", "Left", 0.0, 0.0, 50.0, "%"),
+        f("move_down", "Down", 0.0, 0.0, 50.0, "%"),
+        f("rotate_cw", "Clockwise", 0.0, 0.0, 360.0, "°"),
+        f("rotate_ccw", "Counter Clockwise", 0.0, 0.0, 360.0, "°"),
+        fs("initial_zoom", "Initial Zoom", 100.0, (1.0, 500.0), (50.0, 200.0), "%", 0),
+    ];
+    drive(&mut dance);
+    let mut light = vec![
+        ch("band", "Frequency Band", BANDS, 0),
+        col("color", "1st Color", [1.0, 0.85, 0.3, 1.0]),
+        f("intensity", "Intensity", 60.0, 0.0, 100.0, "%"),
+        f("sensitivity", "Sensitivity", 100.0, 10.0, 400.0, "%"),
+        ch("mode", "Mode", &["Add", "Tint"], 0),
+        col("color2", "2nd Color", [1.0, 0.85, 0.3, 1.0]),
+    ];
+    drive(&mut light);
+    let mut v = vec![
+        video("audio_levels_viz", "Audio Level Visualization", VIZ, levels),
+        video("audio_spectrum_viz", "Audio Spectrum", VIZ, spectrum),
+        video("audio_waveform_viz", "Audio Waveform", VIZ, wave),
+        video("audio_dance", "Dance", VIZ, dance),
+        video("audio_light_show", "Light Show", VIZ, light),
+    ];
+    for d in &mut v {
+        d.accelerated = false;
+    }
+    v
+}
+
+/// Effects of Kdenlive's audio families that the Premiere set has no counterpart for (Tools,
+/// Volume and Dynamics extras, EQ and Filters, Modulators, Channels, Stereo images, Audio misc).
+/// Their parameter ids, ranges and defaults are those of the DSP effects they map to one-to-one.
+fn kdenlive_defs() -> Vec<EffectDef> {
+    const WAVES: &[&str] = &["Sine", "Triangle", "Square", "Saw Up", "Saw Down"];
+    const SIDES: &[&str] = &["Left", "Right"];
+    vec![
+        // ---- Amplitude and Compression
+        audio(
+            "soft_clipper",
+            "Soft Clipper",
+            A_AMP,
+            vec![
+                ch("type", "Type", &["Hard", "Tanh", "Atan", "Cubic", "Exponential", "Algebraic", "Quintic", "Sine"], 1),
+                db("threshold", "Threshold", 0.0, -30.0, 0.0),
+                db("output", "Output Gain", 0.0, -24.0, 24.0),
+            ],
+        ),
+        audio(
+            "dynamic_eq",
+            "Dynamic Equalizer",
+            A_AMP,
+            vec![
+                db("threshold", "Threshold", -30.0, -60.0, 0.0),
+                hz("detect_freq", "Detection Frequency", 1000.0, 20.0, 20000.0),
+                num("detect_q", "Detection Q", 2.0, 0.1, 20.0, "", 2),
+                hz("target_freq", "Target Frequency", 1000.0, 20.0, 20000.0),
+                num("target_q", "Target Q", 2.0, 0.1, 20.0, "", 2),
+                num("ratio", "Ratio", 2.0, 1.0, 30.0, ":1", 1),
+                ms("attack", "Attack", 20.0, 0.1, 500.0),
+                ms("release", "Release", 200.0, 1.0, 3000.0),
+                db("range", "Range", 12.0, 0.0, 30.0),
+                ch("mode", "Mode", &["Cut", "Boost"], 0),
+            ],
+        ),
+        // ---- Filter and EQ
+        audio(
+            "low_shelf",
+            "Low Shelf",
+            A_FILTER,
+            vec![
+                hz("frequency", "Frequency", 100.0, 20.0, 20000.0),
+                db("gain", "Gain", 0.0, -24.0, 24.0),
+                num("q", "Q", 0.71, 0.1, 4.0, "", 2),
+                pct("mix", "Mix", 100.0, 0.0, 100.0),
+            ],
+        ),
+        audio(
+            "high_shelf",
+            "High Shelf",
+            A_FILTER,
+            vec![
+                hz("frequency", "Frequency", 3000.0, 20.0, 20000.0),
+                db("gain", "Gain", 0.0, -24.0, 24.0),
+                num("q", "Q", 0.71, 0.1, 4.0, "", 2),
+                pct("mix", "Mix", 100.0, 0.0, 100.0),
+            ],
+        ),
+        audio(
+            "allpass",
+            "All Pass",
+            A_FILTER,
+            vec![hz("frequency", "Frequency", 1000.0, 20.0, 20000.0), num("q", "Q", 0.71, 0.1, 20.0, "", 2), pct("mix", "Mix", 100.0, 0.0, 100.0)],
+        ),
+        audio(
+            "tilt_shelf",
+            "Tilt Shelf",
+            A_FILTER,
+            vec![hz("frequency", "Frequency", 1000.0, 100.0, 10000.0), db("tilt", "Tilt", 0.0, -12.0, 12.0), db("level", "Level", 0.0, -24.0, 12.0)],
+        ),
+        audio(
+            "sub_cut",
+            "Sub Cut",
+            A_FILTER,
+            vec![
+                hz("cutoff", "Cutoff", 20.0, 2.0, 200.0),
+                fixed(num("order", "Order", 10.0, 2.0, 20.0, "", 0)),
+                pct("level", "Removed Band Level", 0.0, 0.0, 100.0),
+            ],
+        ),
+        audio(
+            "sub_boost",
+            "Sub Boost",
+            A_FILTER,
+            vec![
+                pct("dry", "Dry", 100.0, 0.0, 100.0),
+                pct("wet", "Wet", 80.0, 0.0, 100.0),
+                pct("decay", "Decay", 70.0, 0.0, 100.0),
+                pct("feedback", "Feedback", 90.0, 0.0, 100.0),
+                hz("cutoff", "Cutoff", 100.0, 20.0, 250.0),
+            ],
+        ),
+        // ---- Modulation
+        audio(
+            "pulsator",
+            "Pulsator",
+            A_MOD,
+            vec![
+                ch("mode", "Waveform", WAVES, 0),
+                pct("amount", "Amount", 100.0, 0.0, 100.0),
+                num("rate", "Rate", 2.0, 0.01, 100.0, "Hz", 2),
+                pct("offset_l", "Offset Left", 0.0, 0.0, 100.0),
+                pct("offset_r", "Offset Right", 50.0, 0.0, 100.0),
+                db("level_in", "Input Level", 0.0, -24.0, 12.0),
+                db("level_out", "Output Level", 0.0, -24.0, 12.0),
+            ],
+        ),
+        audio("vibrato", "Vibrato", A_MOD, vec![num("frequency", "Modulation Frequency", 5.0, 0.1, 20.0, "Hz", 2), pct("depth", "Depth", 50.0, 0.0, 100.0)]),
+        audio("freq_shift", "Frequency Shifter", A_MOD, vec![num("shift", "Shift", 0.0, -2000.0, 2000.0, "Hz", 1), db("level", "Level", 0.0, -24.0, 12.0)]),
+        audio("phase_shift", "Phase Shifter", A_MOD, vec![num("shift", "Shift", 0.0, -1.0, 1.0, "", 2), db("level", "Level", 0.0, -24.0, 12.0)]),
+        // ---- Stereo Imagery (Kdenlive: Channels, Stereo and Binaural Images)
+        audio("mixdown", "Mixdown", A_STEREO, vec![ch("channels", "Number of Output Channels", &["Mono", "Stereo", "2.1", "4 Channels", "5.1", "7.1"], 1)]),
+        audio("stereo_to_mono", "Stereo to Mono", A_STEREO, vec![ch("from", "From", SIDES, 0), ch("to", "To", SIDES, 1), b("swap", "Swap Channels", false)]),
+        audio(
+            "crossfeed",
+            "Crossfeed",
+            A_STEREO,
+            vec![
+                pct("strength", "Strength", 20.0, 0.0, 100.0),
+                hz("cutoff", "Cutoff", 700.0, 300.0, 2000.0),
+                db("level_in", "Input Level", 0.0, -24.0, 12.0),
+                db("level_out", "Output Level", 0.0, -24.0, 12.0),
+            ],
+        ),
+        audio(
+            "haas",
+            "Haas Stereo Enhancer",
+            A_STEREO,
+            vec![
+                ch("source", "Middle Source", &["Mid", "Side", "Left", "Right"], 0),
+                ms("delay", "Delay", 12.0, 0.0, 40.0),
+                ch("delayed", "Delayed Side", SIDES, 1),
+                db("left_gain", "Left Gain", 0.0, -24.0, 12.0),
+                db("right_gain", "Right Gain", 0.0, -24.0, 12.0),
+            ],
+        ),
+        audio(
+            "stereo_tools",
+            "Stereo Tools",
+            A_STEREO,
+            vec![
+                ch("mode", "Mode", &["LR > LR", "LR > MS", "MS > LR", "LR > LL", "LR > RR", "LR > L+R", "LR > RL"], 0),
+                db("mid_level", "Mid Level", 0.0, -36.0, 12.0),
+                db("side_level", "Side Level", 0.0, -36.0, 12.0),
+                num("balance", "Balance", 0.0, -100.0, 100.0, "", 0),
+                b("invert_l", "Invert Left Phase", false),
+                b("invert_r", "Invert Right Phase", false),
+                b("mute_l", "Mute Left", false),
+                b("mute_r", "Mute Right", false),
+            ],
+        ),
+        // ---- Special (Kdenlive: Tools, Audio)
+        audio(
+            "crusher",
+            "Crusher",
+            A_SPECIAL,
+            vec![
+                db("level_in", "Input Gain", 0.0, -24.0, 24.0),
+                db("level_out", "Output Gain", 0.0, -24.0, 24.0),
+                fixed(num("bits", "Bit Reduction", 8.0, 1.0, 64.0, "bit", 0)),
+                pct("mix", "Mix", 100.0, 0.0, 100.0),
+                ch("mode", "Mode", &["Linear", "Logarithmic"], 0),
+                fixed(num("dc", "DC", 1.0, 0.25, 4.0, "", 2)),
+                fixed(num("aa", "Anti-aliasing", 0.5, 0.0, 1.0, "", 2)),
+                fixed(num("samples", "Sample Reduction", 1.0, 1.0, 250.0, "", 0)),
+                b("lfo", "Enable LFO", false),
+                fixed(num("lfo_range", "LFO Depth", 20.0, 1.0, 250.0, "", 0)),
+                fixed(num("lfo_rate", "LFO Rate", 0.3, 0.01, 200.0, "Hz", 2)),
+            ],
+        ),
+        audio("crystalizer", "Crystalizer", A_SPECIAL, vec![num("intensity", "Intensity", 2.0, -10.0, 10.0, "", 1), b("clip", "Enable Clipping", true)]),
+        audio(
+            "dc_shift",
+            "DC Shift",
+            A_SPECIAL,
+            vec![num("shift", "DC Shift", 0.0, -1.0, 1.0, "", 3), fixed(num("limitergain", "Limiter Gain", 0.0, 0.0, 1.0, "", 3))],
+        ),
+        audio("derivative", "Derivative", A_SPECIAL, vec![]),
+        audio("integral", "Integral", A_SPECIAL, vec![]),
+        audio("virtual_bass", "Virtual Bass", A_SPECIAL, vec![hz("cutoff", "Cutoff", 120.0, 40.0, 250.0), pct("strength", "Strength", 50.0, 0.0, 100.0)]),
     ]
 }
 

@@ -39,6 +39,11 @@ pub struct SettingsDraft {
     /// `mediaCache.info` when the Media Cache page was shown.
     #[serde(default)]
     pub cache_info: Value,
+    /// `cache.usage` (Manage Cached Data) and the "older than" filter in days (0 = everything).
+    #[serde(default)]
+    pub cache_usage: Value,
+    #[serde(default)]
+    pub cache_older_days: u32,
     /// Audio devices reported by the platform (Audio Hardware page).
     #[serde(default)]
     pub devices: Option<AudioDevices>,
@@ -601,6 +606,121 @@ fn custom(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft, name: &str
             let size = mb(d.cache_info["bytes"].as_u64().unwrap_or(0));
             let files = d.cache_info["files"].as_u64().unwrap_or(0);
             note(ui, &t, &tlf!("Currently: {loc} — {files} file(s), {size}", loc, files, size));
+            // open the cache folder in the file manager
+            if let Some(dir) = d.cache_info["location"].as_str().map(str::to_string) {
+                let r = ui.button(tl!("Show in File Manager"));
+                app.auto.add("settings.mediaCache.reveal", r.rect, "Show in File Manager");
+                if r.clicked() {
+                    let ctx = ui.ctx().clone();
+                    if let Err(e) =
+                        std::fs::create_dir_all(&dir).map_err(|e| e.to_string()).and_then(|_| crate::panels::menu_dialogs::open_path(app, &ctx, &dir, false))
+                    {
+                        d.message = e;
+                    }
+                }
+            }
+        }
+        // Settings ▸ General ▸ Configuration Information: where Redrob Film keeps its files
+        "configPaths" => {
+            let prefs = app.session.prefs_path.clone();
+            let data = prefs.as_ref().and_then(|p| p.parent()).map(|p| p.to_path_buf());
+            if d.cache_info.is_null() {
+                d.cache_info = app.session.execute("mediaCache.info", json!({})).unwrap_or(json!({}));
+            }
+            let status = app.session.execute("file.autoSaveStatus", json!({})).unwrap_or_default();
+            let mut rows: Vec<(&str, &str, Option<String>)> = vec![
+                ("data", tl!("Data folder"), data.as_ref().map(|p| p.display().to_string())),
+                ("preferences", tl!("Preferences file"), prefs.as_ref().map(|p| p.display().to_string())),
+                ("workspaces", tl!("Workspaces file"), data.as_ref().map(|p| p.join(crate::dock::WORKSPACES_FILE).display().to_string())),
+                ("mediaCache", tl!("Media cache"), d.cache_info["location"].as_str().map(str::to_string)),
+                ("autoSave", tl!("Auto-saves"), status["autoSaveDir"].as_str().map(str::to_string)),
+            ];
+            rows.retain(|r| r.2.is_some());
+            if rows.is_empty() {
+                note(ui, &t, tl!("This session keeps no files on disk."));
+            }
+            let ctx = ui.ctx().clone();
+            egui::Grid::new("settings-config-paths").num_columns(3).spacing(vec2(10.0, 4.0)).show(ui, |ui| {
+                for (id, label, path) in rows {
+                    let path = path.unwrap_or_default();
+                    field_label(ui, label);
+                    ui.add(egui::Label::new(RichText::new(&path).monospace().size(11.0)).truncate());
+                    let r = ui.small_button(tl!("Show"));
+                    app.auto.add(&format!("settings.configPaths.{id}"), r.rect, label);
+                    if r.clicked() {
+                        let file = std::path::Path::new(&path).is_file();
+                        if let Err(e) = crate::panels::menu_dialogs::open_path(app, &ctx, &path, file) {
+                            d.message = e;
+                        }
+                    }
+                    ui.end_row();
+                }
+            });
+        }
+        // Settings ▸ Media ▸ Supported Media Types: the file types import and the Media Browser take
+        "mediaTypes" => {
+            for (label, exts) in [
+                (tl!("Video"), redrob_film_media::VIDEO_EXTENSIONS),
+                (tl!("Audio"), redrob_film_media::AUDIO_EXTENSIONS),
+                (tl!("Still images"), redrob_film_media::STILL_EXTENSIONS),
+            ] {
+                ui.horizontal_wrapped(|ui| {
+                    field_label(ui, label);
+                    ui.label(RichText::new(exts.iter().map(|e| format!("*.{e}")).collect::<Vec<_>>().join(" ")).size(11.0).color(t.text_dim));
+                });
+            }
+            note(ui, &t, tl!("Timelines and captions also import from EDL, FCP XML, FCPXML, OTIO, AAF, OMF, SRT, WebVTT and SCC files."));
+        }
+        // Manage Cached Data: the current project's and every project's cached files by kind
+        "cacheManager" => {
+            if d.cache_usage.is_null() {
+                d.cache_usage = app.session.execute("cache.usage", json!({})).unwrap_or(json!({}));
+            }
+            ui.label(egui::RichText::new(tl!("Manage Cached Data")).strong());
+            ui.horizontal(|ui| {
+                ui.label(tl!("Delete only files older than"));
+                let r = ui.add(egui::DragValue::new(&mut d.cache_older_days).range(0..=3650).suffix(tl!(" days")));
+                app.auto.add("settings.cacheManager.olderThan", r.rect, "older than");
+                ui.label(egui::RichText::new(tl!("(0 = all)")).weak());
+            });
+            let cats = d.cache_usage["categories"].as_array().cloned().unwrap_or_default();
+            // the usage chart: each kind's share of the largest one
+            let biggest = cats.iter().filter_map(|c| c["bytes"].as_u64()).max().unwrap_or(0).max(1) as f32;
+            let mut del: Option<String> = None;
+            for scope in ["current", "all"] {
+                ui.label(egui::RichText::new(if scope == "current" { tl!("Current project") } else { tl!("All projects") }).color(t.text_dim));
+                for c in cats.iter().filter(|c| c["scope"] == scope) {
+                    let id = c["id"].as_str().unwrap_or("").to_string();
+                    ui.horizontal(|ui| {
+                        field_label(ui, crate::i18n::t(c["label"].as_str().unwrap_or("")));
+                        let (bar, _) = ui.allocate_exact_size(vec2(120.0, 10.0), Sense::hover());
+                        ui.painter().rect_filled(bar, 2.0, t.field_border);
+                        let share = c["bytes"].as_u64().unwrap_or(0) as f32 / biggest;
+                        if share > 0.0 {
+                            ui.painter().rect_filled(Rect::from_min_size(bar.min, vec2((bar.width() * share).max(2.0), bar.height())), 2.0, t.accent);
+                        }
+                        app.auto.add(&format!("settings.cacheManager.{id}.chart"), bar, &format!("{:.0}%", share * 100.0));
+                        ui.label(tlf!("{files} file(s), {size}", files = c["files"].as_u64().unwrap_or(0), size = mb(c["bytes"].as_u64().unwrap_or(0))));
+                        let b = ui.add_enabled(c["files"].as_u64().unwrap_or(0) > 0, egui::Button::new(tl!("Delete")));
+                        app.auto.add(&format!("settings.cacheManager.{id}.delete"), b.rect, "Delete");
+                        if b.clicked() {
+                            del = Some(id.clone());
+                        }
+                    });
+                }
+            }
+            if let Some(kind) = del {
+                let mut p = json!({"kind": kind});
+                if d.cache_older_days > 0 {
+                    p["olderThanDays"] = json!(d.cache_older_days);
+                }
+                d.message = match app.session.execute("cache.delete", p) {
+                    Ok(v) => tlf!("Deleted {n} file(s), {size}.", n = v["files"].as_u64().unwrap_or(0), size = mb(v["bytes"].as_u64().unwrap_or(0))),
+                    Err(e) => e.to_string(),
+                };
+                d.cache_usage = Value::Null;
+                d.cache_info = Value::Null;
+            }
         }
         "outputMapping" => {
             let ch = d.devices.as_ref().map(|x| x.output_channels).unwrap_or(0);
@@ -619,6 +739,7 @@ fn custom(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft, name: &str
             );
         }
         "appearanceModes" => appearance_modes(app, ui, d),
+        "proxyProfiles" => proxy_profiles(app, ui, d),
         "redrobAccount" => {
             crate::account::settings_block(app, ui);
         }
@@ -642,6 +763,166 @@ fn custom(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft, name: &str
         }
         _ => {}
     }
+}
+
+/// The proxy profile editor of Manage Proxy Profiles (egui temp state).
+#[derive(Clone, Default)]
+struct ProfileEditor {
+    /// The profile being edited (None = a new one).
+    previous: Option<String>,
+    name: String,
+    params: String,
+    message: String,
+}
+
+/// A built-in preset as custom-profile parameters (the starting point of a new profile).
+fn preset_params(id: &str) -> String {
+    match redrob_film_engine::proxies::preset(id) {
+        Some(p) => {
+            let codec = if p.extension == "mp4" { "h264" } else { "prores" };
+            let mut s = format!("codec={codec} scale={}", p.scale);
+            if codec == "prores" {
+                s.push_str(&format!(" profile={}", p.prores));
+            }
+            if p.alpha {
+                s.push_str(" alpha=1");
+            }
+            s
+        }
+        None => String::new(),
+    }
+}
+
+/// Preferences ▸ Media ▸ Proxy Clips: the encoding profile, the profile for clips with alpha, and
+/// Manage Proxy Profiles (add from the selected, edit, delete; the allowed parameters).
+fn proxy_profiles(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft) {
+    let t = app.tokens;
+    let info = app.session.execute("media.proxyProfiles", json!({})).unwrap_or_default();
+    let mut opts: Vec<(String, String)> = Vec::new();
+    for v in info["builtin"].as_array().into_iter().flatten().chain(info["custom"].as_array().into_iter().flatten()) {
+        if let (Some(id), Some(l)) = (v["id"].as_str(), v["label"].as_str()) {
+            opts.push((id.to_string(), l.to_string()));
+        }
+    }
+    for (key, label, fallback) in [
+        ("media.proxyProfile", "Encoding profile", info["profile"].as_str().unwrap_or("")),
+        ("media.proxyAlphaProfile", "Profile for clips with alpha channel", info["alphaProfile"].as_str().unwrap_or("")),
+    ] {
+        let cur = choice_text(get(&d.values, key));
+        let cur = if cur.is_empty() { fallback.to_string() } else { cur };
+        ui.horizontal(|ui| {
+            field_label(ui, label);
+            if let Some(v) = combo(app, ui, key, &cur, &opts, 300.0) {
+                put(&mut d.values, key, json!(v));
+            }
+        });
+    }
+    let id = egui::Id::new("settings-proxy-profile-editor");
+    let mut ed: ProfileEditor = ui.ctx().data(|m| m.get_temp(id)).unwrap_or_default();
+    let tt = t;
+    group(ui, &tt, tl!("Manage Proxy Profiles"), |ui| {
+        for v in info["custom"].as_array().into_iter().flatten() {
+            let name = v["label"].as_str().unwrap_or("").to_string();
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(&name).size(12.5));
+                ui.label(RichText::new(v["params"].as_str().unwrap_or("")).size(11.5).color(tt.text_dim));
+                let e = ui.small_button(tl!("Edit"));
+                app.auto.add(&format!("settings.proxyProfiles.{name}.edit"), e.rect, "Edit");
+                if e.clicked() {
+                    ed = ProfileEditor {
+                        previous: Some(name.clone()),
+                        name: name.clone(),
+                        params: v["params"].as_str().unwrap_or("").to_string(),
+                        message: String::new(),
+                    };
+                }
+                let r = ui.small_button(tl!("Delete"));
+                app.auto.add(&format!("settings.proxyProfiles.{name}.delete"), r.rect, "Delete");
+                if r.clicked() {
+                    ed.message = match app.session.execute("media.deleteProxyProfile", json!({"name": name})) {
+                        Ok(_) => tlf!("Deleted the proxy profile {name}.", name = name),
+                        Err(e) => e.to_string(),
+                    };
+                }
+            });
+        }
+        ui.horizontal(|ui| {
+            let r = ui.button(tl!("New from Selected Profile"));
+            app.auto.add("settings.proxyProfiles.new", r.rect, "New from Selected Profile");
+            if r.clicked() {
+                let sel = choice_text(get(&d.values, "media.proxyProfile"));
+                let sel = if sel.is_empty() { info["profile"].as_str().unwrap_or("").to_string() } else { sel };
+                let params = match sel.strip_prefix("custom:") {
+                    Some(n) => info["custom"]
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .find(|v| v["label"] == json!(n))
+                        .and_then(|v| v["params"].as_str())
+                        .unwrap_or("")
+                        .to_string(),
+                    None => preset_params(&sel),
+                };
+                ed = ProfileEditor { previous: None, name: tl!("New Profile").to_string(), params, message: String::new() };
+            }
+        });
+        ui.horizontal(|ui| {
+            field_label(ui, tl!("Name"));
+            let r = ui.add(egui::TextEdit::singleline(&mut ed.name).desired_width(200.0));
+            app.auto.add("settings.proxyProfiles.name", r.rect, "Name");
+        });
+        ui.horizontal(|ui| {
+            field_label(ui, tl!("Parameters"));
+            let r = ui.add(egui::TextEdit::singleline(&mut ed.params).desired_width(360.0).hint_text("codec=prores profile=proxy width=640"));
+            app.auto.add("settings.proxyProfiles.params", r.rect, "Parameters");
+        });
+        // live check against the allowed parameters
+        let problems = redrob_film_engine::proxies::parse_profile(&ed.name, &ed.params).err();
+        if let Some(p) = &problems {
+            if !p.unknown.is_empty() {
+                let w = tlf!("Warning: parameters not allowed: {list}", list = p.unknown.join(", "));
+                let r = ui.label(RichText::new(&w).size(11.5).color(Color32::from_rgb(0xe0, 0xa0, 0x40)));
+                app.auto.add("settings.proxyProfiles.warning", r.rect, &w);
+            }
+            for e in &p.errors {
+                ui.label(RichText::new(e).size(11.5).color(Color32::from_rgb(0xe0, 0x60, 0x50)));
+            }
+        }
+        ui.horizontal(|ui| {
+            let r = ui.add_enabled(
+                problems.is_none() && !ed.name.trim().is_empty(),
+                egui::Button::new(if ed.previous.is_some() { tl!("Save Profile") } else { tl!("Add Profile") }),
+            );
+            app.auto.add("settings.proxyProfiles.save", r.rect, "Save Profile");
+            if r.clicked() {
+                let mut p = json!({"name": ed.name.trim(), "params": ed.params});
+                if let Some(prev) = &ed.previous {
+                    p["previous"] = json!(prev);
+                }
+                match app.session.execute("media.saveProxyProfile", p) {
+                    Ok(_) => {
+                        ed.message = tlf!("Saved the proxy profile {name}.", name = ed.name.trim());
+                        ed.previous = Some(ed.name.trim().to_string());
+                    }
+                    Err(e) => ed.message = e.to_string(),
+                }
+            }
+        });
+        if !ed.message.is_empty() {
+            note(ui, &tt, &ed.message);
+        }
+        let allowed: Vec<String> = info["allowedParams"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|v| format!("{} = {}", v["key"].as_str().unwrap_or(""), v["values"].as_str().unwrap_or("")))
+            .collect();
+        ui.label(RichText::new(tl!("Allowed parameters:")).size(11.5).color(tt.text_dim));
+        for a in allowed {
+            ui.label(RichText::new(a).size(11.0).color(tt.text_dim).monospace());
+        }
+    });
+    ui.ctx().data_mut(|m| m.insert_temp(id, ed));
 }
 
 fn rows(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft, list: &[Row]) {

@@ -322,7 +322,14 @@ fn freeform_view_places_and_stacks_cards() {
     assert!(d.has(&format!("project.stack.{}", items[0])), "×2 badge");
     // Freeform View Options… from the panel menu
     d.click("panel.menu.Project");
-    d.click("project.menu.freeformOptions");
+    // the panel menu (with Undock Panel added) now runs past the bottom of this 980 pt window,
+    // so the entry is checked and the command it runs is sent directly
+    assert!(d.has("project.menu.freeformOptions"));
+    d.key("Escape");
+    d.frames(1);
+    assert!(!d.has("project.menu.freeformOptions"), "Escape closes the panel menu");
+    d.ok("ui.menu.invoke", json!({"id": "projectPanel.freeformOptions"}));
+    d.frames(2);
     assert!(d.has("projectDialog.snap"));
     d.click("projectDialog.snap");
     d.click("projectDialog.ok");

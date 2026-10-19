@@ -142,7 +142,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             "Audio Channels…",
             &["Clip", "Modify"],
             Some("Shift+G"),
-            r#"{"items":[id]?,"format":"mono|stereo|5.1|adaptive","clips":[[channel]]?,"channels":[channel]?}"#,
+            r#"{"items":[id]?,"format":"mono|stereo|5.1|adaptive","clips":[[channel]]?,"channels":[channel]?,"streams":[{"enabled":bool?,"gainDb":f64?}]?}"#,
             has_audio_target,
             audio_channels,
         ),
@@ -1263,6 +1263,12 @@ fn audio_channels(s: &mut Session, p: &Value) -> Result<Value> {
         .get("clips")
         .and_then(Value::as_array)
         .map(|a| a.iter().map(|c| c.as_array().map(|x| x.iter().filter_map(|v| v.as_u64().map(|n| n as u16)).collect()).unwrap_or_default()).collect());
+    // per audio stream of the file: on/off and gain (index = stream)
+    let streams: Option<Vec<(bool, f64)>> = p.get("streams").and_then(Value::as_array).map(|a| {
+        a.iter()
+            .map(|v| (v.get("enabled").and_then(Value::as_bool).unwrap_or(true), v.get("gainDb").and_then(Value::as_f64).unwrap_or(0.0).clamp(-96.0, 24.0)))
+            .collect()
+    });
     let mut out = Vec::new();
     let mut maps = Vec::new();
     for i in &items {
@@ -1286,6 +1292,12 @@ fn audio_channels(s: &mut Session, p: &Value) -> Result<Value> {
             if let Some(m) = pr.item_mut(i).and_then(|it| it.as_media_mut()) {
                 // the default stereo pair is no override
                 m.interpret.audio_channels = if map == AudioChannelMap::for_format(AudioChannels::Stereo, 2) { None } else { Some(map) };
+                if let Some(st) = &streams {
+                    let n = m.info.audio_streams.len();
+                    m.interpret.audio_stream_gain_db =
+                        st.iter().take(n).enumerate().filter(|(_, (_, g))| *g != 0.0).map(|(k, (_, g))| (k as u32, *g)).collect();
+                    m.interpret.audio_streams_disabled = st.iter().take(n).enumerate().filter(|(_, (on, _))| !on).map(|(k, _)| k as u32).collect();
+                }
             }
         }
         Ok(())

@@ -115,6 +115,115 @@ pub enum Interpolation {
     ContinuousBezier,
     EaseIn,
     EaseOut,
+    /// An easing curve (Robert Penner's family) for the segment leaving the keyframe; ignores
+    /// the influence handles. Kdenlive's easing keyframe types.
+    Penner(EaseCurve, EaseMode),
+}
+
+/// The shape of a [`Interpolation::Penner`] easing.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum EaseCurve {
+    Cubic,
+    Exponential,
+    Circular,
+    Elastic,
+    Bounce,
+}
+
+/// Which end of a segment an easing curve slows down.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum EaseMode {
+    In,
+    Out,
+    InOut,
+}
+
+impl EaseCurve {
+    pub const ALL: [EaseCurve; 5] = [EaseCurve::Cubic, EaseCurve::Exponential, EaseCurve::Circular, EaseCurve::Elastic, EaseCurve::Bounce];
+    pub fn label(self) -> &'static str {
+        match self {
+            EaseCurve::Cubic => "Cubic",
+            EaseCurve::Exponential => "Exponential",
+            EaseCurve::Circular => "Circular",
+            EaseCurve::Elastic => "Elastic",
+            EaseCurve::Bounce => "Bounce",
+        }
+    }
+    fn key(self) -> &'static str {
+        match self {
+            EaseCurve::Cubic => "cubic",
+            EaseCurve::Exponential => "exponential",
+            EaseCurve::Circular => "circular",
+            EaseCurve::Elastic => "elastic",
+            EaseCurve::Bounce => "bounce",
+        }
+    }
+}
+
+impl EaseMode {
+    pub const ALL: [EaseMode; 3] = [EaseMode::In, EaseMode::Out, EaseMode::InOut];
+    fn key(self) -> &'static str {
+        match self {
+            EaseMode::In => "In",
+            EaseMode::Out => "Out",
+            EaseMode::InOut => "InOut",
+        }
+    }
+}
+
+/// Robert Penner's easing equations: progress `u` (0..1) of a segment to its eased share of the
+/// value change. Elastic and Bounce overshoot 0..1 on purpose.
+pub fn penner(curve: EaseCurve, mode: EaseMode, u: f64) -> f64 {
+    use std::f64::consts::PI;
+    let u = u.clamp(0.0, 1.0);
+    fn bounce_out(x: f64) -> f64 {
+        let (n, d) = (7.5625, 2.75);
+        if x < 1.0 / d {
+            n * x * x
+        } else if x < 2.0 / d {
+            let x = x - 1.5 / d;
+            n * x * x + 0.75
+        } else if x < 2.5 / d {
+            let x = x - 2.25 / d;
+            n * x * x + 0.9375
+        } else {
+            let x = x - 2.625 / d;
+            n * x * x + 0.984375
+        }
+    }
+    // the "in" form of each curve; "out" and "in-out" are built from it
+    let ease_in = |x: f64| -> f64 {
+        match curve {
+            EaseCurve::Cubic => x * x * x,
+            EaseCurve::Exponential => {
+                if x <= 0.0 {
+                    0.0
+                } else {
+                    2f64.powf(10.0 * x - 10.0)
+                }
+            }
+            EaseCurve::Circular => 1.0 - (1.0 - x * x).max(0.0).sqrt(),
+            EaseCurve::Elastic => {
+                if x <= 0.0 || x >= 1.0 {
+                    x
+                } else {
+                    -(2f64.powf(10.0 * x - 10.0)) * ((10.0 * x - 10.75) * (2.0 * PI / 3.0)).sin()
+                }
+            }
+            EaseCurve::Bounce => 1.0 - bounce_out(1.0 - x),
+        }
+    };
+    match mode {
+        EaseMode::In => ease_in(u),
+        EaseMode::Out => 1.0 - ease_in(1.0 - u),
+        EaseMode::InOut => {
+            if u < 0.5 {
+                ease_in(2.0 * u) / 2.0
+            } else {
+                1.0 - ease_in(2.0 - 2.0 * u) / 2.0
+            }
+        }
+    }
 }
 
 impl Interpolation {
@@ -136,7 +245,41 @@ impl Interpolation {
             Interpolation::ContinuousBezier => "Continuous Bezier",
             Interpolation::EaseIn => "Ease In",
             Interpolation::EaseOut => "Ease Out",
+            Interpolation::Penner(c, _) => c.label(),
         }
+    }
+
+    /// The command-parameter name (`effects.setInterpolation`): `linear`, `bezier`, …,
+    /// `cubicIn`, `bounceInOut`.
+    pub fn key(self) -> String {
+        match self {
+            Interpolation::Linear => "linear".into(),
+            Interpolation::Hold => "hold".into(),
+            Interpolation::Bezier => "bezier".into(),
+            Interpolation::AutoBezier => "autoBezier".into(),
+            Interpolation::ContinuousBezier => "continuousBezier".into(),
+            Interpolation::EaseIn => "easeIn".into(),
+            Interpolation::EaseOut => "easeOut".into(),
+            Interpolation::Penner(c, m) => format!("{}{}", c.key(), m.key()),
+        }
+    }
+
+    /// Parse [`Interpolation::key`], case-insensitively.
+    pub fn from_key(s: &str) -> Option<Interpolation> {
+        let l = s.to_ascii_lowercase();
+        let simple = [
+            Interpolation::Linear,
+            Interpolation::Hold,
+            Interpolation::Bezier,
+            Interpolation::AutoBezier,
+            Interpolation::ContinuousBezier,
+            Interpolation::EaseIn,
+            Interpolation::EaseOut,
+        ];
+        if let Some(i) = simple.into_iter().find(|i| i.key().to_ascii_lowercase() == l) {
+            return Some(i);
+        }
+        EaseCurve::ALL.into_iter().flat_map(|c| EaseMode::ALL.map(|m| Interpolation::Penner(c, m))).find(|i| i.key().to_ascii_lowercase() == l)
     }
 }
 
@@ -328,6 +471,9 @@ impl Param {
 
 /// Temporal easing for u∈[0,1] between two keyframes (1D cubic Bezier in time/value space).
 fn ease(a: &Keyframe, b: &Keyframe, u: f64) -> f64 {
+    if let Interpolation::Penner(c, m) = a.interp {
+        return penner(c, m, u);
+    }
     let out_ease = matches!(a.interp, Interpolation::Bezier | Interpolation::AutoBezier | Interpolation::ContinuousBezier | Interpolation::EaseOut);
     let in_ease = matches!(b.interp, Interpolation::Bezier | Interpolation::AutoBezier | Interpolation::ContinuousBezier | Interpolation::EaseIn)
         || matches!(a.interp, Interpolation::Bezier | Interpolation::ContinuousBezier);
@@ -403,6 +549,21 @@ mod tests {
             assert!(v >= last - 1e-9);
             last = v;
         }
+    }
+
+    #[test]
+    fn penner_easings_start_and_end_on_the_keyframes() {
+        for c in EaseCurve::ALL {
+            for m in EaseMode::ALL {
+                assert!(penner(c, m, 0.0).abs() < 1e-9, "{c:?} {m:?}");
+                assert!((penner(c, m, 1.0) - 1.0).abs() < 1e-9, "{c:?} {m:?}");
+                let i = Interpolation::Penner(c, m);
+                assert_eq!(Interpolation::from_key(&i.key()), Some(i));
+            }
+        }
+        assert!(penner(EaseCurve::Cubic, EaseMode::In, 0.5) < 0.2);
+        assert!(penner(EaseCurve::Cubic, EaseMode::Out, 0.5) > 0.8);
+        assert_eq!(Interpolation::from_key("autobezier"), Some(Interpolation::AutoBezier));
     }
 
     #[test]

@@ -7,13 +7,17 @@ pub mod eq;
 pub mod essential;
 pub mod filters;
 pub mod modulation;
+pub mod modulators;
 pub mod multiband;
 pub mod pitch;
 pub mod restoration;
 pub mod reverbs;
+pub mod shelves;
 pub mod special;
+pub mod stereo;
 mod stft;
 pub mod time;
+pub mod tools;
 pub(crate) mod util;
 
 pub use channel::{Amplify, Balance, ChannelVolume, Invert, Route, Routing};
@@ -23,12 +27,16 @@ pub use eq::{ParametricEq, SimpleEq};
 pub use essential::{DeEsser, DeReverb, SpeechEnhance, StereoWidth};
 pub use filters::{FftFilter, FullParametricEq, GraphicEq, NotchFilter, ScientificFilter};
 pub use modulation::{AnalogDelay, ChorusFlanger, Flanger, MultitapDelay, Phaser};
+pub use modulators::{Pulsator, Shifter, Vibrato};
 pub use multiband::{DynamicsRack, MultibandCompressor, TubeCompressor};
 pub use pitch::PitchShifter;
 pub use restoration::{DeHum, DeNoise};
 pub use reverbs::{ConvolutionReverb, SurroundReverb};
+pub use shelves::{AllPassFilter, DynamicEq, Shelf, SubCut, TiltShelf};
 pub use special::{AmbisonicsPanner, Binauralizer, ChannelMixer, Distortion, GuitarSuite, LoudnessMeterFx, Mastering, Mute, StereoExpander, VocalEnhancer};
+pub use stereo::{Crossfeed, Haas, Mixdown, StereoToMono, StereoTools};
 pub use time::{Delay, Reverb};
+pub use tools::{Calculus, Crusher, Crystalizer, DcShift, SoftClipper, SubBoost, VirtualBass};
 
 use crate::{AudioEffect, ParamSpec};
 
@@ -143,6 +151,30 @@ static REGISTRY: &[EffectInfo] = &[
     entry!("ambisonics_panner", "Panner - Ambisonics", Special, AmbisonicsPanner),
     entry!("loudness_meter", "Loudness Meter", Special, LoudnessMeterFx),
     entry!("mute", "Mute", Channel, Mute),
+    // Kdenlive parity: Tools, Volume and Dynamics, EQ and Filters, Modulators, Channels, Stereo
+    entry!("crusher", "Crusher", Special, Crusher),
+    entry!("crystalizer", "Crystalizer", Special, Crystalizer),
+    entry!("dc_shift", "DC Shift", Special, DcShift),
+    entry!("derivative", "Derivative", Special, Calculus<false>),
+    entry!("integral", "Integral", Special, Calculus<true>),
+    entry!("soft_clipper", "Soft Clipper", Dynamics, SoftClipper),
+    entry!("sub_boost", "Sub Boost", Filter, SubBoost),
+    entry!("virtual_bass", "Virtual Bass", Special, VirtualBass),
+    entry!("low_shelf", "Low Shelf", Filter, Shelf<false>),
+    entry!("high_shelf", "High Shelf", Filter, Shelf<true>),
+    entry!("allpass", "All Pass", Filter, AllPassFilter),
+    entry!("tilt_shelf", "Tilt Shelf", Filter, TiltShelf),
+    entry!("sub_cut", "Sub Cut", Filter, SubCut),
+    entry!("dynamic_eq", "Dynamic Equalizer", Dynamics, DynamicEq),
+    entry!("pulsator", "Pulsator", Modulation, Pulsator),
+    entry!("vibrato", "Vibrato", Modulation, Vibrato),
+    entry!("freq_shift", "Frequency Shifter", Modulation, Shifter<false>),
+    entry!("phase_shift", "Phase Shifter", Modulation, Shifter<true>),
+    entry!("mixdown", "Mixdown", Channel, Mixdown),
+    entry!("stereo_to_mono", "Stereo to Mono", Channel, StereoToMono),
+    entry!("crossfeed", "Crossfeed", Channel, Crossfeed),
+    entry!("haas", "Haas Stereo Enhancer", Channel, Haas),
+    entry!("stereo_tools", "Stereo Tools", Channel, StereoTools),
 ];
 
 /// All registered effects.

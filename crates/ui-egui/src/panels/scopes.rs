@@ -12,17 +12,26 @@
 //! `scopes.menu.waveformType.<type>`, `scopes.menu.paradeType.<type>`,
 //! `scopes.menu.colorSpace.<space>`, `scopes.menu.brightness.<b>`, `scopes.menu.targets.<75|100>`;
 //! `scopes.hdrWaveform` while levels are shown in cd/m². State: `ui.panels.scopes`.
+//!
+//! Kdenlive-style options in the same menu: Auto Refresh / Refresh Now (`scopes.menu.autoRefresh`,
+//! `scopes.menu.refresh`; a click on the scopes refreshes too), Realtime, Scope Source
+//! (`scopes.menu.source.<active|program|source>`), Histogram Components
+//! (`scopes.menu.histogram.<y|sum|r|g|b|unscaled>`), Paint Mode (`scopes.menu.paintMode.<m>`),
+//! Gradient Reference Line, and under Vectorscope the YPbPr / YUV model
+//! (`scopes.menu.colorModel.*`), I and Q Lines, Gain (`scopes.menu.gain.<n>`) and Export
+//! Background (`scopes.menu.exportBackground.<rgb|yuv|ycbcr>`). Readouts: `scopes.hoverLevel`,
+//! `scopes.histogram.minMax`, `scopes.vectorscope.mode`.
 
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
 use egui::{Align2, Color32, Rect, Sense, Stroke, TextureHandle, TextureOptions, pos2, vec2};
-use redrob_film_scopes::{self as sc, Brightness, ColorSpace, ParadeType, Params, Scale, ScopeKind, Signal, Targets, WaveformType};
+use redrob_film_scopes::{self as sc, Brightness, ColorSpace, PaintMode, ParadeType, Params, Scale, ScopeKind, Signal, Targets, WaveformType};
 
 use crate::FilmcraftApp;
 use crate::frames::{FrameKey, Target};
 use crate::icons::{self, Icon};
-use crate::panels::panel_state::{SCOPE_PRESETS, ScopesState};
+use crate::panels::panel_state::{SCOPE_PRESETS, ScopeSource, ScopesState, VECTOR_GAINS};
 use crate::theme::Tokens;
 
 const GRATICULE: Color32 = Color32::from_rgb(0x2a, 0x2a, 0x2a);
@@ -59,19 +68,21 @@ pub fn frame_signal(app: &mut FilmcraftApp, ctx: &egui::Context, slot: &str, fra
     let rev = app.session.revision;
     let id = egui::Id::new(("scope-signal", slot));
     let cached: Option<(u64, Arc<Signal>, bool)> = ctx.data(|d| d.get_temp(id));
-    let key = hash_of((seq_id.0, frame, rev, pq));
+    let key = hash_of((seq_id.0, frame, rev, pq, st.realtime));
     if let Some((k, s, p)) = &cached
         && *k == key
     {
         return Some(ScopeFrame { signal: s.clone(), key, pq: *p, space });
     }
+    // Realtime: a quarter-resolution frame decimated to MAX_W × MAX_H; off: every pixel
     let fresh = if pq {
-        redrob_film_engine::scopes::scope_signal(&app.session, rate.tick_of(frame), 0.125, true)
+        redrob_film_engine::scopes::scope_signal(&app.session, rate.tick_of(frame), if st.realtime { 0.125 } else { 0.5 }, true)
     } else {
-        let fkey = FrameKey { target: Target::Sequence(seq_id), frame, size: 250, revision: rev, draft: false };
+        let scale = if st.realtime { 0.25 } else { 1.0 };
+        let fkey = FrameKey { target: Target::Sequence(seq_id), frame, size: (scale * 1000.0) as u32, revision: rev, draft: false };
         let project = app.session.project.clone();
-        app.frames.request(fkey, rate.tick_of(frame), 0.25, &project, prio);
-        app.frames.get(&fkey).map(|img| Signal::from_rgba8(img.w, img.h, &img.px))
+        app.frames.request(fkey, rate.tick_of(frame), scale, &project, prio);
+        app.frames.get(&fkey).map(|img| decimate(img.w, img.h, &img.px, st.realtime))
     };
     match fresh {
         Some(s) => {
@@ -83,6 +94,65 @@ pub fn frame_signal(app: &mut FilmcraftApp, ctx: &egui::Context, slot: &str, fra
     }
 }
 
+/// A frame's RGBA8 pixels as a scope signal: decimated (Realtime) or every pixel.
+fn decimate(w: usize, h: usize, px: &[u8], realtime: bool) -> Signal {
+    if realtime { Signal::from_rgba8(w, h, px) } else { Signal::from_rgba8_max(w, h, px, FULL_W, FULL_H) }
+}
+
+/// Largest signal analysed with Realtime off (UHD every pixel; bigger frames are sampled).
+const FULL_W: usize = 3840;
+const FULL_H: usize = 2160;
+
+/// The Source monitor's frame for the scopes (the clip at the Source playhead).
+pub fn source_signal(app: &mut FilmcraftApp, ctx: &egui::Context, st: &ScopesState, prio: u32) -> Option<ScopeFrame> {
+    let item = app.session.state.source_item?;
+    let view = redrob_film_engine::clip_ops::source_view(&app.session, item)?;
+    let frame = view.rate.frame_at(app.session.state.source_playhead);
+    let rev = app.item_revision(item);
+    let space = st.color_space.resolve(false);
+    let id = egui::Id::new(("scope-signal", "source"));
+    let cached: Option<(u64, Arc<Signal>, bool)> = ctx.data(|d| d.get_temp(id));
+    let key = hash_of(("source", item.0, frame, rev, st.realtime));
+    if let Some((k, s, _)) = &cached
+        && *k == key
+    {
+        return Some(ScopeFrame { signal: s.clone(), key, pq: false, space });
+    }
+    let scale = if st.realtime { 0.25 } else { 1.0 };
+    let fkey = FrameKey { target: Target::Item(item), frame, size: (scale * 1000.0) as u32, revision: rev, draft: false };
+    let project = app.session.project.clone();
+    app.frames.request(fkey, view.rate.tick_of(frame), scale, &project, prio);
+    match app.frames.get(&fkey).map(|img| decimate(img.w, img.h, &img.px, st.realtime)) {
+        Some(s) => {
+            let s = Arc::new(s);
+            ctx.data_mut(|d| d.insert_temp(id, (key, s.clone(), false)));
+            Some(ScopeFrame { signal: s, key, pq: false, space })
+        }
+        None => cached.map(|(k, s, _)| ScopeFrame { signal: s, key: k, pq: false, space }),
+    }
+}
+
+/// Whether the scopes read the Source monitor now (Scope Source, or the focused monitor).
+pub fn reads_source(app: &FilmcraftApp, st: &ScopesState) -> bool {
+    match st.source {
+        ScopeSource::Program => false,
+        ScopeSource::Source => true,
+        ScopeSource::Active => app.ui.focused == crate::dock::PanelKind::Source && app.session.state.source_item.is_some(),
+    }
+}
+
+fn frozen_id() -> egui::Id {
+    egui::Id::new("scopes-frozen")
+}
+fn refresh_id() -> egui::Id {
+    egui::Id::new("scopes-refresh")
+}
+
+/// Refresh the scopes once (a click on them, or the menu's Refresh Now) while Auto Refresh is off.
+pub fn request_refresh(ctx: &egui::Context) {
+    ctx.data_mut(|d| d.insert_temp(refresh_id(), true));
+}
+
 /// The Lumetri Scopes panel.
 pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
@@ -90,16 +160,61 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let area = Rect::from_min_max(rect.min, pos2(rect.max.x, rect.max.y - FOOTER_H));
     ui.painter().rect_filled(area, 0.0, Color32::BLACK);
     let ctx = ui.ctx().clone();
-    let frame = app.session.state.active_sequence.map(|_| app.session.sequence_rate().frame_at(app.session.playhead()));
-    // while playing, scopes come after the Program monitor's prefetch
-    let prio = if app.playback.playing { 40 } else { 2 };
-    let sf = frame.and_then(|f| frame_signal(app, &ctx, "program", f, &st, prio));
+    let from_source = reads_source(app, &st);
+    let playing = if from_source { app.source_playback.clock.playing } else { app.playback.playing };
+    // while playing, scopes come after the monitor's prefetch
+    let prio = if playing { 40 } else { 2 };
+    // Auto Refresh off: the frame last analysed stays until the scopes are clicked
+    let frozen: Option<(bool, ScopeFrame)> = ctx.data(|d| d.get_temp(frozen_id()));
+    let refresh = ctx.data_mut(|d| d.remove_temp::<bool>(refresh_id())).unwrap_or(false);
+    let keep = !st.auto_refresh && !refresh && frozen.as_ref().is_some_and(|f| f.0 == from_source);
+    let sf = if keep {
+        frozen.map(|f| f.1)
+    } else if from_source {
+        source_signal(app, &ctx, &st, prio)
+    } else {
+        let frame = app.session.state.active_sequence.map(|_| app.session.sequence_rate().frame_at(app.session.playhead()));
+        frame.and_then(|f| frame_signal(app, &ctx, "program", f, &st, prio))
+    };
+    if !keep {
+        match &sf {
+            Some(f) => ctx.data_mut(|d| {
+                d.insert_temp(frozen_id(), (from_source, f.clone()));
+            }),
+            // keep asking until the refreshed frame has rendered
+            None if refresh => request_refresh(&ctx),
+            None => {}
+        }
+    }
     match &sf {
         Some(sf) => draw(app, ui, area, &st.shown, sf, &st, "scopes"),
-        None => crate::dock::placeholder(ui, area, &t, if app.session.state.active_sequence.is_some() { "…" } else { tl!("(no sequence)") }),
+        None => crate::dock::placeholder(
+            ui,
+            area,
+            &t,
+            if from_source {
+                tl!("(no clips)")
+            } else if app.session.state.active_sequence.is_some() {
+                "…"
+            } else {
+                tl!("(no sequence)")
+            },
+        ),
     }
-    // right-click anywhere on the scopes: the settings menu
+    if !st.auto_refresh {
+        ui.painter().text(
+            area.right_top() + vec2(-6.0, 4.0),
+            Align2::RIGHT_TOP,
+            tl!("Auto Refresh off: click to refresh"),
+            Tokens::ui(9.0),
+            Color32::from_gray(120),
+        );
+    }
+    // right-click anywhere on the scopes: the settings menu; a click refreshes
     let resp = ui.interact(area, egui::Id::new("scopes-area"), Sense::click());
+    if resp.clicked() {
+        request_refresh(&ctx);
+    }
     egui::Popup::context_menu(&resp).show(|ui| settings_menu(app, ui));
     footer(app, ui, Rect::from_min_max(pos2(rect.min.x, area.max.y), rect.max), sf.as_ref().map(|s| s.space));
 }
@@ -214,17 +329,85 @@ pub fn settings_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
         }
     });
     pick(ui, &mut out, "scopes.menu.clamp", tl!("Clamp Signal"), st.clamp);
+    ui.separator();
+    // Kdenlive-style scope options (all scopes; the histogram, parade and vectorscope ones)
+    pick(ui, &mut out, "scopes.menu.autoRefresh", tl!("Auto Refresh"), st.auto_refresh);
+    pick(ui, &mut out, "scopes.menu.refresh", tl!("Refresh Now"), false);
+    pick(ui, &mut out, "scopes.menu.realtime", tl!("Realtime"), st.realtime);
+    sub(ui, &mut out, "sources", tl!("Scope Source"), &mut |ui, out| {
+        for s in ScopeSource::ALL {
+            pick(ui, out, &format!("scopes.menu.source.{}", s.name()), crate::i18n::t(s.label()), st.source == s);
+        }
+    });
+    sub(ui, &mut out, "histogram", tl!("Histogram Components"), &mut |ui, out| {
+        pick(ui, out, "scopes.menu.histogram.y", "Y", st.hist_luma);
+        pick(ui, out, "scopes.menu.histogram.sum", tl!("Sum"), st.hist_sum);
+        pick(ui, out, "scopes.menu.histogram.r", "R", st.hist_red);
+        pick(ui, out, "scopes.menu.histogram.g", "G", st.hist_green);
+        pick(ui, out, "scopes.menu.histogram.b", "B", st.hist_blue);
+        ui.separator();
+        pick(ui, out, "scopes.menu.histogram.unscaled", tl!("Unscaled"), st.hist_unscaled);
+    });
+    sub(ui, &mut out, "paintModes", tl!("Paint Mode"), &mut |ui, out| {
+        for m in PaintMode::ALL {
+            pick(ui, out, &format!("scopes.menu.paintMode.{}", serde_name(&m)), crate::i18n::t(m.label()), st.paint_mode == m);
+        }
+    });
+    pick(ui, &mut out, "scopes.menu.gradientLine", tl!("Gradient Reference Line"), st.gradient_line);
+    sub(ui, &mut out, "vectorscope", tl!("Vectorscope"), &mut |ui, out| {
+        pick(ui, out, "scopes.menu.colorModel.ypbpr", "YPbPr", !st.analog_yuv);
+        pick(ui, out, "scopes.menu.colorModel.yuv", "YUV", st.analog_yuv);
+        ui.separator();
+        pick(ui, out, "scopes.menu.iqLines", tl!("I and Q Lines"), st.iq_lines);
+        ui.separator();
+        for g in VECTOR_GAINS {
+            pick(ui, out, &format!("scopes.menu.gain.{g}"), &tlf!("Gain {n}×", n = g), (st.vector_gain - g).abs() < 1e-3);
+        }
+        ui.separator();
+        for p in sc::paint::Plane::ALL {
+            pick(ui, out, &format!("scopes.menu.exportBackground.{}", p.name()), &tlf!("Export Background ({plane})…", plane = p.label()), false);
+        }
+    });
     let mut close = false;
     for (id, r, label, clicked) in out {
         app.auto.add(&id, r, &label);
         if clicked {
-            apply_menu_id(&mut app.ui.panels.scopes, &id);
+            if !apply_app_menu_id(app, ui.ctx(), &id) {
+                apply_menu_id(&mut app.ui.panels.scopes, &id);
+            }
             close = true;
         }
     }
     if close {
         ui.close();
     }
+}
+
+/// Menu items that act on more than the settings: Refresh Now and Export Background.
+pub fn apply_app_menu_id(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str) -> bool {
+    if id == "scopes.menu.refresh" {
+        request_refresh(ctx);
+        return true;
+    }
+    let Some(name) = id.strip_prefix("scopes.menu.exportBackground.") else { return false };
+    let Some(plane) = sc::paint::Plane::ALL.into_iter().find(|p| p.name() == name) else { return true };
+    let st = &app.ui.panels.scopes;
+    let p = Params { matrix: st.color_space.resolve(false).matrix(), analog_yuv: st.analog_yuv, ..Params::default() };
+    let suggested = format!("vectorscope-{}.png", plane.name());
+    let Some(path) = app.hooks.pick_save_as.as_mut().and_then(|f| f(tl!("PNG image"), &["png"], &suggested)) else { return true };
+    let path = if path.to_ascii_lowercase().ends_with(".png") { path } else { format!("{path}.png") };
+    app.ui.status = match export_background(&path, plane, &p) {
+        Ok(()) => tlf!("Exported the vectorscope background to {path}", path = path),
+        Err(e) => tlf!("Could not export the vectorscope background: {error}", error = e),
+    };
+    true
+}
+
+/// Write the colour plane of the vectorscope (512 px square, the scope's extent) as a PNG.
+pub fn export_background(path: &str, plane: sc::paint::Plane, p: &Params) -> Result<(), String> {
+    let (w, h, px) = sc::paint::background(plane, p.matrix, 512, p.vector_extent());
+    let img = image::RgbaImage::from_raw(w as u32, h as u32, px).ok_or("bad image size")?;
+    img.save_with_format(path, image::ImageFormat::Png).map_err(|e| e.to_string())
 }
 
 fn serde_name<T: serde::Serialize>(v: &T) -> String {
@@ -256,9 +439,68 @@ pub fn apply_menu_id(st: &mut ScopesState, id: &str) -> bool {
             st.clamp = !st.clamp;
             true
         }
+        "autoRefresh" => {
+            st.auto_refresh = !st.auto_refresh;
+            true
+        }
+        "realtime" => {
+            st.realtime = !st.realtime;
+            true
+        }
+        "gradientLine" => {
+            st.gradient_line = !st.gradient_line;
+            true
+        }
+        "iqLines" => {
+            st.iq_lines = !st.iq_lines;
+            true
+        }
+        "source" => ScopeSource::ALL.into_iter().find(|s| s.name() == name).map(|s| st.source = s).is_some(),
+        "paintMode" => from(name, &PaintMode::ALL.map(|x| serde_name(&x))).map(|i| st.paint_mode = PaintMode::ALL[i]).is_some(),
+        "colorModel" => match name {
+            "yuv" => {
+                st.analog_yuv = true;
+                true
+            }
+            "ypbpr" => {
+                st.analog_yuv = false;
+                true
+            }
+            _ => false,
+        },
+        "gain" => name.parse::<f32>().ok().filter(|g| VECTOR_GAINS.iter().any(|x| (x - g).abs() < 1e-3)).map(|g| st.vector_gain = g).is_some(),
+        "histogram" => {
+            let f = match name {
+                "y" => &mut st.hist_luma,
+                "sum" => &mut st.hist_sum,
+                "r" => &mut st.hist_red,
+                "g" => &mut st.hist_green,
+                "b" => &mut st.hist_blue,
+                "unscaled" => &mut st.hist_unscaled,
+                _ => return false,
+            };
+            *f = !*f;
+            true
+        }
         _ => false,
     };
-    if ok && !matches!(group, "colorSpace" | "brightness" | "targets") {
+    if ok
+        && !matches!(
+            group,
+            "colorSpace"
+                | "brightness"
+                | "targets"
+                | "autoRefresh"
+                | "realtime"
+                | "gradientLine"
+                | "iqLines"
+                | "source"
+                | "paintMode"
+                | "colorModel"
+                | "gain"
+                | "histogram"
+        )
+    {
         st.preset.clear();
     }
     ok
@@ -299,7 +541,7 @@ pub fn draw(app: &mut FilmcraftApp, ui: &mut egui::Ui, area: Rect, shown: &[Scop
 
 /// Scope parameters; `rows` = the plot's height in pixels (64–256), so levels are not resampled.
 fn params(st: &ScopesState, sf: &ScopeFrame, rows: usize) -> Params {
-    Params { matrix: sf.space.matrix(), clamp: st.clamp, rows, ..Params::default() }
+    Params { matrix: sf.space.matrix(), clamp: st.clamp, rows, analog_yuv: st.analog_yuv, vector_gain: st.vector_gain, ..Params::default() }
 }
 
 /// Levels on a cd/m² axis: HDR frames, or the HDR scale.
@@ -340,7 +582,12 @@ const BLUE: [f32; 3] = [0.3, 0.38, 1.0];
 const WHITE: [f32; 3] = [0.85, 0.85, 0.85];
 const LUMA: [f32; 3] = [0.55, 1.0, 0.7];
 
-fn trace_color(name: &str, wt: Option<WaveformType>) -> [f32; 3] {
+fn trace_color(name: &str, wt: Option<WaveformType>, mode: PaintMode) -> [f32; 3] {
+    match mode {
+        PaintMode::Green => return [0.25, 1.0, 0.35],
+        PaintMode::Grey => return [0.8, 0.8, 0.8],
+        PaintMode::Color => {}
+    }
     match (name, wt) {
         ("R", _) => RED,
         ("G", _) => GREEN,
@@ -349,6 +596,24 @@ fn trace_color(name: &str, wt: Option<WaveformType>) -> [f32; 3] {
         ("Y", Some(WaveformType::Luma)) => WHITE,
         ("Y", Some(_)) => LUMA,
         _ => WHITE,
+    }
+}
+
+/// Paint Mode Green: samples at exactly 0 or 255 (the rows of 0.0 and 1.0) are painted red.
+fn highlight_extremes(px: &mut [u8], grids: &[&sc::Grid], (lo, hi): (f32, f32)) {
+    let Some(first) = grids.first() else { return };
+    let (w, rows) = (first.cols, first.rows);
+    for v in [0.0f32, 1.0] {
+        let Some(row) = sc::row_of(v, lo, hi, rows) else { continue };
+        let y = rows - 1 - row;
+        for x in 0..w {
+            if grids.iter().any(|g| g.cols == w && g.rows == rows && g.at(x, row) > 0) {
+                let i = (y * w + x) * 4;
+                if let Some(o) = px.get_mut(i..i + 4) {
+                    o.copy_from_slice(&[255, 40, 40, 255]);
+                }
+            }
+        }
     }
 }
 
@@ -365,15 +630,20 @@ fn draw_one(app: &mut FilmcraftApp, ui: &mut egui::Ui, cell: Rect, k: ScopeKind,
             if plot.width() < 8.0 || plot.height() < 8.0 {
                 return;
             }
+            let mode = st.paint_mode;
             let tex = cached_texture(&ctx, slot, key, || {
                 let sig = plotted(st, sf);
                 if k == ScopeKind::Waveform {
                     let w = sc::waveform(&sig, st.waveform_type, &p);
-                    let layers: Vec<(&sc::Grid, [f32; 3])> = w.traces.iter().map(|g| (g, trace_color(g.name, Some(st.waveform_type)))).collect();
-                    sc::paint::grids(&layers, sc::paint::waveform_reference(w.per_column), gain)
+                    let layers: Vec<(&sc::Grid, [f32; 3])> = w.traces.iter().map(|g| (g, trace_color(g.name, Some(st.waveform_type), mode))).collect();
+                    let (iw, ih, mut px) = sc::paint::grids(&layers, sc::paint::waveform_reference(w.per_column), gain);
+                    if mode == PaintMode::Green {
+                        highlight_extremes(&mut px, &w.traces.iter().collect::<Vec<_>>(), (w.lo, w.hi));
+                    }
+                    (iw, ih, px)
                 } else {
                     let w = sc::parade(&sig, st.parade_type, &p);
-                    parade_image(&w, gain)
+                    parade_image(&w, gain, mode)
                 }
             });
             level_graticule(ui, plot, st, sf, p.range());
@@ -389,7 +659,22 @@ fn draw_one(app: &mut FilmcraftApp, ui: &mut egui::Ui, cell: Rect, k: ScopeKind,
                     let x = plot.min.x + plot.width() * i as f32 / n as f32;
                     ui.painter().line_segment([pos2(x, plot.min.y), pos2(x, plot.max.y)], Stroke::new(1.0, Color32::from_gray(40)));
                 }
+                // Gradient reference line: a black-to-white ramp's trace in each channel
+                if st.gradient_line {
+                    let (lo, hi) = p.range();
+                    let y_of = |v: f32| plot.max.y - (v - lo) / (hi - lo) * plot.height();
+                    let sw = plot.width() / n as f32;
+                    for i in 0..n {
+                        let x0 = plot.min.x + sw * i as f32;
+                        ui.painter().line_segment(
+                            [pos2(x0, y_of(0.0)), pos2(x0 + sw, y_of(1.0))],
+                            Stroke::new(1.0, Color32::from_rgba_unmultiplied(255, 220, 120, 150)),
+                        );
+                    }
+                    app.auto.add(&format!("{prefix}.gradientLine"), plot, "Gradient reference line");
+                }
             }
+            hover_level(app, ui, plot, st, sf, p.range(), prefix);
             let title = match k {
                 ScopeKind::Parade => tlf!("Parade ({kind})", kind = crate::i18n::t(st.parade_type.label())),
                 _ => tlf!("Waveform ({kind})", kind = crate::i18n::t(st.waveform_type.label())),
@@ -400,16 +685,56 @@ fn draw_one(app: &mut FilmcraftApp, ui: &mut egui::Ui, cell: Rect, k: ScopeKind,
             }
         }
         ScopeKind::Histogram => {
-            let plot = Rect::from_min_max(cell.min + vec2(34.0, 10.0), cell.max - vec2(34.0, 10.0));
+            let mut plot = Rect::from_min_max(cell.min + vec2(34.0, 10.0), cell.max - vec2(34.0, 10.0));
             if plot.width() < 8.0 || plot.height() < 8.0 {
                 return;
             }
-            let tex = cached_texture(&ctx, slot, key, || histogram_image(&sc::histogram(&plotted(st, sf), &p), gain));
+            // Unscaled: 256 screen pixels wide (a narrower cell still shrinks it)
+            if st.hist_unscaled {
+                plot.max.x = plot.min.x + plot.width().min(256.0 / ctx.pixels_per_point());
+            }
+            let comps = HistComps { y: st.hist_luma, sum: st.hist_sum, r: st.hist_red, g: st.hist_green, b: st.hist_blue };
+            let hid = egui::Id::new(("scope-hist", slot.clone()));
+            let hist = match ctx.data(|d| d.get_temp::<(u64, Arc<sc::Histogram>)>(hid)) {
+                Some((hk, h)) if hk == key => h,
+                _ => {
+                    let h = Arc::new(sc::histogram(&plotted(st, sf), &p));
+                    ctx.data_mut(|d| d.insert_temp(hid, (key, h.clone())));
+                    h
+                }
+            };
+            let tex = cached_texture(&ctx, slot, key, || histogram_image(&hist, gain, comps));
             level_graticule(ui, plot, st, sf, (0.0, 1.0));
             if let Some(tex) = tex {
                 ui.painter().image(tex.id(), plot, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
             }
             ui.painter().text(plot.left_top() + vec2(4.0, 2.0), Align2::LEFT_TOP, tl!("Histogram"), Tokens::ui(9.0), Color32::from_gray(110));
+            // min / max of each component shown (code values, or 0–1 on the Float scale)
+            let sum = hist.sum();
+            let rows: [(bool, &str, &[u32], [f32; 3]); 5] = [
+                (comps.y, "Y", &hist.y, WHITE),
+                (comps.sum, "Sum", &sum, SUM),
+                (comps.r, "R", &hist.r, RED),
+                (comps.g, "G", &hist.g, GREEN),
+                (comps.b, "B", &hist.b, BLUE),
+            ];
+            let mut y = plot.min.y + 2.0;
+            let mut readout = Vec::new();
+            for (on, name, bins, col) in rows {
+                if !on {
+                    continue;
+                }
+                let text = match sc::min_max(bins) {
+                    Some((lo, hi)) if st.scale == Scale::Float => format!("{name}  min {:.2}  max {:.2}", lo as f32 / 255.0, hi as f32 / 255.0),
+                    Some((lo, hi)) => format!("{name}  min {lo}  max {hi}"),
+                    None => format!("{name}  —"),
+                };
+                let c = Color32::from_rgb((col[0] * 230.0) as u8, (col[1] * 230.0) as u8, (col[2] * 230.0) as u8);
+                ui.painter().text(pos2(plot.max.x - 4.0, y), Align2::RIGHT_TOP, &text, Tokens::ui(9.0), c);
+                readout.push(text);
+                y += 12.0;
+            }
+            app.auto.add(&format!("{prefix}.histogram.minMax"), plot, &readout.join("; "));
             if nits_axis(st, sf) {
                 app.auto.add(&format!("{prefix}.hdrWaveform"), plot, "HDR levels (cd/m²)");
             }
@@ -422,17 +747,29 @@ fn draw_one(app: &mut FilmcraftApp, ui: &mut egui::Ui, cell: Rect, k: ScopeKind,
                 let v = if hls { sc::vectorscope_hls(&sf.signal, &p) } else { sc::vectorscope_yuv(&sf.signal, &p) };
                 sc::paint::vectorscope(&v, WHITE, gain, true)
             });
-            vector_graticule(ui, sq, sf.space, st.targets, hls);
+            vector_graticule(ui, sq, &p, st, hls);
             if let Some(tex) = tex {
                 ui.painter().image(tex.id(), sq, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
             }
             ui.painter().text(cell.left_top() + vec2(6.0, 4.0), Align2::LEFT_TOP, k.label(), Tokens::ui(9.0), Color32::from_gray(110));
+            let model = if hls {
+                String::new()
+            } else if st.analog_yuv {
+                "YUV".into()
+            } else {
+                "YPbPr".into()
+            };
+            let info = if st.vector_gain > 1.0 { format!("{model}  {}×", st.vector_gain) } else { model };
+            if !info.is_empty() {
+                ui.painter().text(cell.right_top() + vec2(-6.0, 4.0), Align2::RIGHT_TOP, &info, Tokens::ui(9.0), Color32::from_gray(110));
+                app.auto.add(&format!("{prefix}.vectorscope.mode"), cell, &info);
+            }
         }
     }
 }
 
 /// The parade's traces side by side in one image.
-fn parade_image(w: &sc::Waveform, gain: f32) -> (usize, usize, Vec<u8>) {
+fn parade_image(w: &sc::Waveform, gain: f32, mode: PaintMode) -> (usize, usize, Vec<u8>) {
     let n = w.traces.len();
     let Some(first) = w.traces.first() else { return (0, 0, Vec::new()) };
     let (cw, rows) = (first.cols, first.rows);
@@ -440,7 +777,10 @@ fn parade_image(w: &sc::Waveform, gain: f32) -> (usize, usize, Vec<u8>) {
     let width = cw * n + gap * (n - 1);
     let mut out = vec![0u8; width * rows * 4];
     for (i, g) in w.traces.iter().enumerate() {
-        let (_, _, px) = sc::paint::grids(&[(g, trace_color(g.name, None))], sc::paint::waveform_reference(w.per_column), gain);
+        let (_, _, mut px) = sc::paint::grids(&[(g, trace_color(g.name, None, mode))], sc::paint::waveform_reference(w.per_column), gain);
+        if mode == PaintMode::Green {
+            highlight_extremes(&mut px, &[g], (w.lo, w.hi));
+        }
         let x0 = i * (cw + gap);
         for y in 0..rows {
             let src = &px[y * cw * 4..(y + 1) * cw * 4];
@@ -450,18 +790,45 @@ fn parade_image(w: &sc::Waveform, gain: f32) -> (usize, usize, Vec<u8>) {
     (width, rows, out)
 }
 
-/// The histogram as an image: levels bottom to top, counts to the right, R/G/B added.
-fn histogram_image(h: &sc::Histogram, gain: f32) -> (usize, usize, Vec<u8>) {
+/// The histogram components shown.
+#[derive(Clone, Copy)]
+struct HistComps {
+    y: bool,
+    sum: bool,
+    r: bool,
+    g: bool,
+    b: bool,
+}
+
+const SUM: [f32; 3] = [0.5, 0.5, 0.5];
+
+/// The histogram as an image: levels bottom to top, counts to the right; the shown components
+/// (Sum grey underneath, R/G/B added, Y white) drawn over each other.
+fn histogram_image(h: &sc::Histogram, gain: f32, c: HistComps) -> (usize, usize, Vec<u8>) {
     let (w, rows) = (256usize, sc::BINS);
-    let max = h.r.iter().chain(&h.g).chain(&h.b).copied().max().unwrap_or(0).max(1) as f32;
-    let len = |c: u32| ((c as f32 / max).sqrt() * w as f32).round() as usize;
+    let sum = h.sum();
+    let layers: Vec<(&[u32], [f32; 3], f32)> =
+        [(c.sum, &sum[..], SUM, 0.6), (c.r, &h.r[..], RED, 0.75), (c.g, &h.g[..], GREEN, 0.75), (c.b, &h.b[..], BLUE, 0.75), (c.y, &h.y[..], WHITE, 0.55)]
+            .into_iter()
+            .filter(|l| l.0)
+            .map(|l| (l.1, l.2, l.3))
+            .collect();
+    // each component scaled to its own peak, so Sum does not flatten the others
+    let peaks: Vec<f32> = layers.iter().map(|l| l.0.iter().copied().max().unwrap_or(0).max(1) as f32).collect();
     let mut out = vec![0u8; w * rows * 4];
     for bin in 0..rows {
         let y = rows - 1 - bin;
-        let (lr, lg, lb) = (len(h.r[bin]), len(h.g[bin]), len(h.b[bin]));
+        let lens: Vec<usize> = layers.iter().zip(&peaks).map(|(l, m)| ((l.0[bin] as f32 / m).sqrt() * w as f32).round() as usize).collect();
         for x in 0..w {
-            let c = [if x < lr { RED } else { [0.0; 3] }, if x < lg { GREEN } else { [0.0; 3] }, if x < lb { BLUE } else { [0.0; 3] }];
-            let s = [c[0][0] + c[1][0] + c[2][0], c[0][1] + c[1][1] + c[2][1], c[0][2] + c[1][2] + c[2][2]].map(|v| (v * 0.75 * gain).min(1.0));
+            let mut s = [0f32; 3];
+            for ((_, col, k), len) in layers.iter().zip(&lens) {
+                if x < *len {
+                    for (a, v) in s.iter_mut().zip(col) {
+                        *a += v * k;
+                    }
+                }
+            }
+            let s = s.map(|v| (v * gain).min(1.0));
             let a = s[0].max(s[1]).max(s[2]);
             if a > 0.0 {
                 let o = &mut out[(y * w + x) * 4..(y * w + x) * 4 + 4];
@@ -470,6 +837,27 @@ fn histogram_image(h: &sc::Histogram, gain: f32) -> (usize, usize, Vec<u8>) {
         }
     }
     (w, rows, out)
+}
+
+/// The pointer over a waveform / parade: a horizontal line at its level and the value there.
+fn hover_level(app: &mut FilmcraftApp, ui: &egui::Ui, plot: Rect, st: &ScopesState, sf: &ScopeFrame, (lo, hi): (f32, f32), prefix: &str) {
+    let Some(pos) = ui.ctx().pointer_hover_pos() else { return };
+    if !plot.contains(pos) || !ui.rect_contains_pointer(plot) {
+        return;
+    }
+    let v = lo + (plot.max.y - pos.y) / plot.height().max(1.0) * (hi - lo);
+    let text = if nits_axis(st, sf) {
+        format!("{:.0} cd/m²", sc::pq_to_nits(v))
+    } else {
+        match st.scale {
+            Scale::Float => format!("{v:.3}"),
+            _ => format!("{}", (v * 255.0).round() as i32),
+        }
+    };
+    let painter = ui.painter();
+    painter.line_segment([pos2(plot.min.x, pos.y), pos2(plot.max.x, pos.y)], Stroke::new(1.0, Color32::from_rgba_unmultiplied(255, 255, 255, 140)));
+    let tr = painter.text(pos2(plot.min.x + 4.0, pos.y - 2.0), Align2::LEFT_BOTTOM, &text, Tokens::ui(10.0), Color32::WHITE);
+    app.auto.add(&format!("{prefix}.hoverLevel"), tr, &text);
 }
 
 /// Horizontal graticule and labels of a levels scope (`range` = the value range of the plot).
@@ -501,10 +889,12 @@ fn level_graticule(ui: &egui::Ui, plot: Rect, st: &ScopesState, sf: &ScopeFrame,
 }
 
 /// Circles, axes, colour targets (YUV) or hue labels (HLS) and the skin-tone line.
-fn vector_graticule(ui: &egui::Ui, sq: Rect, space: ColorSpace, targets: Targets, hls: bool) {
+fn vector_graticule(ui: &egui::Ui, sq: Rect, p: &Params, st: &ScopesState, hls: bool) {
+    let targets = st.targets;
     let painter = ui.painter();
     let c = sq.center();
-    let scale = sq.width() / 2.0 / sc::VECTOR_EXTENT;
+    let extent = if hls { sc::VECTOR_EXTENT } else { p.vector_extent() };
+    let scale = sq.width() / 2.0 / extent;
     let at = |cb: f32, cr: f32| pos2(c.x + cb * scale, c.y - cr * scale);
     let ring = 0.5 * scale;
     painter.circle_stroke(c, ring, Stroke::new(1.0, Color32::from_gray(64)));
@@ -519,27 +909,41 @@ fn vector_graticule(ui: &egui::Ui, sq: Rect, space: ColorSpace, targets: Targets
         painter
             .line_segment([pos2(c.x + ix * ring * l, c.y - iy * ring * l), pos2(c.x + ix * ring, c.y - iy * ring)], Stroke::new(1.0, Color32::from_gray(64)));
     }
-    let m = space.matrix();
+    let m = p.matrix;
     if hls {
         for (name, cb, cr) in sc::hls_targets(m) {
-            let p = at(cb * 1.12, cr * 1.12);
-            painter.text(p, Align2::CENTER_CENTER, name, Tokens::ui(10.0), LABEL);
+            let pt = at(cb * 1.12, cr * 1.12);
+            painter.text(pt, Align2::CENTER_CENTER, name, Tokens::ui(10.0), LABEL);
         }
         return;
     }
-    // skin-tone line
-    let a = sc::SKIN_TONE_DEG.to_radians();
-    painter.line_segment([c, pos2(c.x + a.cos() * ring, c.y - a.sin() * ring)], Stroke::new(1.0, Color32::from_rgba_unmultiplied(220, 170, 120, 110)));
+    // I and Q lines (I = the skin-tone line, Q at right angles to it), through the centre
+    if st.iq_lines {
+        for (deg, name, col) in [
+            (sc::SKIN_TONE_DEG, "I", Color32::from_rgba_unmultiplied(220, 170, 120, 110)),
+            (sc::SKIN_TONE_DEG - 90.0, "Q", Color32::from_rgba_unmultiplied(150, 120, 220, 110)),
+        ] {
+            let a = deg.to_radians();
+            let d = vec2(a.cos() * ring, -a.sin() * ring);
+            painter.line_segment([c - d, c + d], Stroke::new(1.0, col));
+            painter.text(c + d * 1.06, Align2::CENTER_CENTER, name, Tokens::ui(9.0), col);
+        }
+    }
+    let inside = |q: egui::Pos2| sq.expand(2.0).contains(q);
     for (amp, strong) in [(0.75, targets == Targets::Percent75), (1.0, targets == Targets::Percent100)] {
         for tg in sc::targets(m, amp) {
-            let p = at(tg.cb, tg.cr);
+            let [tx, ty] = p.vector_point(tg.cb, tg.cr);
+            let pt = at(tx, ty);
+            if !inside(pt) {
+                continue;
+            }
             let col = Color32::from_rgb((tg.rgb[0] / amp * 200.0) as u8 + 40, (tg.rgb[1] / amp * 200.0) as u8 + 40, (tg.rgb[2] / amp * 200.0) as u8 + 40);
             let size = if strong { 9.0 } else { 5.0 };
             let col = if strong { col } else { col.gamma_multiply(0.45) };
-            painter.rect_stroke(Rect::from_center_size(p, vec2(size, size)), 0.0, Stroke::new(1.0, col), egui::StrokeKind::Middle);
+            painter.rect_stroke(Rect::from_center_size(pt, vec2(size, size)), 0.0, Stroke::new(1.0, col), egui::StrokeKind::Middle);
             if strong {
-                let off = egui::Vec2::new(tg.cb, -tg.cr).normalized() * 12.0;
-                painter.text(p + off, Align2::CENTER_CENTER, tg.name, Tokens::ui(10.0), col);
+                let off = egui::Vec2::new(tx, -ty).normalized() * 12.0;
+                painter.text(pt + off, Align2::CENTER_CENTER, tg.name, Tokens::ui(10.0), col);
             }
         }
     }

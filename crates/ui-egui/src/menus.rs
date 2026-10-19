@@ -34,18 +34,40 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("source.playback.toggle", "Source Play/Stop", [], None),
     uic!("source.playback.play", "Play Source", [], None),
     uic!("source.playback.stop", "Stop Source", [], None),
-    uic!("playback.toggle", "Play/Stop", [], Some("Space")),
-    uic!("playback.forward", "Shuttle Right", [], Some("L")),
-    uic!("playback.stop", "Shuttle Stop", [], Some("K")),
-    uic!("playback.reverse", "Shuttle Left", [], Some("J")),
-    uic!("playback.slowForward", "Shuttle Slow Right", [], None),
-    uic!("playback.slowReverse", "Shuttle Slow Left", [], None),
-    uic!("playback.playAround", "Play Around", [], None),
-    uic!("playback.inToOut", "Play In to Out", [], Some("Alt+K")),
-    uic!("playback.loop", "Loop", [], None),
+    uic!("playback.toggle", "Play/Stop", ["Monitor"], Some("Space")),
+    uic!("playback.forward", "Shuttle Right", ["Monitor"], Some("L")),
+    uic!("playback.stop", "Shuttle Stop", ["Monitor"], Some("K")),
+    uic!("playback.reverse", "Shuttle Left", ["Monitor"], Some("J")),
+    uic!("playback.slowForward", "Shuttle Slow Right", ["Monitor"], None),
+    uic!("playback.slowReverse", "Shuttle Slow Left", ["Monitor"], None),
+    uic!("playback.playAround", "Play Around", ["Monitor"], None),
+    uic!("playback.inToOut", "Play In to Out", ["Monitor"], Some("Alt+K")),
+    uic!("playback.loop", "Loop", ["Monitor"], None),
+    // Kdenlive: Loop Zone (In to Out until stopped), Loop Selected Clip, a set shuttle speed (jog
+    // shuttle ring), Focus Timecode, Align Playhead to Mouse Position
+    uic!("playback.loopZone", "Loop Zone", ["View", "Monitor Config"], Some("Ctrl+Shift+Space")),
+    uic!("playback.loopClip", "Loop Selected Clip", ["View", "Monitor Config"], None),
+    uic!("playback.setSpeed", "Set Playback Speed", [], None),
+    uic!("monitor.focusTimecode", "Focus Timecode", ["View", "Monitor Config"], None),
+    uic!("timeline.playheadToMouse", "Align Playhead to Mouse Position", [], None),
+    uic!("monitor.fullscreen", "Switch Monitor Fullscreen", ["View", "Monitor Config"], Some("F11")),
+    uic!("monitor.undock", "Show Monitor in Its Own Window", ["View", "Monitor Config"], None),
     uic!("view.zoomIn", "Zoom In", ["View"], Some("=")),
     uic!("view.zoomOut", "Zoom Out", ["View"], Some("-")),
     uic!("view.zoomToSequence", "Zoom to Sequence", ["View"], Some("\\")),
+    // Kdenlive parity (panels::marker_ui, panels::kparity)
+    uic!("markers.editDialog", "Edit Timeline Marker…", ["Markers"], None),
+    uic!("markers.categoriesDialog", "Marker Categories…", ["Markers"], None),
+    uic!("playhead.alignToMouse", "Align Playhead to Mouse Position", [], None),
+    uic!("window.commandBar", "Find Action…", ["Help"], Some("Cmd+Shift+P")),
+    uic!("window.focusTimecode", "Focus Timecode", [], None),
+    uic!("keyframes.toggle", "Add/Remove Keyframe", [], None),
+    uic!("keyframes.next", "Go to Next Keyframe", [], None),
+    uic!("keyframes.prev", "Go to Previous Keyframe", [], None),
+    uic!("sequence.addEffectDialog", "Add Effect…", ["Sequence"], None),
+    uic!("graphics.insertSpecialCharacter", "Insert Special Character…", ["Graphics and Titles"], None),
+    uic!("graphics.patterns", "Patterns…", ["Graphics and Titles"], None),
+    uic!("view.gridSettings", "Grid…", ["View"], None),
     uic!("view.playbackRes.full", "Full", ["View", "Playback Resolution"], None),
     uic!("view.playbackRes.half", "1/2", ["View", "Playback Resolution"], None),
     uic!("view.playbackRes.quarter", "1/4", ["View", "Playback Resolution"], None),
@@ -90,6 +112,24 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("view.guideTemplates.delete", "Delete Guide Template", [], None),
     uic!("view.compare.setReference", "Set Comparison Reference", [], None),
     uic!("view.dynamicAudioWaveforms", "Dynamic Audio Waveforms", ["View"], None),
+    // Kdenlive's Monitor menu ▸ Current Monitor Overlay / Monitor Config (on the focused monitor)
+    uic!("view.overlay.info", "Monitor Info Overlay", ["View", "Monitor Overlay"], None),
+    uic!("view.overlay.timecode", "Timecode", ["View", "Monitor Overlay"], None),
+    uic!("view.overlay.fps", "Playback FPS", ["View", "Monitor Overlay"], None),
+    uic!("view.overlay.markers", "Markers", ["View", "Monitor Overlay"], None),
+    uic!("view.overlay.waveform", "Audio Waveform", ["View", "Monitor Overlay"], None),
+    uic!("view.overlay.nextPattern", "Change Overlay", ["View", "Monitor Overlay"], None),
+    uic!("view.overlay.pattern.0", "No Guide Pattern", ["View", "Monitor Overlay", "Guide Pattern"], None),
+    uic!("view.overlay.pattern.1", "Rule of Thirds", ["View", "Monitor Overlay", "Guide Pattern"], None),
+    uic!("view.overlay.pattern.2", "Center Cross", ["View", "Monitor Overlay", "Guide Pattern"], None),
+    uic!("view.overlay.pattern.3", "Diagonals", ["View", "Monitor Overlay", "Guide Pattern"], None),
+    uic!("view.overlay.pattern.4", "Grid", ["View", "Monitor Overlay", "Guide Pattern"], None),
+    uic!("view.overlay.pattern.5", "Golden Ratio", ["View", "Monitor Overlay", "Guide Pattern"], None),
+    uic!("view.overlay.editMode", "Edit Mode", ["View", "Monitor Overlay"], None),
+    uic!("view.overlay.moveToolbar", "Move Overlay Toolbar", ["View", "Monitor Overlay"], None),
+    uic!("view.overlay.audioThumbnails", "Always Show Audio Thumbnails", ["View", "Monitor Config"], None),
+    uic!("view.sourceTimecode", "Show Source Timecode", ["View", "Monitor Config"], None),
+    uic!("view.multitrack", "Multitrack View", ["View", "Monitor Config"], Some("F12")),
     uic!("multicam.toggleView", "Multi-Camera View", ["View"], Some("Shift+0")),
     uic!("multicam.recordToggle", "Multi-Camera Record On/Off Toggle", [], Some("0")),
     uic!("multicam.editCamerasDialog", "Edit Cameras…", [], None),
@@ -100,6 +140,8 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("view.theme.medium", "Dark", ["View", "Appearance"], None),
     uic!("view.theme.light", "Light", ["View", "Appearance"], None),
     uic!("view.appearanceMode.next", "Next Appearance Mode", ["View", "Appearance"], None),
+    uic!("window.showMenuBar", "Show Menu Bar", ["Window"], None),
+    uic!("window.showStatusBar", "Show Status Bar", ["Window"], None),
     uic!("window.workspace.editing", "Editing", ["Window", "Workspaces"], Some("Alt+Shift+1")),
     uic!("window.workspace.assembly", "Assembly", ["Window", "Workspaces"], Some("Alt+Shift+2")),
     uic!("window.workspace.color", "Color", ["Window", "Workspaces"], Some("Alt+Shift+3")),
@@ -111,21 +153,21 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("window.workspace.saveChanges", "Save Changes to this Workspace", ["Window", "Workspaces"], None),
     uic!("window.workspace.saveAs", "Save as New Workspace…", ["Window", "Workspaces"], None),
     uic!("window.workspace.edit", "Edit Workspaces…", ["Window", "Workspaces"], None),
-    uic!("tool.selection", "Selection Tool", [], Some("V")),
-    uic!("tool.trackSelectForward", "Track Select Forward Tool", [], Some("A")),
-    uic!("tool.trackSelectBackward", "Track Select Backward Tool", [], Some("Shift+A")),
-    uic!("tool.ripple", "Ripple Edit Tool", [], Some("B")),
-    uic!("tool.rolling", "Rolling Edit Tool", [], Some("N")),
-    uic!("tool.rateStretch", "Rate Stretch Tool", [], Some("R")),
-    uic!("tool.remix", "Remix Tool", [], None),
-    uic!("tool.razor", "Razor Tool", [], Some("C")),
-    uic!("tool.slip", "Slip Tool", [], Some("Y")),
-    uic!("tool.slide", "Slide Tool", [], Some("U")),
-    uic!("tool.pen", "Pen Tool", [], Some("P")),
-    uic!("tool.hand", "Hand Tool", [], Some("H")),
-    uic!("tool.zoom", "Zoom Tool", [], Some("Z")),
-    uic!("tool.type", "Type Tool", [], Some("T")),
-    uic!("tool.verticalType", "Vertical Type Tool", [], None),
+    uic!("tool.selection", "Selection Tool", ["Tool"], Some("V")),
+    uic!("tool.trackSelectForward", "Track Select Forward Tool", ["Tool"], Some("A")),
+    uic!("tool.trackSelectBackward", "Track Select Backward Tool", ["Tool"], Some("Shift+A")),
+    uic!("tool.ripple", "Ripple Edit Tool", ["Tool"], Some("B")),
+    uic!("tool.rolling", "Rolling Edit Tool", ["Tool"], Some("N")),
+    uic!("tool.rateStretch", "Rate Stretch Tool", ["Tool"], Some("R")),
+    uic!("tool.remix", "Remix Tool", ["Tool"], None),
+    uic!("tool.razor", "Razor Tool", ["Tool"], Some("C")),
+    uic!("tool.slip", "Slip Tool", ["Tool"], Some("Y")),
+    uic!("tool.slide", "Slide Tool", ["Tool"], Some("U")),
+    uic!("tool.pen", "Pen Tool", ["Tool"], Some("P")),
+    uic!("tool.hand", "Hand Tool", ["Tool"], Some("H")),
+    uic!("tool.zoom", "Zoom Tool", ["Tool"], Some("Z")),
+    uic!("tool.type", "Type Tool", ["Tool"], Some("T")),
+    uic!("tool.verticalType", "Vertical Type Tool", ["Tool"], None),
     uic!("mode.import", "Import", [], None),
     uic!("mode.edit", "Edit", [], None),
     uic!("mode.export", "Export", ["File", "Export"], Some("Cmd+M")),
@@ -161,6 +203,20 @@ pub fn panel_command_id(p: PanelKind) -> String {
     format!("window.panel.{}", p.id())
 }
 
+/// Shuttle speeds J / L step through (Kdenlive's ladder), in each direction.
+pub const SHUTTLE_LADDER: [f64; 6] = [1.0, 1.5, 2.0, 3.0, 5.5, 10.0];
+
+/// The next shuttle speed in direction `dir` (+1 / -1): the next rung up when already playing that
+/// way (10× stays 10×), else 1× that way.
+pub fn shuttle_step(playing: bool, speed: f64, dir: f64) -> f64 {
+    if !playing || speed * dir <= 0.0 {
+        return dir;
+    }
+    let cur = speed.abs();
+    let next = SHUTTLE_LADDER.iter().copied().find(|s| *s > cur + 1e-6).unwrap_or(SHUTTLE_LADDER[SHUTTLE_LADDER.len() - 1]);
+    next * dir
+}
+
 /// Explicit monitor parameters override keyboard focus.
 pub fn targets_source(app: &FilmcraftApp, params: &Value) -> bool {
     match params.get("monitor").and_then(Value::as_str) {
@@ -172,6 +228,10 @@ pub fn targets_source(app: &FilmcraftApp, params: &Value) -> bool {
 
 /// Execute a UI or engine command by id.
 pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params: Value) -> Result<Value, String> {
+    // the window layout goes into the project file's view (restored when it opens)
+    if matches!(id, "file.save" | "file.saveAs" | "file.saveCopy") {
+        app.session.ui_layout = Some(json!({"workspace": app.ui.workspace, "dock": serde_json::to_value(&app.ui.dock).unwrap_or_default()}));
+    }
     if redrob_film_engine::source_monitor::source_command(id) && targets_source(app, &params) && params.get("target").is_none() {
         let object = params.as_object_mut().ok_or("command parameters must be an object")?;
         object.insert("target".into(), json!("source"));
@@ -235,12 +295,39 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
         // the engine's counters plus playback, frame workers and UI timings
         return Ok(crate::perf::stats(app));
     }
+    // Window ▸ Show Menu Bar / Show Status Bar (`{"on": bool}`, else toggle). On macOS the menu
+    // bar is the system's and stays.
+    if id == "window.showMenuBar" {
+        if cfg!(target_os = "macos") {
+            return Err("on macOS the menus are in the system menu bar".into());
+        }
+        let on = params.get("on").and_then(Value::as_bool).unwrap_or(!app.ui.show_menu_bar);
+        app.ui.show_menu_bar = on;
+        return Ok(json!({"menuBar": on}));
+    }
+    if id == "window.showStatusBar" {
+        let on = params.get("on").and_then(Value::as_bool).unwrap_or(!app.ui.show_status_bar);
+        app.ui.show_status_bar = on;
+        return Ok(json!({"statusBar": on}));
+    }
     if let Some(rest) = id.strip_prefix("window.panel.") {
         let p = PanelKind::from_name(rest).ok_or_else(|| format!("unknown panel `{rest}`"))?;
         app.show_panel(p);
         return Ok(Value::Null);
     }
     if let Some(r) = crate::panels::workspaces::route(app, id, &params) {
+        return r;
+    }
+    if let Some(r) = crate::panels::effect_stack::route(app, ctx, id, &params) {
+        if let Err(e) = &r {
+            app.ui.status = e.clone();
+        }
+        return r;
+    }
+    if let Some(r) = crate::panels::marker_ui::route(app, id, &params).or_else(|| crate::panels::kparity::route(app, ctx, id, &params)) {
+        if let Err(e) = &r {
+            app.ui.status = e.clone();
+        }
         return r;
     }
     if let Some(t) = id.strip_prefix("tool.") {
@@ -322,14 +409,18 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
             app.toggle_source_play()?;
             return Ok(json!({"playing": app.source_playback.clock.playing}));
         }
+        // Kdenlive: Space pauses / resumes a voice-over take (or starts the one `r` armed)
+        "playback.toggle" if crate::panels::voiceover::space_owned(app, ctx) => {
+            return crate::panels::voiceover::space(app, ctx);
+        }
         "playback.toggle" => {
             app.toggle_play(1.0);
             return Ok(json!({"playing": app.playback.playing}));
         }
-        // L / J: pressing again in the same direction doubles the speed, up to 8×
+        // L / J: pressing again in the same direction steps up Kdenlive's ladder 1, 1.5, 2, 3, 5.5, 10×
         "playback.forward" | "playback.reverse" if targets_source(app, &params) => {
             let (clock, dir) = (&app.source_playback.clock, if id == "playback.forward" { 1.0 } else { -1.0 });
-            let speed = if clock.playing && clock.speed * dir > 0.0 { (clock.speed * 2.0).clamp(-8.0, 8.0) } else { dir };
+            let speed = shuttle_step(clock.playing, clock.speed, dir);
             app.shuttle_source(speed)?;
             return Ok(json!({"playing": app.source_playback.clock.playing, "speed": app.source_playback.clock.speed}));
         }
@@ -348,12 +439,12 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
             return app.session.execute("source.setPlayhead", json!({"time": time.0})).map_err(|e| e.to_string());
         }
         "playback.forward" => {
-            let s = if app.playback.playing && app.playback.speed > 0.0 { (app.playback.speed * 2.0).min(8.0) } else { 1.0 };
+            let s = shuttle_step(app.playback.playing, app.playback.speed, 1.0);
             app.play(s);
             return Ok(json!({"speed": app.playback.speed}));
         }
         "playback.reverse" => {
-            let s = if app.playback.playing && app.playback.speed < 0.0 { (app.playback.speed * 2.0).max(-8.0) } else { -1.0 };
+            let s = shuttle_step(app.playback.playing, app.playback.speed, -1.0);
             app.play(s);
             return Ok(json!({"speed": app.playback.speed}));
         }
@@ -386,6 +477,78 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
         "playback.loop" => {
             app.playback.looping = !app.playback.looping;
             return Ok(json!({"loop": app.playback.looping}));
+        }
+        // Loop Zone: the marked range (the whole clip / sequence without one) plays over and over
+        // until playback stops
+        "playback.loopZone" if targets_source(app, &params) => {
+            app.source_playback.clock.looping = true;
+            app.play_source_range(false, false)?;
+            return Ok(json!({"loop": true}));
+        }
+        "playback.loopZone" => {
+            let q = app.session.active_sequence().ok_or("Open a sequence first")?;
+            let fd = q.settings.frame_rate.frame_duration();
+            let a = q.mark_in.unwrap_or(redrob_film_time::Tick::ZERO);
+            let b = q.mark_out.map(|o| o + fd).unwrap_or_else(|| q.duration());
+            return start_loop(app, a, b);
+        }
+        // Loop Selected Clip: from the first selected clip's start to the last one's end
+        "playback.loopClip" => {
+            let q = app.session.active_sequence().ok_or("Open a sequence first")?;
+            let items: Vec<_> = app.session.state.selection.iter().filter_map(|c| q.find_item(*c).map(|(_, i)| (i.start, i.end()))).collect();
+            let a = items.iter().map(|i| i.0).min().ok_or("Select a clip in the Timeline first")?;
+            let b = items.iter().map(|i| i.1).max().ok_or("Select a clip in the Timeline first")?;
+            return start_loop(app, a, b);
+        }
+        // a given speed (negative = backwards, 0 = stop): what a jog shuttle's ring asks for
+        "playback.setSpeed" => {
+            let speed = params.get("speed").and_then(Value::as_f64).ok_or("speed must be a number")?;
+            if !speed.is_finite() {
+                return Err("speed must be a finite number".into());
+            }
+            let speed = speed.clamp(-10.0, 10.0);
+            if targets_source(app, &params) {
+                if speed == 0.0 {
+                    app.stop_source();
+                } else {
+                    app.shuttle_source(speed)?;
+                }
+                return Ok(json!({"speed": if app.source_playback.clock.playing { app.source_playback.clock.speed } else { 0.0 }}));
+            }
+            if speed == 0.0 {
+                app.stop();
+            } else {
+                app.play(speed);
+            }
+            return Ok(json!({"speed": if app.playback.playing { app.playback.speed } else { 0.0 }}));
+        }
+        // Focus Timecode: the active monitor's timecode field takes the keyboard, value selected
+        "monitor.focusTimecode" => {
+            let prefix = if targets_source(app, &params) { "source" } else { "program" };
+            crate::widgets::request_timecode_focus(ctx, egui::Id::new((prefix, "timecode")));
+            ctx.request_repaint();
+            return Ok(json!({"monitor": prefix}));
+        }
+        // Align Playhead to Mouse Position: the Program playhead jumps to the frame under the
+        // pointer in the Timeline
+        "timeline.playheadToMouse" => {
+            let layout = app.tl.layout.as_ref().ok_or("the Timeline is not shown")?;
+            let pos = ctx.pointer_latest_pos().ok_or("the pointer is not over the Timeline")?;
+            if pos.x < layout.content.min.x || pos.x > layout.content.max.x || pos.y < layout.ruler.min.y || pos.y > layout.content.max.y {
+                return Err("the pointer is not over the Timeline".into());
+            }
+            let t = layout.tick_at(pos.x).max(redrob_film_time::Tick::ZERO);
+            let t = app.session.sequence_rate().snap(t);
+            app.stop();
+            app.session.set_playhead(t);
+            return Ok(json!({"time": t.0}));
+        }
+        "monitor.fullscreen" | "monitor.undock" => {
+            let which = if targets_source(app, &params) { crate::panels::monitor::Which::Source } else { crate::panels::monitor::Which::Program };
+            let full = id == "monitor.fullscreen";
+            let on = crate::panels::monitor::toggle_window(ctx, which, full, params.get("enabled").and_then(Value::as_bool));
+            let monitor = if which == crate::panels::monitor::Which::Source { "source" } else { "program" };
+            return Ok(if full { json!({"monitor": monitor, "fullscreen": on}) } else { json!({"monitor": monitor, "window": on}) });
         }
         "view.zoomIn" | "view.zoomOut" => {
             let f = if id == "view.zoomIn" { 1.6 } else { 1.0 / 1.6 };
@@ -549,12 +712,25 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
         crate::panels::settings::set_theme(app, ctx, k);
         return Ok(Value::Null);
     }
+    // File ▸ Open Recent ▸ <project> / Clear List
+    if let Some(n) = id.strip_prefix("file.openRecent.") {
+        let path = n.parse::<usize>().ok().and_then(|i| app.session.prefs.general.recent_projects.get(i).cloned()).ok_or("no such recent project")?;
+        return invoke(app, ctx, "file.open", json!({"path": path}));
+    }
+    if id == "file.clearRecent" {
+        let mut p = app.session.prefs.clone();
+        p.general.recent_projects.clear();
+        app.session.set_prefs(p).map_err(|e| e.to_string())?;
+        return Ok(Value::Null);
+    }
     // File dialogs for commands that need a path.
     if (id == "file.import" && params.get("paths").is_none() && params.get("path").is_none())
         || (id == "file.importImageSequence" && params.get("path").is_none())
         || (id == "file.saveAs" && params.get("path").is_none())
         || (id == "file.saveCopy" && params.get("path").is_none())
         || (id == "file.open" && params.get("path").is_none())
+        || (id == "file.openArchive" && params.get("path").is_none())
+        || (id == "clip.replacePart" && params.get("path").is_none())
         || (id == "file.save" && params.get("path").is_none() && app.session.path.is_none())
         || (matches!(id, "captions.import" | "captions.export") && params.get("path").is_none())
         || (id == "graphics.newFromFile" && params.get("path").is_none())
@@ -611,6 +787,18 @@ fn encode_png(width: usize, height: usize, rgba: Vec<u8>) -> Result<Vec<u8>, Str
     Ok(png)
 }
 
+/// Play `a`..`b` (sequence ticks, `b` exclusive) over and over from `a` until playback stops.
+fn start_loop(app: &mut FilmcraftApp, a: redrob_film_time::Tick, b: redrob_film_time::Tick) -> Result<Value, String> {
+    if b <= a {
+        return Err("the range to loop is empty".into());
+    }
+    app.stop();
+    app.session.set_playhead(a);
+    app.play(1.0);
+    app.playback.loop_range = Some((a, b));
+    Ok(json!({"loop": [a.0, b.0]}))
+}
+
 /// A menu tree entry for display / `ui.menu.list`.
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct MenuItem {
@@ -624,7 +812,9 @@ pub struct MenuItem {
     pub checked: Option<bool>,
 }
 
-pub const MENUS: [&str; 9] = ["File", "Edit", "Clip", "Sequence", "Markers", "Graphics and Titles", "View", "Window", "Help"];
+/// The menu bar. Monitor (transport) and Tool (the Tools panel's tools) follow Kdenlive's menus of
+/// those names; the rest is Premiere's layout.
+pub const MENUS: [&str; 11] = ["File", "Edit", "Clip", "Sequence", "Markers", "Graphics and Titles", "View", "Monitor", "Tool", "Window", "Help"];
 
 pub fn menu_items(app: &FilmcraftApp) -> Vec<MenuItem> {
     let mut v = menu_items_for(&app.session);
@@ -640,6 +830,22 @@ pub fn menu_items(app: &FilmcraftApp) -> Vec<MenuItem> {
             "app.language.german" => it.checked = Some(app.ui.language == crate::i18n::Language::De),
             "app.language.russian" => it.checked = Some(app.ui.language == crate::i18n::Language::Ru),
             "app.language.french" => it.checked = Some(app.ui.language == crate::i18n::Language::Fr),
+            // Sequence ▸ Edit Mode and the timeline switches (radio / toggle items)
+            "timeline.editMode.normal" | "timeline.editMode.overwrite" | "timeline.editMode.insert" => {
+                it.checked = Some(it.id.ends_with(app.session.state.edit_mode.name()));
+            }
+            "sequence.useTimelineZone" => it.checked = Some(!app.session.state.ignore_timeline_zone),
+            "sequence.trackCompositing" => it.checked = Some(app.session.active_sequence().is_none_or(|q| !q.timeline_options.no_track_compositing)),
+            "sequence.disableTimelineEffects" => it.checked = Some(app.session.active_sequence().is_some_and(|q| q.timeline_options.effects_disabled)),
+            "window.showMenuBar" => {
+                it.checked = Some(app.ui.show_menu_bar);
+                it.enabled = !cfg!(target_os = "macos");
+            }
+            "window.showStatusBar" => it.checked = Some(app.ui.show_status_bar),
+            // Tool ▸ <tool>: the current tool is checked
+            id if id.starts_with("tool.") => it.checked = Some(Tool::from_name(&id["tool.".len()..]) == Some(app.ui.tool)),
+            "sequence.autoPreview" => it.checked = Some(app.session.active_sequence().is_some_and(|q| q.auto_preview)),
+            "markers.lock" => it.checked = crate::panels::marker_ui::checked(app, &it.id),
             _ => {}
         }
         if it.id.starts_with("view.") {
@@ -648,6 +854,31 @@ pub fn menu_items(app: &FilmcraftApp) -> Vec<MenuItem> {
         }
     }
     crate::panels::workspaces::menu(app, &mut v);
+    // File ▸ Open Recent: the last ten projects, then Clear List
+    let recent = &app.session.prefs.general.recent_projects;
+    let at = v.iter().position(|i| i.id == "file.open").map_or(v.len(), |i| i + 1);
+    let mut entries: Vec<MenuItem> = recent
+        .iter()
+        .take(10)
+        .enumerate()
+        .map(|(n, p)| MenuItem {
+            id: format!("file.openRecent.{n}"),
+            label: std::path::Path::new(p).file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_else(|| p.clone()),
+            path: vec!["File".into(), "Open Recent".into()],
+            shortcut: None,
+            enabled: true,
+            checked: None,
+        })
+        .collect();
+    entries.push(MenuItem {
+        id: "file.clearRecent".into(),
+        label: app.ui.language.tr("Clear List").to_string(),
+        path: vec!["File".into(), "Open Recent".into()],
+        shortcut: None,
+        enabled: !recent.is_empty(),
+        checked: None,
+    });
+    v.splice(at..at, entries);
     v
 }
 

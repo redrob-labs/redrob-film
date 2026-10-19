@@ -88,6 +88,11 @@ pub fn marker_at(seq: &Sequence, layout: &Layout, pos: Pos2) -> Option<Tick> {
     seq.markers.iter().rev().map(|m| m.start).find(|t| marker_rect(layout, *t).contains(pos))
 }
 
+/// The id of the marker whose pentagon is under `pos` (as [`marker_at`]).
+pub fn marker_id_at(seq: &Sequence, layout: &Layout, pos: Pos2) -> Option<u64> {
+    seq.markers.iter().rev().find(|m| marker_rect(layout, m.start).contains(pos)).map(|m| m.id.0)
+}
+
 pub fn hit(seq: &Sequence, layout: &Layout, pos: Pos2) -> Hit {
     if layout.ruler.contains(pos) {
         return Hit::Ruler;

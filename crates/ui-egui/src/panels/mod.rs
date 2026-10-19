@@ -2,10 +2,14 @@
 //! effects) is carried in egui temp data so the timeline/monitors can accept drops.
 
 pub mod audio_fx_editor;
+pub mod audio_spectrum;
 pub mod clip_dialogs;
+pub mod clip_jobs;
+pub mod clip_transform;
 pub mod color_dialogs;
 pub mod dialogs;
 pub mod effect_controls;
+pub mod effect_stack;
 pub mod effects;
 pub mod essential_sound;
 pub mod events;
@@ -17,7 +21,10 @@ pub mod graphics_templates;
 pub mod import_mode;
 pub mod interchange_export;
 pub mod keyboard;
+pub mod kparity;
+pub mod library;
 pub mod lumetri;
+pub mod marker_ui;
 pub mod masks;
 pub mod media_browser;
 pub mod media_dialogs;
@@ -52,6 +59,7 @@ pub mod tools;
 pub mod transition_controls;
 pub mod trim_monitor;
 pub mod tts;
+pub mod viz_overlay;
 pub mod voiceover;
 pub mod workspaces;
 
@@ -94,6 +102,7 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, p: PanelKind, rect: Rect)
         PanelKind::AudioTrackMixer => mixer::track_mixer(app, ui, rect),
         PanelKind::AudioClipMixer => mixer::clip_mixer(app, ui, rect),
         PanelKind::LumetriScopes => scopes::show(app, ui, rect),
+        PanelKind::AudioSpectrum => audio_spectrum::show(app, ui, rect),
         PanelKind::Metadata => metadata::show(app, ui, rect),
         PanelKind::Timecode => timecode::show(app, ui, rect),
         PanelKind::Events => events::events(app, ui, rect),
@@ -103,8 +112,8 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, p: PanelKind, rect: Rect)
         PanelKind::EssentialSound => essential_sound::show(app, ui, rect),
         PanelKind::TextToSpeech => tts::show(app, ui, rect),
         PanelKind::ProjectNotes => notes::show(app, ui, rect),
+        PanelKind::Libraries => library::show(app, ui, rect),
         PanelKind::Agent => crate::agent::show(app, ui, rect),
-        other => crate::dock::placeholder(ui, rect, &app.tokens, &tlf!("{panel} — coming in a later milestone", panel = crate::i18n::t(other.title()))),
     }
 }
 
@@ -278,6 +287,13 @@ pub fn panel_menu_popup(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
             if ui.button(tl!("Restore Workspace")).clicked() {
                 let w = app.ui.workspace.clone();
                 app.set_workspace(&w);
+                close = true;
+            }
+            // the panel in a floating window of its own (closing the window docks it back)
+            let r = ui.button(tl!("Undock Panel"));
+            app.auto.add(&format!("panel.menu.{}.undock", p.id()), r.rect, "Undock Panel");
+            if r.clicked() {
+                app.float_panel(p);
                 close = true;
             }
             if p == PanelKind::Timeline {

@@ -56,6 +56,10 @@ pub struct GeneralPrefs {
     pub show_compatibility_issues: bool,
     pub show_project_bin_in_tab: bool,
     pub show_mask_tracker_preview: bool,
+    /// Effect Controls greys out the parameters of an effect that is switched off.
+    pub disable_params_of_disabled_effects: bool,
+    /// Where a panel group's tabs are: `top` (default) | `bottom`.
+    pub panel_tab_position: String,
     /// Most recently opened / saved projects (newest first; not shown in the dialog).
     pub recent_projects: Vec<String>,
 }
@@ -79,6 +83,8 @@ impl Default for GeneralPrefs {
             show_compatibility_issues: true,
             show_project_bin_in_tab: true,
             show_mask_tracker_preview: true,
+            disable_params_of_disabled_effects: false,
+            panel_tab_position: "top".into(),
             recent_projects: Vec::new(),
         }
     }
@@ -217,11 +223,27 @@ pub struct ColorPrefs {
     pub extended_dynamic_range: bool,
     /// HDR Graphics White (nits): `100` | `203` | `300`.
     pub hdr_graphics_white: String,
+    /// Waveform colour of an audio clip's first channel (the Timeline and the Source monitor).
+    pub audio_waveform_color: String,
+    /// Colour of the monitors' overlays (safe margins, centre cross).
+    pub monitor_overlay_color: String,
+    /// Fill the monitors around the picture with `monitor_background_color` instead of the
+    /// panel colour.
+    pub custom_monitor_background: bool,
+    pub monitor_background_color: String,
 }
 
 impl Default for ColorPrefs {
     fn default() -> Self {
-        Self { display_color_management: false, extended_dynamic_range: false, hdr_graphics_white: "203".into() }
+        Self {
+            display_color_management: false,
+            extended_dynamic_range: false,
+            hdr_graphics_white: "203".into(),
+            audio_waveform_color: "#79c0f9".into(),
+            monitor_overlay_color: "#ffffff".into(),
+            custom_monitor_background: false,
+            monitor_background_color: "#000000".into(),
+        }
     }
 }
 
@@ -500,6 +522,30 @@ pub struct TimelinePrefs {
     pub add_tracks_automatically: bool,
     /// Files dropped onto the Timeline are placed directly on it.
     pub drop_import_to_timeline: bool,
+    /// The bin new sequences go into (created in the project's root when missing); empty = the
+    /// root (Kdenlive's default folder for new sequences).
+    pub sequences_bin: String,
+    /// Stopping playback puts the playhead back where playback started.
+    pub return_to_start_on_stop: bool,
+    /// Seeking (a press on the ruler or a monitor's time bar) stops playback; off: playback
+    /// carries on from the new position.
+    pub pause_on_seek: bool,
+    /// Applying an effect to a clip the playhead is not over moves the playhead to the clip's
+    /// start, so the monitor shows what the effect does.
+    pub seek_to_clip_on_add_effect: bool,
+    /// Clip markers drawn on timeline clips carry their name (else comment).
+    pub show_clip_marker_comments: bool,
+    /// Defaults of the Timeline wrench menu's display toggles (applied when they change and at
+    /// startup).
+    pub show_video_thumbnails: bool,
+    pub show_audio_waveforms: bool,
+    pub separate_audio_channels: bool,
+    /// Default heights (points) of video and audio tracks of a sequence shown for the first time.
+    pub video_track_height: u32,
+    pub audio_track_height: u32,
+    /// Split Caption: `duplicate` (both halves keep the text) | `splitLines` (the first line stays,
+    /// the other lines go to the second half).
+    pub caption_split_mode: String,
 }
 
 impl Default for TimelinePrefs {
@@ -527,6 +573,17 @@ impl Default for TimelinePrefs {
             restore_open_sequences: true,
             add_tracks_automatically: true,
             drop_import_to_timeline: true,
+            sequences_bin: String::new(),
+            return_to_start_on_stop: false,
+            pause_on_seek: true,
+            seek_to_clip_on_add_effect: false,
+            show_clip_marker_comments: false,
+            show_video_thumbnails: true,
+            show_audio_waveforms: true,
+            separate_audio_channels: false,
+            video_track_height: 60,
+            audio_track_height: 56,
+            caption_split_mode: "duplicate".into(),
         }
     }
 }
@@ -675,7 +732,30 @@ const fn float(min: f64, max: f64, decimals: usize, unit: &'static str) -> Kind 
     Kind::Float { min, max, decimals, unit }
 }
 
-const STARTUP: &[(&str, &str)] = &[("showHome", "Show Home"), ("openMostRecent", "Open Most Recent"), ("emptyProject", "Start with an Empty Project")];
+const FULLSCREEN_SCREENS: &[(&str, &str)] =
+    &[("current", "This screen"), ("left", "Screen to the left"), ("right", "Screen to the right"), ("above", "Screen above"), ("below", "Screen below")];
+
+/// The first ShuttlePRO / ShuttleXpress event device listed under /dev/input/by-id (Linux).
+pub fn detect_jog_shuttle() -> Option<String> {
+    let mut found: Vec<String> = std::fs::read_dir("/dev/input/by-id")
+        .ok()?
+        .filter_map(|e| e.ok())
+        .map(|e| e.path().to_string_lossy().into_owned())
+        .filter(|p| {
+            let n = p.to_ascii_lowercase();
+            (n.contains("shuttle") || n.contains("contour")) && n.contains("event")
+        })
+        .collect();
+    found.sort();
+    found.into_iter().next()
+}
+
+const STARTUP: &[(&str, &str)] = &[
+    ("showHome", "Show Home"),
+    ("showWelcome", "Show Welcome Screen"),
+    ("openMostRecent", "Open Most Recent"),
+    ("emptyProject", "Start with an Empty Project"),
+];
 const OPENING: &[(&str, &str)] = &[("showOpenDialog", "Show Open Dialog"), ("showHome", "Show Home")];
 const BIN_OPEN: &[(&str, &str)] = &[("openInPlace", "Open in place"), ("openNewTab", "Open new tab"), ("openNewWindow", "Open in new window")];
 const PROJECT_OPEN: &[(&str, &str)] = &[("openNewTab", "Open new tab"), ("openNewWindow", "Open in new window")];
@@ -742,8 +822,10 @@ const CACHE_MGMT: &[(&str, &str)] = &[
     ("never", "Do not delete cache files automatically"),
     ("olderThan", "Automatically delete cache files older than"),
     ("exceedsSize", "Automatically delete oldest cache files when cache exceeds"),
+    ("warnSize", "Warn when the cache exceeds"),
 ];
-const AUTO_SCROLL: &[(&str, &str)] = &[("noScroll", "No Scroll"), ("pageScroll", "Page Scroll"), ("smoothScroll", "Smooth Scroll")];
+const AUTO_SCROLL: &[(&str, &str)] =
+    &[("noScroll", "No Scroll"), ("pageScroll", "Page Scroll"), ("smoothScroll", "Smooth Scroll"), ("centeredPlayhead", "Fixed Centered Playhead")];
 const MOUSE_SCROLL: &[(&str, &str)] = &[("vertical", "Vertical"), ("horizontal", "Horizontal")];
 const HW_DECODE: &[(&str, &str)] = &[("auto", "Auto"), ("off", "Off")];
 const TRACKS: &[(&str, &str)] = &[("useFile", "Use File"), ("mono", "Mono"), ("stereo", "Stereo"), ("5.1", "5.1"), ("adaptive", "Adaptive")];
@@ -806,6 +888,9 @@ static CATEGORIES: &[Category] = &[
             b("general.showCompatibilityIssues", "Show system compatibility issues at startup", false),
             b("general.showProjectBinInTab", "Show \"Project:\" and \"Bin:\" in Project panel tab", false),
             b("general.showMaskTrackerPreview", "Show Mask Tracker Preview", false),
+            b("general.disableParamsOfDisabledEffects", "Disable the parameters of an effect that is switched off", true),
+            f("general.panelTabPosition", "Panel tab position", Kind::Choice(&[("top", "Top"), ("bottom", "Bottom")]), true),
+            Row::Group("Configuration Information", &[Row::Custom("configPaths")]),
         ],
     },
     Category {
@@ -910,6 +995,13 @@ static CATEGORIES: &[Category] = &[
                 ],
             ),
             Row::Note("For color management parameters, go to the Settings tab in the Lumetri Color panel."),
+            Row::Group(
+                "Interface Colors",
+                &[
+                    f("color.audioWaveformColor", "Audio waveform color", Kind::Color, true),
+                    f("color.monitorOverlayColor", "Monitor overlay color", Kind::Color, true),
+                ],
+            ),
         ],
     },
     Category {
@@ -984,10 +1076,25 @@ static CATEGORIES: &[Category] = &[
             b("media.enableXmpLinking", "Enable clip and XMP metadata linking", false),
             b("media.includeCaptionsOnImport", "Include captions on import", false),
             b("media.enableProxies", "Enable proxies", true),
+            Row::Group(
+                "Proxy Clips",
+                &[
+                    b("media.proxyAutoVideo", "Generate proxies on import for videos wider than", true),
+                    sub("media.proxyAutoVideoWidth", "Video width", int(64.0, 16384.0, "px"), "media.proxyAutoVideo", true),
+                    f("media.proxyVideoWidth", "Proxy video resize (width, 0 = the profile's size)", int(0.0, 7680.0, "px"), true),
+                    Row::Custom("proxyProfiles"),
+                    b("media.proxyAutoImage", "Generate proxies on import for images wider than", true),
+                    sub("media.proxyAutoImageWidth", "Image width", int(64.0, 32768.0, "px"), "media.proxyAutoImage", true),
+                    f("media.proxyImageWidth", "Proxy image resize (width)", int(64.0, 16384.0, "px"), true),
+                    b("media.proxyExternal", "Use the proxy files cameras record (GoPro, Sony, DJI)", true),
+                ],
+            ),
             b("media.allowDuplicateMedia", "Allow duplicate media during project import", false),
             b("media.createFolderForImportedProjects", "Create folder for imported projects", false),
             b("media.autoHideDependentClips", "Automatically Hide Dependent Clips", false),
             b("media.importImageSequences", "Import numbered stills as image sequences", false),
+            b("media.ignoreSubfolderStructure", "Ignore subfolder structure on import", true),
+            f("media.libraryFolder", "Library folder", Kind::Path, true),
             Row::Group(
                 "Growing Files",
                 &[
@@ -998,6 +1105,8 @@ static CATEGORIES: &[Category] = &[
             ),
             b("media.hardwareDecoding", "Enable hardware accelerated decoding (requires restart)", false),
             b("media.proresHardwareEncoding", "Enable ProRes hardware accelerated encoding, if available", false),
+            f("media.proxyJobThreads", "Proxy and transcode jobs: clips at the same time", int(1.0, 16.0, ""), true),
+            Row::Group("Supported Media Types", &[Row::Custom("mediaTypes")]),
         ],
     },
     Category {
@@ -1033,6 +1142,7 @@ static CATEGORIES: &[Category] = &[
                     b("mediaCache.saveNextToMedia", "Save .cfa and .pek media cache files next to original media files when possible", false),
                     Row::Button { id: "mediaCache.clean", label: "Delete…", command: "mediaCache.clean" },
                     Row::Custom("mediaCacheInfo"),
+                    Row::Custom("cacheManager"),
                 ],
             ),
             Row::Group("Media Cache Database", &[f("mediaCache.databaseLocation", "Location", Kind::Path, false)]),
@@ -1041,7 +1151,7 @@ static CATEGORIES: &[Category] = &[
                 &[
                     f("mediaCache.management", "Policy", Kind::Choice(CACHE_MGMT), true),
                     f("mediaCache.olderThanDays", "Delete files older than", int(1.0, 3650.0, "days"), true),
-                    f("mediaCache.maxSizeGb", "Delete oldest files when the cache exceeds", int(1.0, 100_000.0, "GB"), true),
+                    f("mediaCache.maxSizeGb", "Delete oldest files (or warn) when the cache exceeds", int(1.0, 100_000.0, "GB"), true),
                 ],
             ),
             Row::Note(
@@ -1070,6 +1180,39 @@ static CATEGORIES: &[Category] = &[
             b("playback.disableVideoInBackground", "Disable video output when in the background", false),
             b("playback.draftDecode", "Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)", true),
             f("playback.hardwareDecoding", "Hardware decoding", Kind::Choice(HW_DECODE), true),
+            b("playback.gpuProcessing", "GPU processing of effects in the Program Monitor", true),
+            b("playback.playOnMonitorClick", "Play/pause on monitor click", true),
+            b("playback.customMonitorBackground", "Custom monitor background", true),
+            sub("playback.monitorBackground", "Monitor background color", Kind::Color, "playback.customMonitorBackground", true),
+            f("playback.overlayColor", "Monitor overlay color", Kind::Color, true),
+            f("playback.fullscreenScreen", "Screen used for full screen monitor", Kind::Choice(FULLSCREEN_SCREENS), true),
+            b("playback.mirrorFullscreen", "Mirror the monitor while it is full screen", true),
+            Row::Group(
+                "Jog Shuttle",
+                &[
+                    b("playback.jogShuttle.enabled", "Enable jog shuttle", true),
+                    sub("playback.jogShuttle.device", "Device path", Kind::Text, "playback.jogShuttle.enabled", true),
+                    Row::Button { id: "playback.jogShuttle.detect", label: "Detect", command: "prefs.detectJogShuttle" },
+                    sub("playback.jogShuttle.button1", "Button 1", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button2", "Button 2", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button3", "Button 3", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button4", "Button 4", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button5", "Button 5", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button6", "Button 6", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button7", "Button 7", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button8", "Button 8", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button9", "Button 9", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button10", "Button 10", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button11", "Button 11", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button12", "Button 12", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button13", "Button 13", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button14", "Button 14", Kind::Text, "playback.jogShuttle.enabled", true),
+                    sub("playback.jogShuttle.button15", "Button 15", Kind::Text, "playback.jogShuttle.enabled", true),
+                    Row::Note(
+                        "Each button runs the command id typed beside it (for example playback.toggle, markers.markIn, playhead.nextSnap; see Keyboard Shortcuts). The jog wheel steps frames and the shuttle ring plays at up to 10x either way.",
+                    ),
+                ],
+            ),
             Row::Note(
                 "Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and Redrob Film's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.",
             ),
@@ -1119,6 +1262,27 @@ static CATEGORIES: &[Category] = &[
             b("timeline.restoreOpenSequences", "Restore open sequences when opening projects", false),
             b("timeline.addTracksAutomatically", "Add tracks automatically when editing source clips onto the Timeline", false),
             b("timeline.dropImportToTimeline", "Place files dropped onto the Timeline directly on the Timeline", true),
+            f("timeline.sequencesBin", "Default bin for new sequences", Kind::Text, true),
+            b("timeline.returnToStartOnStop", "Return the playhead to its start position when playback stops", true),
+            b("timeline.pauseOnSeek", "Pause playback when seeking", true),
+            b("timeline.seekToClipOnAddEffect", "Move the playhead to the clip when adding an effect", true),
+            b("timeline.showClipMarkerComments", "Show clip marker comments on timeline clips", true),
+            f(
+                "timeline.captionSplitMode",
+                "Splitting a caption",
+                Kind::Choice(&[("duplicate", "Both parts keep the text"), ("splitLines", "First line stays, the other lines move to the second part")]),
+                true,
+            ),
+            Row::Group(
+                "Display Defaults",
+                &[
+                    b("timeline.showVideoThumbnails", "Show video thumbnails", true),
+                    b("timeline.showAudioWaveforms", "Show audio waveforms", true),
+                    b("timeline.separateAudioChannels", "Separate audio channels", true),
+                    f("timeline.videoTrackHeight", "Video track height", int(8.0, 600.0, "pixels"), true),
+                    f("timeline.audioTrackHeight", "Audio track height", int(8.0, 600.0, "pixels"), true),
+                ],
+            ),
         ],
     },
     Category {
@@ -1487,6 +1651,20 @@ impl Session {
         }
         let keep = self.previews.dir();
         enforce_policy(&dir, &self.prefs.media_cache, keep.as_deref(), std::time::SystemTime::now());
+        // Warn when the cache exceeds: nothing is deleted, the user is told (Manage Cached Data)
+        if self.prefs.media_cache.management == "warnSize" {
+            let (bytes, _) = cache_usage(&dir);
+            let limit = u64::from(self.prefs.media_cache.max_size_gb) * 1_000_000_000;
+            if bytes > limit {
+                let msg = format!(
+                    "The media cache uses {} (over the {} GB warning size): Settings ▸ Media Cache ▸ Manage Cached Data… frees space",
+                    redrob_film_export::format_bytes(bytes),
+                    self.prefs.media_cache.max_size_gb
+                );
+                self.log.push(crate::panels::Level::Warning, "mediaCache", msg.clone());
+                self.events.push(crate::Event::Toast { message: msg, error: false });
+            }
+        }
     }
 
     /// Note a project file as the most recent one (General ▸ At Startup ▸ Open Most Recent).

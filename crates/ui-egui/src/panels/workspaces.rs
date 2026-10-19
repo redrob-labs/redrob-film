@@ -2,7 +2,9 @@
 //! alphabetical list, then Reset to Saved Layout, Save Changes to this Workspace, Save as New
 //! Workspace… and Edit Workspaces… (rename, delete). Saved layouts live in `workspaces.json` beside the
 //! preferences file. A built-in workspace can be changed and reset but not deleted or renamed;
-//! deleting its saved changes brings back the original.
+//! deleting its saved changes brings back the original. Edit Workspaces… also moves a workspace up
+//! or down the list (the order is kept in `workspaces.json`) and exports a layout to a file or
+//! imports one (`*.rfworkspace`, JSON).
 
 use egui::Align2;
 use serde_json::{Value, json};
@@ -13,10 +15,15 @@ use crate::menus::MenuItem;
 use crate::state::WorkspaceDialog;
 
 /// Command ids under `window.workspace.` that are not workspace names.
-const ACTIONS: [&str; 6] = ["reset", "saveChanges", "saveAs", "edit", "rename", "delete"];
+const ACTIONS: [&str; 10] = ["reset", "saveChanges", "saveAs", "edit", "rename", "delete", "moveUp", "moveDown", "export", "import"];
+
+/// Extension of exported workspace files.
+pub const WORKSPACE_EXT: &str = "rfworkspace";
 
 /// `window.workspace.*`: switch (`window.workspace.<name>`), `reset`, `saveChanges`,
-/// `saveAs {name?}` (no name: open the dialog), `edit`, `rename {from, to}`, `delete {name}`.
+/// `saveAs {name?}` (no name: open the dialog), `edit`, `rename {from, to}`, `delete {name}`,
+/// `moveUp {name}` / `moveDown {name}` (the list's order), `export {name?, path?}` (default: the
+/// current workspace; no path: a save dialog) and `import {path?}` (no path: an open dialog).
 pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
     let ws = id.strip_prefix("window.workspace.")?;
     let arg = |k: &str| params.get(k).and_then(Value::as_str).map(str::to_string);
@@ -43,6 +50,12 @@ pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<
         }
         "rename" => rename(app, &arg("from").unwrap_or_default(), &arg("to").unwrap_or_default()),
         "delete" => delete(app, &arg("name").unwrap_or_default()),
+        "moveUp" | "moveDown" => move_in_list(app, &arg("name").unwrap_or_default(), ws == "moveUp"),
+        "export" => {
+            let name = arg("name").unwrap_or_else(|| app.ui.workspace.clone());
+            export(app, &name, arg("path"))
+        }
+        "import" => import(app, arg("path")),
         key => match dock::names(&app.workspaces).into_iter().find(|n| slug(n) == key) {
             Some(n) => {
                 app.set_workspace(&n);
@@ -124,6 +137,75 @@ fn delete(app: &mut FilmcraftApp, name: &str) -> Result<Value, String> {
         app.set_workspace(if is_builtin(name) { name } else { "Editing" });
     }
     Ok(if is_builtin(name) { json!({"restored": name}) } else { json!({"deleted": name}) })
+}
+
+/// Move a workspace one place up or down the list; the whole list's order is stored from then on.
+fn move_in_list(app: &mut FilmcraftApp, name: &str, up: bool) -> Result<Value, String> {
+    let mut order = dock::names(&app.workspaces);
+    let i = order.iter().position(|n| n == name).ok_or_else(|| format!("unknown workspace `{name}`"))?;
+    let j = if up { i.checked_sub(1) } else { (i + 1 < order.len()).then_some(i + 1) };
+    if let Some(j) = j {
+        order.swap(i, j);
+        let mut next = app.workspaces.clone();
+        next.order = order.clone();
+        app.set_workspaces(next)?;
+    }
+    Ok(json!({"order": order}))
+}
+
+/// Write a workspace's saved layout (the current layout for the workspace in use) to a file.
+fn export(app: &mut FilmcraftApp, name: &str, path: Option<String>) -> Result<Value, String> {
+    let name = dock::find(&app.workspaces, name).ok_or_else(|| format!("unknown workspace `{name}`"))?;
+    let layout = if name == app.ui.workspace {
+        serde_json::to_value(&app.ui.dock).map_err(|e| e.to_string())?
+    } else {
+        serde_json::to_value(dock::saved_layout(&app.workspaces, &name)).map_err(|e| e.to_string())?
+    };
+    let path = match path {
+        Some(p) => p,
+        None => {
+            let suggested = format!("{name}.{WORKSPACE_EXT}");
+            match app.hooks.pick_save_as.as_mut().and_then(|f| f(tl!("Workspace"), &[WORKSPACE_EXT], &suggested)) {
+                Some(p) => p,
+                None => return Ok(Value::Null),
+            }
+        }
+    };
+    let file = dock::WorkspaceFile { kind: dock::WORKSPACE_FILE_KIND.into(), name: name.clone(), layout };
+    let bytes = serde_json::to_vec_pretty(&file).map_err(|e| e.to_string())?;
+    std::fs::write(&path, bytes).map_err(|e| format!("writing {path}: {e}"))?;
+    Ok(json!({"exported": name, "path": path}))
+}
+
+/// Add the workspace of a file written by `export` (a free name: `<name> 2`… when taken).
+fn import(app: &mut FilmcraftApp, path: Option<String>) -> Result<Value, String> {
+    let path = match path {
+        Some(p) => p,
+        None => match app.hooks.pick_open_file.as_mut().and_then(|f| f(tl!("Workspace"), &[WORKSPACE_EXT, "json"])) {
+            Some(p) => p,
+            None => return Ok(Value::Null),
+        },
+    };
+    let bytes = std::fs::read(&path).map_err(|e| format!("reading {path}: {e}"))?;
+    let file: dock::WorkspaceFile = serde_json::from_slice(&bytes).map_err(|e| format!("{path} is not a workspace file: {e}"))?;
+    if file.kind != dock::WORKSPACE_FILE_KIND {
+        return Err(format!("{path} is not a workspace file"));
+    }
+    serde_json::from_value::<dock::DockNode>(file.layout.clone()).map_err(|e| format!("{path}: the layout can't be read: {e}"))?;
+    let base = if file.name.trim().is_empty() { "Imported Workspace".to_string() } else { file.name.trim().to_string() };
+    let mut name = base.clone();
+    let mut n = 2;
+    while new_name(app, &name).is_err() {
+        name = format!("{base} {n}");
+        n += 1;
+        if n > 1000 {
+            return Err("no free workspace name".into());
+        }
+    }
+    let mut next = app.workspaces.clone();
+    next.saved.push(dock::SavedWorkspace { name: name.clone(), layout: file.layout });
+    app.set_workspaces(next)?;
+    Ok(json!({"imported": name}))
 }
 
 /// Rebuild the Window ▸ Workspaces submenu: every workspace (the current one checked), then the
@@ -234,6 +316,34 @@ pub fn dialogs(app: &mut FilmcraftApp, ctx: &egui::Context) {
                             *selected = None;
                             name.clear();
                         }
+                    }
+                    let r = ui.add_enabled(sel.is_some(), egui::Button::new(tl!("Move Up")));
+                    push("workspaces.edit.moveUp", &r, "Move Up");
+                    if r.clicked()
+                        && let Some(s) = &sel
+                    {
+                        act = Some(("window.workspace.moveUp", json!({"name": s})));
+                    }
+                    let r = ui.add_enabled(sel.is_some(), egui::Button::new(tl!("Move Down")));
+                    push("workspaces.edit.moveDown", &r, "Move Down");
+                    if r.clicked()
+                        && let Some(s) = &sel
+                    {
+                        act = Some(("window.workspace.moveDown", json!({"name": s})));
+                    }
+                });
+                ui.horizontal(|ui| {
+                    let r = ui.add_enabled(sel.is_some(), egui::Button::new(tl!("Export…")));
+                    push("workspaces.edit.export", &r, "Export…");
+                    if r.clicked()
+                        && let Some(s) = &sel
+                    {
+                        act = Some(("window.workspace.export", json!({"name": s})));
+                    }
+                    let r = ui.button(tl!("Import…"));
+                    push("workspaces.edit.import", &r, "Import…");
+                    if r.clicked() {
+                        act = Some(("window.workspace.import", json!({})));
                     }
                     let r = ui.button(tl!("Close"));
                     push("workspaces.edit.close", &r, "Close");

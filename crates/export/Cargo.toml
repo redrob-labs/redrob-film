@@ -31,7 +31,7 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 rayon = { workspace = true }
 web-time = "1"
-image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "tiff", "bmp"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "tiff", "bmp", "webp"] }
 
 [dev-dependencies]
 redrob-film-testkit = { workspace = true }

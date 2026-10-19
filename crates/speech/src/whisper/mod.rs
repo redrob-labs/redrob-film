@@ -276,7 +276,8 @@ impl Transcriber for Whisper {
                 }
                 let lang = language.as_deref().unwrap_or("en");
                 prompt.push(self.tok.language_token(lang).unwrap_or(self.tok.sot + 1));
-                prompt.push(self.tok.transcribe);
+                // Translate to English: Whisper's translate task token instead of transcribe
+                prompt.push(if opts.translate { self.tok.translate.unwrap_or(self.tok.transcribe) } else { self.tok.transcribe });
             }
             let (toks, avg_lp, no_speech) = self.decode_window(&mut m, &xa, &prompt)?;
             if trace {

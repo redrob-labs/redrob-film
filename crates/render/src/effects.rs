@@ -87,7 +87,8 @@ pub(crate) fn hash3(x: usize, y: usize, z: u64) -> f32 {
 
 /// Apply one effect. Unknown/unimplemented ids are a no-op (they still round-trip in the project).
 pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
-    if !e.enabled || img.w == 0 || img.h == 0 {
+    // (outside its effect zone an effect is not applied)
+    if !e.enabled || !e.in_zone(cx.t) || img.w == 0 || img.h == 0 {
         return;
     }
     if crate::vfx::apply(img, e, cx) {

@@ -88,6 +88,98 @@ pub struct PlaybackPrefs {
     /// or `off` (always Redrob Film's own decoders). Media already open keeps its decoder until it
     /// is reopened.
     pub hardware_decoding: String,
+    /// A click on a monitor's picture plays or pauses that monitor.
+    pub play_pause_on_monitor_click: bool,
+    /// Kdenlive's "Play/pause on monitor click": a click on a monitor's picture toggles its playback.
+    pub play_on_monitor_click: bool,
+    /// Draw the monitors' picture area in `monitor_background` instead of the theme's colour.
+    pub custom_monitor_background: bool,
+    /// `#rrggbb` behind the monitor picture (with `custom_monitor_background`).
+    pub monitor_background: String,
+    /// `#rrggbb` of the monitor overlay lines (guide patterns, guides, info overlays).
+    pub overlay_color: String,
+    /// The screen a monitor goes full screen on: `current` (the main window's), or the screen
+    /// `left` / `right` / `above` / `below` of it.
+    pub fullscreen_screen: String,
+    /// Keep the docked monitor showing while the same monitor is full screen (or in its own window).
+    pub mirror_fullscreen: bool,
+    /// Process effects on the GPU in the Program monitor (off: the CPU renderer, in every project).
+    pub gpu_processing: bool,
+    /// A ShuttlePRO / ShuttleXpress jog shuttle (Linux event device).
+    pub jog_shuttle: JogShuttlePrefs,
+}
+
+/// Settings ▸ Playback ▸ Jog Shuttle: the device and what its buttons do.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct JogShuttlePrefs {
+    pub enabled: bool,
+    /// Event device path, e.g. `/dev/input/by-id/usb-Contour_Design_ShuttlePRO_v2-event-if00`.
+    pub device: String,
+    /// Command id run by each button (empty = nothing).
+    pub button1: String,
+    pub button2: String,
+    pub button3: String,
+    pub button4: String,
+    pub button5: String,
+    pub button6: String,
+    pub button7: String,
+    pub button8: String,
+    pub button9: String,
+    pub button10: String,
+    pub button11: String,
+    pub button12: String,
+    pub button13: String,
+    pub button14: String,
+    pub button15: String,
+}
+
+impl Default for JogShuttlePrefs {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            device: String::new(),
+            button1: "playback.toggle".into(),
+            button2: "playback.reverse".into(),
+            button3: "playback.stop".into(),
+            button4: "playback.forward".into(),
+            button5: "markers.markIn".into(),
+            button6: "markers.markOut".into(),
+            button7: "markers.add".into(),
+            button8: "playhead.prevSnap".into(),
+            button9: "playhead.nextSnap".into(),
+            button10: String::new(),
+            button11: String::new(),
+            button12: String::new(),
+            button13: String::new(),
+            button14: String::new(),
+            button15: String::new(),
+        }
+    }
+}
+
+impl JogShuttlePrefs {
+    /// The command of button `n` (1-based), if one is set.
+    pub fn button(&self, n: usize) -> Option<&str> {
+        let b = [
+            &self.button1,
+            &self.button2,
+            &self.button3,
+            &self.button4,
+            &self.button5,
+            &self.button6,
+            &self.button7,
+            &self.button8,
+            &self.button9,
+            &self.button10,
+            &self.button11,
+            &self.button12,
+            &self.button13,
+            &self.button14,
+            &self.button15,
+        ];
+        b.get(n.checked_sub(1)?).map(|s| s.trim()).filter(|s| !s.is_empty())
+    }
 }
 
 impl Default for PlaybackPrefs {
@@ -101,6 +193,15 @@ impl Default for PlaybackPrefs {
             disable_video_in_background: true,
             draft_decode: false,
             hardware_decoding: "auto".into(),
+            play_pause_on_monitor_click: false,
+            play_on_monitor_click: false,
+            custom_monitor_background: false,
+            monitor_background: "#000000".into(),
+            overlay_color: "#3da5ff".into(),
+            fullscreen_screen: "current".into(),
+            mirror_fullscreen: true,
+            gpu_processing: true,
+            jog_shuttle: JogShuttlePrefs::default(),
         }
     }
 }
@@ -169,6 +270,8 @@ pub struct Preferences {
     pub project_panel: crate::project_panel::ProjectPanelPrefs,
     /// Media Browser: Favorites, recent directories, file types, view, columns.
     pub media_browser: crate::media_browser::MediaBrowserPrefs,
+    /// Sequence presets: the user's own and the default for new sequences.
+    pub sequence_presets: crate::sequence_presets::SequencePresetPrefs,
 }
 
 impl Default for Preferences {
@@ -196,6 +299,7 @@ impl Default for Preferences {
             voice_over: Default::default(),
             project_panel: Default::default(),
             media_browser: Default::default(),
+            sequence_presets: Default::default(),
         }
     }
 }
@@ -247,11 +351,47 @@ pub struct MediaPrefs {
     pub create_folder_for_imported_projects: bool,
     pub auto_hide_dependent_clips: bool,
     pub import_image_sequences: bool,
+    /// Importing a folder puts every file of its sub-folders into the one bin named after it,
+    /// instead of a bin per sub-folder.
+    pub ignore_subfolder_structure: bool,
+    /// Library folder (Library panel items); empty = `Library` in the data directory.
+    pub library_folder: String,
     pub refresh_growing_files: bool,
     pub resume_growing_playback: bool,
     pub growing_refresh_seconds: u32,
     pub hardware_decoding: bool,
     pub prores_hardware_encoding: bool,
+    /// How many clips a proxy / transcode job works on at the same time (1 = one after another).
+    pub proxy_job_threads: u32,
+    /// Proxy Clips: on import, make proxies of videos wider than `proxy_auto_video_width`
+    /// (needs Enable proxies).
+    pub proxy_auto_video: bool,
+    pub proxy_auto_video_width: u32,
+    /// Proxy video resize: the proxies' width in pixels (0 = the encoding profile's size).
+    pub proxy_video_width: u32,
+    /// Encoding profile of new proxies (a `proxies::PRESETS` id or `custom:<name>`; "" = default).
+    pub proxy_profile: String,
+    /// Encoding profile for clips with an alpha channel ("" = ProRes 4444, ¼ size).
+    pub proxy_alpha_profile: String,
+    /// Proxy Clips: on import, make proxies of stills wider than `proxy_auto_image_width`.
+    pub proxy_auto_image: bool,
+    pub proxy_auto_image_width: u32,
+    /// Proxy image resize: the width of still-image proxies in pixels.
+    pub proxy_image_width: u32,
+    /// External proxy clips: on import, attach the low-resolution files cameras record beside
+    /// their clips (GoPro `.LRV`, DJI `.LRF`, Sony `SUB/…S03.MP4`).
+    pub proxy_external: bool,
+    /// Custom proxy encoding profiles (Manage Proxy Profiles).
+    pub proxy_profiles: Vec<ProxyProfile>,
+}
+
+/// A user proxy encoding profile: a name and `key=value` parameters
+/// (`proxies::PROXY_PARAMS` lists the allowed keys).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ProxyProfile {
+    pub name: String,
+    pub params: String,
 }
 
 impl Default for MediaPrefs {
@@ -271,11 +411,24 @@ impl Default for MediaPrefs {
             create_folder_for_imported_projects: false,
             auto_hide_dependent_clips: false,
             import_image_sequences: false,
+            ignore_subfolder_structure: false,
+            library_folder: String::new(),
             refresh_growing_files: true,
             resume_growing_playback: false,
             growing_refresh_seconds: 60,
             hardware_decoding: true,
             prores_hardware_encoding: true,
+            proxy_job_threads: 1,
+            proxy_auto_video: false,
+            proxy_auto_video_width: 1000,
+            proxy_video_width: 0,
+            proxy_profile: String::new(),
+            proxy_alpha_profile: String::new(),
+            proxy_auto_image: false,
+            proxy_auto_image_width: 2000,
+            proxy_image_width: 800,
+            proxy_external: false,
+            proxy_profiles: Vec::new(),
         }
     }
 }

@@ -245,6 +245,30 @@ impl Brightness {
     }
 }
 
+/// Paint Mode of the waveform and parade traces.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PaintMode {
+    /// Each trace in its own colour (R red, G green, B blue, Y white).
+    #[default]
+    Color,
+    /// Every trace green, and samples at exactly 0 or 255 highlighted in red.
+    Green,
+    /// Every trace neutral grey (no colour to tire the eye while grading).
+    Grey,
+}
+
+impl PaintMode {
+    pub const ALL: [PaintMode; 3] = [PaintMode::Color, PaintMode::Green, PaintMode::Grey];
+    pub fn label(self) -> &'static str {
+        match self {
+            PaintMode::Color => "Colour",
+            PaintMode::Green => "Green",
+            PaintMode::Grey => "Grey",
+        }
+    }
+}
+
 /// Which colour-bar targets the YUV vectorscope draws.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Targets {
@@ -280,11 +304,16 @@ pub struct Params {
     pub rows: usize,
     /// Vectorscope grid size (square; odd, so the centre is a cell).
     pub vector_size: usize,
+    /// YUV vectorscope colour model: analogue YUV (U = 0.492 (B'−Y'), V = 0.877 (R'−Y')) instead
+    /// of YPbPr / YCbCr scaling.
+    pub analog_yuv: bool,
+    /// Vectorscope gain: the plane is magnified about its centre (1 = unmagnified).
+    pub vector_gain: f32,
 }
 
 impl Default for Params {
     fn default() -> Self {
-        Params { matrix: Matrix::Bt709, clamp: true, rows: 256, vector_size: 255 }
+        Params { matrix: Matrix::Bt709, clamp: true, rows: 256, vector_size: 255, analog_yuv: false, vector_gain: 1.0 }
     }
 }
 
@@ -293,7 +322,32 @@ impl Params {
     pub fn range(&self) -> (f32, f32) {
         if self.clamp { (0.0, 1.0) } else { (-0.1, 1.1) }
     }
+    /// Half-width of the vectorscope plane (analogue YUV reaches further than Cb/Cr).
+    pub fn vector_extent(&self) -> f32 {
+        if self.analog_yuv { ANALOG_EXTENT } else { VECTOR_EXTENT }
+    }
+    fn gain(&self) -> f32 {
+        if self.vector_gain.is_finite() && self.vector_gain > 0.0 { self.vector_gain } else { 1.0 }
+    }
+    /// A (Cb, Cr) point where the YUV vectorscope plots it: U/V scaling for analogue YUV, then the
+    /// gain. The colour-bar targets go through the same mapping.
+    pub fn vector_point(&self, cb: f32, cr: f32) -> [f32; 2] {
+        let (mut x, mut y) = (cb, cr);
+        if self.analog_yuv {
+            let (kr, kb) = self.matrix.kr_kb();
+            x *= U_SCALE * 2.0 * (1.0 - kb);
+            y *= V_SCALE * 2.0 * (1.0 - kr);
+        }
+        let g = self.gain();
+        [x * g, y * g]
+    }
 }
+
+/// Analogue YUV weights of the colour differences.
+pub const U_SCALE: f32 = 0.492_111;
+pub const V_SCALE: f32 = 0.877_283;
+/// Half-width of the analogue YUV plane (100 % red, V ≈ 0.62, fits).
+pub const ANALOG_EXTENT: f32 = 0.7;
 
 // ------------------------------------------------------------------------------------ signal
 
@@ -390,6 +444,11 @@ pub fn sdr_to_pq(v: f32) -> f32 {
 /// cd/m² → height on the PQ axis (0..1).
 pub fn nits_to_pq(nits: f32) -> f32 {
     redrob_film_color::pq_inverse_eotf((nits / 10_000.0).clamp(0.0, 1.0))
+}
+
+/// Height on the PQ axis (0..1) → cd/m².
+pub fn pq_to_nits(v: f32) -> f32 {
+    redrob_film_color::pq_eotf(v.clamp(0.0, 1.0)) * 10_000.0
 }
 
 // ------------------------------------------------------------------------------------ grids
@@ -526,6 +585,20 @@ pub struct Histogram {
 
 pub const BINS: usize = 256;
 
+impl Histogram {
+    /// The Sum component: R + G + B per bin (its minimum is the lowest value any channel takes).
+    pub fn sum(&self) -> Vec<u32> {
+        (0..BINS).map(|i| self.r[i].saturating_add(self.g[i]).saturating_add(self.b[i])).collect()
+    }
+}
+
+/// Lowest and highest occupied bin (code values 0..255) of a component; None when empty.
+pub fn min_max(bins: &[u32]) -> Option<(usize, usize)> {
+    let lo = bins.iter().position(|&c| c > 0)?;
+    let hi = bins.iter().rposition(|&c| c > 0)?;
+    Some((lo, hi))
+}
+
 /// Bin of a value (None when outside 0..1).
 #[inline]
 pub fn bin_of(v: f32) -> Option<usize> {
@@ -589,8 +662,8 @@ pub fn cell_of(cb: f32, cr: f32, size: usize, extent: f32) -> Option<(usize, usi
 }
 
 impl Vectorscope {
-    fn new(size: usize) -> Self {
-        Vectorscope { size, extent: VECTOR_EXTENT, data: vec![0; size * size], samples: 0, mean: [0.0; 2] }
+    fn new(size: usize, extent: f32) -> Self {
+        Vectorscope { size, extent, data: vec![0; size * size], samples: 0, mean: [0.0; 2] }
     }
     pub fn at(&self, x: usize, y: usize) -> u32 {
         self.data[y * self.size + x]
@@ -621,12 +694,18 @@ impl Vectorscope {
 
 /// The YUV vectorscope (Cb, Cr of each sample).
 pub fn vectorscope_yuv(s: &Signal, p: &Params) -> Vectorscope {
-    let mut v = Vectorscope::new(p.vector_size.max(2));
+    let mut v = Vectorscope::new(p.vector_size.max(2), p.vector_extent());
     let mut sum = [0f64; 2];
+    let plain = !p.analog_yuv && (p.gain() - 1.0).abs() < f32::EPSILON;
     for &c in &s.rgb {
         let [r, g, b] = if p.clamp { c.map(|x| x.clamp(0.0, 1.0)) } else { c };
         let [_, cb, cr] = rgb_to_ycbcr(r, g, b, p.matrix);
-        v.plot(cb, cr, &mut sum);
+        if plain {
+            v.plot(cb, cr, &mut sum);
+        } else {
+            let [x, y] = p.vector_point(cb, cr);
+            v.plot(x, y, &mut sum);
+        }
     }
     v.finish(sum)
 }
@@ -658,7 +737,8 @@ fn hls_at([r, g, b]: [f32; 3], red: f32) -> [f32; 2] {
 
 /// The HLS vectorscope.
 pub fn vectorscope_hls(s: &Signal, p: &Params) -> Vectorscope {
-    let mut v = Vectorscope::new(p.vector_size.max(2));
+    let mut v = Vectorscope::new(p.vector_size.max(2), VECTOR_EXTENT);
+    let gain = p.gain();
     let mut sum = [0f64; 2];
     // hue → unit direction, tabulated at 0.1° (trigonometry per sample is the slow part)
     let red = red_angle(p.matrix);
@@ -667,7 +747,7 @@ pub fn vectorscope_hls(s: &Signal, p: &Params) -> Vectorscope {
         let [r, g, b] = c.map(|x| x.clamp(0.0, 1.0));
         let [h, sat, _] = redrob_film_color::rgb_to_hsl(r, g, b);
         let [dx, dy] = dirs[((h * 3600.0).round() as usize).min(3600)];
-        let rad = sat.clamp(0.0, 1.0) * 0.5;
+        let rad = sat.clamp(0.0, 1.0) * 0.5 * gain;
         v.plot(rad * dx, rad * dy, &mut sum);
     }
     v.finish(sum)

@@ -262,7 +262,8 @@ impl FxOp {
     /// Evaluate `e` at `cx.t` for a `w`×`h` working image. None for effects without a GPU
     /// implementation (and for disabled effects).
     pub fn eval(e: &EffectInstance, cx: &FxCtx, w: usize, h: usize) -> Option<FxOp> {
-        if !e.enabled {
+        // (outside its zone the clip falls back to the CPU path, which skips the effect)
+        if !e.enabled || !e.in_zone(cx.t) {
             return None;
         }
         Some(match e.effect.as_str() {

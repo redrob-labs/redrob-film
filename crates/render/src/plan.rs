@@ -2,7 +2,7 @@
 //!
 //! [`plan_frame`] resolves what is visible at a time into a list of layers the GPU can draw
 //! directly: a decoded source frame (YUV planes or RGBA), the matrix from source pixels to output
-//! pixels, an opacity and a blend mode (all 27 of [`Blend`] are composited by the GPU). A media
+//! pixels, an opacity and a blend mode (all 38 of [`Blend`] are composited by the GPU). A media
 //! clip whose enabled standard effects all have a GPU implementation ([`crate::gpufx`]) carries
 //! them as a [`LayerFx`]: their parameters evaluated at the frame's time, run by the GPU on the
 //! clip's working image before Motion places it, in the CPU's order (effects → Motion → Opacity /
@@ -191,7 +191,9 @@ fn gpu_chain<'a>(project: &Project, item: &'a TrackItem, opts: RenderOptions) ->
 pub fn plan_frame(project: &Project, seq_id: ItemId, t: Tick, opts: RenderOptions, sources: &dyn SourceProvider) -> FramePlan {
     let Some(seq) = project.sequence(seq_id) else { return FramePlan::Image(crate::Image::new(1, 1)) };
     let (w, h) = output_size(seq, opts.scale);
-    if whole_frame_on_cpu(project, seq, t) {
+    let opts = if seq.timeline_options.effects_disabled { RenderOptions { effects: false, ..opts } } else { opts };
+    // track compositing off is drawn on the CPU (only the topmost track, see `render_seq_tracks`)
+    if whole_frame_on_cpu(project, seq, t) || seq.timeline_options.no_track_compositing {
         return FramePlan::Image(crate::render_sequence(project, seq_id, t, opts, sources));
     }
     let mut layers = PlanStack::default();
@@ -311,6 +313,7 @@ fn push_tracks(project: &Project, seq: &Sequence, t: Tick, opts: RenderOptions, 
 /// pipeline.
 fn nest_is_plain(project: &Project, seq: &Sequence, nested: &Sequence, ft: Tick) -> bool {
     nested.settings.color == seq.settings.color
+        && nested.timeline_options.is_default()
         && (nested.settings.width, nested.settings.height) == (seq.settings.width, seq.settings.height)
         && layered_at(project, nested, ft)
         && !nested.video_tracks.iter().any(|tr| tr.enabled && tr.transitions.iter().any(|t| t.range().contains(ft) && !simple_transition(&t.effect.effect)))

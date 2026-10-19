@@ -82,13 +82,100 @@ fn db_text(db: f64) -> String {
 /// Meter key of the recording input (Meter Input(s) Only).
 pub const INPUT_METER: u64 = u64::MAX - 1;
 
-/// Per-strip meter state, `strip id → [level, peak]` per channel (dBFS; 2 channels, or 6 for 5.1
-/// strips), fed by the playing mix ([`redrob_film_render::mixer::LiveMix`]) with fast attack and a
-/// 20 dB/s fall. [`INPUT_METER`] holds the voice-over input.
-pub fn poll_meters(app: &mut FilmcraftApp, ui: &egui::Ui) -> HashMap<u64, Vec<[f32; 2]>> {
+/// How long (s) a clip light stays on after the last sample at or above 0 dBFS (Kdenlive: the
+/// indicator resets after a couple of seconds, 4–5 s, once the level no longer reaches 0 dB).
+pub const CLIP_HOLD_S: f32 = 4.5;
+
+/// One meter channel: `[level dBFS, peak-hold dBFS, clip light seconds left]`.
+pub type MeterCh = [f32; 3];
+pub const METER_IDLE: MeterCh = [-90.0, -90.0, 0.0];
+
+/// Level meter appearance (right-click any level meter): shared by the Audio Track Mixer, the
+/// Audio Clip Mixer, the Audio Meters panel and the level meters of both monitors.
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct MeterStyle {
+    /// Draw the peak-hold line.
+    pub peak_hold: bool,
+    /// Draw the clipping indicator above each bar.
+    pub clip_indicator: bool,
+    /// Colour the bars by level (green, yellow above −12 dB, red above −3 dB); off: one colour.
+    pub color_zones: bool,
+    /// Draw the dB scale next to the meters.
+    pub show_scale: bool,
+}
+
+impl Default for MeterStyle {
+    fn default() -> Self {
+        Self { peak_hold: true, clip_indicator: true, color_zones: true, show_scale: true }
+    }
+}
+
+/// The meter appearance menu (right-click on a level meter). `ap` prefixes the automation ids.
+pub fn meter_menu(app: &mut FilmcraftApp, resp: &egui::Response, ap: &str) {
+    let mut ids = Vec::new();
+    resp.context_menu(|ui| {
+        let st = &mut app.ui.meter_style;
+        let rows: [(&mut bool, &str, &str); 4] = [
+            (&mut st.peak_hold, "peakHold", tl!("Show Peak Hold")),
+            (&mut st.clip_indicator, "clipIndicator", tl!("Show Clipping Indicator")),
+            (&mut st.color_zones, "colorZones", tl!("Color Level Zones")),
+            (&mut st.show_scale, "scale", tl!("Show dB Scale")),
+        ];
+        for (v, key, label) in rows {
+            let r = ui.checkbox(v, label);
+            ids.push((format!("{ap}.meterMenu.{key}"), r.rect, label.to_string()));
+        }
+    });
+    for (id, r, l) in ids {
+        app.auto.add(&id, r, &l);
+    }
+}
+
+/// Per-channel hover readout of a level meter ("L −12.3 dB  R −11.0 dB"; 5.1 names its channels).
+pub fn meter_readout(m: &[MeterCh], channels: usize) -> String {
+    let n = channels.max(1);
+    let names = redrob_film_audio_dsp::channels::Layout::from_channels(n).names();
+    (0..n)
+        .map(|c| {
+            let v = m.get(c).map_or(-90.0, |v| v[0]);
+            let name = if n == 2 { ["L", "R"][c] } else { names.get(c).copied().unwrap_or("") };
+            if v <= -89.9 { format!("{name} -∞ dB") } else { format!("{name} {v:.1} dB") }
+        })
+        .collect::<Vec<_>>()
+        .join("  ")
+}
+
+/// Fall one meter state by `dt` seconds and merge fresh linear peaks (fast attack, 20 dB/s fall
+/// of the level, 6 dB/s of the peak hold, clip light held for [`CLIP_HOLD_S`]).
+pub fn meter_step(st: &mut Vec<MeterCh>, fresh: Option<&[f32]>, dt: f32) {
+    for m in st.iter_mut() {
+        m[0] = (m[0] - 20.0 * dt).max(-90.0);
+        m[1] = (m[1] - 6.0 * dt).max(-90.0);
+        m[2] = (m[2] - dt).max(0.0);
+    }
+    if let Some(p) = fresh {
+        if st.len() != p.len() {
+            *st = vec![METER_IDLE; p.len()];
+        }
+        for (m, x) in st.iter_mut().zip(p) {
+            let l = 20.0 * x.max(1e-6).log10();
+            m[0] = m[0].max(l);
+            m[1] = m[1].max(l);
+            if l >= 0.0 {
+                m[2] = CLIP_HOLD_S;
+            }
+        }
+    }
+}
+
+/// Per-strip meter state, `strip id → [level, peak, clip hold]` per channel (dBFS; 2 channels, or
+/// 6 for 5.1 strips), fed by the playing mix ([`redrob_film_render::mixer::LiveMix`]) with fast
+/// attack and a 20 dB/s fall ([`meter_step`]). [`INPUT_METER`] holds the voice-over input.
+pub fn poll_meters(app: &mut FilmcraftApp, ui: &egui::Ui) -> HashMap<u64, Vec<MeterCh>> {
     let id = egui::Id::new("mixer-meters");
     let frame = ui.ctx().cumulative_frame_nr();
-    let (last, mut st): (u64, HashMap<u64, Vec<[f32; 2]>>) = ui.data(|d| d.get_temp(id)).unwrap_or_default();
+    let (last, mut st): (u64, HashMap<u64, Vec<MeterCh>>) = ui.data(|d| d.get_temp(id)).unwrap_or_default();
     if last == frame && frame != 0 {
         return st;
     }
@@ -101,49 +188,44 @@ pub fn poll_meters(app: &mut FilmcraftApp, ui: &egui::Ui) -> HashMap<u64, Vec<[f
     }
     let dt = ui.input(|i| i.stable_dt).min(0.1);
     for v in st.values_mut() {
-        for m in v.iter_mut() {
-            m[0] = (m[0] - 20.0 * dt).max(-90.0);
-            m[1] = (m[1] - 6.0 * dt).max(-90.0);
-        }
+        meter_step(v, None, dt);
     }
-    let live = app.playback.playing || app.session.voiceover.recording();
+    let live = app.playback.playing || app.session.voiceover.recording() || app.session.voiceover.monitoring();
     if live {
         for (k, p) in fresh {
-            let e = st.entry(k).or_default();
-            if e.len() != p.len() {
-                *e = vec![[-90.0; 2]; p.len()];
-            }
-            for (m, x) in e.iter_mut().zip(&p) {
-                let l = 20.0 * x.max(1e-6).log10();
-                m[0] = m[0].max(l);
-                m[1] = m[1].max(l);
-            }
+            meter_step(st.entry(k).or_default(), Some(&p), 0.0);
         }
+    }
+    // keep repainting while levels fall and clip lights are held
+    if live || st.values().flatten().any(|m| m[0] > -90.0 || m[2] > 0.0) {
         ui.ctx().request_repaint();
     }
     ui.data_mut(|d| d.insert_temp(id, (frame, st.clone())));
     st
 }
 
-/// One bar per channel (level, peak hold) with a clip light on top; 5.1 meters carry channel names.
-fn draw_meters(ui: &egui::Ui, r: Rect, m: &[[f32; 2]], channels: usize, t: &Tokens) {
+/// One bar per channel (level, peak hold) with a clip light on top, drawn with the shared
+/// [`MeterStyle`]. The clip light stays on for [`CLIP_HOLD_S`] after the last over.
+pub fn draw_meters(ui: &egui::Ui, r: Rect, m: &[MeterCh], channels: usize, t: &Tokens, style: MeterStyle) {
     let p = ui.painter();
     p.rect_filled(r, 0.0, t.meter_bg);
     let n = channels.max(1);
     let gap = if n > 2 { 1.0 } else { 2.0 };
     let w = (r.width() - gap * (n as f32 - 1.0)) / n as f32;
+    let top = if style.clip_indicator { 6.0 } else { 0.0 };
     for c in 0..n {
-        let v = m.get(c).copied().unwrap_or([-90.0; 2]);
-        let br = Rect::from_min_size(pos2(r.min.x + c as f32 * (w + gap), r.min.y + 6.0), vec2(w, r.height() - 6.0));
-        crate::widgets::meter_bar(p, br, v[0], v[1], t);
-        // clip light
-        let lr = Rect::from_min_size(pos2(br.min.x, r.min.y), vec2(w, 4.0));
-        p.rect_filled(lr, 0.0, if v[1] >= -0.1 { RED } else { t.meter_clip_off });
+        let v = m.get(c).copied().unwrap_or(METER_IDLE);
+        let br = Rect::from_min_size(pos2(r.min.x + c as f32 * (w + gap), r.min.y + top), vec2(w, r.height() - top));
+        crate::widgets::meter_bar_styled(p, br, v[0], v[1], style.color_zones, style.peak_hold, t);
+        if style.clip_indicator {
+            let lr = Rect::from_min_size(pos2(br.min.x, r.min.y), vec2(w, 4.0));
+            p.rect_filled(lr, 0.0, if v[2] > 0.0 { RED } else { t.meter_clip_off });
+        }
     }
 }
 
 /// Meter levels for the automation label, one per channel (silent channels read -90.0).
-fn meter_text(m: &[[f32; 2]], channels: usize) -> String {
+fn meter_text(m: &[MeterCh], channels: usize) -> String {
     (0..channels).map(|c| format!("{:.1}", m.get(c).map_or(-90.0, |v| v[0]))).collect::<Vec<_>>().join(" / ")
 }
 
@@ -196,6 +278,17 @@ fn insert_effects() -> Vec<&'static redrob_film_project::EffectDef> {
 fn targets(seq: &Sequence, id: TrackId) -> Vec<&Track> {
     let me = seq.submix_tracks.iter().position(|t| t.id == id);
     seq.submix_tracks.iter().enumerate().filter(|(i, _)| me.is_none_or(|m| *i > m)).map(|(_, t)| t).collect()
+}
+
+/// Range of the recording input level the armed fader sets (Voice-Over `inputGainDb`).
+const INPUT_GAIN_MIN_DB: f64 = -60.0;
+const INPUT_GAIN_MAX_DB: f64 = 24.0;
+
+/// `mixer.setStrip` parameters of a click on Solo (Kdenlive): a plain click solos the strip
+/// exclusively (or un-solos it when it is the only soloed one); Shift+click adds or removes it.
+fn solo_params(seq: &Sequence, sid: &Value, id: TrackId, solo: bool, shift: bool) -> Value {
+    let others = seq.audio_tracks.iter().chain(&seq.submix_tracks).any(|t| t.id != id && t.solo);
+    if shift || (solo && !others) { json!({"strip": sid, "solo": !solo}) } else { json!({"strip": sid, "solo": true, "exclusive": true}) }
 }
 
 // ------------------------------------------------------------------------------------- track mixer
@@ -335,9 +428,12 @@ pub fn track_mixer(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         }
         let sr = Rect::from_min_size(pos2(sx, clip.min.y + 2.0 - voff), vec2(STRIP_W, (clip.height() - 4.0).max(need)));
         let is_track = seq.audio_tracks.iter().any(|t| t.id == *id && t.mixer.record_arm);
-        let m = if app.ui.mixer_meter_input_only {
-            // Meter Input(s) Only: armed tracks show the recording input; other meters are idle
-            if is_track { meters.get(&INPUT_METER).cloned().unwrap_or_default() } else { Vec::new() }
+        let m = if is_track {
+            // monitoring mode (Kdenlive): a record-armed track meters the recording input
+            meters.get(&INPUT_METER).cloned().unwrap_or_default()
+        } else if app.ui.mixer_meter_input_only {
+            // Meter Input(s) Only: only armed tracks show a level; other meters are idle
+            Vec::new()
         } else {
             meters.get(&id.0).cloned().unwrap_or_default()
         };
@@ -361,7 +457,7 @@ fn run_actions(app: &mut FilmcraftApp, ctx: &egui::Context, acts: Vec<(String, V
     }
 }
 
-fn strip(app: &mut FilmcraftApp, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, sr: Rect, meter: &[[f32; 2]]) {
+fn strip(app: &mut FilmcraftApp, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, sr: Rect, meter: &[MeterCh]) {
     let t = cx.t;
     let seq = cx.seq;
     let Some(tr) = seq.strip(id).map(|c| c.into_owned()) else { return };
@@ -580,7 +676,9 @@ fn strip(app: &mut FilmcraftApp, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, s
             let pan = shown(app, &tr, LANE_PAN, cx.now);
             let kc = pos2(sr.center().x, y + 20.0);
             let kr = Rect::from_center_size(kc, vec2(38.0, 38.0));
-            let kresp = ui.interact(kr, egui::Id::new((&ap, "pan")), Sense::click_and_drag()).on_hover_text(tl!("Pan / balance (drag; double-click: centre)"));
+            let kresp = ui
+                .interact(kr, egui::Id::new((&ap, "pan")), Sense::click_and_drag())
+                .on_hover_text(tl!("Pan / balance (drag; double-, middle- or right-click: centre)"));
             let ring = if kresp.hovered() || kresp.dragged() { t.tab_text_active } else { t.control_handle_dim };
             ui.painter().circle_stroke(kc, 16.0, Stroke::new(2.0, ring));
             let ang = (pan / 100.0) as f32 * 135f32.to_radians();
@@ -598,7 +696,7 @@ fn strip(app: &mut FilmcraftApp, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, s
             if kresp.drag_stopped() {
                 cx.cmd("mixer.release", json!({"strip": sid, "lane": LANE_PAN, "time": cx.now.0}));
             }
-            if kresp.double_clicked() {
+            if kresp.double_clicked() || kresp.middle_clicked() || kresp.secondary_clicked() {
                 cx.cmd("mixer.setValue", json!({"strip": sid, "lane": LANE_PAN, "value": 0.0}));
             }
             let vr = Rect::from_center_size(pos2(kc.x, y + 48.0), vec2(56.0, 16.0));
@@ -607,6 +705,8 @@ fn strip(app: &mut FilmcraftApp, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, s
             app.auto.add(&format!("{ap}.panValue"), vresp.rect, &format!("{pan:.1}"));
             if let Some(v) = nv {
                 cx.cmd("mixer.setValue", json!({"strip": sid, "lane": LANE_PAN, "value": v}));
+            } else if vresp.middle_clicked() || vresp.secondary_clicked() {
+                cx.cmd("mixer.setValue", json!({"strip": sid, "lane": LANE_PAN, "value": 0.0}));
             }
             y += 62.0;
         }
@@ -650,10 +750,11 @@ fn strip(app: &mut FilmcraftApp, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, s
                 cx.cmd("mixer.setStrip", json!({"strip": sid, "muted": !tr.muted}));
             }
         }
-        let s_r = crate::widgets::letter_toggle(ui, b(1.0), "S", tr.solo, SOLO_ON, &t, egui::Id::new((&ap, "S")));
+        let s_r = crate::widgets::letter_toggle(ui, b(1.0), "S", tr.solo, SOLO_ON, &t, egui::Id::new((&ap, "S")))
+            .on_hover_text(tl!("Solo (click: exclusive; Shift+click: add to the soloed strips)"));
         app.auto.add(&format!("{ap}.solo"), b(1.0), "Solo Track");
         if s_r.clicked() {
-            cx.cmd("mixer.setStrip", json!({"strip": sid, "solo": !tr.solo}));
+            cx.cmd("mixer.setStrip", solo_params(seq, &sid, id, tr.solo, ui.input(|i| i.modifiers.shift)));
         }
         let is_sub = seq.submix_tracks.iter().any(|s| s.id == id);
         if is_sub {
@@ -692,18 +793,34 @@ fn strip(app: &mut FilmcraftApp, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, s
         }
         ui.painter().rect_filled(track, 2.0, t.control_well);
         ui.painter().rect_stroke(track, 2.0, Stroke::new(1.0, t.control_border), StrokeKind::Inside);
-        let vol = shown(app, &tr, LANE_VOLUME, cx.now);
+        // monitoring mode (Kdenlive): while the track is record-armed its fader sets the input level
+        let armed = !is_master && tr.mixer.record_arm && seq.audio_tracks.iter().any(|a| a.id == id);
+        let vol = if armed { app.session.prefs.voice_over.input_gain_db } else { shown(app, &tr, LANE_VOLUME, cx.now) };
         let cy = ypos(vol);
         let cap = Rect::from_center_size(pos2(track.center().x, cy), vec2(18.0, 26.0));
-        let fresp =
-            ui.interact(cap.expand(3.0), egui::Id::new((&ap, "fader")), Sense::click_and_drag()).on_hover_text(tl!("Volume (drag; double-click: 0 dB)"));
+        let tip = if armed {
+            tl!("Input level of the recording (drag; double-, middle- or right-click: 0 dB)")
+        } else {
+            tl!("Volume (drag; double-, middle- or right-click: 0 dB)")
+        };
+        let fresp = ui.interact(cap.expand(3.0), egui::Id::new((&ap, "fader")), Sense::click_and_drag()).on_hover_text(tip);
         let held = app.session.previews.live.get(id, LANE_VOLUME).is_some();
         let col = if fresp.dragged() || held { t.accent } else { t.control_handle };
         ui.painter().rect_filled(cap, 3.0, t.control_handle_bg);
         ui.painter().rect_stroke(cap, 3.0, Stroke::new(2.0, col), StrokeKind::Inside);
         ui.painter().line_segment([pos2(cap.min.x + 5.0, cy), pos2(cap.max.x - 5.0, cy)], Stroke::new(2.0, col));
-        app.auto.add(&format!("{ap}.fader"), cap, &format!("Volume {}", db_text(vol)));
-        if fresp.dragged() {
+        app.auto.add(&format!("{ap}.fader"), cap, &format!("{} {}", if armed { "Input level" } else { "Volume" }, db_text(vol)));
+        if armed {
+            let dy = if fresp.dragged() { fresp.drag_delta().y } else { 0.0 };
+            if dy != 0.0 {
+                let fine = if ui.input(|i| i.modifiers.command) { 0.1 } else { 1.0 };
+                let nv = pos_to_db(db_to_pos(vol) - dy * fine / track.height()).clamp(INPUT_GAIN_MIN_DB, INPUT_GAIN_MAX_DB);
+                cx.cmd("audio.voiceover.settings", json!({"inputGainDb": nv}));
+            }
+            if fresp.double_clicked() || fresp.middle_clicked() || fresp.secondary_clicked() {
+                cx.cmd("audio.voiceover.settings", json!({"inputGainDb": 0.0}));
+            }
+        } else if fresp.dragged() {
             let dy = fresp.drag_delta().y;
             if dy != 0.0 {
                 let fine = if ui.input(|i| i.modifiers.command) { 0.1 } else { 1.0 };
@@ -713,36 +830,49 @@ fn strip(app: &mut FilmcraftApp, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, s
                 cx.cmd("mixer.touch", json!({"strip": sid, "lane": LANE_VOLUME, "value": vol, "time": cx.now.0}));
             }
         }
-        if fresp.drag_stopped() {
+        if !armed && fresp.drag_stopped() {
             cx.cmd("mixer.release", json!({"strip": sid, "lane": LANE_VOLUME, "time": cx.now.0}));
         }
-        if fresp.double_clicked() {
+        // Kdenlive: double-, middle- or right-click resets the fader to its default
+        if !armed && (fresp.double_clicked() || fresp.middle_clicked() || fresp.secondary_clicked()) {
             cx.cmd("mixer.setValue", json!({"strip": sid, "lane": LANE_VOLUME, "value": 0.0}));
         }
         // meters with their own scale (0 … −54 dB)
         let nch = redrob_film_render::mixer::width_of(tr.channels);
         let mrect = Rect::from_min_max(pos2(x + 46.0, area.min.y), pos2(x + 70.0, area.max.y));
         let nshow = if meter.is_empty() { nch } else { meter.len() };
-        draw_meters(ui, mrect, meter, nshow, &t);
+        let style = app.ui.meter_style;
+        draw_meters(ui, mrect, meter, nshow, &t, style);
+        // hover: dB per channel; right-click: meter appearance
+        let mresp = ui.interact(mrect, egui::Id::new((&ap, "meter")), Sense::click()).on_hover_text(meter_readout(meter, nshow));
+        meter_menu(app, &mresp, &format!("{ap}.meter"));
         app.auto.add(&format!("{ap}.meter"), mrect, &format!("Meter {} dB", meter_text(meter, nshow)));
-        let bar_top = mrect.min.y + 6.0;
-        let bar_h = mrect.height() - 6.0;
+        let top = if style.clip_indicator { 6.0 } else { 0.0 };
+        let bar_top = mrect.min.y + top;
+        let bar_h = mrect.height() - top;
         let mut d = 0;
         let step = if tall { 6 } else { 18 };
-        while d >= -54 {
+        while style.show_scale && d >= -54 {
             let yy = bar_top + bar_h * (-d as f32 / 60.0);
             small_text(ui, pos2(x + 91.0, yy), Align2::RIGHT_CENTER, &format!("{d}"), 8.5, t.text_dim);
             ui.painter().line_segment([pos2(x + 71.0, yy), pos2(x + 74.0, yy)], Stroke::new(1.0, t.text_faint));
             d -= step;
         }
-        small_text(ui, pos2(x + 91.0, mrect.max.y + 6.0), Align2::RIGHT_CENTER, "dB", 8.5, t.text_dim);
+        if style.show_scale {
+            small_text(ui, pos2(x + 91.0, mrect.max.y + 6.0), Align2::RIGHT_CENTER, "dB", 8.5, t.text_dim);
+        }
         // fader value (hot text)
         let vr = Rect::from_min_size(pos2(x + 4.0, sr.max.y - name_h - value_h), vec2(56.0, value_h));
         let mut vui = ui.new_child(egui::UiBuilder::new().max_rect(vr));
         let (vresp, nv) = crate::widgets::hot_number(&mut vui, egui::Id::new((&ap, "value")), vol.max(-96.0), 0.1, (FADER_MIN_DB, FADER_MAX_DB), 1, "", &t);
         app.auto.add(&format!("{ap}.value"), vresp.rect, &db_text(vol));
-        if let Some(v) = nv {
-            cx.cmd("mixer.setValue", json!({"strip": sid, "lane": LANE_VOLUME, "value": v}));
+        let reset = vresp.middle_clicked() || vresp.secondary_clicked();
+        match (nv, armed) {
+            (Some(v), true) => cx.cmd("audio.voiceover.settings", json!({"inputGainDb": v.clamp(INPUT_GAIN_MIN_DB, INPUT_GAIN_MAX_DB)})),
+            (Some(v), false) => cx.cmd("mixer.setValue", json!({"strip": sid, "lane": LANE_VOLUME, "value": v})),
+            (None, true) if reset => cx.cmd("audio.voiceover.settings", json!({"inputGainDb": 0.0})),
+            (None, false) if reset => cx.cmd("mixer.setValue", json!({"strip": sid, "lane": LANE_VOLUME, "value": 0.0})),
+            _ => {}
         }
     }
     // ---- name
@@ -944,7 +1074,7 @@ pub fn clip_mixer(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         if kresp.drag_stopped() {
             release(&mut acts, "panner");
         }
-        if kresp.double_clicked() {
+        if kresp.double_clicked() || kresp.middle_clicked() || kresp.secondary_clicked() {
             set(&mut acts, "panner", "balance", 0.0, true);
         }
         // automation mode (Clip Mixer)
@@ -972,7 +1102,7 @@ pub fn clip_mixer(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         let so = crate::widgets::letter_toggle(ui, b(1.0), "S", tr.solo, SOLO_ON, &t, egui::Id::new((&ap, "S")));
         app.auto.add(&format!("{ap}.solo"), b(1.0), "Solo Track");
         if so.clicked() {
-            acts.push(("mixer.setStrip".into(), json!({"strip": tr.id.0, "solo": !tr.solo})));
+            acts.push(("mixer.setStrip".into(), solo_params(&seq, &json!(tr.id.0), tr.id, tr.solo, ui.input(|i| i.modifiers.shift))));
         }
         let kresp =
             crate::widgets::icon_toggle(ui, b(2.0), Icon::Keyframe, kf, &t, egui::Id::new((&ap, "kf")), Some(t.accent)).on_hover_text(tl!("Write keyframes"));
@@ -1003,12 +1133,15 @@ pub fn clip_mixer(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
             if fresp.drag_stopped() {
                 release(&mut acts, "volume");
             }
-            if fresp.double_clicked() {
+            if fresp.double_clicked() || fresp.middle_clicked() || fresp.secondary_clicked() {
                 set(&mut acts, "volume", "level", 0.0, true);
             }
             let mrect = Rect::from_min_max(pos2(sr.min.x + 46.0, area.min.y), pos2(sr.max.x - 6.0, area.max.y));
             let m = meters.get(&tr.id.0).cloned().unwrap_or_default();
-            draw_meters(ui, mrect, &m, if m.is_empty() { redrob_film_render::mixer::width_of(tr.channels) } else { m.len() }, &t);
+            let nshow = if m.is_empty() { redrob_film_render::mixer::width_of(tr.channels) } else { m.len() };
+            draw_meters(ui, mrect, &m, nshow, &t, app.ui.meter_style);
+            let mresp = ui.interact(mrect, egui::Id::new((&ap, "meter")), Sense::click()).on_hover_text(meter_readout(&m, nshow));
+            meter_menu(app, &mresp, &format!("{ap}.meter"));
         }
         // dB readout: drag to scrub, click to type a value (clamped to the fader range), like the track mixer
         let vr = Rect::from_min_size(pos2(sr.min.x + 4.0, sr.max.y - 42.0), vec2(50.0, 16.0));
@@ -1044,7 +1177,7 @@ mod tests {
             let t = Tokens::for_kind(kind);
             let ctx = egui::Context::default();
             let area = Rect::from_min_size(pos2(20.0, 20.0), vec2(40.0, 100.0));
-            let mut out = ctx.run_ui(egui::RawInput::default(), |ui| draw_meters(ui, area, &[[-90.0; 2]], 1, &t));
+            let mut out = ctx.run_ui(egui::RawInput::default(), |ui| draw_meters(ui, area, &[METER_IDLE], 1, &t, MeterStyle::default()));
             out.textures_delta.clear();
             let rectangles: Vec<_> = out
                 .shapes

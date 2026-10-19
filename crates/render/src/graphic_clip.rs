@@ -31,7 +31,7 @@ pub fn xform(a: &Affine) -> Xform {
 /// Layer pixels → graphic canvas pixels (position / anchor / scale / rotation).
 pub fn layer_matrix(spec: &LayerSpec) -> Affine {
     let t = &spec.transform;
-    Affine::motion(t.position, t.scale, t.rotation, t.anchor)
+    Affine::motion(t.position, Vec2::new(t.scale.x * t.tilt.x, t.scale.y * t.tilt.y), t.rotation, t.anchor)
 }
 
 /// Text style + paragraph style of a text layer.
@@ -599,8 +599,180 @@ pub fn apply_roll(meta: &GraphicMeta, specs: &mut [LayerSpec], u: Tick, d: Tick,
 /// Draw all layers of a graphic clip at media time `mt` onto `out`; `m` maps graphic canvas
 /// pixels to `out` pixels.
 pub fn render_graphic(item: &TrackItem, mt: Tick, canvas: (u32, u32), m: &Affine, out: &mut Image) {
-    let specs: Vec<LayerSpec> = item_layer_specs(item, mt, canvas).into_iter().map(|(_, s)| s).collect();
+    let specs: Vec<LayerSpec> = drawn_specs(item, mt, canvas).into_iter().map(|(_, s)| s).collect();
     draw_specs(&specs, m, out);
+}
+
+/// [`render_graphic`] for a clip on a sequence running at `fps`: also applies the clip's
+/// Typewriter effect (`k_typewriter`), which reveals the text layers' characters, words or lines
+/// one at a time.
+pub fn render_graphic_rate(item: &TrackItem, mt: Tick, canvas: (u32, u32), m: &Affine, out: &mut Image, fps: f64) {
+    let mut specs: Vec<LayerSpec> = drawn_specs(item, mt, canvas).into_iter().map(|(_, s)| s).collect();
+    let (_, u, _) = graphic_time(item, mt);
+    apply_typewriter(item, &mut specs, u, fps);
+    draw_specs(&specs, m, out);
+}
+
+/// Byte offsets where each typewriter unit of `text` ends: characters (0), words (1) or lines (2).
+fn typewriter_cuts(text: &str, kind: u32) -> Vec<usize> {
+    match kind {
+        1 => {
+            let mut cuts = Vec::new();
+            let mut in_word = false;
+            for (i, c) in text.char_indices() {
+                if c.is_whitespace() {
+                    if in_word {
+                        cuts.push(i);
+                    }
+                    in_word = false;
+                } else {
+                    in_word = true;
+                }
+            }
+            if in_word {
+                cuts.push(text.len());
+            }
+            cuts
+        }
+        2 => {
+            let mut cuts: Vec<usize> = text.match_indices('\n').map(|(i, _)| i).collect();
+            cuts.push(text.len());
+            cuts
+        }
+        _ => text.char_indices().map(|(i, c)| i + c.len_utf8()).collect(),
+    }
+}
+
+/// [`item_layer_specs`] as drawn: the typewriter applied and every `%s` in a text layer replaced
+/// by the clip's name (Kdenlive's template titles: a source graphic used as a template shows each
+/// clip's own text and follows the template's design).
+pub fn drawn_specs(item: &TrackItem, mt: Tick, canvas: (u32, u32)) -> Vec<(usize, LayerSpec)> {
+    let mut specs = item_layer_specs(item, mt, canvas);
+    for (_, s) in specs.iter_mut() {
+        if let LayerContent::Text(tp) = &mut s.content
+            && tp.text.contains("%s")
+        {
+            // style runs are byte ranges of the text: drop them when the length changes
+            tp.text = tp.text.replace("%s", &item.name);
+            tp.runs.clear();
+        }
+    }
+    apply_layer_typewriter(item, &mut specs, mt - item.source_in);
+    specs
+}
+
+/// Kdenlive's typewriter on text layers that have it on: at clip time `u` only the characters,
+/// words or lines revealed so far are drawn (one every Step, give or take a random Variation).
+/// Only the picture is cut: editors keep reading the whole text from the layer.
+pub fn apply_layer_typewriter(item: &TrackItem, specs: &mut [(usize, LayerSpec)], u: Tick) {
+    for (ei, spec) in specs.iter_mut() {
+        let Some(e) = item.effects.get(*ei) else { continue };
+        let on = e.param("typewriter").and_then(|p| p.value.as_bool()).unwrap_or(false);
+        let LayerContent::Text(tp) = &mut spec.content else { continue };
+        if !on {
+            continue;
+        }
+        let num = |id: &str, d: f64| e.param(id).and_then(|p| p.value.as_f64()).unwrap_or(d);
+        let unit = num("tw_unit", 0.0) as u32;
+        let (step, var, seed) = (num("tw_step", 0.08).max(0.0), num("tw_variation", 0.0).max(0.0), num("tw_seed", 1.0) as u64);
+        let ends = typewriter_ends(&tp.text, unit);
+        let secs = u.seconds();
+        let mut shown = 0;
+        let mut at = 0.0;
+        for (k, end) in ends.iter().enumerate() {
+            let jitter = if var > 0.0 { (unit_hash(seed, k as u64) * 2.0 - 1.0) * var } else { 0.0 };
+            at += (step + jitter).max(0.0);
+            if secs + 1e-9 < at {
+                break;
+            }
+            shown = *end;
+        }
+        tp.text.truncate(shown);
+        tp.runs.retain(|(r, _)| r.start < shown);
+        for (r, _) in tp.runs.iter_mut() {
+            r.end = r.end.min(shown);
+        }
+    }
+}
+
+/// The byte offsets at which each typewriter unit of `text` ends: characters, words (with the
+/// spaces after them) or lines (with their line break).
+fn typewriter_ends(text: &str, unit: u32) -> Vec<usize> {
+    match unit {
+        1 => {
+            let mut v = Vec::new();
+            let mut in_word = false;
+            for (i, c) in text.char_indices() {
+                if c.is_whitespace() {
+                    in_word = false;
+                } else if !in_word {
+                    if i > 0 {
+                        v.push(i);
+                    }
+                    in_word = true;
+                }
+            }
+            v.push(text.len());
+            v
+        }
+        2 => {
+            let mut v: Vec<usize> = text.match_indices('\n').map(|(i, _)| i + 1).collect();
+            if v.last() != Some(&text.len()) {
+                v.push(text.len());
+            }
+            v
+        }
+        _ => text.char_indices().map(|(i, c)| i + c.len_utf8()).collect(),
+    }
+}
+
+/// Cut the text layers back to what a Typewriter effect on `item` shows `u` (clip media time)
+/// into the clip: unit k appears after the delays of the units before it (Frames Step plus up to
+/// Fluctuation random frames each), across the text layers in paint order.
+pub fn apply_typewriter(item: &TrackItem, specs: &mut [LayerSpec], u: Tick, fps: f64) {
+    let Some(e) = item.effects.iter().find(|e| e.enabled && e.effect == "k_typewriter") else { return };
+    let t = item.source_in;
+    let step = e.f64_at("step", t).round().max(1.0);
+    let fluct = e.f64_at("fluctuation", t).round().max(0.0);
+    let seed = e.f64_at("seed", t).round().max(0.0) as u64;
+    let kind = match e.param("type").map(|p| &p.value) {
+        Some(redrob_film_project::ParamValue::Choice(c)) => *c,
+        _ => 0,
+    };
+    let frames = u.seconds().max(0.0) * fps.max(1.0);
+    let total: usize =
+        specs.iter().filter_map(|s| if let LayerContent::Text(tp) = &s.content { Some(typewriter_cuts(&tp.text, kind).len()) } else { None }).sum();
+    // how many units have appeared
+    let mut shown = 0usize;
+    let mut at = 0.0f64;
+    while shown < total && at <= frames {
+        shown += 1;
+        let r = crate::vfx::hash01(shown as i64, 0, 0, seed.wrapping_add(0x7e57)) as f64;
+        at += step + (r * (fluct + 1.0)).floor().min(fluct);
+    }
+    for s in specs.iter_mut() {
+        let LayerContent::Text(tp) = &mut s.content else { continue };
+        let cuts = typewriter_cuts(&tp.text, kind);
+        let k = shown.min(cuts.len());
+        shown -= k;
+        let end = if k == 0 { 0 } else { cuts[k - 1] };
+        if end < tp.text.len() {
+            tp.text.truncate(end);
+            tp.runs.retain(|(r, _)| r.start < end);
+            for (r, _) in tp.runs.iter_mut() {
+                r.end = r.end.min(end);
+            }
+        }
+    }
+}
+
+/// A reproducible number in 0..1 for unit `k` of seed `seed`.
+fn unit_hash(seed: u64, k: u64) -> f64 {
+    let mut h = seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ k.wrapping_mul(0xC2B2_AE3D_27D4_EB4F);
+    h ^= h >> 31;
+    h = h.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    h ^= h >> 29;
+    (h >> 11) as f64 / (1u64 << 53) as f64
 }
 
 /// Draw a graphic's layers (an effect list, without clip settings) at time `t` onto `out`.
@@ -619,8 +791,9 @@ fn draw_specs(specs: &[LayerSpec], m: &Affine, out: &mut Image) {
 
 /// All layers composed into one tight image (for the GPU plan): `(image, x, y)` in output pixels.
 pub fn render_graphic_tight(item: &TrackItem, mt: Tick, canvas: (u32, u32), m: &Affine, w: usize, h: usize) -> Option<(Image, i32, i32)> {
+    let specs = drawn_specs(item, mt, canvas);
     let rasters: Vec<Arc<LayerRaster>> =
-        item_layer_specs(item, mt, canvas).iter().filter_map(|(_, spec)| raster_layer_cached(spec, &xform(&m.then_apply(&layer_matrix(spec))), w, h)).collect();
+        specs.iter().filter_map(|(_, spec)| raster_layer_cached(spec, &xform(&m.then_apply(&layer_matrix(spec))), w, h)).collect();
     let x0 = rasters.iter().map(|r| r.x).min()?.max(0);
     let y0 = rasters.iter().map(|r| r.y).min()?.max(0);
     let x1 = rasters.iter().map(|r| r.x + r.img.w as i32).max()?.min(w as i32);

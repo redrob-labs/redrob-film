@@ -22,9 +22,10 @@
 use egui::{Align2, Color32, Rect, Sense, pos2, vec2};
 use redrob_film_engine::export::presets::{DEFAULT_PRESET, preset_key};
 use redrob_film_engine::export::{
-    AudioCodec, BitrateMode, ExportSettings, FieldOrder, Format, GpuRendering, H264Profile, HardwareEncoding, Multiplexer, MxfVideoCodec, Placement, Scaling,
-    TextOverlay, builtin_presets, format_bytes,
+    AudioCodec, BitrateMode, Deinterlace, EncoderSpeed, ExportSettings, FieldOrder, Format, GpuRendering, H264Profile, HardwareEncoding, Multiplexer,
+    MxfVideoCodec, Placement, ScaleFilter, Scaling, TextOverlay, builtin_presets, format_bytes,
 };
+use redrob_film_engine::render_jobs::AfterExport;
 use redrob_film_engine::time::{FrameRate, Tick};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -57,6 +58,13 @@ pub struct ExportUi {
     pub quick_open: bool,
     pub quick_path: String,
     pub quick_preset: String,
+    /// What happens when an export ends (open folder, play, add to project, log, stems, shut down).
+    pub after: AfterExport,
+    /// Marker colour whose sections Export Marker Sections queues ("" = every marker).
+    pub marker_color: String,
+    /// The user preset being edited (Preset Manager ▸ Edit…) and its name as typed.
+    pub editing_preset: Option<String>,
+    pub editing_name: String,
 }
 
 impl Default for ExportUi {
@@ -76,6 +84,10 @@ impl Default for ExportUi {
             quick_open: false,
             quick_path: String::new(),
             quick_preset: String::new(),
+            after: AfterExport::default(),
+            marker_color: String::new(),
+            editing_preset: None,
+            editing_name: String::new(),
         }
     }
 }
@@ -137,7 +149,7 @@ pub fn output_path(ex: &ExportUi) -> String {
 /// Engine params for the current settings (`file.exportMedia` / `export.queue.add`).
 pub fn export_params(app: &FilmcraftApp) -> Value {
     let ex = &app.ui.export;
-    let mut p = json!({"path": output_path(ex), "settings": settings_json(&ex.settings), "range": ex.range});
+    let mut p = json!({"path": output_path(ex), "settings": settings_json(&ex.settings), "range": ex.range, "after": serde_json::to_value(ex.after).unwrap_or_default()});
     if ex.range == "custom" {
         p["startSeconds"] = json!(ex.custom_start);
         p["endSeconds"] = json!(ex.custom_end);
@@ -205,6 +217,7 @@ fn queue_column(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     p.text(pos2(rect.min.x + 14.0, qtop), Align2::LEFT_CENTER, tlf!("Queue ({n})", n), Tokens::semibold(13.0), t.text);
     let body = Rect::from_min_max(pos2(rect.min.x + 8.0, qtop + 14.0), pos2(rect.max.x - 8.0, rect.max.y - 40.0));
     let items: Vec<Value> = app.session.execute("export.queue.list", json!({})).ok().and_then(|v| v["items"].as_array().cloned()).unwrap_or_default();
+    let scripts: Vec<Value> = app.session.execute("export.scripts.list", json!({})).ok().and_then(|v| v["scripts"].as_array().cloned()).unwrap_or_default();
     let mut action: Option<(&'static str, Value)> = None;
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(body).id_salt("export-queue"));
     egui::ScrollArea::vertical().id_salt("export-queue-scroll").auto_shrink([false, false]).show(&mut child, |ui| {
@@ -219,7 +232,14 @@ fn queue_column(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                 .show(ui, |ui| {
                     ui.set_width(ui.available_width());
                     let file = std::path::Path::new(it["path"].as_str().unwrap_or("")).file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or_default();
-                    ui.label(egui::RichText::new(format!("{} → {file}", it["sequenceName"].as_str().unwrap_or(""))).size(12.0).color(t.text));
+                    let title = ui.add(
+                        egui::Label::new(egui::RichText::new(format!("{} → {file}", it["sequenceName"].as_str().unwrap_or(""))).size(12.0).color(t.text))
+                            .sense(Sense::click()),
+                    );
+                    // double-click a finished export to play it
+                    if status == "done" && title.double_clicked() {
+                        action = Some(("export.output.open", json!({"id": id})));
+                    }
                     let preset = it["preset"].as_str().filter(|s| !s.is_empty()).unwrap_or(CUSTOM);
                     let (label, col) = match status {
                         "ready" => (tl!("Ready").to_string(), t.text_dim),
@@ -257,9 +277,47 @@ fn queue_column(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                         }
                         b(ui, "remove", "Remove", status != "encoding", "export.queue.remove", json!({"id": id}));
                     });
+                    if status == "done" {
+                        ui.horizontal(|ui| {
+                            for (key, text, cmd, params) in [
+                                ("play", tl!("Play"), "export.output.open", json!({"id": id})),
+                                ("folder", tl!("Open Folder"), "export.output.open", json!({"id": id, "reveal": true})),
+                                ("add", tl!("Add to Project"), "export.output.addToProject", json!({"id": id})),
+                            ] {
+                                let r = ui.add(egui::Button::new(egui::RichText::new(text).size(11.0)).small());
+                                reg.add(format!("export.queue.item.{id}.{key}"), r.rect, text);
+                                if r.clicked() {
+                                    action = Some((cmd, params));
+                                }
+                            }
+                        });
+                    }
                 })
                 .response;
             reg.add(format!("export.queue.item.{id}"), r.rect, status);
+        }
+        // Render scripts saved with Generate Script: start or delete them
+        if !scripts.is_empty() {
+            ui.add_space(8.0);
+            ui.label(egui::RichText::new(tl!("Render Scripts")).strong().size(12.5));
+            for sc in &scripts {
+                let name = sc["name"].as_str().unwrap_or("").to_string();
+                ui.label(egui::RichText::new(&name).size(12.0).color(t.text));
+                let out = std::path::Path::new(sc["output"].as_str().unwrap_or("")).file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or_default();
+                ui.label(egui::RichText::new(format!("{} → {out}", sc["sequenceName"].as_str().unwrap_or(""))).size(11.0).color(t.text_dim));
+                ui.horizontal(|ui| {
+                    let r = ui.add(egui::Button::new(egui::RichText::new(tl!("Start")).size(11.0)).small());
+                    reg.add(format!("export.scripts.item.{name}.start"), r.rect, "Start");
+                    if r.clicked() {
+                        action = Some(("export.scripts.start", json!({"name": name})));
+                    }
+                    let r = ui.add(egui::Button::new(egui::RichText::new(tl!("Delete")).size(11.0)).small());
+                    reg.add(format!("export.scripts.item.{name}.delete"), r.rect, "Delete");
+                    if r.clicked() {
+                        action = Some(("export.scripts.delete", json!({"name": name})));
+                    }
+                });
+            }
         }
     });
     // footer
@@ -392,17 +450,38 @@ fn settings_column(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         .map(|q| (q.settings.width, q.settings.height, q.settings.frame_rate, q.settings.sample_rate))
         .unwrap_or((1920, 1080, FrameRate::FPS_24, 48_000));
     let has_captions = app.session.active_sequence().is_some_and(|q| !q.caption_tracks.is_empty());
+    let preview_res = app.ui.program.res.scale();
     // an HDR sequence exports HDR (H.265 Main 10 where the hardware encoder has it) unless SDR is asked for
     let seq_hdr = app.session.active_sequence().is_some_and(|q| q.settings.color.working.is_hdr());
     let all_presets = app.session.export_presets.all();
     let favs: Vec<String> = all_presets.iter().filter(|p| app.session.export_presets.is_favorite(&p.name)).map(|p| p.name.clone()).collect();
     let mut pick_folder = false;
     let mut pick_overlay = false;
+    let mut edit_action: Option<bool> = None;
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(rect.shrink2(vec2(14.0, 10.0))).id_salt("export-settings"));
     let ex = &mut app.ui.export;
     egui::ScrollArea::vertical().id_salt("export-settings-scroll").auto_shrink([false, false]).show(&mut child, |ui| {
         ui.label(egui::RichText::new(tl!("Media File")).strong().size(14.0));
         ui.add_space(6.0);
+        if let Some(editing) = ex.editing_preset.clone() {
+            egui::Frame::NONE.fill(t.field_bg).corner_radius(4.0).inner_margin(egui::Margin::same(8)).show(ui, |ui| {
+                ui.label(egui::RichText::new(tlf!("Editing preset {name}", name = editing)).strong());
+                row(ui, &t, tl!("Preset Name"), |ui| text(ui, &mut reg, "export.editPreset.name", &mut ex.editing_name, tl!("Preset name")));
+                ui.horizontal(|ui| {
+                    let r = ui.add_enabled(!ex.editing_name.trim().is_empty(), egui::Button::new(tl!("Save Changes")));
+                    reg.add("export.editPreset.save", r.rect, "Save Changes");
+                    if r.clicked() {
+                        edit_action = Some(true);
+                    }
+                    let r = ui.button(tl!("Done"));
+                    reg.add("export.editPreset.done", r.rect, "Done");
+                    if r.clicked() {
+                        edit_action = Some(false);
+                    }
+                });
+            });
+            ui.add_space(6.0);
+        }
         row(ui, &t, tl!("File Name"), |ui| text(ui, &mut reg, "export.fileName", &mut ex.file_name, tl!("Sequence name")));
         row(ui, &t, tl!("Location"), |ui| {
             let r = ui.small_button("…");
@@ -535,10 +614,46 @@ fn settings_column(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                 row(ui, &t, label, |ui| text(ui, &mut reg, &format!("export.metadata.{key}"), v, ""));
             }
         }
+        if section(ui, &mut reg, &mut ex.open_sections, "render", tl!("Render Options"), &t) {
+            render_section(ui, &mut reg, s, &t, seq_w, seq_h, preview_res);
+        }
+        if section(ui, &mut reg, &mut ex.open_sections, "after", tl!("After Export"), &t) {
+            let a = &mut ex.after;
+            check(ui, &mut reg, "export.after.openFolder", &mut a.open_folder, tl!("Open folder after export"));
+            check(ui, &mut reg, "export.after.play", &mut a.play, tl!("Play after render"));
+            check(ui, &mut reg, "export.after.addToProject", &mut a.add_to_project, tl!("Add rendered file to project"));
+            check(ui, &mut reg, "export.after.keepLog", &mut a.keep_log, tl!("Keep log file next to the output"));
+            if s.has_audio() || s.format.is_audio_only() {
+                check(ui, &mut reg, "export.after.separateAudioTracks", &mut a.separate_audio_tracks, tl!("Separate file for each audio track"));
+            }
+            check(ui, &mut reg, "export.after.shutdown", &mut a.shutdown, tl!("Shut down computer after renderings"));
+        }
         let _ = seq_rate;
     });
     if let Some(name) = chosen_preset {
         apply_preset(app, &name);
+    }
+    match (edit_action, app.ui.export.editing_preset.clone()) {
+        (Some(true), Some(old)) => {
+            let new = app.ui.export.editing_name.trim().to_string();
+            let p = json!({"name": new, "settings": settings_json(&app.ui.export.settings), "overwrite": true});
+            let r = app.session.execute("export.presets.save", p).and_then(|v| {
+                if preset_key(&old) != preset_key(&new) {
+                    app.session.execute("export.presets.delete", json!({"name": old}))?;
+                }
+                Ok(v)
+            });
+            match r {
+                Ok(_) => {
+                    app.ui.export.preset = new.clone();
+                    app.ui.export.editing_preset = Some(new.clone());
+                    app.ui.status = tlf!("Saved preset {name}", name = new);
+                }
+                Err(e) => app.ui.status = e.to_string(),
+            }
+        }
+        (Some(false), _) => app.ui.export.editing_preset = None,
+        _ => {}
     }
     if open_manager {
         app.ui.export.manager = Some(PresetManager { selected: app.ui.export.preset.clone(), ..Default::default() });
@@ -551,6 +666,94 @@ fn settings_column(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         app.ui.export.settings.effects.image_overlay.enabled = true;
     }
     reg.flush(app);
+}
+
+/// Aspect ratio crop presets: the output keeps the sequence's height or width and crops the
+/// picture to this aspect (Scale To Fill).
+const ASPECTS: [(&str, u32, u32); 7] = [
+    ("16:9", 16, 9),
+    ("4:3", 4, 3),
+    ("1:1 (square)", 1, 1),
+    ("4:5 (portrait)", 4, 5),
+    ("9:16 (vertical)", 9, 16),
+    ("2.39:1 (scope)", 239, 100),
+    ("1.85:1 (flat)", 185, 100),
+];
+
+/// The largest frame of aspect `a:b` inside the sequence frame (even sizes).
+fn aspect_frame(seq_w: u32, seq_h: u32, a: u32, b: u32) -> (u32, u32) {
+    let (sw, sh) = (seq_w.max(2) as f64, seq_h.max(2) as f64);
+    let r = a.max(1) as f64 / b.max(1) as f64;
+    let (w, h) = if r > sw / sh { (sw, sw / r) } else { (sh * r, sh) };
+    (((w.round() as u32) & !1).max(2), ((h.round() as u32) & !1).max(2))
+}
+
+/// Render Options: video stream, scaling interpolation, deinterlacer, encoder speed and range,
+/// preview resolution, proxies, parallel processing / threads, aspect ratio crop.
+fn render_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &Tokens, seq_w: u32, seq_h: u32, preview_res: f32) {
+    let movie = !s.format.is_audio_only() && !s.is_image_sequence() && s.format != Format::Gif;
+    if movie {
+        row(ui, t, tl!("Video Stream"), |ui| check(ui, reg, "export.render.video", &mut s.include_video, tl!("Export video")));
+    }
+    if s.has_video() {
+        row(ui, t, tl!("Aspect Ratio"), |ui| {
+            let cur = ASPECTS
+                .iter()
+                .find(|(_, a, b)| s.scaling == Scaling::ScaleToFill && s.frame_size == Some(aspect_frame(seq_w, seq_h, *a, *b)))
+                .map_or(tl!("Match Source"), |x| x.0);
+            let mut labels = vec![(tl!("Match Source").to_string(), true)];
+            labels.extend(ASPECTS.iter().map(|(l, _, _)| (l.to_string(), true)));
+            if let Some(i) = combo(ui, reg, "export.render.aspect", cur, &labels, 180.0) {
+                match i.checked_sub(1).and_then(|k| ASPECTS.get(k)) {
+                    Some((_, a, b)) => {
+                        s.frame_size = Some(aspect_frame(seq_w, seq_h, *a, *b));
+                        s.scaling = Scaling::ScaleToFill;
+                    }
+                    None => {
+                        s.frame_size = None;
+                        s.scaling = Scaling::ScaleToFit;
+                    }
+                }
+            }
+        });
+        row(ui, t, tl!("Scaling Interpolation"), |ui| {
+            let labels: Vec<(String, bool)> = ScaleFilter::ALL.iter().map(|f| (f.label().to_string(), true)).collect();
+            if let Some(i) = combo(ui, reg, "export.render.scaleFilter", s.scale_filter.label(), &labels, 180.0) {
+                s.scale_filter = ScaleFilter::ALL[i];
+            }
+        });
+        row(ui, t, tl!("Deinterlacer"), |ui| {
+            let labels: Vec<(String, bool)> = Deinterlace::ALL.iter().map(|f| (f.label().to_string(), true)).collect();
+            if let Some(i) = combo(ui, reg, "export.render.deinterlace", s.deinterlace.label(), &labels, 180.0) {
+                s.deinterlace = Deinterlace::ALL[i];
+            }
+        });
+        if s.video_format() == Format::H264 {
+            row(ui, t, tl!("Encoder Speed"), |ui| {
+                let labels: Vec<(String, bool)> = EncoderSpeed::ALL.iter().map(|f| (f.label().to_string(), true)).collect();
+                if let Some(i) = combo(ui, reg, "export.render.encoderSpeed", s.encoder_speed.label(), &labels, 180.0) {
+                    s.encoder_speed = EncoderSpeed::ALL[i];
+                }
+            });
+            row(ui, t, "", |ui| check(ui, reg, "export.render.fullRange", &mut s.full_range, tl!("Render full color range")));
+        }
+        let mut preview = s.preview_scale.is_some();
+        let label = tlf!("Render at preview resolution ({res})", res = format!("{:.0} %", preview_res * 100.0));
+        if row(ui, t, "", |ui| check(ui, reg, "export.render.previewResolution", &mut preview, &label)) {
+            s.preview_scale = preview.then_some(preview_res).filter(|r| *r < 1.0);
+        }
+        row(ui, t, "", |ui| check(ui, reg, "export.render.useProxies", &mut s.use_proxies, tl!("Use proxy clips")));
+    }
+    row(ui, t, "", |ui| check(ui, reg, "export.render.parallel", &mut s.parallel, tl!("Parallel processing")));
+    if s.parallel {
+        row(ui, t, tl!("Encoding Threads"), |ui| {
+            let mut n = s.threads.unwrap_or(0) as f64;
+            if drag(ui, reg, "export.render.threads", &mut n, 0.0..=256.0, 0.2, "", 0) {
+                s.threads = (n >= 1.0).then_some(n as u32);
+            }
+            ui.label(egui::RichText::new(tl!("0 = one per core")).color(t.text_dim).size(11.0));
+        });
+    }
 }
 
 fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &Tokens, seq_w: u32, seq_h: u32, seq_hdr: bool) {
@@ -872,6 +1075,9 @@ fn effects_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: 
         check(ui, reg, "export.effects.timecodeOverlay", &mut fx.timecode_overlay.enabled, tl!("Timecode Overlay"));
         if fx.timecode_overlay.enabled {
             text_overlay(ui, reg, "timecodeOverlay", &mut fx.timecode_overlay, t, tl!("Prefix"));
+            row(ui, t, "", |ui| {
+                check(ui, reg, "export.effects.timecodeOverlay.frameCount", &mut fx.timecode_overlay.frame_count, tl!("Show frame count instead of timecode"))
+            });
         }
         check(ui, reg, "export.effects.videoLimiter", &mut fx.video_limiter.enabled, tl!("Video Limiter"));
         if fx.video_limiter.enabled {
@@ -955,6 +1161,35 @@ fn preview_column(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq_id:
             drag(ui, &mut reg, "export.range.end", &mut ex.custom_end, 0.0..=86_400.0, 0.04, " s", 2);
         }
     });
+    // Custom: from marker A to marker B (the zone between two sequence markers)
+    if ex.range == "custom" && !q.markers.is_empty() {
+        let mut ms: Vec<(f64, String)> = q
+            .markers
+            .iter()
+            .map(|m| (m.start.seconds(), if m.name.trim().is_empty() { format!("{:.2} s", m.start.seconds()) } else { m.name.clone() }))
+            .collect();
+        ms.sort_by(|a, b| a.0.total_cmp(&b.0));
+        let end = q.duration().seconds();
+        child.horizontal(|ui| {
+            ui.label(egui::RichText::new(tl!("From marker")).color(t.text_dim));
+            let near = |v: f64| ms.iter().find(|(s, _)| (s - v).abs() < 1e-3).map(|x| x.1.clone()).unwrap_or_else(|| "—".into());
+            let labels: Vec<(String, bool)> = ms.iter().map(|(_, n)| (n.clone(), true)).collect();
+            if let Some(i) = combo(ui, &mut reg, "export.range.fromMarker", &near(ex.custom_start), &labels, 110.0) {
+                ex.custom_start = ms[i].0;
+                // to the next marker (or the end) unless the end is already after it
+                if ex.custom_end <= ex.custom_start {
+                    ex.custom_end = ms.get(i + 1).map_or(end, |x| x.0);
+                }
+            }
+            ui.label(egui::RichText::new(tl!("to")).color(t.text_dim));
+            let mut to_labels = labels.clone();
+            to_labels.push((tl!("Sequence End").to_string(), true));
+            let cur_to = if (ex.custom_end - end).abs() < 1e-3 { tl!("Sequence End").to_string() } else { near(ex.custom_end) };
+            if let Some(i) = combo(ui, &mut reg, "export.range.toMarker", &cur_to, &to_labels, 110.0) {
+                ex.custom_end = ms.get(i).map_or(end, |x| x.0);
+            }
+        });
+    }
     if ex.settings.has_video() {
         child.horizontal(|ui| {
             ui.label(egui::RichText::new(tl!("Scaling")).color(t.text_dim));
@@ -1015,6 +1250,35 @@ fn preview_column(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq_id:
     child.add_space(4.0);
     let est = child.label(egui::RichText::new(tlf!("Estimated file size: {size}", size = format_bytes(sum.estimated_bytes))).color(t.text_dim));
     reg.add("export.estimate", est.rect, sum.estimated_size.clone());
+    // markers multi-export and render scripts
+    let mut extra: Option<(&'static str, Value)> = None;
+    let colors: Vec<redrob_film_engine::project::Label> = {
+        let mut v: Vec<_> = q.markers.iter().map(|m| m.color).collect();
+        v.dedup();
+        redrob_film_engine::project::Label::ALL.iter().copied().filter(|l| v.contains(l)).collect()
+    };
+    child.add_space(6.0);
+    child.horizontal(|ui| {
+        let all = tl!("All markers");
+        let cur = if ex.marker_color.is_empty() { all.to_string() } else { ex.marker_color.clone() };
+        let mut labels = vec![(all.to_string(), true)];
+        labels.extend(colors.iter().map(|l| (l.name().to_string(), true)));
+        if let Some(i) = combo(ui, &mut reg, "export.markers.color", &cur, &labels, 120.0) {
+            ex.marker_color = if i == 0 { String::new() } else { labels[i].0.clone() };
+        }
+        let r = ui.add_enabled(!q.markers.is_empty(), egui::Button::new(tl!("Queue Marker Sections")));
+        reg.add("export.markers.queue", r.rect, "Queue Marker Sections");
+        if r.clicked() {
+            extra = Some(("export.queue.addMarkers", json!({"colors": if ex.marker_color.is_empty() { json!([]) } else { json!([ex.marker_color]) }})));
+        }
+    });
+    child.horizontal(|ui| {
+        let r = ui.button(tl!("Generate Script"));
+        reg.add("export.scripts.save", r.rect, "Generate Script");
+        if r.clicked() {
+            extra = Some(("export.scripts.save", json!({})));
+        }
+    });
     // buttons
     let go = Rect::from_min_size(pos2(rect.max.x - 120.0, rect.max.y - 44.0), vec2(104.0, 30.0));
     let queue = Rect::from_min_size(pos2(go.min.x - 132.0, go.min.y), vec2(122.0, 30.0));
@@ -1027,6 +1291,19 @@ fn preview_column(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq_id:
     ui.painter().text(go.center(), Align2::CENTER_CENTER, tl!("Export"), Tokens::semibold(13.0), Color32::WHITE);
     reg.add("export.button", go, "Export");
     reg.flush(app);
+    if let Some((cmd, extra_p)) = extra {
+        let mut p = export_params(app);
+        if let (Some(o), Some(x)) = (p.as_object_mut(), extra_p.as_object()) {
+            for (k, v) in x {
+                o.insert(k.clone(), v.clone());
+            }
+        }
+        match app.session.execute(cmd, p) {
+            Ok(v) if cmd == "export.scripts.save" => app.ui.status = tlf!("Render script saved: {name}", name = v["name"].as_str().unwrap_or("")),
+            Ok(v) => app.ui.status = tlf!("Queued {n} marker sections", n = v["sections"].as_u64().unwrap_or(0)),
+            Err(e) => app.ui.status = e.to_string(),
+        }
+    }
     if resp.clicked() {
         let r = app.session.execute("file.exportMedia", export_params(app));
         match r {
@@ -1073,6 +1350,7 @@ fn preset_manager(app: &mut FilmcraftApp, ctx: &egui::Context) {
     let mut open = true;
     let mut close = false;
     let mut apply: Option<String> = None;
+    let mut edit: Option<String> = None;
     let mut cmd: Option<(&'static str, Value)> = None;
     let mut pick: Option<&'static str> = None;
     let all = app.session.export_presets.all();
@@ -1158,6 +1436,11 @@ fn preset_manager(app: &mut FilmcraftApp, ctx: &egui::Context) {
                 if r.clicked() {
                     pick = Some("export");
                 }
+                let r = ui.add_enabled(sel.as_ref().is_some_and(|p| !p.builtin), egui::Button::new(tl!("Edit…")));
+                reg.add("presetManager.edit", r.rect, "Edit…");
+                if r.clicked() {
+                    edit = Some(m.selected.clone());
+                }
                 let r = ui.add_enabled(sel.as_ref().is_some_and(|p| !p.builtin), egui::Button::new(tl!("Delete")));
                 reg.add("presetManager.delete", r.rect, "Delete");
                 if r.clicked() {
@@ -1203,6 +1486,14 @@ fn preset_manager(app: &mut FilmcraftApp, ctx: &egui::Context) {
     if let Some(name) = apply
         && apply_preset(app, &name)
     {
+        close = true;
+    }
+    // Edit…: the preset's settings go into Export mode with an "Editing preset" bar to save them back
+    if let Some(name) = edit
+        && apply_preset(app, &name)
+    {
+        app.ui.export.editing_name = name.clone();
+        app.ui.export.editing_preset = Some(name);
         close = true;
     }
     app.ui.export.manager = if close || !open || ctx.input(|i| i.key_pressed(egui::Key::Escape)) { None } else { Some(m) };

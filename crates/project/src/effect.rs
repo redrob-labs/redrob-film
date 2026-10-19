@@ -16,7 +16,13 @@ mod audio;
 use crate::mask::Mask;
 pub use audio::{GEQ10_LABELS, GEQ20_LABELS, GEQ30_LABELS, PREMIERE_AUDIO_EFFECTS};
 
+mod kcolor;
+mod kfx;
 mod vfx;
+pub use kcolor::{COLOR_MATRICES, PHASE_MODES};
+mod kdx;
+pub use kdx::{MASK_APPLY, MASK_STARTS};
+pub use kfx::{GPS_KEYWORDS, MORE_TOP, PSEUDO_PRESETS, TIMER_FORMATS};
 pub use vfx::{EASINGS, ECHO_OPERATORS, FRAME_LAYOUTS, LIGHT_IDS, SIMPLE_BLEND, TRACK_CHOICES, auto_point, ultra_key_setting};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -97,6 +103,7 @@ impl EffectDef {
             post_fader: false,
             essential: false,
             layer: None,
+            zone: None,
         }
     }
 }
@@ -118,9 +125,17 @@ pub struct EffectInstance {
     /// ([`crate::graphic_design::LayerExtra`]). Schema v12.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub layer: Option<Box<crate::graphic_design::LayerExtra>>,
+    /// Effect zone (Kdenlive's "Use effect zone"): the media-time span `[in, out)` of the clip the
+    /// effect applies in; `None` = the whole clip. Video effects only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub zone: Option<(redrob_film_time::Tick, redrob_film_time::Tick)>,
 }
 
 impl EffectInstance {
+    /// Whether the effect applies at media time `t` (inside its zone, or it has none).
+    pub fn in_zone(&self, t: redrob_film_time::Tick) -> bool {
+        self.zone.is_none_or(|(a, b)| t >= a && t < b)
+    }
     pub fn def(&self) -> Option<&'static EffectDef> {
         find_effect(&self.effect)
     }
@@ -169,6 +184,18 @@ pub const BLEND_MODES: &[&str] = &[
     "Saturation",
     "Color",
     "Luminosity",
+    // Kdenlive's compositions (appended: projects store the index)
+    "Grain Extract",
+    "Grain Merge",
+    "Or",
+    "And",
+    "Xor",
+    "Nor",
+    "Nand",
+    "Not Xor",
+    "Alpha Atop",
+    "Alpha Xor",
+    "Destination Out",
 ];
 
 pub(crate) fn f(id: &'static str, label: &'static str, def: f64, min: f64, max: f64, unit: &'static str) -> ParamDef {
@@ -839,6 +866,9 @@ fn build_effects() -> Vec<EffectDef> {
     ];
     v.extend(audio::defs());
     v.extend(vfx::defs());
+    v.extend(kfx::defs());
+    v.extend(kcolor::defs());
+    v.extend(kdx::defs());
     vfx::extend_core(&mut v);
     v.extend(crate::vtransition::video_transition_defs());
     v.extend(crate::graphic::layer_defs());
@@ -849,6 +879,8 @@ fn build_effects() -> Vec<EffectDef> {
         }
     }
     vfx::apply_badges(&mut v);
+    v.extend(audio::visualization_defs());
+    kfx::apply_badges(&mut v);
     v
 }
 

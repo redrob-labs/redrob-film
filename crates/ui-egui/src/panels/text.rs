@@ -163,6 +163,32 @@ fn captions(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         }
         x += 28.0;
     }
+    // edit-window zoom and the split mode (Kdenlive)
+    for (key, label, tip) in [("zoomOut", "A−", tl!("Smaller caption text")), ("zoomIn", "A+", tl!("Larger caption text"))] {
+        let r = Rect::from_min_size(pos2(x, bar.min.y), vec2(26.0, 24.0));
+        if r.max.x > rect.max.x {
+            break;
+        }
+        let b = ui.put(r, egui::Button::new(egui::RichText::new(label).size(11.0)).frame(false)).on_hover_text(tip);
+        app.auto.add(&format!("text.captions.{key}"), r, tip);
+        if b.clicked() {
+            let z = crate::panels::kparity::caption_font_size(app) + if key == "zoomIn" { 1.5 } else { -1.5 };
+            app.ui.kp.caption_font = z.clamp(9.0, 32.0);
+        }
+        x += 28.0;
+    }
+    let split_first = app.session.state.caption_split_after_first_line;
+    let r = Rect::from_min_size(pos2(x, bar.min.y), vec2(24.0, 24.0));
+    if r.max.x <= rect.max.x {
+        let tip = if split_first { tl!("Split mode: after the first line") } else { tl!("Split mode: duplicate the text") };
+        let b = ui
+            .put(r, egui::Button::new(egui::RichText::new("¶").size(13.0).color(if split_first { t.accent } else { t.text_dim })).frame(false))
+            .on_hover_text(tip);
+        app.auto.add("text.captions.splitMode", r, tip);
+        if b.clicked() {
+            actions.push(("captions.splitMode".into(), json!({"afterFirstLine": !split_first})));
+        }
+    }
 
     // ---- style strip
     let style_h = 30.0;
@@ -238,9 +264,13 @@ fn captions(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                                 .id(key.with("te"))
                                 .desired_rows(1)
                                 .desired_width(ui.available_width())
-                                .font(Tokens::ui(12.5))
+                                .font(Tokens::ui(crate::panels::kparity::caption_font_size(app)))
                                 .frame(egui::Frame::NONE),
                         );
+                        // character count (Kdenlive): letters without the line breaks, longest line
+                        let chars = buf.chars().filter(|ch| *ch != '\n').count();
+                        let longest = buf.lines().map(|l| l.chars().count()).max().unwrap_or(0);
+                        ui.label(egui::RichText::new(tlf!("{n} characters · longest line {m}", n = chars, m = longest)).size(10.0).color(t.text_faint));
                         app.auto.add(&format!("text.captions.{}.text", c.id.0), resp.rect, "Caption text");
                         if resp.has_focus() {
                             ui.data_mut(|d| d.insert_temp(key, buf.clone()));
@@ -318,9 +348,26 @@ fn transcript(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let hits: Vec<std::ops::Range<usize>> = redrob_film_edit::transcript::search(&words, &app.ui.transcript_search);
     let mut x = bar.min.x + sw + 10.0;
     let range = sel.map(|(a, b)| json!({"from": a.min(b), "to": a.max(b)}));
-    let tools: [(Icon, &str, &str, bool, &str, Value); 4] = [
+    let tools: [(Icon, &str, &str, bool, &str, Value); 7] = [
         (Icon::Razor, "text.transcript.extract", tl!("Extract selected text"), sel.is_some(), "transcript.extract", range.clone().unwrap_or_default()),
-        (Icon::Trash, "text.transcript.lift", tl!("Lift selected text"), sel.is_some(), "transcript.lift", range.unwrap_or_default()),
+        (Icon::Trash, "text.transcript.lift", tl!("Lift selected text"), sel.is_some(), "transcript.lift", range.clone().unwrap_or_default()),
+        (
+            Icon::Insert,
+            "text.transcript.insert",
+            tl!("Insert selected text at the playhead"),
+            sel.is_some(),
+            "transcript.insertSelection",
+            range.clone().unwrap_or_default(),
+        ),
+        (
+            Icon::Sequence,
+            "text.transcript.newSequence",
+            tl!("New sequence from selected text"),
+            sel.is_some(),
+            "transcript.selectionToSequence",
+            range.clone().unwrap_or_default(),
+        ),
+        (Icon::Marker, "text.transcript.addMarker", tl!("Add marker at selected text"), sel.is_some(), "transcript.addMarker", range.unwrap_or_default()),
         (Icon::Link, "text.transcript.removeFillers", tl!("Remove filler words"), true, "transcript.removeFillers", json!({})),
         (Icon::Captions, "text.transcript.createCaptions", tl!("Create captions"), true, "transcript.createCaptions", json!({})),
     ];
@@ -337,6 +384,21 @@ fn transcript(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         }
         x += 28.0;
     }
+    // text size of the transcript (Kdenlive's speech editor font size)
+    for (key, label, tip) in [("zoomOut", "A−", tl!("Smaller transcript text")), ("zoomIn", "A+", tl!("Larger transcript text"))] {
+        let r = Rect::from_min_size(pos2(x, bar.min.y), vec2(26.0, 24.0));
+        if r.max.x > rect.max.x {
+            break;
+        }
+        let b = ui.put(r, egui::Button::new(egui::RichText::new(label).size(11.0)).frame(false)).on_hover_text(tip);
+        app.auto.add(&format!("text.transcript.{key}"), r, tip);
+        if b.clicked() {
+            let z = crate::panels::kparity::transcript_font_size(app) + if key == "zoomIn" { 1.5 } else { -1.5 };
+            app.ui.kp.transcript_font = z.clamp(9.0, 32.0);
+        }
+        x += 28.0;
+    }
+    let word_size = crate::panels::kparity::transcript_font_size(app);
 
     // ---- paragraphs of words
     let list = Rect::from_min_max(pos2(rect.min.x + 6.0, bar.max.y + 8.0), pos2(rect.max.x - 6.0, rect.max.y - 4.0));
@@ -360,7 +422,7 @@ fn transcript(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                     let w = &words[i];
                     let in_sel = sa.is_some_and(|a| i >= a) && sb.is_some_and(|b| i <= b);
                     let hit = hits.iter().any(|h| h.contains(&i));
-                    let mut text = egui::RichText::new(&w.text).size(13.0).color(if Some(i) == current { t.hot_text } else { t.text });
+                    let mut text = egui::RichText::new(&w.text).size(word_size).color(if Some(i) == current { t.hot_text } else { t.text });
                     if in_sel {
                         text = text.background_color(t.row_selected);
                     } else if hit {

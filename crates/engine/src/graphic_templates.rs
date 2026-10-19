@@ -949,6 +949,33 @@ fn upgrade_to_source(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"clip": clip.0, "item": item.0}))
 }
 
+/// Kdenlive's "Add as new Title": this clip's graphic becomes a source graphic of its own, a new
+/// project item. `replace` (default): the clip now shows the new graphic, so editing it leaves the
+/// other instances alone; `keep`: the clip stays as it was and only the new item is added.
+fn add_as_new_source(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.addAsNewSourceGraphic";
+    let clip = target_clip(s, p).ok_or_else(|| bad(CMD, "select a graphic clip"))?;
+    let keep = crate::commands::str_p(p, "mode") == Some("keep");
+    let it = clip_item(s, clip)?;
+    let kind = s.project.item(it.item).map(|x| x.kind.clone()).ok_or_else(|| bad(CMD, "no item"))?;
+    let seq = s.state.active_sequence.ok_or(EngineError::NoSequence)?;
+    let name = format!("{} (2)", it.name);
+    let item = s.edit("Add as New Source Graphic", move |pr, st| {
+        let item = pr.add_item(&name, Label::Rose, kind, None);
+        let q = pr.sequence_mut(seq).ok_or(EngineError::NoSequence)?;
+        let (_, ti) = q.find_item_mut(clip).ok_or_else(|| bad(CMD, "no such clip"))?;
+        let layers: Vec<EffectInstance> = ti.effects.iter().filter(|e| graphic::is_layer(e)).cloned().collect();
+        let meta = ti.graphic.as_deref().cloned();
+        if !keep {
+            ti.item = item;
+        }
+        pr.source_graphics.insert(item, SourceGraphic { layers, meta });
+        st.project_selection = vec![item];
+        Ok(item)
+    })?;
+    Ok(json!({"clip": clip.0, "item": item.0, "replaced": !keep}))
+}
+
 /// After a `graphics.*` command: copy an edited instance of a source graphic to the shared
 /// layers and every other instance (in the same undo step).
 pub fn sync_source_graphics(s: &mut Session) {
@@ -1230,6 +1257,14 @@ pub fn commands() -> Vec<CommandSpec> {
             upgrade_caption,
         ),
         spec("graphics.upgradeToSourceGraphic", "Upgrade to Source Graphic", G, r#"{"clip":id?}"#, has_graphic, upgrade_to_source),
+        spec(
+            "graphics.addAsNewSourceGraphic",
+            "Add as New Source Graphic",
+            G,
+            r#"{"clip":id?,"mode":"replace"|"keep"?="replace"}"#,
+            has_graphic,
+            add_as_new_source,
+        ),
         spec(
             "file.replaceFonts",
             "Replace Fonts in Projects…",

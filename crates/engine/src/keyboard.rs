@@ -84,6 +84,62 @@ pub fn go_to_edit(s: &mut Session, next: bool, any: bool) -> Result<Value> {
     Ok(json!({"time": s.playhead().0}))
 }
 
+/// The snap points of a sequence (Kdenlive's Go to Previous / Next Snap Point): every clip's
+/// start and end on any track, transition starts and ends, the sequence markers (start and, for a
+/// ranged marker, end), the In and Out points (Out as the edge after its frame) and the sequence end.
+pub fn snap_points(seq: &Sequence) -> Vec<Tick> {
+    let fd = seq.settings.frame_rate.frame_duration();
+    let mut v = edits_on(seq, None);
+    for t in seq.all_tracks() {
+        for tr in &t.transitions {
+            v.push(tr.start);
+            v.push(tr.end());
+        }
+    }
+    for m in &seq.markers {
+        v.push(m.start);
+        if m.duration > Tick::ZERO {
+            v.push(m.start + m.duration);
+        }
+    }
+    v.extend(seq.mark_in);
+    v.extend(seq.mark_out.map(|o| o + fd));
+    v.push(Tick::ZERO);
+    v.push(seq.duration());
+    v.sort_unstable();
+    v.dedup();
+    v
+}
+
+/// Go to the next / previous snap point ([`snap_points`]).
+pub fn go_to_snap(s: &mut Session, next: bool) -> Result<Value> {
+    let t = s.playhead();
+    let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let points = snap_points(seq);
+    let e = if next { points.into_iter().find(|e| *e > t) } else { points.into_iter().rev().find(|e| *e < t) };
+    if let Some(e) = e {
+        s.set_playhead(e);
+    }
+    Ok(json!({"time": s.playhead().0}))
+}
+
+/// Run a navigation command on the Source monitor when `p.target` is "source", else `program`.
+fn source_or(s: &mut Session, id: &str, p: &Value, program: fn(&mut Session) -> Result<Value>) -> Result<Value> {
+    if let Some(v) = crate::source_monitor::route(s, id, p)? {
+        return Ok(v);
+    }
+    program(s)
+}
+
+/// Frames in one second at `rate`, rounded (30 at 29.97, 24 at 23.976); at least 1.
+pub fn frames_per_second(rate: redrob_film_time::FrameRate) -> i64 {
+    let fd = rate.frame_duration().0;
+    if fd <= 0 {
+        return 1;
+    }
+    ((redrob_film_time::TICKS_PER_SECOND as f64 / fd as f64).round() as i64).max(1)
+}
+
 fn selected_span(s: &Session) -> Option<(Tick, Tick)> {
     let seq = s.active_sequence()?;
     let items: Vec<_> = s.state.selection.iter().filter_map(|c| seq.find_item(*c).map(|(_, i)| i)).collect();
@@ -713,6 +769,26 @@ pub fn commands() -> Vec<CommandSpec> {
         spec("playhead.selectedClipStart", "Go to Selected Clip Start", Some("Shift+Home"), "{}", has_selection, |s, _| go_to_selected(s, false)),
         spec("playhead.selectedClipEnd", "Go to Selected Clip End", Some("Shift+End"), "{}", has_selection, |s, _| go_to_selected(s, true)),
         spec("sequence.revealNested", "Reveal Nested Sequence", Some("Cmd+Alt+F"), "{}", has_seq, |s, _| reveal_nested(s)),
+        // Kdenlive: Go to Previous / Next Snap Point (clips, transitions, markers, In / Out)
+        spec("playhead.nextSnap", "Go to Next Snap Point", None, r#"{"target":"program|source"}"#, always, |s, p| {
+            source_or(s, "playhead.nextSnap", p, |s| go_to_snap(s, true))
+        }),
+        spec("playhead.prevSnap", "Go to Previous Snap Point", None, r#"{"target":"program|source"}"#, always, |s, p| {
+            source_or(s, "playhead.prevSnap", p, |s| go_to_snap(s, false))
+        }),
+        // Kdenlive: Forward / Rewind 1 Second (one second of frames at the sequence rate)
+        spec("playhead.forwardSecond", "Forward 1 Second", None, r#"{"target":"program|source"}"#, always, |s, p| {
+            source_or(s, "playhead.forwardSecond", p, |s| {
+                let n = frames_per_second(s.sequence_rate());
+                s.execute("playhead.step", json!({"frames": n}))
+            })
+        }),
+        spec("playhead.backSecond", "Rewind 1 Second", None, r#"{"target":"program|source"}"#, always, |s, p| {
+            source_or(s, "playhead.backSecond", p, |s| {
+                let n = frames_per_second(s.sequence_rate());
+                s.execute("playhead.step", json!({"frames": -n}))
+            })
+        }),
         // ---- selection
         spec("timeline.selectClipAtPlayhead", "Select Clip at Playhead", Some("D"), "{}", has_seq, |s, _| select_clip_at_playhead(s)),
         spec("timeline.selectNextClip", "Select Next Clip", Some("Cmd+Down"), "{}", has_seq, |s, _| select_step(s, true)),
