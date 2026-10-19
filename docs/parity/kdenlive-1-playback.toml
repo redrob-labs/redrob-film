@@ -594,3 +594,625 @@ manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html"
 film = "none"
 evidence = "no command found"
 gap = "no command to cycle which audio stream goes to the target track"
+
+# ------------------------------------------------------------------ clip monitor
+
+[[row]]
+id = "K1-100"
+group = "clip-monitor"
+feature = "Clip Monitor plays the clip selected in the Project Bin"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "Source monitor: crates/ui-egui/src/source_playback.rs:1; source.open"
+gap = ""
+
+[[row]]
+id = "K1-101"
+group = "clip-monitor"
+feature = "Video stream icon: drag only the video to the timeline"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/source_drag.rs:32 source.drag.video"
+gap = ""
+
+[[row]]
+id = "K1-102"
+group = "clip-monitor"
+feature = "Audio stream icon: drag only the audio to the timeline"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/source_drag.rs:32 source.drag.audio"
+gap = ""
+
+[[row]]
+id = "K1-103"
+group = "clip-monitor"
+feature = "Clip zone indicator on the monitor ruler"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "source.range.in / out / body (docs/monitors.md 'Adjust Source marks on the ruler')"
+gap = ""
+
+[[row]]
+id = "K1-104"
+group = "clip-monitor"
+feature = "List of last opened clips (hover the top of the monitor)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/monitor.rs:828 Source panel menu lists recent clips"
+gap = ""
+
+[[row]]
+id = "K1-105"
+group = "clip-monitor"
+feature = "Audio minimap under the clip monitor for zooming the audio stream"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/monitor_view.rs:586 waveform has no minimap or zoom"
+gap = "no minimap; the clip waveform cannot be zoomed or scrolled"
+
+[[row]]
+id = "K1-106"
+group = "clip-monitor"
+feature = "Monitor ruler zoom bar (Ctrl+wheel on the ruler, drag handles)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/monitor.rs scrub bar always shows the whole clip/sequence"
+gap = "monitor time ruler cannot be zoomed for frame-accurate zones"
+
+[[row]]
+id = "K1-107"
+group = "clip-monitor"
+feature = "Double-click the monitor to switch to full screen"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/monitor.rs:309 double-click shows the clip name in the status bar"
+gap = "double-click does not make the monitor full screen"
+
+[[row]]
+id = "K1-108"
+group = "clip-monitor"
+feature = "Insert Zone in Project Bin as sub-clip (Ctrl+I, add-clip icon)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "full"
+evidence = "crates/engine/src/clip_ops.rs:123 clip.makeSubclip from Source In/Out"
+gap = ""
+
+[[row]]
+id = "K1-109"
+group = "clip-monitor"
+feature = "Extract Zone: write the zone to a file (Cut Clip dialog), optionally add to bin"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "partial"
+evidence = "Export mode can export a Source In/Out range (crates/ui-egui/src/panels/export_mode.rs)"
+gap = "no one-step Extract Zone dialog from the monitor menu with Add clip to project"
+
+[[row]]
+id = "K1-110"
+group = "clip-monitor"
+feature = "Set current image as thumbnail"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "crates/engine/src/keyboard.rs:680 clip.setPosterFrame"
+gap = ""
+
+[[row]]
+id = "K1-111"
+group = "clip-monitor"
+feature = "Always show audio thumbnails in the clip monitor"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:68 view.display.videoAndWaveform split view"
+gap = "no hover-reveal waveform strip at the bottom of the picture with an always-show toggle"
+
+[[row]]
+id = "K1-112"
+group = "clip-monitor"
+feature = "Show Source Timecode option"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:975 start_timecode exists for sequences"
+gap = "no toggle to show a media file's embedded start timecode in the clip monitor"
+
+[[row]]
+id = "K1-113"
+group = "clip-monitor"
+feature = "Force Monitor Size: 100%, 50%, free resize"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:69 view.magnification.fit / 50 / 100 ..."
+gap = ""
+
+[[row]]
+id = "K1-114"
+group = "clip-monitor"
+feature = "Monitor background colour"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "none"
+evidence = "monitor draws on the theme background; no preference (grep monitor_background)"
+gap = "no choice of monitor background colour"
+
+[[row]]
+id = "K1-115"
+group = "clip-monitor"
+feature = "Add Marker with dialog (comment, category)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/monitor.rs:721 markers.add; markers.edit"
+gap = ""
+
+[[row]]
+id = "K1-116"
+group = "clip-monitor"
+feature = "Add Marker quickly (Num *)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "markers.add (M) adds at the playhead without a dialog"
+gap = ""
+
+[[row]]
+id = "K1-117"
+group = "clip-monitor"
+feature = "Edit Marker at the current position"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "markers.edit (crates/engine/src/commands.rs)"
+gap = ""
+
+[[row]]
+id = "K1-118"
+group = "clip-monitor"
+feature = "Delete Marker at the current position"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "markers.clearCurrent"
+gap = ""
+
+[[row]]
+id = "K1-119"
+group = "clip-monitor"
+feature = "Delete All Markers of the clip"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "markers.clearAll with target source"
+gap = ""
+
+[[row]]
+id = "K1-120"
+group = "clip-monitor"
+feature = "Extract Frame to an image file"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/monitor.rs:731 file.exportFrame (PNG/JPEG/TIFF/BMP)"
+gap = ""
+
+[[row]]
+id = "K1-121"
+group = "clip-monitor"
+feature = "Extract Frame to Project (adds the still to the bin)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "Export Frame 'Import into project' (docs/monitors.md Export Frame)"
+gap = ""
+
+[[row]]
+id = "K1-122"
+group = "clip-monitor"
+feature = "Add Project Note with a link to the current frame"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/notes.rs:1 plain-text project notes"
+gap = "notes cannot hold clickable timecode links to a frame"
+
+[[row]]
+id = "K1-123"
+group = "clip-monitor"
+feature = "Set Zone In / Out (I / O)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1900 markers.markIn / markOut (Source routed)"
+gap = ""
+
+[[row]]
+id = "K1-124"
+group = "clip-monitor"
+feature = "Monitor Overlay Clip Jobs (running jobs, click X to cancel)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "none"
+evidence = "jobs.list / jobs.cancel exist (crates/engine/src/commands.rs:1292) but no monitor overlay"
+gap = "running clip jobs are not shown over the clip monitor"
+
+# ------------------------------------------------------------------ project monitor
+
+[[row]]
+id = "K1-130"
+group = "project-monitor"
+feature = "Project Monitor plays the timeline from the playhead"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/project_monitor.html"
+film = "full"
+evidence = "Program monitor; crates/ui-egui/src/play_ahead.rs:1"
+gap = ""
+
+[[row]]
+id = "K1-131"
+group = "project-monitor"
+feature = "Edit Mode toggle button (direct manipulation on/off)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/project_monitor.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/graphics.rs:519 / masks.rs:225 overlays are always active"
+gap = "no button to switch monitor editing handles on or off"
+
+[[row]]
+id = "K1-132"
+group = "project-monitor"
+feature = "Zone set in the Project Monitor is the timeline zone"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/project_monitor.html"
+film = "full"
+evidence = "program.range.in / out / body (docs/monitors.md 'Program range handles')"
+gap = ""
+
+[[row]]
+id = "K1-133"
+group = "project-monitor"
+feature = "Multitrack View (F12): all video tracks in a split grid"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:65 view.display.multicam; crates/ui-egui/src/panels/multicam.rs:36"
+gap = "the grid shows angles of a multi-camera source sequence, not every visible video track of any sequence"
+
+[[row]]
+id = "K1-134"
+group = "project-monitor"
+feature = "Multitrack View: click a cell to select that track"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "partial"
+evidence = "program.multicam.angle.<n> switches angle"
+gap = "click switches a multicam angle rather than selecting a timeline track"
+
+[[row]]
+id = "K1-135"
+group = "project-monitor"
+feature = "Alt+click cycles through resized (overlapping) clips"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/graphics.rs:519 selects graphic layers only"
+gap = "no Alt+click cycling between stacked transformed clips"
+
+[[row]]
+id = "K1-136"
+group = "project-monitor"
+feature = "Switch Monitor Fullscreen (F11)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/keyboard.rs:60 window.maximizeFrame; header.rs:83 app full screen"
+gap = "no monitor-only full-screen output; only panel maximise or whole-window full screen"
+
+[[row]]
+id = "K1-137"
+group = "project-monitor"
+feature = "Fullscreen hides the mouse cursor after 2 s idle"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "none"
+evidence = "no idle cursor hide over the monitor (CursorIcon::None only in widgets.rs:136 drags)"
+gap = "cursor stays visible over a full-screen picture"
+
+[[row]]
+id = "K1-138"
+group = "project-monitor"
+feature = "Preference: monitor used for full-screen output"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "none"
+evidence = "crates/engine/src/settings.rs playback category has no display choice"
+gap = "cannot pick which screen gets full-screen monitor output"
+
+[[row]]
+id = "K1-139"
+group = "project-monitor"
+feature = "Mirror monitor on fullscreen (duplicate on a second screen)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "none"
+evidence = "no second-window output (grep mirror)"
+gap = "no mirrored full-screen playback on another display"
+
+[[row]]
+id = "K1-140"
+group = "project-monitor"
+feature = "Clip and Project Monitor in separate (undocked) windows"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "none"
+evidence = "crates/ui-egui/src/dock.rs tabs only; floating windows exist for Project bins only (panels/project.rs:26)"
+gap = "monitors cannot be dragged out into their own OS windows"
+
+[[row]]
+id = "K1-141"
+group = "project-monitor"
+feature = "Resize monitors by dragging the widget edges"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "full"
+evidence = "crates/ui-egui/src/dock.rs splitters"
+gap = ""
+
+[[row]]
+id = "K1-142"
+group = "project-monitor"
+feature = "View menu: show / hide Clip Monitor and Project Monitor"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/view_menu.html"
+film = "full"
+evidence = "window.panel.<id> commands (crates/ui-egui/src/menus.rs:797)"
+gap = ""
+
+[[row]]
+id = "K1-143"
+group = "project-monitor"
+feature = "Monitor Zoom In / Zoom Out menu commands"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/keyboard.rs:70 view.programZoom100 / Fit; magnification menu"
+gap = ""
+
+# ------------------------------------------------------------------ monitor overlay toolbar
+
+[[row]]
+id = "K1-150"
+group = "monitor-overlay"
+feature = "Overlay toolbar revealed by hovering a hotspot on the monitor"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/monitor.rs:357 options live in the wrench menu"
+gap = "no hover toolbar on the picture"
+
+[[row]]
+id = "K1-151"
+group = "monitor-overlay"
+feature = "Move the overlay toolbar left / right"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "none"
+evidence = "no overlay toolbar"
+gap = "not applicable until a hover toolbar exists"
+
+[[row]]
+id = "K1-152"
+group = "monitor-overlay"
+feature = "Change overlay: cycle grid / guide patterns"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:83 view.addGuide, guide templates; monitor_view.rs:538"
+gap = "no built-in patterns (thirds, grid, crosshair, diagonals) to click through"
+
+[[row]]
+id = "K1-153"
+group = "monitor-overlay"
+feature = "Overlay line colour (Colors and Markers settings)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_colors%2Bmarkers.html"
+film = "none"
+evidence = "guide colour is fixed in crates/ui-egui/src/panels/monitor_view.rs:538"
+gap = "no preference for monitor overlay colour"
+
+[[row]]
+id = "K1-154"
+group = "monitor-overlay"
+feature = "Grid size for the editing-handle grid"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/monitor_view.rs:426 snaps to edges/centre/guides only"
+gap = "no configurable snapping grid"
+
+[[row]]
+id = "K1-155"
+group = "monitor-overlay"
+feature = "Zoom fly-out: zoom in, zoom out, zoom reset"
+manual = "https://docs.kdenlive.org/en/user_interface/ui_elements.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/monitor_view.rs:749 zoom_menu; view.magnification.*"
+gap = ""
+
+[[row]]
+id = "K1-156"
+group = "monitor-overlay"
+feature = "Add / remove guide or marker from the monitor toolbar"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/monitor.rs:721 Add Marker button; markers.clearCurrent"
+gap = ""
+
+[[row]]
+id = "K1-157"
+group = "monitor-overlay"
+feature = "Show Safe Areas: title safe 80%, action safe 90%"
+manual = "https://docs.kdenlive.org/en/user_interface/ui_elements.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/monitor.rs:254 boxes at 0.9 and 0.8 plus centre cross; view.safeMargins"
+gap = ""
+
+[[row]]
+id = "K1-158"
+group = "monitor-overlay"
+feature = "Monitor Info Overlay: switch all overlays on/off"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "none"
+evidence = "no master overlay toggle in crates/ui-egui/src/panels/monitor_view.rs:694"
+gap = "no single switch for all info overlays"
+
+[[row]]
+id = "K1-159"
+group = "monitor-overlay"
+feature = "Overlay: timecode drawn over the picture"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "none"
+evidence = "timecode only in the controls row (crates/ui-egui/src/panels/monitor.rs:319)"
+gap = "no timecode burned over the monitor picture"
+
+[[row]]
+id = "K1-160"
+group = "monitor-overlay"
+feature = "Overlay: playback FPS"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/monitor.rs:277 green/yellow dropped-frame dot"
+gap = "no frames-per-second number on the monitor"
+
+[[row]]
+id = "K1-161"
+group = "monitor-overlay"
+feature = "Overlay: marker lines and thumbnails"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/monitor.rs:647 markers drawn on the monitor ruler"
+gap = "no marker name shown over the picture when the playhead is on a marker"
+
+[[row]]
+id = "K1-162"
+group = "monitor-overlay"
+feature = "Overlay: audio waveform at the bottom of the monitor"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:68 Video and Audio Waveform Split (Source)"
+gap = "split view rather than an overlay; not available in the Program monitor"
+
+[[row]]
+id = "K1-163"
+group = "monitor-overlay"
+feature = "Preview Resolution selector in the monitor toolbar"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:49 view.playbackRes.* and view.pausedRes.*; monitor resolution dropdown"
+gap = ""
+
+[[row]]
+id = "K1-164"
+group = "monitor-overlay"
+feature = "Monitor menu: Current Monitor Overlay / Monitor Config fly-outs"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/monitor_view.rs:694 wrench menu (display mode, rulers, guides, safe margins)"
+gap = "no Monitor menu in the menu bar; overlay options listed in rows above are missing"
+
+# ------------------------------------------------------------------ direct control in the monitor
+
+[[row]]
+id = "K1-170"
+group = "direct-control"
+feature = "Direct control of Transform / Position and Zoom (move, resize handles)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/graphics.rs:519 handles for graphic layers only"
+gap = "video clips' Motion (position/scale/rotation) cannot be dragged in the Program monitor"
+
+[[row]]
+id = "K1-171"
+group = "direct-control"
+feature = "Direct control of Crop by Padding"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "none"
+evidence = "no crop overlay (grep crop_overlay)"
+gap = "crop edges cannot be dragged in the monitor"
+
+[[row]]
+id = "K1-172"
+group = "direct-control"
+feature = "Shift keeps aspect ratio, Ctrl resizes about the centre"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/graphics.rs:11 handle behaviour per layer type"
+gap = "modifiers apply only to graphic layers, not to clip transforms"
+
+[[row]]
+id = "K1-173"
+group = "direct-control"
+feature = "Snap editing handles to a grid"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/monitor_view.rs:426 snap_move; view.snapInProgramMonitor"
+gap = "snaps to frame edges, centre and guides, not to a grid"
+
+[[row]]
+id = "K1-174"
+group = "direct-control"
+feature = "Monitor toolbar: previous / next / add keyframe"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "none"
+evidence = "keyframe navigation only in Effect Controls (crates/ui-egui/src/panels/effect_controls.rs)"
+gap = "no keyframe buttons on the monitor"
+
+[[row]]
+id = "K1-175"
+group = "direct-control"
+feature = "Automatic keyframe recording while playing (red dot)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html"
+film = "none"
+evidence = "no auto-keyframe mode for video parameters (mixer automation is audio-only)"
+gap = "moving a handle during playback does not create keyframes"
+
+[[row]]
+id = "K1-176"
+group = "direct-control"
+feature = "Direct control of masks / shapes (Alpha Shapes, Rotoscoping)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/masks.rs:225 mask vertices, feather and expansion in the monitor"
+gap = ""
+
+[[row]]
+id = "K1-177"
+group = "direct-control"
+feature = "Direct control of Dynamic Text / Timer / GPS graphic placement"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/graphics.rs:519 text layers of graphic clips"
+gap = "only graphic clips; no timer or GPS effect to place"
+
+[[row]]
+id = "K1-178"
+group = "direct-control"
+feature = "Compare Effect: split monitor with and without effects"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/monitor_view.rs:658 Comparison View shows a reference frame beside the current one"
+gap = "no wipe/side-by-side of the same frame before and after the effect stack"
+
+# ------------------------------------------------------------------ waveforms / thumbnails
+
+[[row]]
+id = "K1-185"
+group = "waveforms"
+feature = "Show Audio Thumbnails in the timeline"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/sequence_menu.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:761 waveforms; wrench Show Audio Waveform"
+gap = ""
+
+[[row]]
+id = "K1-186"
+group = "waveforms"
+feature = "Separate audio channels in thumbnails"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_colors%2Bmarkers.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/timeline.rs:760 one rectified waveform per clip"
+gap = "no per-channel waveform lanes"
+
+[[row]]
+id = "K1-187"
+group = "waveforms"
+feature = "Audio thumbnail colours (one per channel)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_colors%2Bmarkers.html"
+film = "none"
+evidence = "waveform colour comes from the theme"
+gap = "no preference for waveform colours"
+
+[[row]]
+id = "K1-188"
+group = "waveforms"
+feature = "Show Video Thumbnails in the timeline"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/sequence_menu.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1291 Show Video Thumbnails with modes"
+gap = ""
+
+[[row]]
+id = "K1-189"
+group = "waveforms"
+feature = "Waveform of an audio clip in the clip monitor"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:66 view.display.audioWaveform"
+gap = ""
