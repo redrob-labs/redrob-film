@@ -603,6 +603,85 @@ pub fn render_graphic(item: &TrackItem, mt: Tick, canvas: (u32, u32), m: &Affine
     draw_specs(&specs, m, out);
 }
 
+/// [`render_graphic`] for a clip on a sequence running at `fps`: also applies the clip's
+/// Typewriter effect (`k_typewriter`), which reveals the text layers' characters, words or lines
+/// one at a time.
+pub fn render_graphic_rate(item: &TrackItem, mt: Tick, canvas: (u32, u32), m: &Affine, out: &mut Image, fps: f64) {
+    let mut specs: Vec<LayerSpec> = item_layer_specs(item, mt, canvas).into_iter().map(|(_, s)| s).collect();
+    let (_, u, _) = graphic_time(item, mt);
+    apply_typewriter(item, &mut specs, u, fps);
+    draw_specs(&specs, m, out);
+}
+
+/// Byte offsets where each typewriter unit of `text` ends: characters (0), words (1) or lines (2).
+fn typewriter_cuts(text: &str, kind: u32) -> Vec<usize> {
+    match kind {
+        1 => {
+            let mut cuts = Vec::new();
+            let mut in_word = false;
+            for (i, c) in text.char_indices() {
+                if c.is_whitespace() {
+                    if in_word {
+                        cuts.push(i);
+                    }
+                    in_word = false;
+                } else {
+                    in_word = true;
+                }
+            }
+            if in_word {
+                cuts.push(text.len());
+            }
+            cuts
+        }
+        2 => {
+            let mut cuts: Vec<usize> = text.match_indices('\n').map(|(i, _)| i).collect();
+            cuts.push(text.len());
+            cuts
+        }
+        _ => text.char_indices().map(|(i, c)| i + c.len_utf8()).collect(),
+    }
+}
+
+/// Cut the text layers back to what a Typewriter effect on `item` shows `u` (clip media time)
+/// into the clip: unit k appears after the delays of the units before it (Frames Step plus up to
+/// Fluctuation random frames each), across the text layers in paint order.
+pub fn apply_typewriter(item: &TrackItem, specs: &mut [LayerSpec], u: Tick, fps: f64) {
+    let Some(e) = item.effects.iter().find(|e| e.enabled && e.effect == "k_typewriter") else { return };
+    let t = item.source_in;
+    let step = e.f64_at("step", t).round().max(1.0);
+    let fluct = e.f64_at("fluctuation", t).round().max(0.0);
+    let seed = e.f64_at("seed", t).round().max(0.0) as u64;
+    let kind = match e.param("type").map(|p| &p.value) {
+        Some(redrob_film_project::ParamValue::Choice(c)) => *c,
+        _ => 0,
+    };
+    let frames = u.seconds().max(0.0) * fps.max(1.0);
+    let total: usize = specs.iter().filter_map(|s| if let LayerContent::Text(tp) = &s.content { Some(typewriter_cuts(&tp.text, kind).len()) } else { None }).sum();
+    // how many units have appeared
+    let mut shown = 0usize;
+    let mut at = 0.0f64;
+    while shown < total && at <= frames {
+        shown += 1;
+        let r = crate::vfx::hash01(shown as i64, 0, 0, seed.wrapping_add(0x7e57)) as f64;
+        at += step + (r * (fluct + 1.0)).floor().min(fluct);
+    }
+    for s in specs.iter_mut() {
+        let LayerContent::Text(tp) = &mut s.content else { continue };
+        let cuts = typewriter_cuts(&tp.text, kind);
+        let k = shown.min(cuts.len());
+        shown -= k;
+        let end = if k == 0 { 0 } else { cuts[k - 1] };
+        if end < tp.text.len() {
+            tp.text.truncate(end);
+            tp.runs.retain(|(r, _)| r.start < end);
+            for (r, _) in tp.runs.iter_mut() {
+                r.end = r.end.min(end);
+            }
+        }
+    }
+}
+
 /// Draw a graphic's layers (an effect list, without clip settings) at time `t` onto `out`.
 pub fn render_graphic_layers(effects: &[EffectInstance], t: Tick, canvas: (u32, u32), m: &Affine, out: &mut Image) {
     draw_specs(&graphic_specs(effects, t, canvas), m, out);
