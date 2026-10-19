@@ -307,25 +307,37 @@ fn convert_samples<T: cpal::Sample + cpal::FromSample<f32>>(input: &[f32], outpu
 
 /// The stream configurations to try, in order: the one the settings ask for; the same with the
 /// device's own buffer size (WASAPI and some ALSA/CoreAudio devices refuse a fixed size); the
-/// device's default configuration (format, rate and channels as the device reports them). Opening
-/// the first that works is what keeps a Windows machine from playing in silence when the mix format
-/// is not what the settings expect.
+/// device's default configuration (on Windows the shared-mode mix format, `GetMixFormat`); that
+/// mix format as 32-bit float (the engine's own sample type); then stereo float / 16-bit at the
+/// mix rate and at 48 / 44.1 kHz. Opening the first that works is what keeps a Windows machine
+/// from playing in silence when the mix format is not what the settings expect (upstream #1705:
+/// "unsupported stream configuration" on every device). Duplicates are tried once.
 fn attempts(
     wanted: &cpal::SupportedStreamConfig,
     config: &cpal::StreamConfig,
     default: Option<cpal::SupportedStreamConfig>,
 ) -> Vec<(cpal::SupportedStreamConfig, cpal::StreamConfig)> {
-    let mut out = vec![(wanted.clone(), config.clone())];
-    if config.buffer_size != cpal::BufferSize::Default {
-        let mut c = config.clone();
-        c.buffer_size = cpal::BufferSize::Default;
-        out.push((wanted.clone(), c));
+    fn push(out: &mut Vec<(cpal::SupportedStreamConfig, cpal::StreamConfig)>, c: cpal::SupportedStreamConfig, buffer: cpal::BufferSize) {
+        let mut sc: cpal::StreamConfig = c.clone().into();
+        sc.buffer_size = buffer;
+        if c.channels() > 0 && c.sample_rate().0 > 0 && !out.iter().any(|(o, s)| o.sample_format() == c.sample_format() && *s == sc) {
+            out.push((c, sc));
+        }
     }
-    if let Some(d) = default
-        && (d.sample_format() != wanted.sample_format() || d.sample_rate() != wanted.sample_rate() || d.channels() != wanted.channels())
-    {
-        let c: cpal::StreamConfig = d.clone().into();
-        out.push((d, c));
+    let mut out = Vec::new();
+    push(&mut out, wanted.clone(), config.buffer_size);
+    push(&mut out, wanted.clone(), cpal::BufferSize::Default);
+    let base = default.unwrap_or_else(|| wanted.clone());
+    push(&mut out, base.clone(), cpal::BufferSize::Default);
+    let like = |channels: u16, rate: u32, format: cpal::SampleFormat| {
+        cpal::SupportedStreamConfig::new(channels, cpal::SampleRate(rate), *base.buffer_size(), format)
+    };
+    let rate = base.sample_rate().0;
+    push(&mut out, like(base.channels(), rate, cpal::SampleFormat::F32), cpal::BufferSize::Default);
+    push(&mut out, like(2, rate, cpal::SampleFormat::F32), cpal::BufferSize::Default);
+    push(&mut out, like(2, rate, cpal::SampleFormat::I16), cpal::BufferSize::Default);
+    for r in [48_000, 44_100] {
+        push(&mut out, like(2, r, cpal::SampleFormat::F32), cpal::BufferSize::Default);
     }
     out
 }
@@ -410,7 +422,10 @@ impl CpalOut {
         let mut opened = None;
         let mut last = String::from("no stream configuration to try");
         for (c, sc) in attempts(&cfg, &config, dev.default_output_config().ok()) {
-            match self.build(&dev, c.sample_format(), &sc, shared()) {
+            // A stream that builds but will not start (WASAPI can refuse at `Start`) is one more
+            // configuration that failed, not the end of playback: try the next.
+            let started = self.build(&dev, c.sample_format(), &sc, shared()).map_err(|e| e.to_string());
+            match started.and_then(|s| s.play().map(|()| s).map_err(|e| e.to_string())) {
                 Ok(s) => {
                     opened = Some((s, c, sc));
                     break;
@@ -423,12 +438,11 @@ impl CpalOut {
                         c.channels(),
                         sc.buffer_size
                     );
-                    last = e.to_string();
+                    last = e;
                 }
             }
         }
         let (stream, cfg, config) = opened.ok_or(last)?;
-        stream.play().map_err(|e| e.to_string())?;
         self.rate = cfg.sample_rate().0;
         self.channels = cfg.channels();
         log::info!(
@@ -478,6 +492,39 @@ mod tests {
         let mut samples = [cpal::I24::EQUILIBRIUM; 3];
         convert_samples(&[-1.0, 0.0, 1.0], &mut samples);
         assert_eq!(samples.map(|s| s.inner()), [-8_388_608, 0, 8_388_607]);
+    }
+
+    /// Upstream #1705: WASAPI refused the configuration the settings asked for, and nothing else
+    /// was tried that the shared-mode engine accepts. The list must end in the mix format, its
+    /// float form and plain stereo float, each once.
+    #[test]
+    fn attempts_fall_back_to_the_mix_format_then_stereo_float() {
+        let range = cpal::SupportedBufferSize::Range { min: 64, max: 4096 };
+        let wanted = cpal::SupportedStreamConfig::new(2, cpal::SampleRate(96_000), range, cpal::SampleFormat::F32);
+        let mut config: cpal::StreamConfig = wanted.clone().into();
+        config.buffer_size = cpal::BufferSize::Fixed(256);
+        // a 7.1 mix format in 24-bit integers at 44.1 kHz
+        let mix = cpal::SupportedStreamConfig::new(8, cpal::SampleRate(44_100), range, cpal::SampleFormat::I24);
+        let list = attempts(&wanted, &config, Some(mix));
+        let key = |(c, s): &(cpal::SupportedStreamConfig, cpal::StreamConfig)| (c.sample_format(), s.channels, s.sample_rate.0, s.buffer_size);
+        let keys: Vec<_> = list.iter().map(key).collect();
+        use cpal::{BufferSize::Default as D, SampleFormat as F};
+        assert_eq!(
+            keys,
+            [
+                (F::F32, 2, 96_000, cpal::BufferSize::Fixed(256)),
+                (F::F32, 2, 96_000, D),
+                (F::I24, 8, 44_100, D),
+                (F::F32, 8, 44_100, D),
+                (F::F32, 2, 44_100, D),
+                (F::I16, 2, 44_100, D),
+                (F::F32, 2, 48_000, D),
+            ]
+        );
+        // a stereo float mix format at the wanted rate collapses to two attempts plus 48 / 44.1 kHz
+        let same = attempts(&wanted, &wanted.clone().into(), Some(wanted.clone()));
+        let keys: Vec<_> = same.iter().map(key).collect();
+        assert_eq!(keys, [(F::F32, 2, 96_000, D), (F::I16, 2, 96_000, D), (F::F32, 2, 48_000, D), (F::F32, 2, 44_100, D)]);
     }
 
     #[test]
