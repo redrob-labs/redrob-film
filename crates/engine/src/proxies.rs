@@ -201,32 +201,52 @@ pub fn start_job(s: &mut Session, label: String, work: Vec<(ItemId, String, &'st
     job.progress.total.store(total, std::sync::atomic::Ordering::Relaxed);
     let outputs: Arc<Mutex<Vec<(ItemId, String)>>> = Arc::default();
     let (prog, res, outs) = (job.progress.clone(), job.result.clone(), outputs.clone());
+    // Settings ▸ Media ▸ Proxy and transcode jobs at once: clips transcoded side by side
+    let threads = if cfg!(target_arch = "wasm32") { 1 } else { s.prefs.media.proxy_job_threads.clamp(1, 16) as usize };
     let run = move || {
         let t0 = web_time::Instant::now();
-        let mut bytes = 0;
-        let mut err = None;
         let n = tasks.len();
-        for (k, (item, clip, name, src, out, pr)) in tasks.into_iter().enumerate() {
-            if prog.cancel.load(std::sync::atomic::Ordering::Relaxed) {
-                err = Some("cancelled".to_string());
-                break;
-            }
-            *prog.status.lock().unwrap_or_else(|e| e.into_inner()) = format!("{name} ({} of {n})", k + 1);
-            if let Some(d) = Path::new(&out).parent() {
-                let _ = std::fs::create_dir_all(d);
-            }
-            match transcode(&clip, &name, src, None, &out, pr, &prog) {
-                Ok(r) => {
-                    bytes += r.bytes;
-                    outs.lock().unwrap_or_else(|e| e.into_inner()).push((item, out));
-                }
-                Err(e) => {
-                    let _ = std::fs::remove_file(&out);
-                    err = Some(format!("{name}: {e}"));
+        let queue = Mutex::new(tasks.into_iter().enumerate().collect::<std::collections::VecDeque<_>>());
+        let failed: Mutex<Option<String>> = Mutex::new(None);
+        let bytes = std::sync::atomic::AtomicU64::new(0);
+        let worker = || {
+            loop {
+                if prog.cancel.load(std::sync::atomic::Ordering::Relaxed) {
+                    failed.lock().unwrap_or_else(|e| e.into_inner()).get_or_insert_with(|| "cancelled".to_string());
                     break;
                 }
+                if failed.lock().unwrap_or_else(|e| e.into_inner()).is_some() {
+                    break;
+                }
+                let Some((k, (item, clip, name, src, out, pr))) = queue.lock().unwrap_or_else(|e| e.into_inner()).pop_front() else { break };
+                *prog.status.lock().unwrap_or_else(|e| e.into_inner()) = format!("{name} ({} of {n})", k + 1);
+                if let Some(d) = Path::new(&out).parent() {
+                    let _ = std::fs::create_dir_all(d);
+                }
+                match transcode(&clip, &name, src, None, &out, pr, &prog) {
+                    Ok(r) => {
+                        bytes.fetch_add(r.bytes, std::sync::atomic::Ordering::Relaxed);
+                        outs.lock().unwrap_or_else(|e| e.into_inner()).push((item, out));
+                    }
+                    Err(e) => {
+                        let _ = std::fs::remove_file(&out);
+                        failed.lock().unwrap_or_else(|e| e.into_inner()).get_or_insert_with(|| format!("{name}: {e}"));
+                        break;
+                    }
+                }
             }
+        };
+        if threads <= 1 || n <= 1 {
+            worker();
+        } else {
+            std::thread::scope(|sc| {
+                for _ in 0..threads.min(n) {
+                    sc.spawn(&worker);
+                }
+            });
         }
+        let bytes = bytes.load(std::sync::atomic::Ordering::Relaxed);
+        let err = failed.into_inner().unwrap_or_else(|e| e.into_inner());
         let secs = t0.elapsed().as_secs_f64();
         let frames = prog.done.load(std::sync::atomic::Ordering::Relaxed);
         let r = match err {
@@ -446,8 +466,16 @@ pub fn ingest(s: &mut Session, items: &[ItemId]) -> Result<Value> {
     let mut job = Value::Null;
     match ing.action {
         IngestAction::CreateProxies | IngestAction::CopyAndCreateProxies => {
-            let p = json!({"items": items.iter().map(|i| i.0).collect::<Vec<_>>(), "preset": if ing.preset.is_empty() { DEFAULT_PROXY_PRESET } else { ing.preset.as_str() }, "destination": ing.destination});
-            if items.iter().any(|i| s.project.item(*i).and_then(|x| x.as_media()).is_some_and(|m| m.info.video.is_some() && m.info.kind == MediaKind::Movie)) {
+            // only videos wider than the project's threshold (Ingest Settings ▸ Only for videos wider than)
+            let wide = |i: &ItemId| {
+                s.project
+                    .item(*i)
+                    .and_then(|x| x.as_media())
+                    .is_some_and(|m| m.info.kind == MediaKind::Movie && m.info.video.as_ref().is_some_and(|v| v.width > ing.min_proxy_width))
+            };
+            let picked: Vec<u64> = items.iter().filter(|i| wide(i)).map(|i| i.0).collect();
+            if !picked.is_empty() {
+                let p = json!({"items": picked, "preset": if ing.preset.is_empty() { DEFAULT_PROXY_PRESET } else { ing.preset.as_str() }, "destination": ing.destination});
                 job = create(s, &p)?;
             }
         }
@@ -600,7 +628,7 @@ pub fn commands() -> Vec<CommandSpec> {
             label: "Ingest Settings…",
             menu: &[],
             shortcut: None,
-            params: r#"{"enabled":bool?,"action":"copy|transcode|createProxies|copyAndCreateProxies"?,"destination":str?,"preset":str?}"#,
+            params: r#"{"enabled":bool?,"action":"copy|transcode|createProxies|copyAndCreateProxies"?,"destination":str?,"preset":str?,"minProxyWidth":u32?}"#,
             enabled: always,
             run: |s, p| {
                 let mut ing = s.project.settings.ingest.clone();
@@ -618,6 +646,9 @@ pub fn commands() -> Vec<CommandSpec> {
                         return Err(bad("project.ingestSettings", format!("unknown preset `{pr}`")));
                     }
                     ing.preset = pr.to_string();
+                }
+                if let Some(w) = u64_p(p, "minProxyWidth") {
+                    ing.min_proxy_width = w.min(u64::from(redrob_film_project::MAX_FRAME_SIDE)) as u32;
                 }
                 if ing != s.project.settings.ingest {
                     let v = ing.clone();

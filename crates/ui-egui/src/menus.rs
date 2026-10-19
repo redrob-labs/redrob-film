@@ -34,15 +34,15 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("source.playback.toggle", "Source Play/Stop", [], None),
     uic!("source.playback.play", "Play Source", [], None),
     uic!("source.playback.stop", "Stop Source", [], None),
-    uic!("playback.toggle", "Play/Stop", [], Some("Space")),
-    uic!("playback.forward", "Shuttle Right", [], Some("L")),
-    uic!("playback.stop", "Shuttle Stop", [], Some("K")),
-    uic!("playback.reverse", "Shuttle Left", [], Some("J")),
-    uic!("playback.slowForward", "Shuttle Slow Right", [], None),
-    uic!("playback.slowReverse", "Shuttle Slow Left", [], None),
-    uic!("playback.playAround", "Play Around", [], None),
-    uic!("playback.inToOut", "Play In to Out", [], Some("Alt+K")),
-    uic!("playback.loop", "Loop", [], None),
+    uic!("playback.toggle", "Play/Stop", ["Monitor"], Some("Space")),
+    uic!("playback.forward", "Shuttle Right", ["Monitor"], Some("L")),
+    uic!("playback.stop", "Shuttle Stop", ["Monitor"], Some("K")),
+    uic!("playback.reverse", "Shuttle Left", ["Monitor"], Some("J")),
+    uic!("playback.slowForward", "Shuttle Slow Right", ["Monitor"], None),
+    uic!("playback.slowReverse", "Shuttle Slow Left", ["Monitor"], None),
+    uic!("playback.playAround", "Play Around", ["Monitor"], None),
+    uic!("playback.inToOut", "Play In to Out", ["Monitor"], Some("Alt+K")),
+    uic!("playback.loop", "Loop", ["Monitor"], None),
     uic!("view.zoomIn", "Zoom In", ["View"], Some("=")),
     uic!("view.zoomOut", "Zoom Out", ["View"], Some("-")),
     uic!("view.zoomToSequence", "Zoom to Sequence", ["View"], Some("\\")),
@@ -104,6 +104,8 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("view.theme.medium", "Dark", ["View", "Appearance"], None),
     uic!("view.theme.light", "Light", ["View", "Appearance"], None),
     uic!("view.appearanceMode.next", "Next Appearance Mode", ["View", "Appearance"], None),
+    uic!("window.showMenuBar", "Show Menu Bar", ["Window"], None),
+    uic!("window.showStatusBar", "Show Status Bar", ["Window"], None),
     uic!("window.workspace.editing", "Editing", ["Window", "Workspaces"], Some("Alt+Shift+1")),
     uic!("window.workspace.assembly", "Assembly", ["Window", "Workspaces"], Some("Alt+Shift+2")),
     uic!("window.workspace.color", "Color", ["Window", "Workspaces"], Some("Alt+Shift+3")),
@@ -115,21 +117,21 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("window.workspace.saveChanges", "Save Changes to this Workspace", ["Window", "Workspaces"], None),
     uic!("window.workspace.saveAs", "Save as New Workspace…", ["Window", "Workspaces"], None),
     uic!("window.workspace.edit", "Edit Workspaces…", ["Window", "Workspaces"], None),
-    uic!("tool.selection", "Selection Tool", [], Some("V")),
-    uic!("tool.trackSelectForward", "Track Select Forward Tool", [], Some("A")),
-    uic!("tool.trackSelectBackward", "Track Select Backward Tool", [], Some("Shift+A")),
-    uic!("tool.ripple", "Ripple Edit Tool", [], Some("B")),
-    uic!("tool.rolling", "Rolling Edit Tool", [], Some("N")),
-    uic!("tool.rateStretch", "Rate Stretch Tool", [], Some("R")),
-    uic!("tool.remix", "Remix Tool", [], None),
-    uic!("tool.razor", "Razor Tool", [], Some("C")),
-    uic!("tool.slip", "Slip Tool", [], Some("Y")),
-    uic!("tool.slide", "Slide Tool", [], Some("U")),
-    uic!("tool.pen", "Pen Tool", [], Some("P")),
-    uic!("tool.hand", "Hand Tool", [], Some("H")),
-    uic!("tool.zoom", "Zoom Tool", [], Some("Z")),
-    uic!("tool.type", "Type Tool", [], Some("T")),
-    uic!("tool.verticalType", "Vertical Type Tool", [], None),
+    uic!("tool.selection", "Selection Tool", ["Tool"], Some("V")),
+    uic!("tool.trackSelectForward", "Track Select Forward Tool", ["Tool"], Some("A")),
+    uic!("tool.trackSelectBackward", "Track Select Backward Tool", ["Tool"], Some("Shift+A")),
+    uic!("tool.ripple", "Ripple Edit Tool", ["Tool"], Some("B")),
+    uic!("tool.rolling", "Rolling Edit Tool", ["Tool"], Some("N")),
+    uic!("tool.rateStretch", "Rate Stretch Tool", ["Tool"], Some("R")),
+    uic!("tool.remix", "Remix Tool", ["Tool"], None),
+    uic!("tool.razor", "Razor Tool", ["Tool"], Some("C")),
+    uic!("tool.slip", "Slip Tool", ["Tool"], Some("Y")),
+    uic!("tool.slide", "Slide Tool", ["Tool"], Some("U")),
+    uic!("tool.pen", "Pen Tool", ["Tool"], Some("P")),
+    uic!("tool.hand", "Hand Tool", ["Tool"], Some("H")),
+    uic!("tool.zoom", "Zoom Tool", ["Tool"], Some("Z")),
+    uic!("tool.type", "Type Tool", ["Tool"], Some("T")),
+    uic!("tool.verticalType", "Vertical Type Tool", ["Tool"], None),
     uic!("mode.import", "Import", [], None),
     uic!("mode.edit", "Edit", [], None),
     uic!("mode.export", "Export", ["File", "Export"], Some("Cmd+M")),
@@ -242,6 +244,21 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
     if id == "perf.stats" {
         // the engine's counters plus playback, frame workers and UI timings
         return Ok(crate::perf::stats(app));
+    }
+    // Window ▸ Show Menu Bar / Show Status Bar (`{"on": bool}`, else toggle). On macOS the menu
+    // bar is the system's and stays.
+    if id == "window.showMenuBar" {
+        if cfg!(target_os = "macos") {
+            return Err("on macOS the menus are in the system menu bar".into());
+        }
+        let on = params.get("on").and_then(Value::as_bool).unwrap_or(!app.ui.show_menu_bar);
+        app.ui.show_menu_bar = on;
+        return Ok(json!({"menuBar": on}));
+    }
+    if id == "window.showStatusBar" {
+        let on = params.get("on").and_then(Value::as_bool).unwrap_or(!app.ui.show_status_bar);
+        app.ui.show_status_bar = on;
+        return Ok(json!({"statusBar": on}));
     }
     if let Some(rest) = id.strip_prefix("window.panel.") {
         let p = PanelKind::from_name(rest).ok_or_else(|| format!("unknown panel `{rest}`"))?;
@@ -655,7 +672,9 @@ pub struct MenuItem {
     pub checked: Option<bool>,
 }
 
-pub const MENUS: [&str; 9] = ["File", "Edit", "Clip", "Sequence", "Markers", "Graphics and Titles", "View", "Window", "Help"];
+/// The menu bar. Monitor (transport) and Tool (the Tools panel's tools) follow Kdenlive's menus of
+/// those names; the rest is Premiere's layout.
+pub const MENUS: [&str; 11] = ["File", "Edit", "Clip", "Sequence", "Markers", "Graphics and Titles", "View", "Monitor", "Tool", "Window", "Help"];
 
 pub fn menu_items(app: &FilmcraftApp) -> Vec<MenuItem> {
     let mut v = menu_items_for(&app.session);
@@ -678,6 +697,13 @@ pub fn menu_items(app: &FilmcraftApp) -> Vec<MenuItem> {
             "sequence.useTimelineZone" => it.checked = Some(!app.session.state.ignore_timeline_zone),
             "sequence.trackCompositing" => it.checked = Some(app.session.active_sequence().is_none_or(|q| !q.timeline_options.no_track_compositing)),
             "sequence.disableTimelineEffects" => it.checked = Some(app.session.active_sequence().is_some_and(|q| q.timeline_options.effects_disabled)),
+            "window.showMenuBar" => {
+                it.checked = Some(app.ui.show_menu_bar);
+                it.enabled = !cfg!(target_os = "macos");
+            }
+            "window.showStatusBar" => it.checked = Some(app.ui.show_status_bar),
+            // Tool ▸ <tool>: the current tool is checked
+            id if id.starts_with("tool.") => it.checked = Some(Tool::from_name(&id["tool.".len()..]) == Some(app.ui.tool)),
             _ => {}
         }
         if it.id.starts_with("view.") {

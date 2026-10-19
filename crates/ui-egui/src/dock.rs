@@ -181,6 +181,9 @@ pub const WORKSPACES_FILE: &str = "workspaces.json";
 pub struct WorkspacePrefs {
     pub saved: Vec<SavedWorkspace>,
     pub current: String,
+    /// The order the user gave the workspaces (Edit Workspaces ▸ Move Up / Move Down); names not
+    /// in it follow alphabetically. Empty = alphabetical, Premiere's order.
+    pub order: Vec<String>,
 }
 
 /// A named layout. `layout` is a [`DockNode`] kept as JSON, so one unreadable entry (a panel a
@@ -225,8 +228,24 @@ pub fn names(prefs: &WorkspacePrefs) -> Vec<String> {
         }
     }
     v.sort_by_key(|n| n.to_lowercase());
+    if !prefs.order.is_empty() {
+        // stable: the workspaces the order does not name stay alphabetical after it
+        v.sort_by_key(|n| prefs.order.iter().position(|o| o == n).unwrap_or(usize::MAX));
+    }
     v
 }
+
+/// A workspace file (`window.workspace.export` / `import`): one named layout.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct WorkspaceFile {
+    /// Always `redrob-film-workspace`, so other JSON is refused on import.
+    pub kind: String,
+    pub name: String,
+    pub layout: serde_json::Value,
+}
+
+pub const WORKSPACE_FILE_KIND: &str = "redrob-film-workspace";
 
 /// The workspace called `query` (any case, spaces optional).
 pub fn find(prefs: &WorkspacePrefs, query: &str) -> Option<String> {
@@ -393,6 +412,38 @@ impl DockNode {
             self.open_near(PanelKind::Timeline, PanelKind::Project);
         }
     }
+    /// Move panel `p` to the group that holds `anchor`: as one of its tabs, or in a new group
+    /// beside it (`zone`). Returns false when nothing changes (dropped back onto its own group,
+    /// or `anchor` is not in the tree).
+    pub fn dock_panel(&mut self, p: PanelKind, anchor: PanelKind, zone: DropZone) -> bool {
+        if p == anchor || !self.contains(anchor) {
+            return false;
+        }
+        fn put(n: &mut DockNode, p: PanelKind, anchor: PanelKind, zone: DropZone) -> bool {
+            match n {
+                DockNode::Split { a, b, .. } => put(a, p, anchor, zone) || put(b, p, anchor, zone),
+                DockNode::Tabs { panels, active } => {
+                    if !panels.contains(&anchor) {
+                        return false;
+                    }
+                    if zone == DropZone::Tabs {
+                        panels.push(p);
+                        *active = panels.len() - 1;
+                        return true;
+                    }
+                    let here = n.clone();
+                    let new = tabs(&[p], 0);
+                    let vertical = matches!(zone, DropZone::Top | DropZone::Bottom);
+                    let (a, b) = if matches!(zone, DropZone::Left | DropZone::Top) { (new, here) } else { (here, new) };
+                    *n = DockNode::Split { vertical, size: SplitSize::Ratio(0.5), a: Box::new(a), b: Box::new(b) };
+                    true
+                }
+            }
+        }
+        self.close(p);
+        put(self, p, anchor, zone)
+    }
+
     /// Add a panel as a tab next to `near` (or into the first group).
     pub fn open_near(&mut self, p: PanelKind, near: PanelKind) {
         if self.contains(p) {
@@ -451,6 +502,47 @@ pub enum DockAction {
     CloseSequence(u64),
     /// A sequence tab was dragged past a neighbour: its new place among the sequence tabs.
     MoveSequence(u64, usize),
+    /// A panel's tab was dragged and let go at this point: dock it where it was dropped.
+    DropPanel(PanelKind, egui::Pos2),
+}
+
+/// Where a dragged panel goes in the group it is dropped on: into its tabs, or beside it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DropZone {
+    Tabs,
+    Left,
+    Right,
+    Top,
+    Bottom,
+}
+
+impl DropZone {
+    /// The zone of `group` under `pos`: the outer quarter of each side splits, the middle (and the
+    /// tab strip) adds a tab.
+    pub fn at(group: Rect, tab_h: f32, pos: egui::Pos2) -> DropZone {
+        if pos.y < group.min.y + tab_h {
+            return DropZone::Tabs;
+        }
+        let fx = (pos.x - group.min.x) / group.width().max(1.0);
+        let fy = (pos.y - group.min.y) / group.height().max(1.0);
+        let edges = [(fx, DropZone::Left), (1.0 - fx, DropZone::Right), (fy, DropZone::Top), (1.0 - fy, DropZone::Bottom)];
+        match edges.iter().filter(|(d, _)| *d < 0.25).min_by(|a, b| a.0.total_cmp(&b.0)) {
+            Some((_, z)) => *z,
+            None => DropZone::Tabs,
+        }
+    }
+
+    /// The part of `group` the panel would take (for the drop preview).
+    pub fn preview(self, group: Rect) -> Rect {
+        let (w, h) = (group.width(), group.height());
+        match self {
+            DropZone::Tabs => group,
+            DropZone::Left => Rect::from_min_size(group.min, vec2(w * 0.5, h)),
+            DropZone::Right => Rect::from_min_max(pos2(group.min.x + w * 0.5, group.min.y), group.max),
+            DropZone::Top => Rect::from_min_size(group.min, vec2(w, h * 0.5)),
+            DropZone::Bottom => Rect::from_min_max(pos2(group.min.x, group.min.y + h * 0.5), group.max),
+        }
+    }
 }
 
 /// Size of a split's first child in `avail` points: the requested size, keeping both children at
@@ -467,12 +559,22 @@ fn split_first(size: SplitSize, avail: f32) -> f32 {
     want.clamp(lo, hi)
 }
 
+/// Settings ▸ General ▸ Panel tab position: whether the tab strips are under the panels this
+/// frame (set by the app from the preference before the dock is laid out).
+pub fn tabs_at_bottom(ctx: &egui::Context) -> bool {
+    ctx.data(|d| d.get_temp::<bool>(egui::Id::new("dock-tabs-bottom"))).unwrap_or(false)
+}
+
 /// Lay out the tree into group rects (with `gap` gutters) and handle gutter dragging.
 pub fn layout(ui: &mut egui::Ui, node: &mut DockNode, rect: Rect, t: &Tokens, path: &str, out: &mut Vec<Group>, reg: &mut crate::automation::Registry) {
     match node {
         DockNode::Tabs { panels, active } => {
             let tab_h = if panels.len() == 1 && panels[0].compact() { 8.0 } else { t.tab_h };
-            let content = Rect::from_min_max(pos2(rect.min.x, rect.min.y + tab_h), rect.max);
+            let content = if tabs_at_bottom(ui.ctx()) && tab_h == t.tab_h {
+                Rect::from_min_max(rect.min, pos2(rect.max.x, rect.max.y - tab_h))
+            } else {
+                Rect::from_min_max(pos2(rect.min.x, rect.min.y + tab_h), rect.max)
+            };
             out.push(Group { path: path.to_string(), rect, content, panels: panels.clone(), active: *active });
         }
         DockNode::Split { vertical, size, a, b } => {
@@ -547,7 +649,11 @@ pub fn draw_group_chrome(
             painter.circle_filled(c + vec2(dx, 0.0), 1.0, t.text_faint);
         }
     } else {
-        let strip = Rect::from_min_size(g.rect.min, vec2(g.rect.width(), t.tab_h));
+        let strip = if tabs_at_bottom(ui.ctx()) {
+            Rect::from_min_size(pos2(g.rect.min.x, g.rect.max.y - t.tab_h), vec2(g.rect.width(), t.tab_h))
+        } else {
+            Rect::from_min_size(g.rect.min, vec2(g.rect.width(), t.tab_h))
+        };
         // the Timeline panel shows one tab per open sequence (its own tab names the sequence)
         struct Tab {
             panel: PanelKind,
@@ -625,8 +731,24 @@ pub fn draw_group_chrome(
             // a sequence tab keeps its identity when the tabs are reordered under the pointer
             let resp = match tab.seq {
                 Some(id) => ui.interact(tab_rect, egui::Id::new(("tab-seq", g.path.clone(), id)), Sense::click_and_drag()),
-                None => ui.interact(tab_rect, egui::Id::new(("tab", g.path.clone(), i)), Sense::click()),
+                None => ui.interact(tab_rect, egui::Id::new(("tab", g.path.clone(), i)), Sense::click_and_drag()),
             };
+            // a panel's tab dragged elsewhere docks the panel where it is let go (DropPanel)
+            if tab.seq.is_none() {
+                let drag_id = egui::Id::new("dock-drag-panel");
+                if resp.dragged() {
+                    ui.ctx().data_mut(|d| d.insert_temp(drag_id, *p));
+                    ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+                }
+                if resp.drag_stopped() {
+                    ui.ctx().data_mut(|d| d.remove::<PanelKind>(drag_id));
+                    if let Some(at) = ui.input(|i| i.pointer.latest_pos())
+                        && !tab_rect.contains(at)
+                    {
+                        actions.push(DockAction::DropPanel(*p, at));
+                    }
+                }
+            }
             if let Some(id) = tab.seq {
                 seq_rects.push((id, tab_rect));
                 if resp.dragged() {

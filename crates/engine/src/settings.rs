@@ -56,6 +56,10 @@ pub struct GeneralPrefs {
     pub show_compatibility_issues: bool,
     pub show_project_bin_in_tab: bool,
     pub show_mask_tracker_preview: bool,
+    /// Effect Controls greys out the parameters of an effect that is switched off.
+    pub disable_params_of_disabled_effects: bool,
+    /// Where a panel group's tabs are: `top` (default) | `bottom`.
+    pub panel_tab_position: String,
     /// Most recently opened / saved projects (newest first; not shown in the dialog).
     pub recent_projects: Vec<String>,
 }
@@ -79,6 +83,8 @@ impl Default for GeneralPrefs {
             show_compatibility_issues: true,
             show_project_bin_in_tab: true,
             show_mask_tracker_preview: true,
+            disable_params_of_disabled_effects: false,
+            panel_tab_position: "top".into(),
             recent_projects: Vec::new(),
         }
     }
@@ -217,11 +223,27 @@ pub struct ColorPrefs {
     pub extended_dynamic_range: bool,
     /// HDR Graphics White (nits): `100` | `203` | `300`.
     pub hdr_graphics_white: String,
+    /// Waveform colour of an audio clip's first channel (the Timeline and the Source monitor).
+    pub audio_waveform_color: String,
+    /// Colour of the monitors' overlays (safe margins, centre cross).
+    pub monitor_overlay_color: String,
+    /// Fill the monitors around the picture with `monitor_background_color` instead of the
+    /// panel colour.
+    pub custom_monitor_background: bool,
+    pub monitor_background_color: String,
 }
 
 impl Default for ColorPrefs {
     fn default() -> Self {
-        Self { display_color_management: false, extended_dynamic_range: false, hdr_graphics_white: "203".into() }
+        Self {
+            display_color_management: false,
+            extended_dynamic_range: false,
+            hdr_graphics_white: "203".into(),
+            audio_waveform_color: "#79c0f9".into(),
+            monitor_overlay_color: "#ffffff".into(),
+            custom_monitor_background: false,
+            monitor_background_color: "#000000".into(),
+        }
     }
 }
 
@@ -505,6 +527,25 @@ pub struct TimelinePrefs {
     pub sequences_bin: String,
     /// Stopping playback puts the playhead back where playback started.
     pub return_to_start_on_stop: bool,
+    /// Seeking (a press on the ruler or a monitor's time bar) stops playback; off: playback
+    /// carries on from the new position.
+    pub pause_on_seek: bool,
+    /// Applying an effect to a clip the playhead is not over moves the playhead to the clip's
+    /// start, so the monitor shows what the effect does.
+    pub seek_to_clip_on_add_effect: bool,
+    /// Clip markers drawn on timeline clips carry their name (else comment).
+    pub show_clip_marker_comments: bool,
+    /// Defaults of the Timeline wrench menu's display toggles (applied when they change and at
+    /// startup).
+    pub show_video_thumbnails: bool,
+    pub show_audio_waveforms: bool,
+    pub separate_audio_channels: bool,
+    /// Default heights (points) of video and audio tracks of a sequence shown for the first time.
+    pub video_track_height: u32,
+    pub audio_track_height: u32,
+    /// Split Caption: `duplicate` (both halves keep the text) | `splitLines` (the first line stays,
+    /// the other lines go to the second half).
+    pub caption_split_mode: String,
 }
 
 impl Default for TimelinePrefs {
@@ -534,6 +575,15 @@ impl Default for TimelinePrefs {
             drop_import_to_timeline: true,
             sequences_bin: String::new(),
             return_to_start_on_stop: false,
+            pause_on_seek: true,
+            seek_to_clip_on_add_effect: false,
+            show_clip_marker_comments: false,
+            show_video_thumbnails: true,
+            show_audio_waveforms: true,
+            separate_audio_channels: false,
+            video_track_height: 60,
+            audio_track_height: 56,
+            caption_split_mode: "duplicate".into(),
         }
     }
 }
@@ -756,7 +806,8 @@ const CACHE_MGMT: &[(&str, &str)] = &[
     ("exceedsSize", "Automatically delete oldest cache files when cache exceeds"),
     ("warnSize", "Warn when the cache exceeds"),
 ];
-const AUTO_SCROLL: &[(&str, &str)] = &[("noScroll", "No Scroll"), ("pageScroll", "Page Scroll"), ("smoothScroll", "Smooth Scroll")];
+const AUTO_SCROLL: &[(&str, &str)] =
+    &[("noScroll", "No Scroll"), ("pageScroll", "Page Scroll"), ("smoothScroll", "Smooth Scroll"), ("centeredPlayhead", "Fixed Centered Playhead")];
 const MOUSE_SCROLL: &[(&str, &str)] = &[("vertical", "Vertical"), ("horizontal", "Horizontal")];
 const HW_DECODE: &[(&str, &str)] = &[("auto", "Auto"), ("off", "Off")];
 const TRACKS: &[(&str, &str)] = &[("useFile", "Use File"), ("mono", "Mono"), ("stereo", "Stereo"), ("5.1", "5.1"), ("adaptive", "Adaptive")];
@@ -819,6 +870,9 @@ static CATEGORIES: &[Category] = &[
             b("general.showCompatibilityIssues", "Show system compatibility issues at startup", false),
             b("general.showProjectBinInTab", "Show \"Project:\" and \"Bin:\" in Project panel tab", false),
             b("general.showMaskTrackerPreview", "Show Mask Tracker Preview", false),
+            b("general.disableParamsOfDisabledEffects", "Disable the parameters of an effect that is switched off", true),
+            f("general.panelTabPosition", "Panel tab position", Kind::Choice(&[("top", "Top"), ("bottom", "Bottom")]), true),
+            Row::Group("Configuration Information", &[Row::Custom("configPaths")]),
         ],
     },
     Category {
@@ -923,6 +977,15 @@ static CATEGORIES: &[Category] = &[
                 ],
             ),
             Row::Note("For color management parameters, go to the Settings tab in the Lumetri Color panel."),
+            Row::Group(
+                "Interface Colors",
+                &[
+                    f("color.audioWaveformColor", "Audio waveform color", Kind::Color, true),
+                    f("color.monitorOverlayColor", "Monitor overlay color", Kind::Color, true),
+                    b("color.customMonitorBackground", "Custom monitor background", true),
+                    sub("color.monitorBackgroundColor", "Monitor background color", Kind::Color, "color.customMonitorBackground", true),
+                ],
+            ),
         ],
     },
     Category {
@@ -1013,6 +1076,8 @@ static CATEGORIES: &[Category] = &[
             ),
             b("media.hardwareDecoding", "Enable hardware accelerated decoding (requires restart)", false),
             b("media.proresHardwareEncoding", "Enable ProRes hardware accelerated encoding, if available", false),
+            f("media.proxyJobThreads", "Proxy and transcode jobs: clips at the same time", int(1.0, 16.0, ""), true),
+            Row::Group("Supported Media Types", &[Row::Custom("mediaTypes")]),
         ],
     },
     Category {
@@ -1086,6 +1151,7 @@ static CATEGORIES: &[Category] = &[
             b("playback.disableVideoInBackground", "Disable video output when in the background", false),
             b("playback.draftDecode", "Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)", true),
             f("playback.hardwareDecoding", "Hardware decoding", Kind::Choice(HW_DECODE), true),
+            b("playback.playPauseOnMonitorClick", "Play or pause when clicking a monitor", true),
             Row::Note(
                 "Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and Redrob Film's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.",
             ),
@@ -1137,6 +1203,25 @@ static CATEGORIES: &[Category] = &[
             b("timeline.dropImportToTimeline", "Place files dropped onto the Timeline directly on the Timeline", true),
             f("timeline.sequencesBin", "Default bin for new sequences", Kind::Text, true),
             b("timeline.returnToStartOnStop", "Return the playhead to its start position when playback stops", true),
+            b("timeline.pauseOnSeek", "Pause playback when seeking", true),
+            b("timeline.seekToClipOnAddEffect", "Move the playhead to the clip when adding an effect", true),
+            b("timeline.showClipMarkerComments", "Show clip marker comments on timeline clips", true),
+            f(
+                "timeline.captionSplitMode",
+                "Splitting a caption",
+                Kind::Choice(&[("duplicate", "Both parts keep the text"), ("splitLines", "First line stays, the other lines move to the second part")]),
+                true,
+            ),
+            Row::Group(
+                "Display Defaults",
+                &[
+                    b("timeline.showVideoThumbnails", "Show video thumbnails", true),
+                    b("timeline.showAudioWaveforms", "Show audio waveforms", true),
+                    b("timeline.separateAudioChannels", "Separate audio channels", true),
+                    f("timeline.videoTrackHeight", "Video track height", int(8.0, 600.0, "pixels"), true),
+                    f("timeline.audioTrackHeight", "Audio track height", int(8.0, 600.0, "pixels"), true),
+                ],
+            ),
         ],
     },
     Category {

@@ -91,6 +91,8 @@ pub fn open(app: &mut FilmcraftApp) {
         working_space: st.color.working.id().into(),
         wide_gamut: st.color.wide_gamut,
         auto_tone_map: st.color.auto_tone_map,
+        preset_filter: String::new(),
+        preset_name: String::new(),
     };
     app.dialog = Some(crate::Dialog::SequenceSettings);
 }
@@ -118,8 +120,111 @@ pub fn open_new(app: &mut FilmcraftApp) {
         wide_gamut: st.color.wide_gamut,
         auto_tone_map: st.color.auto_tone_map,
         name: format!("Sequence {n:02}"),
+        preset_filter: String::new(),
+        preset_name: String::new(),
     };
+    // the default sequence preset (Sequence Presets ▸ Set as Default), when one is chosen
+    if let Some(pr) = redrob_film_engine::sequence_presets::default_preset(&app.session.prefs) {
+        apply_preset(&mut app.ui.sequence_settings, &pr);
+    }
     app.dialog = Some(crate::Dialog::SequenceSettings);
+}
+
+/// Put a preset's settings into the dialog's draft (the name of the sequence stays).
+fn apply_preset(d: &mut SequenceSettingsDraft, pr: &redrob_film_engine::sequence_presets::SequencePreset) {
+    d.width = pr.width;
+    d.height = pr.height;
+    d.fps_num = pr.fps_num;
+    d.fps_den = pr.fps_den;
+    d.drop_frame = pr.drop_frame && pr.rate().supports_drop_frame();
+    d.sample_rate = pr.sample_rate;
+    d.mix = pr.mix.clone();
+    if d.new_sequence {
+        d.video_tracks = pr.video_tracks;
+        d.audio_tracks = pr.audio_tracks;
+    }
+    d.preset_name = pr.name.clone();
+}
+
+/// What the Sequence Presets tab asks for once the dialog is drawn.
+enum PresetAction {
+    Save(String),
+    Delete(String),
+    SetDefault(String),
+}
+
+/// The Sequence Presets tab: the presets (built-in, then the user's) narrowed to a frame rate; a
+/// click applies one to the other tabs. The current settings can be saved as a preset, a user
+/// preset deleted, and one made the default of File ▸ New ▸ Sequence….
+fn presets(ui: &mut egui::Ui, d: &mut SequenceSettingsDraft, list: &[(redrob_film_engine::sequence_presets::SequencePreset, bool)], default: &str, elems: &mut Elems, action: &mut Option<PresetAction>) {
+    ui.horizontal(|ui| {
+        ui.label(tl!("Frame rate:"));
+        let shown = if d.preset_filter.is_empty() { tl!("All frame rates").to_string() } else { d.preset_filter.split_once('/').and_then(|(n, dd)| Some(FrameRate { num: n.parse().ok()?, den: dd.parse().ok()? }.label())).unwrap_or_default() };
+        let resp = egui::ComboBox::from_id_salt("seq-presets-filter").selected_text(&shown).width(160.0).show_ui(ui, |ui| {
+            let o = ui.selectable_value(&mut d.preset_filter, String::new(), tl!("All frame rates"));
+            elems.push(("sequenceSettings.presets.filter.all".into(), o.rect, "All".into()));
+            let mut rates: Vec<FrameRate> = Vec::new();
+            for (p, _) in list {
+                if !rates.contains(&p.rate()) {
+                    rates.push(p.rate());
+                }
+            }
+            rates.sort_by(|a, b| a.as_f64().total_cmp(&b.as_f64()));
+            for r in rates {
+                let key = format!("{}/{}", r.num, r.den);
+                let o = ui.selectable_value(&mut d.preset_filter, key.clone(), r.label());
+                elems.push((format!("sequenceSettings.presets.filter.{key}"), o.rect, r.label()));
+            }
+        });
+        elems.push(("sequenceSettings.presets.filter".into(), resp.response.rect, shown));
+    });
+    ui.add_space(4.0);
+    egui::ScrollArea::vertical().id_salt("seq-presets-list").max_height(260.0).auto_shrink([false, true]).show(ui, |ui| {
+        for (i, (p, user)) in list.iter().enumerate() {
+            let key = format!("{}/{}", p.rate().num, p.rate().den);
+            if !d.preset_filter.is_empty() && d.preset_filter != key {
+                continue;
+            }
+            let mut label = format!("{}  —  {} x {}, {} fps, {} Hz {}", p.name, p.width, p.height, p.rate().label(), p.sample_rate, t(&p.mix));
+            if *user {
+                label.push_str(&format!("  ({})", tl!("custom")));
+            }
+            if p.name == default {
+                label.push_str(&format!("  ★ {}", tl!("default")));
+            }
+            let o = ui.selectable_label(d.preset_name == p.name, label);
+            elems.push((format!("sequenceSettings.presets.item.{i}"), o.rect, p.name.clone()));
+            if o.clicked() {
+                apply_preset(d, p);
+            }
+        }
+    });
+    ui.separator();
+    ui.horizontal(|ui| {
+        ui.label(tl!("Preset name:"));
+        let r = ui.add(egui::TextEdit::singleline(&mut d.preset_name).desired_width(220.0));
+        elems.push(("sequenceSettings.presets.name".into(), r.rect, d.preset_name.clone()));
+        let name = d.preset_name.trim().to_string();
+        let builtin = list.iter().any(|(p, u)| !*u && p.name == name);
+        let r = ui.add_enabled(!name.is_empty() && !builtin, egui::Button::new(tl!("Save Preset"))).on_hover_text(tl!("Save the settings of the General and Tracks tabs as a preset"));
+        elems.push(("sequenceSettings.presets.save".into(), r.rect, "Save Preset".into()));
+        if r.clicked() {
+            *action = Some(PresetAction::Save(name.clone()));
+        }
+        let own = list.iter().any(|(p, u)| *u && p.name == name);
+        let r = ui.add_enabled(own, egui::Button::new(tl!("Delete")));
+        elems.push(("sequenceSettings.presets.delete".into(), r.rect, "Delete".into()));
+        if r.clicked() {
+            *action = Some(PresetAction::Delete(name.clone()));
+        }
+        let known = list.iter().any(|(p, _)| p.name == name);
+        let is_default = default == name;
+        let r = ui.add_enabled(known || is_default || !default.is_empty(), egui::Button::new(if is_default { tl!("Clear Default") } else { tl!("Set as Default") }));
+        elems.push(("sequenceSettings.presets.default".into(), r.rect, "Set as Default".into()));
+        if r.clicked() {
+            *action = Some(PresetAction::SetDefault(if is_default || !known { String::new() } else { name }));
+        }
+    });
 }
 
 /// The `file.newSequence` parameters for a New Sequence draft. Settings `file.newSequence` doesn't
@@ -481,10 +586,13 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool {
     let max_h = ctx.content_rect().height() * 0.8;
     let title = if new_sequence { tl!("New Sequence") } else { tl!("Sequence Settings") };
     let tabs: &[(&str, &str)] = if new_sequence {
-        &[("general", "General"), ("tracks", "Tracks")]
+        &[("presets", "Sequence Presets"), ("general", "General"), ("tracks", "Tracks")]
     } else {
-        &[("general", "General"), ("color", "Color Management"), ("vr", "VR Properties")]
+        &[("presets", "Sequence Presets"), ("general", "General"), ("color", "Color Management"), ("vr", "VR Properties")]
     };
+    let preset_list = redrob_film_engine::sequence_presets::all(&app.session.prefs);
+    let preset_default = app.session.prefs.sequence_presets.default.clone();
+    let mut preset_action: Option<PresetAction> = None;
     egui::Window::new(title)
         .id(egui::Id::new("Sequence Settings"))
         .collapsible(false)
@@ -507,6 +615,7 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool {
                 "color" if !new_sequence => color(ui, &mut d, &mut elems),
                 "tracks" if new_sequence => tracks(ui, &mut d, &mut elems),
                 "vr" if !new_sequence => vr(ui, &mut elems),
+                "presets" => presets(ui, &mut d, &preset_list, &preset_default, &mut elems, &mut preset_action),
                 _ => general(ui, &mut d, &cur, audio_samples, &mut elems),
             });
             ui.add_space(10.0);
@@ -525,6 +634,19 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool {
         });
     for (id, r, l) in elems {
         app.auto.add(&id, r, &l);
+    }
+    if let Some(a) = preset_action {
+        let r = match a {
+            PresetAction::Save(name) => app.session.execute(
+                "sequencePresets.save",
+                json!({"name": name, "width": d.width, "height": d.height, "fps": rate(&d).as_f64(), "dropFrame": d.drop_frame, "sampleRate": d.sample_rate, "mix": d.mix, "video": d.video_tracks, "audio": d.audio_tracks}),
+            ),
+            PresetAction::Delete(name) => app.session.execute("sequencePresets.delete", json!({"name": name})),
+            PresetAction::SetDefault(name) => app.session.execute("sequencePresets.setDefault", json!({"name": name})),
+        };
+        if let Err(e) = r {
+            app.ui.status = e.to_string();
+        }
     }
     if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
         keep = false;

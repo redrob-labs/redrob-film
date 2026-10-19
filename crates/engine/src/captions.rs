@@ -385,6 +385,9 @@ pub fn commands() -> Vec<CommandSpec> {
         spec("captions.split", "Split Caption", &[], None, r#"{"caption":id?,"time":ticks?}"#, has_captions, |s, p| {
             let t = time_p(s, p, "").unwrap_or(s.playhead());
             let explicit = u64_p(p, "caption").map(ClipId);
+            // Settings ▸ Timeline ▸ Caption split: both halves keep the text, or the first line
+            // stays and the other lines go to the second half
+            let split_lines = s.prefs.timeline.caption_split_mode == "splitLines";
             let ids = s.edit_sequence("Split Caption", |q, ctx, st| {
                 let ids = match explicit {
                     Some(c) => vec![edit::captions::split_caption(q, c, t, ctx)?],
@@ -392,6 +395,20 @@ pub fn commands() -> Vec<CommandSpec> {
                 };
                 if ids.is_empty() {
                     return Err(edit::EditError::Nothing.into());
+                }
+                if split_lines {
+                    for nid in &ids {
+                        for tr in q.caption_tracks.iter_mut() {
+                            let Some(ri) = tr.captions.iter().position(|c| c.id == *nid) else { continue };
+                            let (start, text) = (tr.captions[ri].start, tr.captions[ri].text.clone());
+                            if let Some((first, rest)) = text.split_once('\n') {
+                                if let Some(left) = tr.captions.iter_mut().find(|c| c.id != *nid && c.end() == start) {
+                                    left.text = first.to_string();
+                                }
+                                tr.captions[ri].text = rest.to_string();
+                            }
+                        }
+                    }
                 }
                 st.caption_selection = ids.clone();
                 Ok(ids)

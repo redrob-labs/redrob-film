@@ -4601,3 +4601,79 @@
 	Initial Zoom	初始缩放
 	1st Color	第 1 种颜色
 	2nd Color	第 2 种颜色
+# Kdenlive parity p12: preferences, project notes, menus, workspaces, shortcuts
+	Interface Colors	界面颜色
+	Audio waveform color	音频波形颜色
+	Monitor overlay color	监视器叠加颜色
+	Custom monitor background	自定义监视器背景
+	Monitor background color	监视器背景颜色
+	Pause playback when seeking	定位时暂停播放
+	Move the playhead to the clip when adding an effect	添加效果时将播放指示器移到剪辑
+	Show clip marker comments on timeline clips	在时间轴剪辑上显示剪辑标记注释
+	Display Defaults	默认显示
+	Show video thumbnails	显示视频缩览图
+	Show audio waveforms	显示音频波形
+	Separate audio channels	分离音频声道
+	Video track height	视频轨道高度
+	Audio track height	音频轨道高度
+	pixels	像素
+	Fixed Centered Playhead	固定居中的播放指示器
+	Disable the parameters of an effect that is switched off	停用已关闭效果的参数
+	Play or pause when clicking a monitor	单击监视器时播放或暂停
+	Insert Timecode	插入时间码
+	Write the playhead's timecode at the caret	在光标处写入播放指示器的时间码
+	Create Markers	创建标记
+	Add a sequence marker at each timecode of the selected text (or of all the notes)	在所选文本（或全部注释）的每个时间码处添加序列标记
+	Find in notes	在注释中查找
+	Find Previous (Shift+F3)	查找上一个 (Shift+F3)
+	Find Next (F3)	查找下一个 (F3)
+	Not found in the project notes	在项目注释中未找到
+	Timecodes:	时间码：
+	{n} marker(s) created from the notes	已从注释创建 {n} 个标记
+	Monitor	监视器
+	Tool	工具
+	Undock Panel	取消停靠面板
+	Move Up	上移
+	Move Down	下移
+	Workspace	工作区
+	Configuration Information	配置信息
+	Supported Media Types	支持的媒体类型
+	Show in File Manager	在文件管理器中显示
+	Data folder	数据文件夹
+	Preferences file	首选项文件
+	Workspaces file	工作区文件
+	Media cache	媒体缓存
+	Auto-saves	自动保存
+	This session keeps no files on disk.	此会话不在磁盘上保存文件。
+	Still images	静态图像
+	Timelines and captions also import from EDL, FCP XML, FCPXML, OTIO, AAF, OMF, SRT, WebVTT and SCC files.	时间轴和字幕也可从 EDL、FCP XML、FCPXML、OTIO、AAF、OMF、SRT、WebVTT 和 SCC 文件导入。
+	Panel tab position	面板选项卡位置
+	Print…	打印…
+	Opened {path} to print	已打开 {path} 以便打印
+	Print: no file chosen (agents: shortcuts.print {path})	打印：未选择文件（代理：shortcuts.print {path}）
+	Splitting a caption	拆分字幕
+	Both parts keep the text	两部分都保留文本
+	First line stays, the other lines move to the second part	第一行保留，其余行移到第二部分
+	Proxy and transcode jobs: clips at the same time	代理和转码任务：同时处理的剪辑数
+	Show Menu Bar	显示菜单栏
+	Show Status Bar	显示状态栏
+	Project Files	项目文件
+	Author	作者
+	Remove Field	移除字段
+	New field name	新字段名称
+	Add Field	添加字段
+	Used in sequences: {n} file(s), {size}	在序列中使用：{n} 个文件，{size}
+	Unused: {n} file(s), {size}	未使用：{n} 个文件，{size}
+	{n} file(s) not found on disk	磁盘上未找到 {n} 个文件
+	Remove unused clips with Edit ▸ Remove Unused; files on disk are never deleted.	使用“编辑 ▸ 移除未使用项”移除未使用的剪辑；磁盘上的文件永远不会被删除。
+	Create proxies only for videos wider than:	仅为宽度大于此值的视频创建代理：
+	(0 = every video)	（0 = 所有视频）
+	Frame rate:	帧速率：
+	All frame rates	所有帧速率
+	custom	自定义
+	default	默认
+	Preset name:	预设名称：
+	Save the settings of the General and Tracks tabs as a preset	将“常规”和“轨道”选项卡的设置保存为预设
+	Clear Default	清除默认
+	Set as Default	设为默认
+	Sequence Presets	序列预设

@@ -4608,3 +4608,79 @@
 	Initial Zoom	初期ズーム
 	1st Color	1 番目の色
 	2nd Color	2 番目の色
+# Kdenlive parity p12: preferences, project notes, menus, workspaces, shortcuts
+	Interface Colors	インターフェイスの色
+	Audio waveform color	オーディオ波形の色
+	Monitor overlay color	モニターオーバーレイの色
+	Custom monitor background	モニターの背景をカスタム
+	Monitor background color	モニターの背景色
+	Pause playback when seeking	シーク時に再生を一時停止
+	Move the playhead to the clip when adding an effect	エフェクトを追加したときに再生ヘッドをクリップへ移動
+	Show clip marker comments on timeline clips	タイムラインのクリップにクリップマーカーのコメントを表示
+	Display Defaults	表示の既定値
+	Show video thumbnails	ビデオサムネールを表示
+	Show audio waveforms	オーディオ波形を表示
+	Separate audio channels	オーディオチャンネルを分離
+	Video track height	ビデオトラックの高さ
+	Audio track height	オーディオトラックの高さ
+	pixels	ピクセル
+	Fixed Centered Playhead	再生ヘッドを中央に固定
+	Disable the parameters of an effect that is switched off	オフにしたエフェクトのパラメーターを無効にする
+	Play or pause when clicking a monitor	モニターをクリックして再生または一時停止
+	Insert Timecode	タイムコードを挿入
+	Write the playhead's timecode at the caret	再生ヘッドのタイムコードをキャレット位置に書き込みます
+	Create Markers	マーカーを作成
+	Add a sequence marker at each timecode of the selected text (or of all the notes)	選択したテキスト（またはメモ全体）の各タイムコードにシーケンスマーカーを追加します
+	Find in notes	メモ内を検索
+	Find Previous (Shift+F3)	前を検索 (Shift+F3)
+	Find Next (F3)	次を検索 (F3)
+	Not found in the project notes	プロジェクトメモに見つかりません
+	Timecodes:	タイムコード:
+	{n} marker(s) created from the notes	メモから {n} 個のマーカーを作成しました
+	Monitor	モニター
+	Tool	ツール
+	Undock Panel	パネルのドッキングを解除
+	Move Up	上へ移動
+	Move Down	下へ移動
+	Workspace	ワークスペース
+	Configuration Information	構成情報
+	Supported Media Types	対応メディアの種類
+	Show in File Manager	ファイルマネージャーで表示
+	Data folder	データフォルダー
+	Preferences file	環境設定ファイル
+	Workspaces file	ワークスペースファイル
+	Media cache	メディアキャッシュ
+	Auto-saves	自動保存
+	This session keeps no files on disk.	このセッションはディスクにファイルを保存しません。
+	Still images	静止画
+	Timelines and captions also import from EDL, FCP XML, FCPXML, OTIO, AAF, OMF, SRT, WebVTT and SCC files.	タイムラインとキャプションは EDL、FCP XML、FCPXML、OTIO、AAF、OMF、SRT、WebVTT、SCC ファイルからも読み込めます。
+	Panel tab position	パネルタブの位置
+	Print…	印刷…
+	Opened {path} to print	印刷用に {path} を開きました
+	Print: no file chosen (agents: shortcuts.print {path})	印刷: ファイルが選択されていません (エージェント: shortcuts.print {path})
+	Splitting a caption	キャプションの分割
+	Both parts keep the text	両方の部分がテキストを保持
+	First line stays, the other lines move to the second part	1 行目は残り、ほかの行は 2 番目の部分に移動
+	Proxy and transcode jobs: clips at the same time	プロキシとトランスコードのジョブ: 同時に処理するクリップ数
+	Show Menu Bar	メニューバーを表示
+	Show Status Bar	ステータスバーを表示
+	Project Files	プロジェクトファイル
+	Author	作成者
+	Remove Field	フィールドを削除
+	New field name	新しいフィールド名
+	Add Field	フィールドを追加
+	Used in sequences: {n} file(s), {size}	シーケンスで使用: {n} ファイル、{size}
+	Unused: {n} file(s), {size}	未使用: {n} ファイル、{size}
+	{n} file(s) not found on disk	{n} 個のファイルがディスクに見つかりません
+	Remove unused clips with Edit ▸ Remove Unused; files on disk are never deleted.	未使用のクリップは「編集 ▸ 未使用を削除」で取り除けます。ディスク上のファイルは削除されません。
+	Create proxies only for videos wider than:	次の幅より大きいビデオだけプロキシを作成:
+	(0 = every video)	(0 = すべてのビデオ)
+	Frame rate:	フレームレート:
+	All frame rates	すべてのフレームレート
+	custom	カスタム
+	default	既定
+	Preset name:	プリセット名:
+	Save the settings of the General and Tracks tabs as a preset	「一般」と「トラック」タブの設定をプリセットとして保存します
+	Clear Default	既定を解除
+	Set as Default	既定に設定
+	Sequence Presets	シーケンスプリセット

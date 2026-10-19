@@ -88,6 +88,8 @@ pub struct PlaybackPrefs {
     /// or `off` (always Redrob Film's own decoders). Media already open keeps its decoder until it
     /// is reopened.
     pub hardware_decoding: String,
+    /// A click on a monitor's picture plays or pauses that monitor.
+    pub play_pause_on_monitor_click: bool,
 }
 
 impl Default for PlaybackPrefs {
@@ -101,6 +103,7 @@ impl Default for PlaybackPrefs {
             disable_video_in_background: true,
             draft_decode: false,
             hardware_decoding: "auto".into(),
+            play_pause_on_monitor_click: false,
         }
     }
 }
@@ -169,6 +172,8 @@ pub struct Preferences {
     pub project_panel: crate::project_panel::ProjectPanelPrefs,
     /// Media Browser: Favorites, recent directories, file types, view, columns.
     pub media_browser: crate::media_browser::MediaBrowserPrefs,
+    /// Sequence presets: the user's own and the default for new sequences.
+    pub sequence_presets: crate::sequence_presets::SequencePresetPrefs,
 }
 
 impl Default for Preferences {
@@ -196,6 +201,7 @@ impl Default for Preferences {
             voice_over: Default::default(),
             project_panel: Default::default(),
             media_browser: Default::default(),
+            sequence_presets: Default::default(),
         }
     }
 }
@@ -257,6 +263,8 @@ pub struct MediaPrefs {
     pub growing_refresh_seconds: u32,
     pub hardware_decoding: bool,
     pub prores_hardware_encoding: bool,
+    /// How many clips a proxy / transcode job works on at the same time (1 = one after another).
+    pub proxy_job_threads: u32,
 }
 
 impl Default for MediaPrefs {
@@ -283,6 +291,7 @@ impl Default for MediaPrefs {
             growing_refresh_seconds: 60,
             hardware_decoding: true,
             prores_hardware_encoding: true,
+            proxy_job_threads: 1,
         }
     }
 }

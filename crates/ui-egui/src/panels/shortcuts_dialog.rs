@@ -255,6 +255,22 @@ fn header(app: &mut FilmcraftApp, ui: &mut egui::Ui, t: &Tokens) {
                 None => app.shortcut_editor.message = tl!("Import: no file chosen (agents: shortcuts.import {path})").into(),
             }
         }
+        // Print…: a printable page of the assigned shortcuts, opened in the browser to print
+        if small_button(app, ui, "shortcuts.print", tl!("Print…"), true) {
+            let picked = app.hooks.pick_save_as.as_mut().and_then(|f| f(tl!("Keyboard Shortcuts"), &["html"], &format!("{active}.html")));
+            match picked {
+                Some(path) => {
+                    if exec(app, "shortcuts.print", json!({"path": path})).is_some() {
+                        let ctx = ui.ctx().clone();
+                        app.shortcut_editor.message = match crate::panels::menu_dialogs::open_path(app, &ctx, &path, false) {
+                            Ok(()) => tlf!("Opened {path} to print", path),
+                            Err(e) => e,
+                        };
+                    }
+                }
+                None => app.shortcut_editor.message = tl!("Print: no file chosen (agents: shortcuts.print {path})").into(),
+            }
+        }
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             ui.label(RichText::new(if cfg!(target_os = "macos") { tl!("Keyboard: US (macOS)") } else { tl!("Keyboard: US") }).size(12.0).color(t.text_dim));
         });

@@ -4620,3 +4620,79 @@
 	Initial Zoom	Zoom inicial
 	1st Color	1.er color
 	2nd Color	2.º color
+# Kdenlive parity p12: preferences, project notes, menus, workspaces, shortcuts
+	Interface Colors	Colores de la interfaz
+	Audio waveform color	Color de la forma de onda de audio
+	Monitor overlay color	Color de las superposiciones del monitor
+	Custom monitor background	Fondo de monitor personalizado
+	Monitor background color	Color de fondo del monitor
+	Pause playback when seeking	Pausar la reproducción al buscar
+	Move the playhead to the clip when adding an effect	Mover el cabezal al clip al añadir un efecto
+	Show clip marker comments on timeline clips	Mostrar los comentarios de los marcadores de clip en la línea de tiempo
+	Display Defaults	Visualización predeterminada
+	Show video thumbnails	Mostrar miniaturas de video
+	Show audio waveforms	Mostrar formas de onda de audio
+	Separate audio channels	Separar canales de audio
+	Video track height	Altura de las pistas de video
+	Audio track height	Altura de las pistas de audio
+	pixels	píxeles
+	Fixed Centered Playhead	Cabezal fijo centrado
+	Disable the parameters of an effect that is switched off	Desactivar los parámetros de un efecto apagado
+	Play or pause when clicking a monitor	Reproducir o pausar al hacer clic en un monitor
+	Insert Timecode	Insertar código de tiempo
+	Write the playhead's timecode at the caret	Escribe el código de tiempo del cabezal en el cursor de texto
+	Create Markers	Crear marcadores
+	Add a sequence marker at each timecode of the selected text (or of all the notes)	Añade un marcador de secuencia en cada código de tiempo del texto seleccionado (o de todas las notas)
+	Find in notes	Buscar en las notas
+	Find Previous (Shift+F3)	Buscar anterior (Mayús+F3)
+	Find Next (F3)	Buscar siguiente (F3)
+	Not found in the project notes	No se encontró en las notas del proyecto
+	Timecodes:	Códigos de tiempo:
+	{n} marker(s) created from the notes	{n} marcador(es) creado(s) a partir de las notas
+	Monitor	Monitor
+	Tool	Herramienta
+	Undock Panel	Desacoplar panel
+	Move Up	Subir
+	Move Down	Bajar
+	Workspace	Espacio de trabajo
+	Configuration Information	Información de configuración
+	Supported Media Types	Tipos de medios compatibles
+	Show in File Manager	Mostrar en el gestor de archivos
+	Data folder	Carpeta de datos
+	Preferences file	Archivo de preferencias
+	Workspaces file	Archivo de espacios de trabajo
+	Media cache	Caché de medios
+	Auto-saves	Guardados automáticos
+	This session keeps no files on disk.	Esta sesión no guarda archivos en el disco.
+	Still images	Imágenes fijas
+	Timelines and captions also import from EDL, FCP XML, FCPXML, OTIO, AAF, OMF, SRT, WebVTT and SCC files.	Las líneas de tiempo y los subtítulos también se importan desde archivos EDL, FCP XML, FCPXML, OTIO, AAF, OMF, SRT, WebVTT y SCC.
+	Panel tab position	Posición de las pestañas de los paneles
+	Print…	Imprimir…
+	Opened {path} to print	Se abrió {path} para imprimir
+	Print: no file chosen (agents: shortcuts.print {path})	Imprimir: no se eligió ningún archivo (agentes: shortcuts.print {path})
+	Splitting a caption	Al dividir un subtítulo
+	Both parts keep the text	Ambas partes conservan el texto
+	First line stays, the other lines move to the second part	La primera línea se queda y las demás pasan a la segunda parte
+	Proxy and transcode jobs: clips at the same time	Tareas de proxy y transcodificación: clips a la vez
+	Show Menu Bar	Mostrar barra de menús
+	Show Status Bar	Mostrar barra de estado
+	Project Files	Archivos del proyecto
+	Author	Autor
+	Remove Field	Quitar campo
+	New field name	Nombre del nuevo campo
+	Add Field	Añadir campo
+	Used in sequences: {n} file(s), {size}	Usados en secuencias: {n} archivo(s), {size}
+	Unused: {n} file(s), {size}	Sin usar: {n} archivo(s), {size}
+	{n} file(s) not found on disk	{n} archivo(s) no encontrado(s) en el disco
+	Remove unused clips with Edit ▸ Remove Unused; files on disk are never deleted.	Quite los clips sin usar con Edición ▸ Quitar no utilizados; los archivos del disco nunca se eliminan.
+	Create proxies only for videos wider than:	Crear proxies solo para videos más anchos que:
+	(0 = every video)	(0 = todos los videos)
+	Frame rate:	Frecuencia de fotogramas:
+	All frame rates	Todas las frecuencias
+	custom	personalizado
+	default	predeterminado
+	Preset name:	Nombre del ajuste preestablecido:
+	Save the settings of the General and Tracks tabs as a preset	Guarda los ajustes de las pestañas General y Pistas como ajuste preestablecido
+	Clear Default	Quitar predeterminado
+	Set as Default	Establecer como predeterminado
+	Sequence Presets	Ajustes preestablecidos de secuencia

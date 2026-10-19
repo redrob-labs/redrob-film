@@ -501,8 +501,10 @@ fn defaults(app: &mut FilmcraftApp, cmd: &str, id: &str) -> Result<(Value, Value
                     "captureFormat": general["captureFormat"], "titleSafe": general["titleSafe"], "actionSafe": general["actionSafe"],
                     "captured": sc.captured, "videoPreviews": sc.video_previews, "audioPreviews": sc.audio_previews, "autoSave": sc.auto_save,
                     "ingest": ingest.clone(),
+                    "metadata": s.project.metadata.clone(), "newField": "",
                 }),
-                json!({"scratch": scratch, "ingest": ingest, "project": s.project.name}),
+                json!({"scratch": scratch, "ingest": ingest, "project": s.project.name, "metadata": s.project.metadata.clone(),
+                    "files": s.execute("project.filesStats", json!({})).unwrap_or_default()}),
             )
         }
         "file.mediaProperties" => {
@@ -730,7 +732,13 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
             "project.settings" => {
                 ui.label(tlf!("Project: {name}", name = d.info["project"].as_str().unwrap_or_default()));
                 ui.horizontal(|ui| {
-                    for (k, l) in [("general", tl!("General")), ("scratchDisks", tl!("Scratch Disks")), ("ingest", tl!("Ingest Settings"))] {
+                    for (k, l) in [
+                        ("general", tl!("General")),
+                        ("scratchDisks", tl!("Scratch Disks")),
+                        ("ingest", tl!("Ingest Settings")),
+                        ("metadata", tl!("Metadata")),
+                        ("files", tl!("Project Files")),
+                    ] {
                         let r = ui.selectable_label(p["tab"].as_str() == Some(k), l);
                         push(&mut elems, format!("projectSettings.tab.{k}"), &r, l);
                         if r.clicked() {
@@ -770,6 +778,82 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                             ui.label(RichText::new(tlf!("Path: {path}", path)).weak().small());
                         }
                     }
+                    // the project's metadata: the standard fields, then the user's own (exports take
+                    // the standard ones)
+                    "metadata" => {
+                        let mut md = p["metadata"].as_object().cloned().unwrap_or_default();
+                        let mut names: Vec<String> = redrob_film_engine::panels::PROJECT_METADATA_FIELDS.iter().map(|f| f.to_string()).collect();
+                        names.extend(md.keys().filter(|k| !names.contains(*k)).cloned().collect::<Vec<_>>());
+                        let mut remove: Option<String> = None;
+                        egui::Grid::new("project-settings-metadata").num_columns(3).spacing(egui::vec2(8.0, 4.0)).show(ui, |ui| {
+                            for k in &names {
+                                let standard = redrob_film_engine::panels::PROJECT_METADATA_FIELDS.contains(&k.as_str());
+                                let label = match k.as_str() {
+                                    "title" => tl!("Title"),
+                                    "creator" => tl!("Author"),
+                                    "copyright" => tl!("Copyright"),
+                                    "description" => tl!("Description"),
+                                    "comment" => tl!("Comment"),
+                                    other => other,
+                                };
+                                ui.label(label);
+                                let mut v = md.get(k).and_then(Value::as_str).unwrap_or_default().to_string();
+                                let r = ui.add(egui::TextEdit::singleline(&mut v).desired_width(300.0));
+                                push(&mut elems, format!("projectSettings.metadata.{k}"), &r, label);
+                                if r.changed() {
+                                    md.insert(k.clone(), json!(v));
+                                }
+                                if standard {
+                                    ui.label("");
+                                } else {
+                                    let r = ui.small_button("✕").on_hover_text(tl!("Remove Field"));
+                                    push(&mut elems, format!("projectSettings.metadata.{k}.remove"), &r, "Remove Field");
+                                    if r.clicked() {
+                                        remove = Some(k.clone());
+                                    }
+                                }
+                                ui.end_row();
+                            }
+                        });
+                        if let Some(k) = remove {
+                            md.insert(k, Value::Null);
+                        }
+                        ui.horizontal(|ui| {
+                            let mut name = p["newField"].as_str().unwrap_or_default().to_string();
+                            let r = ui.add(egui::TextEdit::singleline(&mut name).hint_text(tl!("New field name")).desired_width(180.0));
+                            push(&mut elems, "projectSettings.metadata.newField", &r, "New field name");
+                            let n = name.trim().to_string();
+                            let b = ui.add_enabled(!n.is_empty() && !md.contains_key(&n), egui::Button::new(tl!("Add Field")));
+                            push(&mut elems, "projectSettings.metadata.add", &b, "Add Field");
+                            if b.clicked() {
+                                md.insert(n, json!(""));
+                                name.clear();
+                            }
+                            p["newField"] = json!(name);
+                        });
+                        p["metadata"] = Value::Object(md);
+                    }
+                    // used and unused media files with their sizes
+                    "files" => {
+                        let f = &d.info["files"];
+                        let mb = |b: u64| format!("{:.1} MB", b as f64 / f64::from(1u32 << 20));
+                        ui.label(tlf!("Used in sequences: {n} file(s), {size}", n = f["used"]["files"].as_u64().unwrap_or(0), size = mb(f["used"]["bytes"].as_u64().unwrap_or(0))));
+                        ui.label(tlf!("Unused: {n} file(s), {size}", n = f["unused"]["files"].as_u64().unwrap_or(0), size = mb(f["unused"]["bytes"].as_u64().unwrap_or(0))));
+                        let missing = f["missing"].as_u64().unwrap_or(0);
+                        if missing > 0 {
+                            ui.label(RichText::new(tlf!("{n} file(s) not found on disk", n = missing)).weak());
+                        }
+                        let unused = f["unused"]["items"].as_array().cloned().unwrap_or_default();
+                        if !unused.is_empty() {
+                            ui.separator();
+                            egui::ScrollArea::vertical().id_salt("project-files-unused").max_height(180.0).show(ui, |ui| {
+                                for u in &unused {
+                                    ui.label(RichText::new(format!("{}  ({})", u["name"].as_str().unwrap_or_default(), mb(u["bytes"].as_u64().unwrap_or(0)))).small());
+                                }
+                            });
+                        }
+                        ui.label(RichText::new(tl!("Remove unused clips with Edit ▸ Remove Unused; files on disk are never deleted.")).weak());
+                    }
                     "ingest" => {
                         let mut ing = p["ingest"].clone();
                         let mut on = ing["enabled"].as_bool().unwrap_or(false);
@@ -791,6 +875,17 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                             if r.changed() {
                                 ing["destination"] = if v.is_empty() { Value::Null } else { json!(v) };
                             }
+                        });
+                        // proxies only of large videos (0 = every video)
+                        ui.horizontal(|ui| {
+                            ui.label(tl!("Create proxies only for videos wider than:"));
+                            let mut w = ing["minProxyWidth"].as_u64().unwrap_or(0) as u32;
+                            let r = ui.add(egui::DragValue::new(&mut w).range(0..=redrob_film_project::MAX_FRAME_SIDE).suffix(" px"));
+                            push(&mut elems, "projectSettings.ingest.minProxyWidth", &r, "Minimum proxy width");
+                            if r.changed() {
+                                ing["minProxyWidth"] = json!(w);
+                            }
+                            ui.label(RichText::new(tl!("(0 = every video)")).weak());
                         });
                         p["ingest"] = ing;
                     }
@@ -1089,6 +1184,18 @@ fn run(app: &mut FilmcraftApp, d: &ClipDialogDraft) -> Result<Option<String>, St
             .map_err(|e| e.to_string())?;
             if p["ingest"] != d.info["ingest"] {
                 s.execute("project.ingestSettings", p["ingest"].clone()).map_err(|e| e.to_string())?;
+            }
+            // metadata: the changed fields (an emptied or removed one goes away)
+            let mut fields = serde_json::Map::new();
+            if let Some(md) = p["metadata"].as_object() {
+                for (k, v) in md {
+                    if d.info["metadata"].get(k) != Some(v) {
+                        fields.insert(k.clone(), v.clone());
+                    }
+                }
+            }
+            if !fields.is_empty() {
+                s.execute("project.setMetadata", json!({"fields": fields})).map_err(|e| e.to_string())?;
             }
             Ok(None)
         }

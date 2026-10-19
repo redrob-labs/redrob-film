@@ -54,6 +54,7 @@ pub mod render_jobs;
 pub mod scene_detect;
 pub mod scopes;
 pub mod sequence_extras;
+pub mod sequence_presets;
 pub mod sequence_tools;
 pub mod settings;
 pub mod shortcut_presets;

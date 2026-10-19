@@ -324,7 +324,12 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         let ph = app.session.playhead().seconds();
         let w = content.width() as f64;
         let px = (ph - v.scroll) * v.pps;
-        if auto_scroll == "smoothScroll" {
+        if auto_scroll == "centeredPlayhead" {
+            // Fixed Centered Playhead: the playhead stays in the middle and the clips move under it
+            // (at the start of the sequence, until there is half a view of time before it)
+            v.target_scroll = (ph - w * 0.5 / v.pps).max(0.0);
+            v.scroll = v.target_scroll;
+        } else if auto_scroll == "smoothScroll" {
             // the playhead stays in the middle once it gets there
             if px > w * 0.5 || px < 0.0 {
                 v.target_scroll = (ph - w * 0.5 / v.pps).max(0.0);
@@ -788,6 +793,31 @@ fn draw_clip(
         draw_waveform(app, p, body, it, inr);
     }
     let clip_p = p.with_clip_rect(body.shrink2(vec2(1.0, 0.0)).intersect(p.clip_rect()));
+    // clip markers (the media's markers inside the clip's source range): a tick on the clip's
+    // bottom edge in the marker colour, with its name (else comment) beside it when Settings ▸
+    // Timeline ▸ "Show clip marker comments on timeline clips" is on
+    if let Some(m) = app.session.project.item(it.item).and_then(|pi| pi.as_media()) {
+        let span = it.duration.0 as f64 * it.speed.abs().max(1e-9);
+        let comments = app.session.prefs.timeline.show_clip_marker_comments;
+        for mk in &m.markers {
+            let f = (mk.start.0 - it.source_in.0) as f64 / span.max(1.0);
+            if !(0.0..=1.0).contains(&f) {
+                continue;
+            }
+            let f = if it.reverse { 1.0 - f } else { f };
+            let x = body.min.x + (f as f32) * w;
+            let [r, g, b] = mk.color.marker_rgb();
+            let c = Color32::from_rgb(r, g, b);
+            let y = body.max.y - 1.0;
+            clip_p.add(egui::Shape::convex_polygon(vec![pos2(x - 3.5, y), pos2(x + 3.5, y), pos2(x, y - 6.0)], c, Stroke::NONE));
+            if comments && w > 24.0 {
+                let text = if mk.name.is_empty() { mk.comment.as_str() } else { mk.name.as_str() };
+                if !text.is_empty() {
+                    clip_p.text(pos2(x + 5.0, y - 3.0), Align2::LEFT_CENTER, text, Tokens::ui(9.0), t.text);
+                }
+            }
+        }
+    }
     // name band (the wrench menu's Show Clip Names)
     if w > 24.0 && !app.ui.timeline.hide_clip_names {
         let mut label = it.name.clone();
@@ -2408,7 +2438,6 @@ pub(crate) fn wheel_input(ctx: &egui::Context) -> WheelInput {
 /// A press on the ruler or the playhead handle: playback stops and the playhead goes to the press
 /// (onto the marker pressed, if any, #695).
 fn start_scrub(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, p: Pos2, mods: egui::Modifiers) {
-    app.stop();
     let rate = seq.settings.frame_rate;
     let mut tt = rate.snap_nearest(layout.tick_at(p.x).max(Tick::ZERO));
     if mods.shift || app.session.prefs.timeline.snap_playhead {
@@ -2418,12 +2447,17 @@ fn start_scrub(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, p: Pos2,
     if let Some(m) = marker_at(seq, layout, p) {
         tt = m.max(Tick::ZERO);
     }
-    app.session.set_playhead(tt);
+    // stops playback, unless Settings ▸ Timeline ▸ "Pause playback when seeking" is off
+    app.seek_program(tt);
 }
 
 /// The playhead follows a drag to screen `x`. Shift snaps; so does Settings ▸ Timeline ▸ "Snap
 /// playhead in Timeline when Snap is enabled".
 fn scrub_to(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, x: f32, mods: egui::Modifiers) {
+    // playback that carried on after the press keeps playing from the pressed position
+    if app.playback.playing {
+        return;
+    }
     let rate = seq.settings.frame_rate;
     let mut tt = rate.snap_nearest(layout.tick_at(x).max(Tick::ZERO));
     if mods.shift || app.session.prefs.timeline.snap_playhead {

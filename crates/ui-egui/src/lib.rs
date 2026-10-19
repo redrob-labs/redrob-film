@@ -706,6 +706,30 @@ impl FilmcraftApp {
         }
         self.frames.set_cache_budget(p.memory.frame_cache_mb as usize * (1 << 20));
         self.ui.play_after_render = p.timeline.play_after_rendering;
+        // Settings ▸ Timeline ▸ Display Defaults and Settings ▸ Color: the wrench menu's toggles
+        // and the first waveform colour follow the preference when it changes (and at startup);
+        // the wrench menu still changes them for the session.
+        {
+            let (a, v) = (prev.as_ref().map(|q| &q.timeline), &p.timeline);
+            let tv = &mut self.ui.timeline;
+            if a.is_none_or(|a| a.show_video_thumbnails != v.show_video_thumbnails) {
+                tv.show_thumbnails = v.show_video_thumbnails;
+            }
+            if a.is_none_or(|a| a.show_audio_waveforms != v.show_audio_waveforms) {
+                tv.show_waveforms = v.show_audio_waveforms;
+            }
+            if a.is_none_or(|a| a.separate_audio_channels != v.separate_audio_channels) {
+                tv.separate_channels = v.separate_audio_channels;
+            }
+            if prev.as_ref().is_none_or(|q| q.color.audio_waveform_color != p.color.audio_waveform_color)
+                && let Some(c) = redrob_film_engine::settings::parse_hex(&p.color.audio_waveform_color)
+            {
+                if tv.waveform_colors.is_empty() {
+                    tv.waveform_colors = state::default_waveform_colors();
+                }
+                tv.waveform_colors[0] = c;
+            }
+        }
         if prev.as_ref().is_none_or(|q| q.audio_hardware != p.audio_hardware) {
             if let Some(input) = self.session.voiceover.input.as_mut() {
                 input.configure_host(&p.audio_hardware.device_class);
@@ -771,8 +795,10 @@ impl FilmcraftApp {
                     self.timeline_view_last = Some(s);
                 }
                 None => {
-                    let d = state::TimelineView::default();
-                    (v.v_scroll, v.a_scroll, v.video_track_h, v.audio_track_h) = (0.0, 0.0, d.video_track_h, d.audio_track_h);
+                    // Settings ▸ Timeline ▸ Display Defaults ▸ Video / Audio track height
+                    let tp = &self.session.prefs.timeline;
+                    let (vh, ah) = (tp.video_track_height.clamp(8, 600) as f32, tp.audio_track_height.clamp(8, 600) as f32);
+                    (v.v_scroll, v.a_scroll, v.video_track_h, v.audio_track_h) = (0.0, 0.0, vh, ah);
                     (v.fit_pending, v.fit_empty) = (true, None);
                     self.timeline_view_last = None;
                 }
@@ -820,6 +846,11 @@ impl FilmcraftApp {
     }
 
     pub fn show_panel(&mut self, p: PanelKind) {
+        // a floating panel is already on screen: it only takes the keyboard
+        if self.ui.floating.contains(&p) {
+            self.ui.focused = p;
+            return;
+        }
         if p == PanelKind::Timeline {
             self.ui.dock.restore_timeline();
         }
@@ -935,6 +966,19 @@ impl FilmcraftApp {
             a.stop();
         }
         self.playback.audio_clock = false;
+    }
+
+    /// A seek of the Program playhead (a press on the Timeline ruler or the monitor's time bar).
+    /// Settings ▸ Timeline ▸ "Pause playback when seeking" (on by default) stops playback; with it
+    /// off, playback carries on from the new position at the same speed.
+    pub fn seek_program(&mut self, t: Tick) {
+        let resume = self.playback.playing && !self.session.prefs.timeline.pause_on_seek;
+        let speed = self.playback.speed;
+        self.stop();
+        self.session.set_playhead(t);
+        if resume {
+            self.play(speed);
+        }
     }
 
     /// Start the clock (and audio) once the first frames are ready or the preroll timed out.
@@ -1910,6 +1954,8 @@ impl FilmcraftApp {
 
     fn dock_area(&mut self, ui: &mut egui::Ui, body: egui::Rect) {
         let t = self.tokens;
+        let bottom = self.session.prefs.general.panel_tab_position == "bottom";
+        ui.ctx().data_mut(|d| d.insert_temp(egui::Id::new("dock-tabs-bottom"), bottom));
         // Maximize or Restore Frame (` / Shift+`): the maximized panel fills the dock area.
         let maximized = self.ui.keys.maximized.filter(|p| self.ui.dock.contains(*p));
         let mut dock = match maximized {
@@ -1968,6 +2014,19 @@ impl FilmcraftApp {
                         self.ui.status = e.to_string();
                     }
                 }
+                // a panel tab dropped on a group docks the panel there (in its tabs or beside it);
+                // dropped outside every group it becomes a floating panel
+                dock::DockAction::DropPanel(p, at) if maximized.is_none() => match groups.iter().find(|g| g.rect.contains(at)) {
+                    Some(g) => {
+                        let zone = dock::DropZone::at(g.rect, g.content.min.y - g.rect.min.y, at);
+                        if let Some(anchor) = g.panels.iter().copied().find(|q| *q != p) {
+                            self.ui.dock.dock_panel(p, anchor, zone);
+                            self.ui.dock.activate(p);
+                        }
+                    }
+                    None => self.float_panel(p),
+                },
+                dock::DockAction::DropPanel(..) => {}
                 dock::DockAction::PanelMenu(p, pos) => {
                     // (with the frame it opened in: the click that opens it is not a click elsewhere)
                     let frame = ui.ctx().cumulative_frame_nr();
@@ -1978,7 +2037,71 @@ impl FilmcraftApp {
                 }
             }
         }
+        // the drop preview while a panel tab is dragged
+        if let Some(p) = ui.ctx().data(|d| d.get_temp::<dock::PanelKind>(egui::Id::new("dock-drag-panel")))
+            && let Some(at) = ui.input(|i| i.pointer.latest_pos())
+            && maximized.is_none()
+        {
+            let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("dock-drop-preview")));
+            if let Some(g) = groups.iter().find(|g| g.rect.contains(at)) {
+                let zone = dock::DropZone::at(g.rect, g.content.min.y - g.rect.min.y, at);
+                let r = zone.preview(g.rect).shrink(2.0);
+                painter.rect_filled(r, t.radius, t.focus.gamma_multiply(0.25));
+                painter.rect_stroke(r, t.radius, egui::Stroke::new(1.5, t.focus), egui::StrokeKind::Inside);
+            }
+            painter.text(at + egui::vec2(14.0, 14.0), egui::Align2::LEFT_TOP, i18n::t(p.title()), theme::Tokens::ui(12.0), t.text);
+        }
+        self.floating_panels(ui.ctx());
         panels::panel_menu_popup(self, ui);
+    }
+
+    /// Take panel `p` out of the dock into a floating window of its own (Window ▸ Undock Panel in
+    /// its panel menu, or a tab dropped outside every group).
+    pub fn float_panel(&mut self, p: dock::PanelKind) {
+        self.ui.keys.maximized = None;
+        self.ui.dock.close(p);
+        if !self.ui.floating.contains(&p) {
+            self.ui.floating.push(p);
+        }
+        self.ui.focused = p;
+    }
+
+    /// Put a floating panel back into the dock (beside the Project panel, as Window ▸ <panel> does).
+    pub fn dock_floating(&mut self, p: dock::PanelKind) {
+        self.ui.floating.retain(|q| *q != p);
+        self.ui.dock.open_near(p, dock::PanelKind::Project);
+    }
+
+    /// Floating panels: each in a movable, resizable window over the main window. Closing one
+    /// docks it back. A panel the dock shows again (a workspace switch) is no longer floating.
+    fn floating_panels(&mut self, ctx: &egui::Context) {
+        let dock = &self.ui.dock;
+        self.ui.floating.retain(|p| !dock.contains(*p));
+        for p in self.ui.floating.clone() {
+            let mut open = true;
+            let title = i18n::t(p.title()).to_string();
+            egui::Window::new(title)
+                .id(egui::Id::new(("floating-panel", p.id())))
+                .default_size(egui::vec2(520.0, 360.0))
+                .min_size(egui::vec2(220.0, 140.0))
+                .resizable(true)
+                .collapsible(false)
+                .open(&mut open)
+                .show(ctx, |ui| {
+                    let size = ui.available_size().max(egui::vec2(200.0, 120.0));
+                    let (rect, _) = ui.allocate_exact_size(size, egui::Sense::hover());
+                    self.auto.add(&format!("panel.{}", p.id()), rect, p.title());
+                    if ui.rect_contains_pointer(rect) && ui.input(|i| i.pointer.any_pressed()) {
+                        self.ui.focused = p;
+                    }
+                    let mut child = ui.new_child(egui::UiBuilder::new().max_rect(rect).id_salt(("floating", p.id())));
+                    child.set_clip_rect(rect.intersect(ui.clip_rect()));
+                    panels::show(self, &mut child, p, rect);
+                });
+            if !open {
+                self.dock_floating(p);
+            }
+        }
     }
 }
 

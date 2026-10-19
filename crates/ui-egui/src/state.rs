@@ -492,6 +492,10 @@ pub struct UiState {
     pub mode: Mode,
     pub workspace: String,
     pub dock: DockNode,
+    /// Panels taken out of the dock into floating windows (panel menu ▸ Undock Panel, or a tab
+    /// dropped outside every group).
+    #[serde(default)]
+    pub floating: Vec<PanelKind>,
     /// Focused panel (blue outline, receives shortcuts).
     pub focused: PanelKind,
     pub timeline: TimelineView,
@@ -947,6 +951,10 @@ pub struct SequenceSettingsDraft {
     pub working_space: String,
     pub wide_gamut: bool,
     pub auto_tone_map: bool,
+    /// Sequence Presets tab: the frame rate the list is narrowed to (`num/den`; empty = every
+    /// rate), and the preset picked or the name to save the settings under.
+    pub preset_filter: String,
+    pub preset_name: String,
 }
 
 impl Default for SequenceSettingsDraft {
@@ -969,6 +977,8 @@ impl Default for SequenceSettingsDraft {
             working_space: "rec709".into(),
             wide_gamut: false,
             auto_tone_map: true,
+            preset_filter: String::new(),
+            preset_name: String::new(),
         }
     }
 }
@@ -1036,6 +1046,7 @@ impl Default for UiState {
             mode: Mode::Edit,
             workspace: "Editing".into(),
             dock: crate::dock::workspace("Editing"),
+            floating: Vec::new(),
             focused: PanelKind::Timeline,
             timeline: TimelineView::default(),
             program: MonitorView::default(),

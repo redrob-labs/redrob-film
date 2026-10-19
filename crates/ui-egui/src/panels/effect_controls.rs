@@ -230,22 +230,29 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                 if !open {
                     continue;
                 }
-                if crate::panels::audio_fx_editor::has_editor(&e.effect) {
-                    custom_setup_row(app, bui, body, &lane, clip, idx, &e.effect);
-                }
-                for pd in &def.params {
-                    param_row(app, bui, body, clip, idx, e, None, pd, mt_now, &mut actions, &lane, &lx, it);
-                    if app.ui.expanded_fx.contains(&graph_key(clip, idx, pd.id))
-                        && let Some(param) = e.params.get(pd.id)
-                        && param.is_animated()
-                        && graphable(&param.value)
-                    {
-                        graph_rows(app, bui, body, clip, idx, None, pd, param, &lane, it, &mut actions);
+                // Settings ▸ General ▸ "Disable the parameters of an effect that is switched off"
+                let greyed = !e.enabled && app.session.prefs.general.disable_params_of_disabled_effects;
+                bui.scope(|bui| {
+                    if greyed {
+                        bui.disable();
                     }
-                }
-                if crate::panels::masks::maskable(e) {
-                    crate::panels::masks::effect_rows(app, bui, body, clip, idx, e, mt_now, &mut actions, &lane, &lx, it);
-                }
+                    if crate::panels::audio_fx_editor::has_editor(&e.effect) {
+                        custom_setup_row(app, bui, body, &lane, clip, idx, &e.effect);
+                    }
+                    for pd in &def.params {
+                        param_row(app, bui, body, clip, idx, e, None, pd, mt_now, &mut actions, &lane, &lx, it);
+                        if app.ui.expanded_fx.contains(&graph_key(clip, idx, pd.id))
+                            && let Some(param) = e.params.get(pd.id)
+                            && param.is_animated()
+                            && graphable(&param.value)
+                        {
+                            graph_rows(app, bui, body, clip, idx, None, pd, param, &lane, it, &mut actions);
+                        }
+                    }
+                    if crate::panels::masks::maskable(e) {
+                        crate::panels::masks::effect_rows(app, bui, body, clip, idx, e, mt_now, &mut actions, &lane, &lx, it);
+                    }
+                });
             }
         }
     });
