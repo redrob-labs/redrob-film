@@ -32,6 +32,7 @@ pub mod interchange;
 pub mod keyboard;
 pub mod library;
 mod marker_export;
+pub mod marker_tools;
 pub mod masks;
 pub mod media_browser;
 pub mod media_pool;

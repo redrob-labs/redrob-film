@@ -1481,6 +1481,10 @@ impl FilmcraftApp {
         {
             self.ui.status = e;
         }
+        // the focused Markers panel's own keys (F2 edit, Delete, Cmd+A, Up / Down)
+        if panels::marker_ui::panel_keys(self, ctx) || panels::kparity::effect_controls_keys(self, ctx) {
+            return;
+        }
         // Panel shortcuts of the focused panel override application shortcuts on the same chord.
         // egui ignores extra Shift and Alt when matching, so the most specific chords go first
         // across both scopes (the sort is stable, so the panel still wins a tie): otherwise the

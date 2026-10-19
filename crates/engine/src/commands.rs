@@ -2132,7 +2132,7 @@ fn build() -> Vec<CommandSpec> {
                 let t = time_p(s, p, "").unwrap_or(ph);
                 let name = str_p(p, "name").unwrap_or("").to_string();
                 let comment = str_p(p, "comment").unwrap_or("").to_string();
-                let color = str_p(p, "color").and_then(Label::from_name).unwrap_or(Label::Green);
+                let color = str_p(p, "color").and_then(Label::from_name).unwrap_or_else(|| s.project.settings.default_marker_color());
                 let dur = p.get("durationFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)).unwrap_or_default();
                 let id = s.edit_sequence("Add Marker", |q, ctx, _| {
                     let id = MarkerId(ctx.alloc());
@@ -2200,7 +2200,7 @@ fn build() -> Vec<CommandSpec> {
             "Edit Marker…",
             [],
             None,
-            r#"{"target":"program|source","marker":id,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?}"#,
+            r#"{"target":"program|source","marker":id,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?,"time":ticks?|"frame":i64?|"seconds":f64?|"timecode":str? (moves it)}"#,
             always,
             |s, p| {
                 if let Some(v) = crate::source_monitor::route(s, "markers.edit", p)? {
@@ -2208,8 +2208,15 @@ fn build() -> Vec<CommandSpec> {
                 }
                 let id = u64_p(p, "marker").map(MarkerId).ok_or_else(|| bad("markers.edit", "need `marker`"))?;
                 let rate = s.sequence_rate();
+                // a new position (Edit Marker ▸ Position, or dragging the marker on the ruler)
+                let moved = time_p(s, p, "").map(|t| rate.snap_nearest(t.max(Tick::ZERO)));
                 let p = p.clone();
                 s.edit_sequence("Edit Marker", |q, _, _| {
+                    if let Some(t) = moved {
+                        let m = q.markers.iter_mut().find(|m| m.id == id).ok_or_else(|| bad("markers.edit", "no such marker"))?;
+                        m.start = t;
+                        q.markers.sort_by_key(|m| m.start);
+                    }
                     let m = q.markers.iter_mut().find(|m| m.id == id).ok_or_else(|| bad("markers.edit", "no such marker"))?;
                     if let Some(n) = str_p(&p, "name") {
                         m.name = n.into();
@@ -3106,6 +3113,8 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::library::commands());
     v.extend(crate::media_browser::commands());
     v.extend(crate::paste_media::commands());
+    // Kdenlive-parity marker tools: categories, interval, chapters export/import, lock
+    v.extend(crate::marker_tools::commands());
     // Kdenlive-parity timeline commands: edit modes, current track, spaces, snap points…
     v.extend(crate::timeline_ops::commands());
     // Edit ▸ Label ▸ <colour>, Paste Attributes, subclips, Video / Audio Options, Replace With Clip…

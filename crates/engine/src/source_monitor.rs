@@ -196,7 +196,7 @@ pub(crate) fn route(s: &mut Session, id: &str, p: &Value) -> Result<Option<Value
             let duration = duration(p, &view, id)?.min(Tick(view.end.0.saturating_sub(time.0)));
             let name = text(p, "name", id)?.unwrap_or_default().to_string();
             let comment = text(p, "comment", id)?.unwrap_or_default().to_string();
-            let color = color(p, id)?.unwrap_or(Label::Green);
+            let color = color(p, id)?.unwrap_or_else(|| s.project.settings.default_marker_color());
             let root = view.media;
             let marker = s.edit("Add Source Marker", |pr, _| {
                 if pr.next_id == u64::MAX {
@@ -227,7 +227,24 @@ pub(crate) fn route(s: &mut Session, id: &str, p: &Value) -> Result<Option<Value
             let comment = text(p, "comment", id)?.map(str::to_string);
             let color = color(p, id)?;
             let duration = if p.get("durationFrames").is_some() { Some(duration(p, &view, id)?) } else { None };
+            // a new position (Edit Marker ▸ Position), kept inside the Source clip
+            let moved = match p.get("time") {
+                None => None,
+                Some(v) => {
+                    let t = Tick(v.as_i64().ok_or_else(|| bad(id, "time must be integer ticks"))?);
+                    if t < view.start || t >= view.end {
+                        return Err(bad(id, "marker time is outside the Source clip"));
+                    }
+                    Some(t)
+                }
+            };
             s.edit("Edit Source Marker", |pr, _| {
+                if let Some(t) = moved {
+                    let list = marker_list(pr, view.media)?;
+                    let m = list.iter_mut().find(|m| m.id == marker).ok_or_else(|| bad(id, "no such Source marker"))?;
+                    m.start = t;
+                    list.sort_by_key(|m| m.start);
+                }
                 let m = marker_list(pr, view.media)?.iter_mut().find(|m| m.id == marker).ok_or_else(|| bad(id, "no such Source marker"))?;
                 if let Some(name) = name {
                     m.name = name;
