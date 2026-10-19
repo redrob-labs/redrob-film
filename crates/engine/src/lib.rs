@@ -15,6 +15,7 @@ pub mod autosave;
 pub mod bin_tags;
 pub mod captions;
 pub mod clip_ops;
+pub mod clip_props;
 pub mod color;
 pub mod commands;
 pub mod demo;

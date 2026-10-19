@@ -79,6 +79,11 @@ pub enum ProjectDialog {
     SaveArrangement { name: String, bin: Option<u64> },
     /// Tags bar ▸ Edit Tag…: a tag's name (description) and colour.
     EditTag { tag: u32, name: String, color: [u8; 3] },
+    /// New Item ▸ Color Bars… / Counter…: the generator's options (`file.newColorBars`,
+    /// `file.newCounter`).
+    NewGenerator { command: String, pattern: String, count_up: bool, no_background: bool, style: String, sound: String, seconds: f64 },
+    /// Image sequence ▸ Slideshow…: `clip.slideshow` options (`on` false = one image per frame).
+    Slideshow { item: u64, on: bool, opts: redrob_film_media::slideshow::Slideshow },
 }
 
 /// Frontend state of the Project panel (`UiState::project_panel`).
@@ -836,13 +841,16 @@ fn footer(app: &mut FilmcraftApp, ui: &mut egui::Ui, bar: Rect, v: &View, action
     }
 }
 
-pub const NEW_ITEMS: [(&str, &str); 8] = [
+pub const NEW_ITEMS: [(&str, &str); 11] = [
     ("Sequence…", "file.newSequence"),
     ("Adjustment Layer…", "file.newAdjustmentLayer"),
     ("Bars and Tone…", "file.newBarsAndTone"),
     ("Black Video…", "file.newBlackVideo"),
     ("Color Matte…", "file.newColorMatte"),
     ("Universal Counting Leader…", "file.newCountingLeader"),
+    ("Color Bars…", "file.newColorBars"),
+    ("Counter…", "file.newCounter"),
+    ("White Noise…", "file.newWhiteNoise"),
     ("Transparent Video…", "file.newTransparentVideo"),
     ("Demo Footage", "file.importDemoFootage"),
 ];
@@ -852,7 +860,20 @@ pub fn new_item_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, pre: &str, actio
         let b = ui.button(crate::i18n::t(label));
         app.auto.add(&format!("{pre}.newItem.{c}"), b.rect, label);
         if b.clicked() {
-            actions.push((c.into(), json!({})));
+            if matches!(c, "file.newColorBars" | "file.newCounter") {
+                // these ask for their options first
+                app.ui.project_panel.dialog = Some(ProjectDialog::NewGenerator {
+                    command: c.to_string(),
+                    pattern: "smpte".into(),
+                    count_up: false,
+                    no_background: false,
+                    style: "secondsTo1".into(),
+                    sound: "silent".into(),
+                    seconds: if c == "file.newCounter" { 10.0 } else { 5.0 },
+                });
+            } else {
+                actions.push((c.into(), json!({})));
+            }
             ui.close();
         }
     }

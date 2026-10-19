@@ -65,7 +65,11 @@ pub const PROBE_WHOLE_FILE_MAX: u64 = 64 * 1024 * 1024;
 pub fn media_key(m: &MediaClip) -> String {
     match &m.media {
         MediaRef::File { path } if m.offline => format!("offline:{path}"),
-        MediaRef::File { path } => format!("file:{path}"),
+        // slideshow options change what the source shows
+        MediaRef::File { path } => match &m.interpret.slideshow {
+            Some(sl) => format!("file:{path}#slideshow:{sl:?}"),
+            None => format!("file:{path}"),
+        },
         MediaRef::Generator(g) => format!("generator:{g:?}"),
     }
 }
@@ -253,7 +257,14 @@ impl MediaPool {
                 Arc::new(SlateSource::new(m.info.clone(), &file_name(path), OfflineReason::MadeOffline))
             }
             MediaRef::File { path } => match if m.info.kind == redrob_film_media::MediaKind::ImageSequence {
-                open_image_sequence(path, services, m.info.frame_rate(), &it.name)
+                open_image_sequence(path, services, m.info.frame_rate(), &it.name).map(|s| match m.interpret.slideshow {
+                    // Clip Properties ▸ slideshow: time per image, loop, crop, transitions…
+                    Some(sl) => {
+                        let images = s.info().frame_rate().frame_at(s.info().duration).max(1) as usize;
+                        Arc::new(redrob_film_media::slideshow::SlideshowSource::new(s, images, m.frame_rate(), sl)) as SharedSource
+                    }
+                    None => s,
+                })
             } else {
                 self.open_file(path, services)
             } {

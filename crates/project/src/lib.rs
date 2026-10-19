@@ -178,6 +178,10 @@ pub struct Interpretation {
     /// is edited into a sequence. None = one stereo clip of the first two channels.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audio_channels: Option<AudioChannelMap>,
+    /// Image sequences: play as a slideshow (time per image, loop, crop to fill, transitions,
+    /// pan and zoom, low-pass). None = one image per frame.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub slideshow: Option<redrob_film_media::slideshow::Slideshow>,
 }
 
 /// Modify ▸ Audio Channels: the clip channel format and, per audio clip, the source channels it

@@ -285,6 +285,20 @@ fn item_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, id: ItemId, kind: &ItemK
         actions.push(("clip.interpretFootage".into(), json!({"items": [id.0]})));
         ui.close();
     }
+    if let ItemKind::Media(m) = kind
+        && m.info.kind == redrob_film_media::MediaKind::ImageSequence
+    {
+        let b = ui.button(tl!("Slideshow…"));
+        app.auto.add("project.itemMenu.slideshow", b.rect, "Slideshow…");
+        if b.clicked() {
+            app.ui.project_panel.dialog = Some(crate::panels::project::ProjectDialog::Slideshow {
+                item: id.0,
+                on: m.interpret.slideshow.is_some(),
+                opts: m.interpret.slideshow.unwrap_or_default(),
+            });
+            ui.close();
+        }
+    }
     // subclips: Make Subclip (media), Edit Subclip and Convert to Master Clip (subclips)
     let subclip_items: Vec<(&str, &str, &str)> = match kind {
         ItemKind::Media(_) => vec![("makeSubclip", tl!("Make Subclip…"), "clip.makeSubclip")],
@@ -360,6 +374,13 @@ fn item_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, id: ItemId, kind: &ItemK
                     actions.push((cmd.into(), json!({})));
                     ui.close();
                 }
+            }
+            // detach and delete the proxy files (Clip Properties ▸ Delete proxy)
+            let b = ui.button(tl!("Delete Proxies"));
+            app.auto.add("project.itemMenu.deleteProxies", b.rect, "Delete Proxies");
+            if b.clicked() {
+                actions.push(("media.detachProxies".into(), json!({"items": [id.0], "deleteFiles": true})));
+                ui.close();
             }
         });
     }

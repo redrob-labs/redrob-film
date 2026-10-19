@@ -481,22 +481,39 @@ pub fn commands() -> Vec<CommandSpec> {
             label: "Detach Proxies",
             menu: &["Clip", "Proxy"],
             shortcut: None,
-            params: r#"{"items":[id]?}"#,
+            params: r#"{"items":[id]?,"deleteFiles":bool=false}"#,
             enabled: has_file_media,
             run: |s, p| {
                 let items = items_param(s, p);
-                let n = s.edit("Detach Proxies", |proj, _| {
+                let delete = p.get("deleteFiles").and_then(Value::as_bool).unwrap_or(false);
+                let mut paths: Vec<String> = Vec::new();
+                let n = s.edit(if delete { "Delete Proxies" } else { "Detach Proxies" }, |proj, _| {
                     let mut n = 0;
                     for i in &items {
                         if let Some(m) = proj.item_mut(*i).and_then(|it| it.as_media_mut())
-                            && m.proxy.take().is_some()
+                            && let Some(px) = m.proxy.take()
                         {
+                            if let MediaRef::File { path } = px {
+                                paths.push(path);
+                            }
                             n += 1;
                         }
                     }
                     Ok(n)
                 })?;
-                Ok(json!({"detached": n}))
+                // Clip Properties ▸ Delete proxy: the file goes too, unless something else still uses it
+                let mut deleted = Vec::new();
+                if delete && !cfg!(target_arch = "wasm32") {
+                    for path in paths {
+                        let used = s.project.items.values().filter_map(|it| it.as_media()).any(|m| {
+                            matches!(&m.proxy, Some(MediaRef::File { path: q }) if *q == path) || matches!(&m.media, MediaRef::File { path: q } if *q == path)
+                        });
+                        if !used && std::fs::remove_file(&path).is_ok() {
+                            deleted.push(path);
+                        }
+                    }
+                }
+                Ok(json!({"detached": n, "deleted": deleted}))
             },
             journal: true,
         },

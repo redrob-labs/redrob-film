@@ -17,6 +17,7 @@ pub mod generators;
 pub mod pending;
 pub mod reader;
 pub mod sequence;
+pub mod slideshow;
 pub mod still;
 pub mod tga;
 pub mod wav;
@@ -30,7 +31,7 @@ use redrob_film_time::{FrameRate, Tick};
 use serde::{Deserialize, Serialize};
 
 pub use cache::FrameCache;
-pub use generators::{DemoScene, Generator};
+pub use generators::{BarsPattern, CounterSound, CounterStyle, DemoScene, Generator};
 pub use reader::{ByteReader, ReaderOpener, SharedReader};
 
 #[derive(Debug, thiserror::Error)]

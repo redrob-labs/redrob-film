@@ -55,6 +55,136 @@ pub enum Generator {
         hz: f32,
         db: f32,
     },
+    /// Color bars in one of several broadcast test patterns.
+    ColorBars {
+        pattern: BarsPattern,
+    },
+    /// A counter clip: counts down to (or up from) zero over `seconds`, in one of several
+    /// styles, optionally with a 1 kHz beep.
+    Counter {
+        count_up: bool,
+        /// Grey background only (no black lines or white circles).
+        no_background: bool,
+        style: CounterStyle,
+        sound: CounterSound,
+        /// Length the count runs over (whole seconds).
+        seconds: u32,
+    },
+    /// White noise: video "snow" and white-noise audio.
+    WhiteNoise,
+}
+
+/// Color bars test patterns (our own drawings of each layout).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum BarsPattern {
+    /// 75 % bars, full height (white, yellow, cyan, green, magenta, red, blue, black).
+    Pal,
+    /// PAL bars with a 75 % red field across the lower half.
+    PalRed,
+    /// 100 % bars, full height.
+    Bbc,
+    /// 100 % bars with a 75 % strip and a grey step scale below.
+    Ebu,
+    /// SMPTE HD bars (the Bars and Tone pattern).
+    #[default]
+    Smpte,
+    /// A circle test card on a grid with bars, a grey scale and a centre cross.
+    Pm5544,
+    /// A circle test card on a grid with a grey step scale and bars across the centre.
+    Fubk,
+    /// The circle test card without the grid.
+    FubkSimple,
+}
+
+impl BarsPattern {
+    pub const ALL: [BarsPattern; 8] = [
+        BarsPattern::Pal,
+        BarsPattern::PalRed,
+        BarsPattern::Bbc,
+        BarsPattern::Ebu,
+        BarsPattern::Smpte,
+        BarsPattern::Pm5544,
+        BarsPattern::Fubk,
+        BarsPattern::FubkSimple,
+    ];
+    pub fn label(self) -> &'static str {
+        match self {
+            BarsPattern::Pal => "PAL color bars",
+            BarsPattern::PalRed => "PAL color bars with red",
+            BarsPattern::Bbc => "BBC color bars",
+            BarsPattern::Ebu => "EBU color bars",
+            BarsPattern::Smpte => "SMPTE color bars",
+            BarsPattern::Pm5544 => "Philips PM5544",
+            BarsPattern::Fubk => "FuBK",
+            BarsPattern::FubkSimple => "Simplified FuBK",
+        }
+    }
+    pub fn from_name(s: &str) -> Option<BarsPattern> {
+        let n = s.to_ascii_lowercase().replace([' ', '_', '-'], "");
+        Self::ALL.into_iter().find(|p| format!("{p:?}").to_ascii_lowercase() == n || p.label().to_ascii_lowercase().replace([' ', '_', '-'], "") == n)
+    }
+}
+
+/// What a counter shows.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum CounterStyle {
+    /// Whole seconds, ending at 1.
+    #[default]
+    SecondsTo1,
+    /// Whole seconds, ending at 0.
+    SecondsTo0,
+    /// Frame count.
+    Frames,
+    /// `HH:MM:SS:FF`.
+    Timecode,
+    /// A sweep hand around a dial (one turn per second) with the seconds in the middle.
+    Clock,
+}
+
+impl CounterStyle {
+    pub const ALL: [CounterStyle; 5] = [CounterStyle::SecondsTo1, CounterStyle::SecondsTo0, CounterStyle::Frames, CounterStyle::Timecode, CounterStyle::Clock];
+    pub fn label(self) -> &'static str {
+        match self {
+            CounterStyle::SecondsTo1 => "Seconds to 1",
+            CounterStyle::SecondsTo0 => "Seconds to 0",
+            CounterStyle::Frames => "Frames",
+            CounterStyle::Timecode => "Timecode",
+            CounterStyle::Clock => "Clock",
+        }
+    }
+    pub fn from_name(s: &str) -> Option<CounterStyle> {
+        let n = s.to_ascii_lowercase().replace([' ', '_', '-'], "");
+        Self::ALL.into_iter().find(|p| format!("{p:?}").to_ascii_lowercase() == n || p.label().to_ascii_lowercase().replace(' ', "") == n)
+    }
+}
+
+/// A counter's sound.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum CounterSound {
+    #[default]
+    Silent,
+    /// One 1 kHz beep two seconds before the end (a "2-pop").
+    BeforeEnd,
+    /// A 1 kHz beep at each second.
+    EachSecond,
+}
+
+impl CounterSound {
+    pub const ALL: [CounterSound; 3] = [CounterSound::Silent, CounterSound::BeforeEnd, CounterSound::EachSecond];
+    pub fn label(self) -> &'static str {
+        match self {
+            CounterSound::Silent => "Silent",
+            CounterSound::BeforeEnd => "1 kHz before end",
+            CounterSound::EachSecond => "1 kHz each second",
+        }
+    }
+    pub fn from_name(s: &str) -> Option<CounterSound> {
+        let n = s.to_ascii_lowercase().replace([' ', '_', '-'], "");
+        Self::ALL.into_iter().find(|p| format!("{p:?}").to_ascii_lowercase() == n || p.label().to_ascii_lowercase().replace(' ', "") == n)
+    }
 }
 
 impl Generator {
@@ -67,10 +197,14 @@ impl Generator {
             Generator::CountingLeader => "Universal Counting Leader".into(),
             Generator::Demo(d) => d.file_name().into(),
             Generator::Tone { hz, .. } => format!("Tone {hz} Hz"),
+            Generator::ColorBars { pattern } => pattern.label().into(),
+            Generator::Counter { .. } => "Counter".into(),
+            Generator::WhiteNoise => "White Noise".into(),
         }
     }
     fn has_audio(&self) -> bool {
-        matches!(self, Generator::BarsAndTone | Generator::CountingLeader | Generator::Demo(_) | Generator::Tone { .. })
+        matches!(self, Generator::BarsAndTone | Generator::CountingLeader | Generator::Demo(_) | Generator::Tone { .. } | Generator::WhiteNoise)
+            || matches!(self, Generator::Counter { sound, .. } if *sound != CounterSound::Silent)
     }
     fn has_video(&self) -> bool {
         !matches!(self, Generator::Tone { .. })
@@ -205,6 +339,20 @@ fn audio_sample(g: &Generator, t: f32, n: i64) -> (f32, f32) {
             (s, s)
         }
         Generator::Demo(scene) => demo_audio(*scene, t, n),
+        Generator::WhiteNoise => {
+            let a = db(-18.0);
+            (hash(n) * a, hash(n ^ 0x5555_5555) * a)
+        }
+        Generator::Counter { sound, seconds, .. } => {
+            let beep = |at: f32| t >= at && t < at + 1.0 / 24.0;
+            let on = match sound {
+                CounterSound::Silent => false,
+                CounterSound::EachSecond => t.fract() < 1.0 / 24.0,
+                CounterSound::BeforeEnd => *seconds >= 2 && beep(*seconds as f32 - 2.0),
+            };
+            let s = if on { (TAU * 1000.0 * t).sin() * db(-20.0) } else { 0.0 };
+            (s, s)
+        }
         _ => (0.0, 0.0),
     }
 }
@@ -298,6 +446,18 @@ pub fn render(g: &Generator, w: u32, h: u32, t: f32, frame: i64, rate: FrameRate
         Generator::BlackVideo => px.as_chunks_mut::<4>().0.iter_mut().for_each(|p| p.copy_from_slice(&[0, 0, 0, 255])),
         Generator::TransparentVideo | Generator::Tone { .. } => {}
         Generator::CountingLeader => leader(&mut px, wu, hu, t, frame, rate),
+        Generator::ColorBars { pattern } => color_bars(&mut px, wu, hu, *pattern),
+        Generator::WhiteNoise => {
+            // a fresh grain every frame: a hash of the pixel and the frame number
+            px.par_chunks_mut(wu * 4).enumerate().for_each(|(y, row)| {
+                for x in 0..wu {
+                    let n = frame.wrapping_mul(0x1_0000_0001) ^ ((y * wu + x) as i64).wrapping_mul(2_654_435_761);
+                    let v = ((hash(n) * 0.5 + 0.5) * 255.0) as u8;
+                    row[x * 4..x * 4 + 4].copy_from_slice(&[v, v, v, 255]);
+                }
+            });
+        }
+        Generator::Counter { count_up, no_background, style, seconds, .. } => counter(&mut px, wu, hu, frame, rate, *count_up, *no_background, *style, *seconds),
         Generator::Demo(scene) => {
             let scene = *scene;
             px.par_chunks_mut(wu * 4).enumerate().for_each(|(y, row)| {
@@ -372,6 +532,165 @@ fn bars(px: &mut [u8], w: usize, h: usize) {
             px[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&c);
         }
     }
+}
+
+/// Bars of the given colours across `x0..x1` × `y0..y1`.
+#[allow(clippy::too_many_arguments)]
+fn bar_row(px: &mut [u8], w: usize, x0: usize, x1: usize, y0: usize, y1: usize, colors: &[[u8; 4]]) {
+    let n = colors.len().max(1);
+    let span = (x1.saturating_sub(x0)).max(1) as f32;
+    for y in y0..y1 {
+        for x in x0..x1 {
+            let k = (((x - x0) as f32 / span * n as f32) as usize).min(n - 1);
+            px[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&colors[k]);
+        }
+    }
+}
+
+fn fill(px: &mut [u8], w: usize, x0: usize, x1: usize, y0: usize, y1: usize, c: [u8; 4]) {
+    for y in y0..y1 {
+        for x in x0..x1 {
+            px[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&c);
+        }
+    }
+}
+
+const fn bars8(on: u8) -> [[u8; 4]; 8] {
+    [
+        [on, on, on, 255],
+        [on, on, 0, 255],
+        [0, on, on, 255],
+        [0, on, 0, 255],
+        [on, 0, on, 255],
+        [on, 0, 0, 255],
+        [0, 0, on, 255],
+        [0, 0, 0, 255],
+    ]
+}
+
+/// Color bars test patterns (our own layouts of each named pattern).
+fn color_bars(px: &mut [u8], w: usize, h: usize, pattern: BarsPattern) {
+    let grey = |v: u8| [v, v, v, 255];
+    match pattern {
+        BarsPattern::Smpte => bars(px, w, h),
+        BarsPattern::Pal => bar_row(px, w, 0, w, 0, h, &bars8(191)),
+        BarsPattern::PalRed => {
+            bar_row(px, w, 0, w, 0, h / 2, &bars8(191));
+            fill(px, w, 0, w, h / 2, h, [191, 0, 0, 255]);
+        }
+        BarsPattern::Bbc => bar_row(px, w, 0, w, 0, h, &bars8(255)),
+        BarsPattern::Ebu => {
+            let (a, b) = (h * 2 / 3, h * 5 / 6);
+            bar_row(px, w, 0, w, 0, a, &bars8(255));
+            bar_row(px, w, 0, w, a, b, &bars8(191));
+            let steps: Vec<[u8; 4]> = (0..6).map(|k| grey((k * 51) as u8)).collect();
+            bar_row(px, w, 0, w, b, h, &steps);
+        }
+        BarsPattern::Pm5544 | BarsPattern::Fubk | BarsPattern::FubkSimple => test_card(px, w, h, pattern),
+    }
+}
+
+/// Circle test cards: a grid (except the simplified card), a centre circle holding bars and a grey
+/// scale, and a centre cross.
+fn test_card(px: &mut [u8], w: usize, h: usize, pattern: BarsPattern) {
+    let grid = pattern != BarsPattern::FubkSimple;
+    let bg = if pattern == BarsPattern::Pm5544 { [96, 96, 96, 255] } else { [128, 128, 128, 255] };
+    let cell = (h / 12).max(4);
+    let (cx, cy) = (w as f32 / 2.0, h as f32 / 2.0);
+    let r = h as f32 * 0.44;
+    let bars = bars8(if pattern == BarsPattern::Pm5544 { 191 } else { 255 });
+    let steps: Vec<[u8; 4]> = (0..6).map(|k| [(k * 51) as u8, (k * 51) as u8, (k * 51) as u8, 255]).collect();
+    px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+        for x in 0..w {
+            let dx = x as f32 - cx;
+            let dy = y as f32 - cy;
+            let inside = dx * dx + dy * dy <= r * r;
+            let mut c = bg;
+            if grid && !inside && (x % cell < 2 || y % cell < 2) {
+                c = [235, 235, 235, 255];
+            }
+            if inside {
+                let v = (dy + r) / (2.0 * r);
+                let u = ((dx + r) / (2.0 * r)).clamp(0.0, 0.9999);
+                c = if v < 0.18 {
+                    [20, 20, 20, 255]
+                } else if v < 0.42 {
+                    bars[(u * 8.0) as usize]
+                } else if v < 0.58 {
+                    steps[(u * 6.0) as usize]
+                } else if v < 0.82 {
+                    // fine lines (frequency gratings), finer to the right
+                    let f = 2.0 + u * 10.0;
+                    if ((dx + r) / f).floor() as i64 % 2 == 0 { [235, 235, 235, 255] } else { [20, 20, 20, 255] }
+                } else if pattern == BarsPattern::Pm5544 {
+                    [191, 191, 0, 255]
+                } else {
+                    [191, 0, 0, 255]
+                };
+                if d_ring(dx, dy, r) < 2.5 || dx.abs() < 1.0 || dy.abs() < 1.0 {
+                    c = [235, 235, 235, 255];
+                }
+            }
+            row[x * 4..x * 4 + 4].copy_from_slice(&c);
+        }
+    });
+}
+
+fn d_ring(dx: f32, dy: f32, r: f32) -> f32 {
+    ((dx * dx + dy * dy).sqrt() - r).abs()
+}
+
+/// A counter frame: the count in the chosen style on a grey dial (or grey alone).
+#[allow(clippy::too_many_arguments)]
+fn counter(px: &mut [u8], w: usize, h: usize, frame: i64, rate: FrameRate, count_up: bool, no_background: bool, style: CounterStyle, seconds: u32) {
+    let fps = rate.as_f64().max(1.0);
+    let total = (seconds as f64 * fps).round() as i64;
+    let elapsed = frame.clamp(0, total.max(0));
+    // frames shown: elapsed when counting up, frames left when counting down
+    let shown = if count_up { elapsed } else { (total - elapsed).max(0) };
+    let secs_f = shown as f64 / fps;
+    let sweep = if count_up { (secs_f.fract() as f32) * TAU } else { (1.0 - secs_f.fract() as f32) % 1.0 * TAU };
+    let (cx, cy) = (w as f32 / 2.0, h as f32 / 2.0);
+    let r_out = h as f32 * 0.42;
+    px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+        for x in 0..w {
+            let dx = x as f32 - cx;
+            let dy = y as f32 - cy;
+            let d = (dx * dx + dy * dy).sqrt();
+            let ang = (dx.atan2(-dy) + TAU) % TAU;
+            let mut c = [0.55, 0.55, 0.55];
+            if !no_background {
+                if style == CounterStyle::Clock && d < r_out && ang < sweep {
+                    c = [0.42, 0.42, 0.42];
+                }
+                let ring = |r: f32, wdt: f32| (d - r).abs() < wdt;
+                if ring(r_out, 3.0) || ring(r_out * 0.86, 2.0) {
+                    c = [0.95, 0.95, 0.95];
+                }
+                if dx.abs() < 1.5 || dy.abs() < 1.5 {
+                    c = [0.08, 0.08, 0.08];
+                }
+            }
+            row[x * 4..x * 4 + 4].copy_from_slice(&to8(c));
+        }
+    });
+    let fps_i = fps.round().max(1.0) as i64;
+    let text = match style {
+        CounterStyle::SecondsTo1 => {
+            // a count down ends on 1 (the last second shows 1); counting up starts at 1
+            let s = if count_up { shown / fps_i + 1 } else { (shown + fps_i - 1) / fps_i };
+            s.max(1).to_string()
+        }
+        CounterStyle::SecondsTo0 | CounterStyle::Clock => (if count_up { shown / fps_i } else { (shown + fps_i - 1) / fps_i }).to_string(),
+        CounterStyle::Frames => shown.to_string(),
+        CounterStyle::Timecode => {
+            let (ff, s) = (shown % fps_i, shown / fps_i);
+            format!("{:02}:{:02}:{:02}:{:02}", s / 3600, (s / 60) % 60, s % 60, ff)
+        }
+    };
+    let dh = if style == CounterStyle::Timecode { (h as i32) / 8 } else { (h as i32) / 3 };
+    let tw = text_width(dh, &text);
+    draw_text(px, w, h, (w as i32 - tw) / 2, (h as i32 - dh) / 2, dh, &text, [20, 20, 20, 255]);
 }
 
 fn leader(px: &mut [u8], w: usize, h: usize, t: f32, _frame: i64, _rate: FrameRate) {
