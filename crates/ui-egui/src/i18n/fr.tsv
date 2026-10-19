@@ -4388,3 +4388,101 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	Cache
 	ClipJobs	Tâches de clip
+# Kdenlive parity p05: markers, subtitles, speech, keyframes, clip menu, shortcuts
+	Add/Remove Timeline Marker	Ajouter/supprimer un marqueur de timeline
+	Timeline Markers Locked	Marqueurs de timeline verrouillés
+	Export Markers…	Exporter les marqueurs…
+	Import Markers…	Importer des marqueurs…
+	Duplicate Clip	Dupliquer le clip
+	Edit Timeline Marker…	Modifier le marqueur de timeline…
+	Marker Categories…	Catégories de marqueurs…
+	Find Action…	Rechercher une action…
+	Add Category	Ajouter une catégorie
+	Add Clip	Ajouter un clip
+	Add Markers	Ajouter des marqueurs
+	Add Markers at Interval…	Ajouter des marqueurs à intervalle…
+	Add Project Note	Ajouter une note de projet
+	Add Subtitle	Ajouter un sous-titre
+	Add marker at selected text	Ajouter un marqueur au texte sélectionné
+	Adjust Timeline Zone to Selection	Ajuster la zone de timeline à la sélection
+	Advanced SubStation Alpha (ASS)	Advanced SubStation Alpha (ASS)
+	Align Playhead to Mouse Position	Aligner la tête de lecture sur la souris
+	All Clips	Tous les clips
+	Ascending / descending	Croissant / décroissant
+	At least 3 chapters are needed.	Il faut au moins 3 chapitres.
+	Categories of this project (Project Settings ▸ Markers)	Catégories de ce projet (Réglages du projet ▸ Marqueurs)
+	Color Clip	Clip de couleur
+	Comment:	Commentaire :
+	Configure Categories…	Configurer les catégories…
+	Copy to Clipboard	Copier dans le presse-papiers
+	Create Marker from Zone	Créer un marqueur depuis la zone
+	Create Marker from Zone Quickly	Créer rapidement un marqueur depuis la zone
+	Default:	Par défaut :
+	Delete Category	Supprimer la catégorie
+	Delete Markers Too	Supprimer aussi les marqueurs
+	Delete Selected Markers	Supprimer les marqueurs sélectionnés
+	Delete category	Supprimer la catégorie
+	Each chapter must be at least 10 seconds long.	Chaque chapitre doit durer au moins 10 secondes.
+	Edit Marker	Modifier le marqueur
+	Encoding:	Encodage :
+	Export markers as chapters description	Exporter les marqueurs comme description de chapitres
+	Exported:	Exporté :
+	Find Action	Rechercher une action
+	Focus Timecode	Activer le timecode
+	Format:	Format :
+	Go To Marker…	Aller au marqueur…
+	Go to Next Keyframe	Aller à l'image clé suivante
+	Go to Previous Keyframe	Aller à l'image clé précédente
+	Import Subtitle File	Importer un fichier de sous-titres
+	Insert selected text at the playhead	Insérer le texte sélectionné à la tête de lecture
+	Interval:	Intervalle :
+	JSON	JSON
+	Kdenlive Compatible	Compatible Kdenlive
+	Larger caption text	Texte de sous-titre plus grand
+	Larger transcript text	Texte de transcription plus grand
+	Lock timeline markers	Verrouiller les marqueurs de timeline
+	Marker Categories	Catégories de marqueurs
+	Marker Type:	Type de marqueur :
+	Markers copied to the clipboard	Marqueurs copiés dans le presse-papiers
+	Markers start at the playhead.	Les marqueurs commencent à la tête de lecture.
+	New sequence from selected text	Nouvelle séquence à partir du texte sélectionné
+	No marker matches the search or the category filter.	Aucun marqueur ne correspond à la recherche ou au filtre de catégories.
+	No matching action	Aucune action correspondante
+	Number of markers:	Nombre de marqueurs :
+	Open a sequence first	Ouvrez d'abord une séquence
+	Point at the Timeline first	Pointez d'abord sur la timeline
+	Range Marker	Marqueur de plage
+	Reassign and Delete	Réaffecter et supprimer
+	Reassign them to:	Les réaffecter à :
+	Restore Audio	Restaurer l'audio
+	Restore Video	Restaurer la vidéo
+	Save As:	Enregistrer sous :
+	Save…	Enregistrer…
+	Search for an action	Rechercher une action
+	Search markers	Rechercher des marqueurs
+	Select a clip first	Sélectionnez d'abord un clip
+	Set Zone In	Définir l'entrée de zone
+	Set Zone Out	Définir la sortie de zone
+	Show the markers of every clip in the project	Afficher les marqueurs de tous les clips du projet
+	Smaller caption text	Texte de sous-titre plus petit
+	Smaller transcript text	Texte de transcription plus petit
+	Sort by Category	Trier par catégorie
+	Sort by Comment	Trier par commentaire
+	Sort by Time	Trier par temps
+	Split mode: after the first line	Mode de division : après la première ligne
+	Split mode: duplicate the text	Mode de division : dupliquer le texte
+	SubViewer (SBV)	SubViewer (SBV)
+	Text (YouTube)	Texte (YouTube)
+	The clip has no animated parameter: turn on animation in Effect Controls first	Le clip n'a aucun paramètre animé : activez d'abord l'animation dans Paramètres d'effet
+	The first chapter must start at 0:00.	Le premier chapitre doit commencer à 0:00.
+	The interval is not a valid timecode	L'intervalle n'est pas un timecode valide
+	The offset is not a valid timecode	Le décalage n'est pas un timecode valide
+	The position is not a valid timecode	La position n'est pas un timecode valide
+	There is no marker at the playhead	Il n'y a aucun marqueur à la tête de lecture
+	Timeline markers are locked	Les marqueurs de timeline sont verrouillés
+	Title Clip	Clip de titre
+	Translate to English	Traduire en anglais
+	Turn on animation for a parameter in Effect Controls first	Activez d'abord l'animation d'un paramètre dans Paramètres d'effet
+	{n} characters · longest line {m}	{n} caractères · ligne la plus longue {m}
+	{n} markers use this category.	{n} marqueurs utilisent cette catégorie.
+	✓ Timeline Markers Locked	✓ Marqueurs de timeline verrouillés

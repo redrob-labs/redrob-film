@@ -4387,3 +4387,101 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	キャッシュ
 	ClipJobs	クリップジョブ
+# Kdenlive parity p05: markers, subtitles, speech, keyframes, clip menu, shortcuts
+	Add/Remove Timeline Marker	タイムラインマーカーを追加/削除
+	Timeline Markers Locked	タイムラインマーカーをロック
+	Export Markers…	マーカーを書き出し…
+	Import Markers…	マーカーを読み込み…
+	Duplicate Clip	クリップを複製
+	Edit Timeline Marker…	タイムラインマーカーを編集…
+	Marker Categories…	マーカーカテゴリ…
+	Find Action…	アクションを検索…
+	Add Category	カテゴリを追加
+	Add Clip	クリップを追加
+	Add Markers	マーカーを追加
+	Add Markers at Interval…	一定間隔でマーカーを追加…
+	Add Project Note	プロジェクトメモを追加
+	Add Subtitle	字幕を追加
+	Add marker at selected text	選択したテキストにマーカーを追加
+	Adjust Timeline Zone to Selection	タイムラインゾーンを選択範囲に合わせる
+	Advanced SubStation Alpha (ASS)	Advanced SubStation Alpha (ASS)
+	Align Playhead to Mouse Position	再生ヘッドをマウス位置に合わせる
+	All Clips	すべてのクリップ
+	Ascending / descending	昇順 / 降順
+	At least 3 chapters are needed.	チャプターは 3 つ以上必要です。
+	Categories of this project (Project Settings ▸ Markers)	このプロジェクトのカテゴリ（プロジェクト設定 ▸ マーカー）
+	Color Clip	カラークリップ
+	Comment:	コメント：
+	Configure Categories…	カテゴリを設定…
+	Copy to Clipboard	クリップボードにコピー
+	Create Marker from Zone	ゾーンからマーカーを作成
+	Create Marker from Zone Quickly	ゾーンからマーカーをすばやく作成
+	Default:	既定：
+	Delete Category	カテゴリを削除
+	Delete Markers Too	マーカーも削除
+	Delete Selected Markers	選択したマーカーを削除
+	Delete category	カテゴリを削除
+	Each chapter must be at least 10 seconds long.	各チャプターは 10 秒以上必要です。
+	Edit Marker	マーカーを編集
+	Encoding:	エンコーディング：
+	Export markers as chapters description	マーカーをチャプター説明として書き出し
+	Exported:	書き出し内容：
+	Find Action	アクションを検索
+	Focus Timecode	タイムコードにフォーカス
+	Format:	形式：
+	Go To Marker…	マーカーへ移動…
+	Go to Next Keyframe	次のキーフレームへ移動
+	Go to Previous Keyframe	前のキーフレームへ移動
+	Import Subtitle File	字幕ファイルを読み込み
+	Insert selected text at the playhead	選択したテキストを再生ヘッドに挿入
+	Interval:	間隔：
+	JSON	JSON
+	Kdenlive Compatible	Kdenlive 互換
+	Larger caption text	字幕テキストを大きく
+	Larger transcript text	文字起こしのテキストを大きく
+	Lock timeline markers	タイムラインマーカーをロック
+	Marker Categories	マーカーカテゴリ
+	Marker Type:	マーカーの種類：
+	Markers copied to the clipboard	マーカーをクリップボードにコピーしました
+	Markers start at the playhead.	マーカーは再生ヘッドから始まります。
+	New sequence from selected text	選択したテキストから新規シーケンス
+	No marker matches the search or the category filter.	検索またはカテゴリフィルターに一致するマーカーはありません。
+	No matching action	一致するアクションはありません
+	Number of markers:	マーカーの数：
+	Open a sequence first	先にシーケンスを開いてください
+	Point at the Timeline first	先にタイムラインを指してください
+	Range Marker	範囲マーカー
+	Reassign and Delete	再割り当てして削除
+	Reassign them to:	再割り当て先：
+	Restore Audio	オーディオを復元
+	Restore Video	ビデオを復元
+	Save As:	保存形式：
+	Save…	保存…
+	Search for an action	アクションを検索
+	Search markers	マーカーを検索
+	Select a clip first	先にクリップを選択してください
+	Set Zone In	ゾーンのインを設定
+	Set Zone Out	ゾーンのアウトを設定
+	Show the markers of every clip in the project	プロジェクトのすべてのクリップのマーカーを表示
+	Smaller caption text	字幕テキストを小さく
+	Smaller transcript text	文字起こしのテキストを小さく
+	Sort by Category	カテゴリで並べ替え
+	Sort by Comment	コメントで並べ替え
+	Sort by Time	時間で並べ替え
+	Split mode: after the first line	分割モード：1 行目の後
+	Split mode: duplicate the text	分割モード：テキストを複製
+	SubViewer (SBV)	SubViewer (SBV)
+	Text (YouTube)	テキスト（YouTube）
+	The clip has no animated parameter: turn on animation in Effect Controls first	このクリップにアニメーションするパラメーターがありません。先にエフェクトコントロールでアニメーションをオンにしてください
+	The first chapter must start at 0:00.	最初のチャプターは 0:00 から始める必要があります。
+	The interval is not a valid timecode	間隔が有効なタイムコードではありません
+	The offset is not a valid timecode	オフセットが有効なタイムコードではありません
+	The position is not a valid timecode	位置が有効なタイムコードではありません
+	There is no marker at the playhead	再生ヘッドにマーカーがありません
+	Timeline markers are locked	タイムラインマーカーはロックされています
+	Title Clip	タイトルクリップ
+	Translate to English	英語に翻訳
+	Turn on animation for a parameter in Effect Controls first	先にエフェクトコントロールでパラメーターのアニメーションをオンにしてください
+	{n} characters · longest line {m}	{n} 文字 · 最長行 {m}
+	{n} markers use this category.	{n} 個のマーカーがこのカテゴリを使用しています。
+	✓ Timeline Markers Locked	✓ タイムラインマーカーをロック

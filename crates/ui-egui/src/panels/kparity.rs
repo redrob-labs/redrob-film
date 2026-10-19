@@ -30,6 +30,14 @@ pub struct KpUi {
     pub command_bar: Option<(String, usize)>,
     /// Text panel ▸ Captions: the edit window's text size (0 = the default).
     pub caption_font: f32,
+    /// Text panel ▸ Transcript: the words' text size (0 = the default).
+    pub transcript_font: f32,
+    /// Effects whose keyframes the timeline clip does not show (`clip:effect index`; Effect
+    /// Controls ▸ effect menu ▸ Show Keyframes in Timeline).
+    pub hidden_timeline_keyframes: Vec<String>,
+    /// A keyframe diamond being dragged on a timeline clip: (clip, the keyframes' media time).
+    #[serde(skip)]
+    pub kf_drag: Option<(u64, redrob_film_time::Tick)>,
     /// Import Captions options (open when Some): the file and the text encoding (`auto` = detected).
     #[serde(skip)]
     pub caption_import: Option<(String, String)>,
@@ -38,6 +46,11 @@ pub struct KpUi {
 /// The caption edit window's text size (Text panel ▸ Captions zoom).
 pub fn caption_font_size(app: &FilmcraftApp) -> f32 {
     if app.ui.kp.caption_font > 0.0 { app.ui.kp.caption_font } else { 12.5 }
+}
+
+/// The transcript's text size (Text panel ▸ Transcript zoom).
+pub fn transcript_font_size(app: &FilmcraftApp) -> f32 {
+    if app.ui.kp.transcript_font > 0.0 { app.ui.kp.transcript_font } else { 13.0 }
 }
 
 pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, _params: &Value) -> Option<Result<Value, String>> {

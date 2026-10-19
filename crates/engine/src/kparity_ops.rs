@@ -8,6 +8,9 @@
 //! | `clip.restoreAudio` / `clip.restoreVideo` | bring back the missing audio / video part of a clip from its media, linked | |
 //! | `timeline.addClipInGap` | Empty space menu ▸ Add Clip: a colour clip or a title filling the selected gap | |
 //! | `captions.splitMode` | subtitle split mode: duplicate the text, or split after the first line | |
+//! | `transcript.insertSelection` | speech editor: insert the media under the selected words at the playhead | |
+//! | `transcript.selectionToSequence` | speech editor: a new sequence (in the Project panel) of the selected words | |
+//! | `transcript.addMarker` | speech editor: a marker at the selected words, named after them | |
 
 use redrob_film_edit as edit;
 use redrob_film_project::{ClipId, TrackId, TrackItem, TrackKind};
@@ -49,7 +52,104 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             s.state.caption_split_after_first_line = bool_p(p, "afterFirstLine").unwrap_or(!s.state.caption_split_after_first_line);
             Ok(json!({"afterFirstLine": s.state.caption_split_after_first_line}))
         }),
+        spec(
+            "transcript.insertSelection",
+            "Insert Selected Text at Playhead",
+            &[],
+            None,
+            r#"{"from":word,"to":word?,"time":ticks?}"#,
+            has_seq,
+            insert_selection,
+        ),
+        spec(
+            "transcript.selectionToSequence",
+            "New Sequence from Selected Text",
+            &[],
+            None,
+            r#"{"from":word,"to":word?,"name":str?} (the sequence lands in the Project panel)"#,
+            has_seq,
+            selection_to_sequence,
+        ),
+        spec("transcript.addMarker", "Add Marker at Text", &[], None, r#"{"from":word,"to":word?}"#, has_seq, add_marker_at_text),
     ]
+}
+
+/// The media pieces under transcript words `from..=to` of the active sequence: (media item,
+/// source In, duration), one per run of words heard through one clip, in order.
+fn selection_pieces(s: &Session, p: &Value, cmd: &str) -> Result<(Vec<(redrob_film_project::ItemId, Tick, Tick)>, String)> {
+    let words = crate::transcript::sequence_words(s);
+    let from = crate::commands::u64_p(p, "from").ok_or_else(|| bad(cmd, "`from` (word index) is required"))? as usize;
+    let to = crate::commands::u64_p(p, "to").map(|n| n as usize).unwrap_or(from);
+    let (a, b) = (from.min(to), from.max(to));
+    if b >= words.len() {
+        return Err(bad(cmd, format!("word index out of range (the transcript has {} words)", words.len())));
+    }
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let rate = q.settings.frame_rate;
+    let text = words[a..=b].iter().map(|w| w.text.as_str()).collect::<Vec<_>>().join(" ");
+    let mut pieces = Vec::new();
+    let mut i = a;
+    while i <= b {
+        let clip = words[i].clip;
+        let mut j = i;
+        while j < b && words[j + 1].clip == clip {
+            j += 1;
+        }
+        let Some(r) = redrob_film_edit::transcript::word_range(&words, i, j, rate) else { break };
+        if let Some((_, it)) = q.find_item(clip) {
+            let start = r.start.max(it.start);
+            let end = r.end().min(it.end());
+            if end > start {
+                pieces.push((it.item, it.source_time_at(start), end - start));
+            }
+        }
+        i = j + 1;
+    }
+    if pieces.is_empty() {
+        return Err(bad(cmd, "the selected words are not on a clip"));
+    }
+    Ok((pieces, text))
+}
+
+fn place_pieces(s: &mut Session, pieces: &[(redrob_film_project::ItemId, Tick, Tick)], mut at: Tick, insert: bool) -> Result<Vec<u64>> {
+    let mut clips = Vec::new();
+    for (item, src_in, dur) in pieces {
+        let r = s.execute("timeline.place", json!({"item": item.0, "time": at.0, "sourceIn": src_in.0, "duration": dur.0, "insert": insert}))?;
+        clips.extend(r["clips"].as_array().into_iter().flatten().filter_map(Value::as_u64));
+        at = at + *dur;
+    }
+    s.set_playhead(at);
+    Ok(clips)
+}
+
+fn insert_selection(s: &mut Session, p: &Value) -> Result<Value> {
+    let (pieces, _) = selection_pieces(s, p, "transcript.insertSelection")?;
+    let at = crate::commands::time_p(s, p, "").unwrap_or(s.playhead());
+    let clips = place_pieces(s, &pieces, at, true)?;
+    Ok(json!({"clips": clips}))
+}
+
+fn selection_to_sequence(s: &mut Session, p: &Value) -> Result<Value> {
+    let (pieces, text) = selection_pieces(s, p, "transcript.selectionToSequence")?;
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let st = q.settings.clone();
+    let fps = st.frame_rate.num as f64 / st.frame_rate.den.max(1) as f64;
+    let short: String = text.chars().take(32).collect();
+    let name = str_p(p, "name").map(str::to_string).unwrap_or_else(|| format!("Text: {short}"));
+    let made = s.execute("file.newSequence", json!({"name": name, "width": st.width, "height": st.height, "fps": fps, "sampleRate": st.sample_rate}))?;
+    let clips = place_pieces(s, &pieces, Tick::ZERO, false)?;
+    Ok(json!({"sequence": made["sequence"], "clips": clips}))
+}
+
+fn add_marker_at_text(s: &mut Session, p: &Value) -> Result<Value> {
+    let words = crate::transcript::sequence_words(s);
+    let from = crate::commands::u64_p(p, "from").ok_or_else(|| bad("transcript.addMarker", "`from` (word index) is required"))? as usize;
+    let to = crate::commands::u64_p(p, "to").map(|n| n as usize).unwrap_or(from);
+    let (a, b) = (from.min(to), from.max(to));
+    let w = words.get(a).ok_or_else(|| bad("transcript.addMarker", "word index out of range"))?;
+    let text: String = words.get(a..=b.min(words.len().saturating_sub(1))).unwrap_or_default().iter().map(|w| w.text.as_str()).collect::<Vec<_>>().join(" ");
+    let t = s.sequence_rate().snap(w.start);
+    s.execute("markers.add", json!({"time": t.0, "name": text}))
 }
 
 fn step_second(s: &mut Session, dir: i64) -> Result<Value> {

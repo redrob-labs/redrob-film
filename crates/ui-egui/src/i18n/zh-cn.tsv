@@ -4380,3 +4380,101 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	缓存
 	ClipJobs	剪辑任务
+# Kdenlive parity p05: markers, subtitles, speech, keyframes, clip menu, shortcuts
+	Add/Remove Timeline Marker	添加/删除时间轴标记
+	Timeline Markers Locked	锁定时间轴标记
+	Export Markers…	导出标记…
+	Import Markers…	导入标记…
+	Duplicate Clip	复制剪辑
+	Edit Timeline Marker…	编辑时间轴标记…
+	Marker Categories…	标记类别…
+	Find Action…	查找操作…
+	Add Category	添加类别
+	Add Clip	添加剪辑
+	Add Markers	添加标记
+	Add Markers at Interval…	按间隔添加标记…
+	Add Project Note	添加项目备注
+	Add Subtitle	添加字幕
+	Add marker at selected text	在所选文本处添加标记
+	Adjust Timeline Zone to Selection	将时间轴区域调整为所选内容
+	Advanced SubStation Alpha (ASS)	Advanced SubStation Alpha (ASS)
+	Align Playhead to Mouse Position	将播放头对齐到鼠标位置
+	All Clips	所有剪辑
+	Ascending / descending	升序 / 降序
+	At least 3 chapters are needed.	至少需要 3 个章节。
+	Categories of this project (Project Settings ▸ Markers)	此项目的类别（项目设置 ▸ 标记）
+	Color Clip	颜色剪辑
+	Comment:	注释：
+	Configure Categories…	配置类别…
+	Copy to Clipboard	复制到剪贴板
+	Create Marker from Zone	从区域创建标记
+	Create Marker from Zone Quickly	从区域快速创建标记
+	Default:	默认：
+	Delete Category	删除类别
+	Delete Markers Too	同时删除标记
+	Delete Selected Markers	删除所选标记
+	Delete category	删除类别
+	Each chapter must be at least 10 seconds long.	每个章节至少需要 10 秒。
+	Edit Marker	编辑标记
+	Encoding:	编码：
+	Export markers as chapters description	将标记导出为章节说明
+	Exported:	导出内容：
+	Find Action	查找操作
+	Focus Timecode	聚焦时间码
+	Format:	格式：
+	Go To Marker…	转到标记…
+	Go to Next Keyframe	转到下一个关键帧
+	Go to Previous Keyframe	转到上一个关键帧
+	Import Subtitle File	导入字幕文件
+	Insert selected text at the playhead	在播放头处插入所选文本
+	Interval:	间隔：
+	JSON	JSON
+	Kdenlive Compatible	兼容 Kdenlive
+	Larger caption text	放大字幕文本
+	Larger transcript text	放大转录文本
+	Lock timeline markers	锁定时间轴标记
+	Marker Categories	标记类别
+	Marker Type:	标记类型：
+	Markers copied to the clipboard	标记已复制到剪贴板
+	Markers start at the playhead.	标记从播放头开始。
+	New sequence from selected text	用所选文本新建序列
+	No marker matches the search or the category filter.	没有与搜索或类别筛选匹配的标记。
+	No matching action	没有匹配的操作
+	Number of markers:	标记数量：
+	Open a sequence first	请先打开一个序列
+	Point at the Timeline first	请先将指针放在时间轴上
+	Range Marker	范围标记
+	Reassign and Delete	重新分配并删除
+	Reassign them to:	重新分配到：
+	Restore Audio	恢复音频
+	Restore Video	恢复视频
+	Save As:	保存为：
+	Save…	保存…
+	Search for an action	搜索操作
+	Search markers	搜索标记
+	Select a clip first	请先选择一个剪辑
+	Set Zone In	设置区域入点
+	Set Zone Out	设置区域出点
+	Show the markers of every clip in the project	显示项目中所有剪辑的标记
+	Smaller caption text	缩小字幕文本
+	Smaller transcript text	缩小转录文本
+	Sort by Category	按类别排序
+	Sort by Comment	按注释排序
+	Sort by Time	按时间排序
+	Split mode: after the first line	拆分模式：在第一行之后
+	Split mode: duplicate the text	拆分模式：复制文本
+	SubViewer (SBV)	SubViewer (SBV)
+	Text (YouTube)	文本（YouTube）
+	The clip has no animated parameter: turn on animation in Effect Controls first	此剪辑没有动画参数：请先在效果控件中打开动画
+	The first chapter must start at 0:00.	第一个章节必须从 0:00 开始。
+	The interval is not a valid timecode	间隔不是有效的时间码
+	The offset is not a valid timecode	偏移不是有效的时间码
+	The position is not a valid timecode	位置不是有效的时间码
+	There is no marker at the playhead	播放头处没有标记
+	Timeline markers are locked	时间轴标记已锁定
+	Title Clip	标题剪辑
+	Translate to English	翻译成英语
+	Turn on animation for a parameter in Effect Controls first	请先在效果控件中为某个参数打开动画
+	{n} characters · longest line {m}	{n} 个字符 · 最长行 {m}
+	{n} markers use this category.	{n} 个标记使用此类别。
+	✓ Timeline Markers Locked	✓ 锁定时间轴标记

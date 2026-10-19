@@ -346,9 +346,12 @@ fn transcript(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let hits: Vec<std::ops::Range<usize>> = redrob_film_edit::transcript::search(&words, &app.ui.transcript_search);
     let mut x = bar.min.x + sw + 10.0;
     let range = sel.map(|(a, b)| json!({"from": a.min(b), "to": a.max(b)}));
-    let tools: [(Icon, &str, &str, bool, &str, Value); 4] = [
+    let tools: [(Icon, &str, &str, bool, &str, Value); 7] = [
         (Icon::Razor, "text.transcript.extract", tl!("Extract selected text"), sel.is_some(), "transcript.extract", range.clone().unwrap_or_default()),
-        (Icon::Trash, "text.transcript.lift", tl!("Lift selected text"), sel.is_some(), "transcript.lift", range.unwrap_or_default()),
+        (Icon::Trash, "text.transcript.lift", tl!("Lift selected text"), sel.is_some(), "transcript.lift", range.clone().unwrap_or_default()),
+        (Icon::Insert, "text.transcript.insert", tl!("Insert selected text at the playhead"), sel.is_some(), "transcript.insertSelection", range.clone().unwrap_or_default()),
+        (Icon::Sequence, "text.transcript.newSequence", tl!("New sequence from selected text"), sel.is_some(), "transcript.selectionToSequence", range.clone().unwrap_or_default()),
+        (Icon::Marker, "text.transcript.addMarker", tl!("Add marker at selected text"), sel.is_some(), "transcript.addMarker", range.unwrap_or_default()),
         (Icon::Link, "text.transcript.removeFillers", tl!("Remove filler words"), true, "transcript.removeFillers", json!({})),
         (Icon::Captions, "text.transcript.createCaptions", tl!("Create captions"), true, "transcript.createCaptions", json!({})),
     ];
@@ -365,6 +368,21 @@ fn transcript(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         }
         x += 28.0;
     }
+    // text size of the transcript (Kdenlive's speech editor font size)
+    for (key, label, tip) in [("zoomOut", "A−", tl!("Smaller transcript text")), ("zoomIn", "A+", tl!("Larger transcript text"))] {
+        let r = Rect::from_min_size(pos2(x, bar.min.y), vec2(26.0, 24.0));
+        if r.max.x > rect.max.x {
+            break;
+        }
+        let b = ui.put(r, egui::Button::new(egui::RichText::new(label).size(11.0)).frame(false)).on_hover_text(tip);
+        app.auto.add(&format!("text.transcript.{key}"), r, tip);
+        if b.clicked() {
+            let z = crate::panels::kparity::transcript_font_size(app) + if key == "zoomIn" { 1.5 } else { -1.5 };
+            app.ui.kp.transcript_font = z.clamp(9.0, 32.0);
+        }
+        x += 28.0;
+    }
+    let word_size = crate::panels::kparity::transcript_font_size(app);
 
     // ---- paragraphs of words
     let list = Rect::from_min_max(pos2(rect.min.x + 6.0, bar.max.y + 8.0), pos2(rect.max.x - 6.0, rect.max.y - 4.0));
@@ -388,7 +406,7 @@ fn transcript(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                     let w = &words[i];
                     let in_sel = sa.is_some_and(|a| i >= a) && sb.is_some_and(|b| i <= b);
                     let hit = hits.iter().any(|h| h.contains(&i));
-                    let mut text = egui::RichText::new(&w.text).size(13.0).color(if Some(i) == current { t.hot_text } else { t.text });
+                    let mut text = egui::RichText::new(&w.text).size(word_size).color(if Some(i) == current { t.hot_text } else { t.text });
                     if in_sel {
                         text = text.background_color(t.row_selected);
                     } else if hit {

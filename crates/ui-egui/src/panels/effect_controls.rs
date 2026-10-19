@@ -223,6 +223,17 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                         ui.close();
                     }
                     effect_menu(app, ui, clip, idx, e, it, &mut actions);
+                    // Kdenlive: show or hide this effect's keyframes on the timeline clip
+                    let key = format!("{}:{}", clip.0, idx);
+                    let mut shown = !app.ui.kp.hidden_timeline_keyframes.contains(&key);
+                    let r = ui.checkbox(&mut shown, tl!("Show Keyframes in Timeline"));
+                    app.auto.add(&format!("effectControls.effect.{fx_id}.timelineKeyframes"), r.rect, "Show Keyframes in Timeline");
+                    if r.changed() {
+                        app.ui.kp.hidden_timeline_keyframes.retain(|k| *k != key);
+                        if !shown {
+                            app.ui.kp.hidden_timeline_keyframes.push(key);
+                        }
+                    }
                 });
                 if save_preset {
                     crate::panels::presets::open_save(app, clip.0, vec![idx], def.name);
