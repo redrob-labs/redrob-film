@@ -313,13 +313,15 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which)
 
     // ---- controls row: timecode | zoom | res | wrench | duration
     let row1 = Rect::from_min_size(pos2(rect.min.x + 14.0, rect.max.y - controls_h + 2.0), vec2(rect.width() - 28.0, 26.0));
-    let tc = format_time(time, rate, drop_frame, TimeDisplay::Timecode, 48000);
+    // the Program monitor counts from the sequence's start timecode (Sequence Settings ▸ Start Time)
+    let pofs = if which == Which::Program { rate.tick_of(app.session.active_sequence().map_or(0, |q| q.start_timecode.max(0))) } else { Tick::ZERO };
+    let tc = format_time(time + pofs, rate, drop_frame, TimeDisplay::Timecode, 48000);
     let tc_rect = Rect::from_min_size(row1.min, vec2(110.0, row1.height()));
     let min = if which == Which::Program { Tick::ZERO } else { origin };
-    match crate::widgets::timecode_field(ui, egui::Id::new((prefix, "timecode")), tc_rect, &tc, time, min, rate, drop_frame, t.timecode) {
+    match crate::widgets::timecode_field(ui, egui::Id::new((prefix, "timecode")), tc_rect, &tc, time + pofs, min + pofs, rate, drop_frame, t.timecode) {
         Some(Ok(to)) => {
             let cmd = if which == Which::Program { "playhead.set" } else { "source.setPlayhead" };
-            if let Err(e) = app.session.execute(cmd, json!({"time": to.0})) {
+            if let Err(e) = app.session.execute(cmd, json!({"time": (to - pofs).0})) {
                 app.ui.status = e.to_string();
             }
         }

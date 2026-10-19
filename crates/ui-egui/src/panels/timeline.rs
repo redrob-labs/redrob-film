@@ -1162,6 +1162,7 @@ fn draw_headers(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, rows:
             ui.separator();
             cmd(ui, if locked { tl!("Unlock Track") } else { tl!("Lock Track") }, "timeline.setTrack", json!({"track": r.track.0, "locked": !locked}));
             cmd(ui, tl!("Select All in Track"), "timeline.selectAllInTrack", json!({"track": r.track.0}));
+            cmd(ui, tl!("Identify Gaps"), "markers.identifyGaps", json!({"track": r.track.0}));
             ui.separator();
             for (text, what) in [(tl!("Rename Track"), "rename"), (tl!("Expand or Collapse Track"), "collapse"), (tl!("Fit Tracks to View"), "fit")] {
                 if ui.button(text).clicked() {

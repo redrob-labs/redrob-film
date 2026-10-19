@@ -186,7 +186,7 @@ fn set_param_group(s: &mut Session, p: &Value) -> Result<Value> {
         let mut n = 0;
         for t in &targets {
             let Some((_, it)) = q.find_item_mut(*t) else { continue };
-            let mt = at(it);
+            let mt = at(&*it);
             let Some(e) = it.effects.iter_mut().find(|e| e.effect == effect) else { continue };
             if !e.params.contains_key(&pid)
                 && let Some(d) = e.def().and_then(|d| d.param(&pid))
@@ -632,7 +632,10 @@ pub fn gaps(q: &Sequence, tracks: &[TrackId]) -> Vec<TimeRange> {
 /// of one track.
 fn identify_gaps(s: &mut Session, p: &Value) -> Result<Value> {
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
-    let all = str_p(p, "track").is_none_or(|x| x.eq_ignore_ascii_case("all"));
+    let all = match p.get("track") {
+        None | Some(Value::Null) => true,
+        Some(v) => v.as_str().is_some_and(|x| x.eq_ignore_ascii_case("all")),
+    };
     let tracks: Vec<TrackId> = if all { q.all_tracks().map(|t| t.id).collect() } else { vec![track_or_current(s, p, "markers.identifyGaps")?] };
     let found = gaps(q, &tracks);
     if found.is_empty() {
