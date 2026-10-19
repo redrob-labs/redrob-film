@@ -3567,3 +3567,300 @@
 	The reply hit its length limit.	回复已达到长度上限。
 	The turn ended: {reason}.	本轮已结束：{reason}。
 	Workspace changed. The next message starts the agent with it.	工作区已更改。下一条消息将用它启动智能体。
+# More Video Effects bin
+	More Video Effects	更多视频效果
+	Grain and Noise	颗粒与杂色
+	Misc	其他
+	Deprecated	已弃用
+	Y (Luminance)	Y（亮度）
+	U (Chroma)	U（色度）
+	YU	YU
+	V (Chroma)	V（色度）
+	YV	YV
+	UV	UV
+	Magma	Magma
+	Inferno	Inferno
+	Plasma	Plasma
+	Viridis	Viridis
+	Turbo	Turbo
+	Cividis	Cividis
+	Range1	范围 1
+	Range2	范围 2
+	Solar	日光
+	Nominal	标称
+	Preferred	首选
+	Total	全部范围
+	Spectral	光谱
+	Cool	冷色
+	Heat	热度
+	Fiery	火焰
+	Blues	蓝色系
+	Greens	绿色系
+	Helix	螺旋
+	HH:MM:SS	HH:MM:SS
+	HH:MM:SS.S	HH:MM:SS.S
+	MM:SS	MM:SS
+	MM:SS.SS	MM:SS.SS
+	MM:SS.SSS	MM:SS.SSS
+	SS	SS
+	SS.S	SS.S
+	SS.SS	SS.SS
+	SS.SSS	SS.SSS
+	Middle	中间
+	Regular	常规
+	Bold	粗体
+	Italic	斜体
+	Bold Italic	粗斜体
+	GPS Location	GPS 位置
+	Altitude	海拔
+	Heart Rate	心率
+	Basic Graph	基本图表
+	Follow Current Position	跟随当前位置
+	Speedometer	速度表
+	One Color	单色
+	Two Colors	双色
+	Solid Past, Thin Future	过去粗线、未来细线
+	Solid Future, Thin Past	未来粗线、过去细线
+	Vertical Gradient	垂直渐变
+	Horizontal Gradient	水平渐变
+	Color by Duration	按时长着色
+	Color by Altitude	按海拔着色
+	Color by Heart Rate	按心率着色
+	Color by Speed	按速度着色
+	gps_lat	gps_lat
+	gps_lon	gps_lon
+	gps_elev	gps_elev
+	gps_speed	gps_speed
+	gps_dist	gps_dist
+	gps_datetime_now	gps_datetime_now
+	vid_datetime_now	vid_datetime_now
+	gps_hr	gps_hr
+	gps_bearing	gps_bearing
+	gps_compass	gps_compass
+	gps_vdist_up	gps_vdist_up
+	gps_vdist_down	gps_vdist_down
+	gps_dist_uphill	gps_dist_uphill
+	gps_dist_downhill	gps_dist_downhill
+	gps_dist_flat	gps_dist_flat
+	Planes	平面
+	Delta	增量
+	Font Family	字体系列
+	Outline Width	轮廓宽度
+	Padding	内边距
+	Foreground Color	前景色
+	Outline Color	轮廓颜色
+	X	X
+	Geometry	几何
+	Y	Y
+	W	宽
+	H	高
+	GPS File	GPS 文件
+	Time Offset in Seconds	时间偏移（秒）
+	Smoothing Level	平滑级别
+	3-Level Threshold	三级阈值
+	Analog Video Echo	模拟视频回声
+	Fade Factor	渐隐系数
+	Brighter	更亮
+	Darker	更暗
+	Keep Red	保留红色
+	Keep Green	保留绿色
+	Keep Blue	保留蓝色
+	Strobe Period	频闪周期
+	Binarize	二值化
+	Use Transparency	使用透明度
+	Threshold Value	阈值
+	Binarize Dynamically	动态二值化
+	Burning TV	燃烧电视
+	Foreground Only	仅前景
+	Movement Threshold	运动阈值
+	Cartoon	卡通
+	Level of Trip	触发级别
+	Difference Space	差异间距
+	Charcoal	炭笔
+	Horizontal Scatter	水平散布
+	Vertical Scatter	垂直散布
+	Color Distance	颜色距离
+	Source Color	源颜色
+	Color Effect	颜色效果
+	X-Pro	X-Pro
+	Sepia	棕褐色
+	Old Photo	老照片
+	X-Ray	X 光
+	Esses	S 曲线
+	Yellow-Blue	黄-蓝
+	Heatmap0r	Heatmap0r
+	Map Grey To	将灰色映射到
+	Specify Source Segment	指定源扇区
+	Segmentation Direction	分割方向
+	Counter Clockwise	逆时针
+	Reflect Edges	反射边缘
+	Preferred Corner	首选角
+	Corner Search	角搜索
+	No Alpha Background	无 Alpha 背景
+	Origin X	原点 X
+	Origin Y	原点 Y
+	Segmentation	分割
+	Source Segment	源扇区
+	Kirsch	Kirsch
+	Light Graffiti	光绘
+	Show Brightness Statistics	显示亮度统计
+	Statistics	统计
+	Show Background Difference Statistics	显示背景差异统计
+	Show Background Difference Sum Statistics	显示背景差异总和统计
+	Transparent Background	透明背景
+	Nonlinear Dimming	非线性变暗
+	Brightness Threshold	亮度阈值
+	Difference Threshold	差异阈值
+	Difference Sum Threshold	差异总和阈值
+	Lower Overexposure	降低过曝
+	Dimming	变暗
+	Background Weight	背景权重
+	α	α
+	NDVI Filter	NDVI 滤镜
+	VIS Scale	VIS 缩放
+	VIS Offset	VIS 偏移
+	NIR Scale	NIR 缩放
+	NIR Offset	NIR 偏移
+	NTSC	NTSC
+	Progressive Scan	逐行扫描
+	Scanlines	扫描线
+	Signal Noise	信号噪声
+	Old Film Simulator	老电影模拟
+	Maximum Up/Down Move	最大上下移动
+	Frames With Movement	有移动的帧
+	Brightness Up	增亮
+	Brightness Down	变暗量
+	Brightness Every	亮度变化频率
+	Uneven Develop Up	显影不均（亮）
+	Uneven Develop Down	显影不均（暗）
+	Uneven Develop Duration	显影不均周期
+	Photosensitivity Filter	光敏性滤镜
+	Frames to Use	使用帧数
+	Skip	跳过
+	Pixelize (advanced)	像素化（高级）
+	Pixelize Mode	像素化模式
+	Average	平均
+	Pixels0rt	Pixels0rt
+	Vertical Top to Bottom	垂直（从上到下）
+	Vertical Bottom to Top	垂直（从下到上）
+	Horizontal Left to Right	水平（从左到右）
+	Horizontal Right to Left	水平（从右到左）
+	Reversed	反向
+	Transparency Threshold	透明度阈值
+	Posterize (ELBG)	色调分离（ELBG）
+	Codebook Length	码本长度
+	Steps	步数
+	Prewitt	Prewitt
+	Primaries	原色
+	Factor	系数
+	Pseudo Color	伪彩色
+	Base Component	基准分量
+	RGB Splitter	RGB 分离
+	Vertical Split Distance	垂直分离距离
+	Horizontal Split Distance	水平分离距离
+	Roberts	Roberts
+	Scharr	Scharr
+	Sobel	Sobel
+	Sobel with Planes	Sobel（按平面）
+	Squigglevision	Squigglevision
+	FPS	FPS
+	Frames Step	帧步长
+	Fluctuation	波动
+	Char by Char	逐字符
+	Word by Word	逐词
+	Line by Line	逐行
+	3D FFT Denoiser	3D FFT 降噪
+	Sigma	Sigma
+	Block	块
+	Overlap	重叠
+	Wiener	Wiener
+	Add Previous Frame to Temporal Denoise	将上一帧加入时间降噪
+	Add Next Frame to Temporal Denoise	将下一帧加入时间降噪
+	Chroma Noise Reduction	色度降噪
+	Y+U+V Threshold	Y+U+V 阈值
+	Horizontal Size	水平大小
+	Vertical Size	垂直大小
+	Horizontal Step	水平步长
+	Vertical Step	垂直步长
+	Y Threshold	Y 阈值
+	U Threshold	U 阈值
+	V Threshold	V 阈值
+	Manhattan	Manhattan
+	Euclidean	欧几里得
+	HQ 3D Denoiser	HQ 3D 降噪
+	Spatial	空间
+	Temporal	时间
+	Dither	抖动
+	Matrix ID	矩阵 ID
+	Dust	灰尘
+	Maximum Diameter	最大直径
+	Maximum Number of Particles	最大粒子数
+	Film Grain	胶片颗粒
+	Grain Amount	颗粒量
+	Red Grain	红色颗粒
+	Green Grain	绿色颗粒
+	Blue Grain	蓝色颗粒
+	Dust Amount	灰尘量
+	Gradfun	Gradfun
+	Scratch Lines	划痕线
+	Width of Line	线宽
+	Max Number of Lines	最大线数
+	Max Darker	最大变暗
+	Max Lighter	最大变亮
+	Wavelet Denoiser	小波降噪
+	Garrote	Garrote
+	Threshold Type	阈值类型
+	Universal	通用
+	Bayes	Bayes
+	Percentage	百分比
+	Draw Box	绘制方框
+	Replace Color and Alpha	替换颜色和 Alpha
+	Top-left X	左上 X
+	Top-left Y	左上 Y
+	Width (px)	宽度（px）
+	Height (px)	高度（px）
+	Thickness (px)	粗细（px）
+	Scanline0r	Scanline0r
+	Alphaextract	Alphaextract
+	Xine Deinterlacer	Xine 去隔行
+	Linear Blend	线性混合
+	One Field	单场
+	Linear Interpolation	线性插值
+	Bottom Field First	下场优先
+	Box Blur	方框模糊
+	Denoiser	降噪
+	Grain	颗粒
+	Hqdn3d	Hqdn3d
+	K-Means Clustering	k 均值聚类
+	Number of Clusters	聚类数
+	Distance Weight	距离权重
+	Start	开始
+	Up	正计时
+	Down	倒计时
+	Timer	计时器
+	Keyword	关键字
+	Updates per Second	每秒更新次数
+	Strikethrough	删除线
+	GPS Text	GPS 文本
+	Speed Multiplier	速度倍数
+	Graph Data Source	图表数据源
+	Graph Type	图表类型
+	Trim Start	修剪开头
+	Trim End	修剪结尾
+	Crop Mode Horizontal (Absolute)	水平裁剪模式（绝对值）
+	Crop Left	左侧裁剪
+	Crop Right	右侧裁剪
+	Crop Mode Vertical (Absolute)	垂直裁剪模式（绝对值）
+	Crop Bottom	底部裁剪
+	Crop Top	顶部裁剪
+	Graph Color Style	图表颜色样式
+	Show Now Dot	显示当前点
+	Now Dot Color	当前点颜色
+	Show Now Text	显示当前值
+	Line Thickness (px)	线条粗细（px）
+	Draw Legend	绘制图例
+	Legend Unit	图例单位
+	Show Dots Only	仅显示点
+	Background Image	背景图像
+	Background Scale	背景缩放
+	GPS Graphic	GPS 图形
