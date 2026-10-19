@@ -3567,3 +3567,115 @@
 	The reply hit its length limit.	回复已达到长度上限。
 	The turn ended: {reason}.	本轮已结束：{reason}。
 	Workspace changed. The next message starts the agent with it.	工作区已更改。下一条消息将用它启动智能体。
+
+# Kdenlive parity: audio effects, mixer, meters, recording, waveforms
+	Soft Clipper	软削波器
+	Dynamic Equalizer	动态均衡器
+	All Pass	全通
+	Tilt Shelf	倾斜搁架
+	Sub Cut	次低频切除
+	Sub Boost	次低频增强
+	Pulsator	脉动器
+	Vibrato	颤音
+	Frequency Shifter	移频器
+	Phase Shifter	移相器
+	Mixdown	混缩
+	Stereo to Mono	立体声转单声道
+	Crossfeed	交叉馈送
+	Haas Stereo Enhancer	哈斯立体声增强
+	Stereo Tools	立体声工具
+	Crusher	破碎器
+	Crystalizer	晶化器
+	DC Shift	直流偏移
+	Derivative	微分
+	Integral	积分
+	Virtual Bass	虚拟低音
+	Tanh	Tanh
+	Atan	Atan
+	Cubic	三次
+	Exponential	指数
+	Algebraic	代数
+	Quintic	五次
+	Sine	正弦
+	Detection Frequency	检测频率
+	Detection Q	检测 Q
+	Target Frequency	目标频率
+	Target Q	目标 Q
+	Removed Band Level	已移除频段电平
+	Saw Up	上升锯齿波
+	Saw Down	下降锯齿波
+	Rate	速率
+	Offset Left	左偏移
+	Offset Right	右偏移
+	Input Level	输入电平
+	Output Level	输出电平
+	Modulation Frequency	调制频率
+	Shift	偏移
+	Number of Output Channels	输出声道数
+	4 Channels	4 声道
+	Middle Source	中间声源
+	Side	侧
+	Delayed Side	延迟侧
+	Left Gain	左增益
+	Right Gain	右增益
+	LR > LR	LR > LR
+	LR > MS	LR > MS
+	MS > LR	MS > LR
+	LR > LL	LR > LL
+	LR > RR	LR > RR
+	LR > L+R	LR > L+R
+	LR > RL	LR > RL
+	Mid Level	中置电平
+	Side Level	侧边电平
+	Invert Left Phase	反转左相位
+	Invert Right Phase	反转右相位
+	Mute Left	左静音
+	Mute Right	右静音
+	Input Gain	输入增益
+	Bit Reduction	位深降低
+	Logarithmic	对数
+	DC	直流
+	Anti-aliasing	抗混叠
+	Sample Reduction	采样降低
+	Enable LFO	启用 LFO
+	LFO Depth	LFO 深度
+	LFO Rate	LFO 速率
+	Enable Clipping	启用削波
+	Limiter Gain	限幅器增益
+	Show/Hide the Audio Track Mixer	显示/隐藏音频轨道混合器
+	Show Peak Hold	显示峰值保持
+	Show Clipping Indicator	显示削波指示
+	Color Level Zones	按电平区域着色
+	Show dB Scale	显示 dB 刻度
+	Solo (click: exclusive; Shift+click: add to the soloed strips)	独奏（单击：独占；Shift+单击：加入已独奏的通道）
+	Input level of the recording (drag; double-, middle- or right-click: 0 dB)	录音输入电平（拖动；双击、中键或右键单击：0 dB）
+	Volume (drag; double-, middle- or right-click: 0 dB)	音量（拖动；双击、中键或右键单击：0 dB）
+	Pan / balance (drag; double-, middle- or right-click: centre)	声像/平衡（拖动；双击、中键或右键单击：居中）
+	Voice-over paused (Space: resume, Esc: stop)	画外音已暂停（空格：继续，Esc：停止）
+	Voice-over ready: press Space to record from here	画外音就绪：按空格从此处开始录音
+	Show the Countdown in the Program Monitor	在节目监视器中显示倒计时
+	Separate Audio Channels	分开显示音频声道
+	Audio Waveform Colors	音频波形颜色
+	Reset Colors	重置颜色
+	Audio Visualization	音频可视化
+	Audio Level Visualization	音频电平可视化
+	Audio Spectrum	音频频谱
+	Dance	舞动
+	Light Show	灯光秀
+	Position X	位置 X
+	Position Y	位置 Y
+	Peak Color	峰值颜色
+	Bands	频段数
+	Lowest Frequency	最低频率
+	Highest Frequency	最高频率
+	Floor	下限
+	Line	线条
+	Filled	填充
+	Mirrored	镜像
+	Frequency Band	频段
+	Horizontal Move	水平移动
+	Vertical Move	垂直移动
+	Audio Streams	音频流
+	Stream {n}	音频流 {n}
+	Enabled	启用
+	Switch Audio Stream	切换音频流

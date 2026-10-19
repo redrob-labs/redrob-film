@@ -3574,3 +3574,115 @@
 	The reply hit its length limit.	返答が長さの上限に達しました。
 	The turn ended: {reason}.	ターンが終了しました: {reason}。
 	Workspace changed. The next message starts the agent with it.	ワークスペースが変わりました。次のメッセージでそのワークスペースのエージェントが起動します。
+
+# Kdenlive parity: audio effects, mixer, meters, recording, waveforms
+	Soft Clipper	ソフトクリッパー
+	Dynamic Equalizer	ダイナミックイコライザー
+	All Pass	オールパス
+	Tilt Shelf	チルトシェルフ
+	Sub Cut	サブカット
+	Sub Boost	サブブースト
+	Pulsator	パルセーター
+	Vibrato	ビブラート
+	Frequency Shifter	周波数シフター
+	Phase Shifter	位相シフター
+	Mixdown	ミックスダウン
+	Stereo to Mono	ステレオからモノラル
+	Crossfeed	クロスフィード
+	Haas Stereo Enhancer	ハース・ステレオエンハンサー
+	Stereo Tools	ステレオツール
+	Crusher	クラッシャー
+	Crystalizer	クリスタライザー
+	DC Shift	DC シフト
+	Derivative	微分
+	Integral	積分
+	Virtual Bass	バーチャルベース
+	Tanh	Tanh
+	Atan	Atan
+	Cubic	3 次
+	Exponential	指数
+	Algebraic	代数
+	Quintic	5 次
+	Sine	サイン
+	Detection Frequency	検出周波数
+	Detection Q	検出 Q
+	Target Frequency	ターゲット周波数
+	Target Q	ターゲット Q
+	Removed Band Level	除去帯域のレベル
+	Saw Up	ノコギリ波（上昇）
+	Saw Down	ノコギリ波（下降）
+	Rate	レート
+	Offset Left	左オフセット
+	Offset Right	右オフセット
+	Input Level	入力レベル
+	Output Level	出力レベル
+	Modulation Frequency	変調周波数
+	Shift	シフト
+	Number of Output Channels	出力チャンネル数
+	4 Channels	4 チャンネル
+	Middle Source	中央ソース
+	Side	サイド
+	Delayed Side	遅延する側
+	Left Gain	左ゲイン
+	Right Gain	右ゲイン
+	LR > LR	LR > LR
+	LR > MS	LR > MS
+	MS > LR	MS > LR
+	LR > LL	LR > LL
+	LR > RR	LR > RR
+	LR > L+R	LR > L+R
+	LR > RL	LR > RL
+	Mid Level	ミッドレベル
+	Side Level	サイドレベル
+	Invert Left Phase	左の位相を反転
+	Invert Right Phase	右の位相を反転
+	Mute Left	左をミュート
+	Mute Right	右をミュート
+	Input Gain	入力ゲイン
+	Bit Reduction	ビット削減
+	Logarithmic	対数
+	DC	DC
+	Anti-aliasing	アンチエイリアス
+	Sample Reduction	サンプル削減
+	Enable LFO	LFO を有効化
+	LFO Depth	LFO の深さ
+	LFO Rate	LFO のレート
+	Enable Clipping	クリッピングを有効化
+	Limiter Gain	リミッターゲイン
+	Show/Hide the Audio Track Mixer	オーディオトラックミキサーの表示/非表示
+	Show Peak Hold	ピークホールドを表示
+	Show Clipping Indicator	クリップインジケーターを表示
+	Color Level Zones	レベルゾーンを色分け
+	Show dB Scale	dB スケールを表示
+	Solo (click: exclusive; Shift+click: add to the soloed strips)	ソロ（クリック: 排他、Shift+クリック: ソロ中のストリップに追加）
+	Input level of the recording (drag; double-, middle- or right-click: 0 dB)	録音の入力レベル（ドラッグ、ダブル/中/右クリック: 0 dB）
+	Volume (drag; double-, middle- or right-click: 0 dB)	ボリューム（ドラッグ、ダブル/中/右クリック: 0 dB）
+	Pan / balance (drag; double-, middle- or right-click: centre)	パン/バランス（ドラッグ、ダブル/中/右クリック: 中央）
+	Voice-over paused (Space: resume, Esc: stop)	ボイスオーバー一時停止中（Space: 再開、Esc: 停止）
+	Voice-over ready: press Space to record from here	ボイスオーバー準備完了: Space でここから録音
+	Show the Countdown in the Program Monitor	プログラムモニターにカウントダウンを表示
+	Separate Audio Channels	オーディオチャンネルを分けて表示
+	Audio Waveform Colors	オーディオ波形の色
+	Reset Colors	色をリセット
+	Audio Visualization	オーディオビジュアライゼーション
+	Audio Level Visualization	オーディオレベル表示
+	Audio Spectrum	オーディオスペクトラム
+	Dance	ダンス
+	Light Show	ライトショー
+	Position X	位置 X
+	Position Y	位置 Y
+	Peak Color	ピークの色
+	Bands	バンド数
+	Lowest Frequency	最低周波数
+	Highest Frequency	最高周波数
+	Floor	下限
+	Line	ライン
+	Filled	塗りつぶし
+	Mirrored	ミラー
+	Frequency Band	周波数帯域
+	Horizontal Move	水平移動
+	Vertical Move	垂直移動
+	Audio Streams	オーディオストリーム
+	Stream {n}	ストリーム {n}
+	Enabled	有効
+	Switch Audio Stream	オーディオストリームを切り替え

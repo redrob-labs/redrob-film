@@ -11,6 +11,7 @@
 //! (frames for analysis, sequence geometry) — read it through [`FxEnv`]; without an environment
 //! (isolated tests, adjustment layers) they leave the image unchanged.
 
+mod audioviz;
 mod blur;
 mod color;
 pub(crate) use color::cdl;
@@ -60,6 +61,11 @@ pub trait FxEnv: Sync {
     fn source_size(&self) -> (u32, u32);
     /// Identity of the clip and its source range (cache key for analyses).
     fn clip_key(&self) -> u64;
+    /// The sequence Mix (stereo, sequence rate) for `seconds` from `dt` seconds after now, for the
+    /// audio visualisations. `None` where there is no sequence to listen to.
+    fn sequence_audio(&self, _dt: f64, _seconds: f64) -> Option<redrob_film_frame::AudioBuffer> {
+        None
+    }
 }
 
 /// The environment of a track item being rendered by [`crate::item_layer`].
@@ -155,6 +161,12 @@ impl FxEnv for ItemEnv<'_> {
     }
     fn sequence_size(&self) -> (u32, u32) {
         (self.seq.settings.width, self.seq.settings.height)
+    }
+    fn sequence_audio(&self, dt: f64, seconds: f64) -> Option<redrob_film_frame::AudioBuffer> {
+        let sr = self.seq.settings.sample_rate.max(1) as i64;
+        let start = (self.t + Tick::from_seconds_f64(dt)).to_units_floor(sr);
+        let n = (seconds.clamp(0.001, 2.0) * sr as f64).ceil() as usize;
+        Some(crate::audio::mix_sequence(self.project, self.seq, start, n, self.sources))
     }
     fn source_size(&self) -> (u32, u32) {
         crate::source_size(self.project, self.item.item).unwrap_or((self.seq.settings.width, self.seq.settings.height))
@@ -460,6 +472,12 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
     match e.effect.as_str() {
         // Adjust / Color / Image Control / Keying / Utility colour
         "lighting_effects" => color::lighting(img, e, cx),
+        // Audio Visualization (Kdenlive: On Master)
+        "audio_levels_viz" => audioviz::levels(img, e, cx),
+        "audio_spectrum_viz" => audioviz::spectrum(img, e, cx),
+        "audio_waveform_viz" => audioviz::waveform(img, e, cx),
+        "audio_dance" => audioviz::dance(img, e, cx),
+        "audio_light_show" => audioviz::light_show(img, e, cx),
         "logo_cutout" => color::logo_cutout(img, e, cx),
         "ultra_key" => color::ultra_key(img, e, cx),
         "track_matte" => color::track_matte(img, e, cx),

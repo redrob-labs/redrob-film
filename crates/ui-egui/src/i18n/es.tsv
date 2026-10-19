@@ -3586,3 +3586,115 @@
 	The reply hit its length limit.	La respuesta alcanzó su límite de longitud.
 	The turn ended: {reason}.	El turno terminó: {reason}.
 	Workspace changed. The next message starts the agent with it.	El espacio de trabajo cambió. El próximo mensaje inicia el agente con él.
+
+# Kdenlive parity: audio effects, mixer, meters, recording, waveforms
+	Soft Clipper	Recortador suave
+	Dynamic Equalizer	Ecualizador dinámico
+	All Pass	Paso todo
+	Tilt Shelf	Shelving de inclinación
+	Sub Cut	Corte de subgraves
+	Sub Boost	Realce de subgraves
+	Pulsator	Pulsador
+	Vibrato	Vibrato
+	Frequency Shifter	Desplazador de frecuencia
+	Phase Shifter	Desplazador de fase
+	Mixdown	Mezcla a mono
+	Stereo to Mono	Estéreo a mono
+	Crossfeed	Alimentación cruzada
+	Haas Stereo Enhancer	Realce estéreo Haas
+	Stereo Tools	Herramientas estéreo
+	Crusher	Triturador
+	Crystalizer	Cristalizador
+	DC Shift	Desplazamiento de CC
+	Derivative	Derivada
+	Integral	Integral
+	Virtual Bass	Graves virtuales
+	Tanh	Tanh
+	Atan	Atan
+	Cubic	Cúbica
+	Exponential	Exponencial
+	Algebraic	Algebraica
+	Quintic	Quíntica
+	Sine	Seno
+	Detection Frequency	Frecuencia de detección
+	Detection Q	Q de detección
+	Target Frequency	Frecuencia de destino
+	Target Q	Q de destino
+	Removed Band Level	Nivel de la banda eliminada
+	Saw Up	Diente de sierra ascendente
+	Saw Down	Diente de sierra descendente
+	Rate	Velocidad
+	Offset Left	Desfase izquierdo
+	Offset Right	Desfase derecho
+	Input Level	Nivel de entrada
+	Output Level	Nivel de salida
+	Modulation Frequency	Frecuencia de modulación
+	Shift	Desplazamiento
+	Number of Output Channels	Número de canales de salida
+	4 Channels	4 canales
+	Middle Source	Fuente central
+	Side	Lateral
+	Delayed Side	Lado retardado
+	Left Gain	Ganancia izquierda
+	Right Gain	Ganancia derecha
+	LR > LR	LR > LR
+	LR > MS	LR > MS
+	MS > LR	MS > LR
+	LR > LL	LR > LL
+	LR > RR	LR > RR
+	LR > L+R	LR > L+R
+	LR > RL	LR > RL
+	Mid Level	Nivel central
+	Side Level	Nivel lateral
+	Invert Left Phase	Invertir fase izquierda
+	Invert Right Phase	Invertir fase derecha
+	Mute Left	Silenciar izquierda
+	Mute Right	Silenciar derecha
+	Input Gain	Ganancia de entrada
+	Bit Reduction	Reducción de bits
+	Logarithmic	Logarítmica
+	DC	CC
+	Anti-aliasing	Antialiasing
+	Sample Reduction	Reducción de muestras
+	Enable LFO	Activar LFO
+	LFO Depth	Profundidad del LFO
+	LFO Rate	Velocidad del LFO
+	Enable Clipping	Activar recorte
+	Limiter Gain	Ganancia del limitador
+	Show/Hide the Audio Track Mixer	Mostrar/ocultar el mezclador de pistas de audio
+	Show Peak Hold	Mostrar retención de picos
+	Show Clipping Indicator	Mostrar indicador de saturación
+	Color Level Zones	Colorear zonas de nivel
+	Show dB Scale	Mostrar escala en dB
+	Solo (click: exclusive; Shift+click: add to the soloed strips)	Solo (clic: exclusivo; Mayús+clic: añadir a los canales en solo)
+	Input level of the recording (drag; double-, middle- or right-click: 0 dB)	Nivel de entrada de la grabación (arrastrar; doble clic, clic central o derecho: 0 dB)
+	Volume (drag; double-, middle- or right-click: 0 dB)	Volumen (arrastrar; doble clic, clic central o derecho: 0 dB)
+	Pan / balance (drag; double-, middle- or right-click: centre)	Panorama / balance (arrastrar; doble clic, clic central o derecho: centro)
+	Voice-over paused (Space: resume, Esc: stop)	Voz en off en pausa (Espacio: reanudar, Esc: detener)
+	Voice-over ready: press Space to record from here	Voz en off lista: pulse Espacio para grabar desde aquí
+	Show the Countdown in the Program Monitor	Mostrar la cuenta atrás en el monitor de programa
+	Separate Audio Channels	Separar canales de audio
+	Audio Waveform Colors	Colores de la forma de onda de audio
+	Reset Colors	Restablecer colores
+	Audio Visualization	Visualización de audio
+	Audio Level Visualization	Visualización del nivel de audio
+	Audio Spectrum	Espectro de audio
+	Dance	Baile
+	Light Show	Espectáculo de luces
+	Position X	Posición X
+	Position Y	Posición Y
+	Peak Color	Color de pico
+	Bands	Bandas
+	Lowest Frequency	Frecuencia más baja
+	Highest Frequency	Frecuencia más alta
+	Floor	Suelo
+	Line	Línea
+	Filled	Relleno
+	Mirrored	Reflejado
+	Frequency Band	Banda de frecuencia
+	Horizontal Move	Movimiento horizontal
+	Vertical Move	Movimiento vertical
+	Audio Streams	Flujos de audio
+	Stream {n}	Flujo {n}
+	Enabled	Activado
+	Switch Audio Stream	Cambiar flujo de audio

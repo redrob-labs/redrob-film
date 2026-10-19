@@ -44,6 +44,7 @@ pub mod i18n;
 pub mod icons;
 pub mod links;
 pub mod menus;
+pub mod monitor_audio;
 pub mod panels;
 pub mod perf;
 #[cfg(not(target_arch = "wasm32"))]
@@ -1009,6 +1010,7 @@ impl FilmcraftApp {
             return;
         };
         let cursor = start_tick.to_units_floor(i64::from(mix_rate));
+        monitor_audio::program().set_volume(self.ui.program.volume);
         let mix = playback_mix(&self.session, seq_id, mix_rate);
         // the old stream stops before the new mixer resets the underrun counters
         a.stop();
@@ -1430,6 +1432,26 @@ impl FilmcraftApp {
         // Esc cancels a dynamic trim in progress
         if self.session.trim_play.dynamic.is_some() && ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
             let _ = self.session.execute("trim.cancelDynamic", json!({}));
+        }
+        // Voice-over (Kdenlive): Esc stops a take; `r` records while a track is record-armed (it
+        // takes the key from the Rate Stretch tool only then)
+        if self.session.voiceover.recording() && ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
+            if self.session.voiceover.paused().is_some() {
+                // a paused take is not playing: finish it directly
+                let t = self.session.playhead();
+                if let Err(e) = self.session.execute("audio.voiceover.stop", json!({"time": t.0})) {
+                    self.ui.status = e.to_string();
+                }
+            } else if let Err(e) = panels::voiceover::toggle(self, None) {
+                self.ui.status = e;
+            }
+        }
+        let armed = self.session.active_sequence().is_some_and(|q| q.audio_tracks.iter().any(|t| t.mixer.record_arm));
+        if armed
+            && ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::R))
+            && let Err(e) = panels::voiceover::record_key(self, ctx)
+        {
+            self.ui.status = e;
         }
         // Panel shortcuts of the focused panel override application shortcuts on the same chord.
         // egui ignores extra Shift and Alt when matching, so the most specific chords go first
@@ -2099,6 +2121,8 @@ pub fn playback_mix(session: &Session, seq_id: redrob_film_project::ItemId, sr: 
     let mixdown = redrob_film_audio_dsp::channels::Mixdown::from_id(&session.prefs.audio.mixdown_type).unwrap_or_default();
     let cues = panels::voiceover::cues(session, sr);
     previews.live.publish_project(project.clone());
+    // the Program monitor's own volume and level meter
+    let tap = monitor_audio::program();
     let mut resampler = None;
     move |cursor: i64, buf: &mut [f32], ch: usize| {
         // the newest project snapshot: mixer moves and other edits are heard while playing
@@ -2138,6 +2162,11 @@ pub fn playback_mix(session: &Session, seq_id: redrob_film_project::ItemId, sr: 
         } else {
             redrob_film_engine::settings::map_output(&mix.channels[0], &mix.channels[1.min(mix.channels.len() - 1)], buf, ch, map);
         }
+        let gain = tap.gain();
+        if gain != 1.0 {
+            buf.iter_mut().for_each(|x| *x *= gain);
+        }
+        tap.post(&mix.channels, n, gain);
         panels::voiceover::mix_cues(buf, ch, cursor, &cues);
     }
 }

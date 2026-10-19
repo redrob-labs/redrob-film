@@ -208,7 +208,23 @@ fn mix_item(
         if !src.info().has_audio() {
             return;
         }
-        effected(item, &|m0, len| src.audio_stream(item.audio_stream, m0, len, sr).ok(), a0, n, sr, w)
+        // the stream's own gain / on-off (Modify ▸ Audio Channels ▸ Audio Streams)
+        let sg = project.item(item.item).and_then(|i| i.as_media()).map_or(1.0, |m| m.interpret.audio_stream_gain(item.audio_stream));
+        effected(
+            item,
+            &|m0, len| {
+                src.audio_stream(item.audio_stream, m0, len, sr).ok().map(|mut b| {
+                    if sg != 1.0 {
+                        b.channels.iter_mut().flatten().for_each(|x| *x *= sg);
+                    }
+                    b
+                })
+            },
+            a0,
+            n,
+            sr,
+            w,
+        )
     };
     // gains: clip gain × Volume (keyframed, per 64-sample block) × channel volume × panner
     let clip_gain = db_to_gain(item.gain_db);

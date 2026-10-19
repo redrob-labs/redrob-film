@@ -186,7 +186,13 @@ fn defaults(app: &FilmcraftApp, id: &str) -> (Value, Value) {
                 Some(m) => {
                     let n = m.info.audio().map_or(2, |a| a.channels) as u16;
                     let map = m.interpret.audio_channels.clone().unwrap_or_else(|| AudioChannelMap::for_format(AudioChannels::Stereo, n));
-                    (json!({"format": format_name(map.format), "clips": map.clips}), json!({"channels": n, "items": true}))
+                    let streams: Vec<Value> = (0..m.info.audio_streams.len())
+                        .map(|k| {
+                            let on = !m.interpret.audio_streams_disabled.contains(&(k as u32));
+                            json!({"enabled": on, "gainDb": m.interpret.audio_stream_gain_db.get(&(k as u32)).copied().unwrap_or(0.0)})
+                        })
+                        .collect();
+                    (json!({"format": format_name(map.format), "clips": map.clips, "streams": streams}), json!({"channels": n, "items": true}))
                 }
                 None => (json!({"channels": [0, 1]}), json!({"channels": 2, "items": false})),
             }
@@ -458,6 +464,27 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                         }
                     });
                     p["clips"] = json!(clips);
+                    // Kdenlive: each audio stream of the file can be switched off or given its
+                    // own gain (effects per stream go on the stream's own clip)
+                    let mut streams: Vec<Value> = p["streams"].as_array().cloned().unwrap_or_default();
+                    if streams.len() > 1 {
+                        ui.label(RichText::new(tl!("Audio Streams")).strong());
+                        egui::Grid::new("audio-stream-settings").striped(true).show(ui, |ui| {
+                            for (k, st) in streams.iter_mut().enumerate() {
+                                ui.label(tlf!("Stream {n}", n = k + 1));
+                                let mut on = st["enabled"].as_bool().unwrap_or(true);
+                                let r = ui.checkbox(&mut on, tl!("Enabled"));
+                                push(&mut elems, format!("{pre}.stream.{k}.enabled"), &r, format!("Stream {} enabled", k + 1));
+                                st["enabled"] = json!(on);
+                                let mut g = st["gainDb"].as_f64().unwrap_or(0.0);
+                                let r = ui.add(egui::DragValue::new(&mut g).speed(0.1).range(-96.0..=24.0).suffix(" dB"));
+                                push(&mut elems, format!("{pre}.stream.{k}.gain"), &r, format!("Stream {} gain", k + 1));
+                                st["gainDb"] = json!(g);
+                                ui.end_row();
+                            }
+                        });
+                        p["streams"] = json!(streams);
+                    }
                 } else {
                     ui.label(tl!("Source channels the selected audio clips play:"));
                     let mut chans: Vec<u16> = serde_json::from_value(p["channels"].clone()).unwrap_or_default();

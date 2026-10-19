@@ -359,3 +359,6 @@
 	Redrob Account…	Conta Redrob…
 	Agent	Agente
 	Add Redrob Film to Redrob Code	Adicionar Redrob Film ao Redrob Code
+
+# Kdenlive parity: audio effects, mixer, meters, recording, waveforms
+	Switch Audio Stream	Alternar fluxo de áudio

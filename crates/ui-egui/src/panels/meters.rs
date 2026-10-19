@@ -48,7 +48,7 @@ fn lufs_text(v: f64) -> String {
 pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     // levels of the Mix as it plays (fast attack, 20 dB/s release, peak hold)
-    let st = super::mixer::poll_meters(app, ui).get(&redrob_film_render::mixer::MASTER.0).cloned().unwrap_or_else(|| vec![[-90.0; 2]; 2]);
+    let st = super::mixer::poll_meters(app, ui).get(&redrob_film_render::mixer::MASTER.0).cloned().unwrap_or_else(|| vec![super::mixer::METER_IDLE; 2]);
     // one bar per channel of the Mix (2, or 6 for a 5.1 Mix)
     let nch = app.session.active_sequence().map(|q| redrob_film_render::mixer::width_of(q.settings.audio_master)).unwrap_or(2);
     let names = redrob_film_audio_dsp::channels::Layout::from_channels(nch).names();
@@ -88,12 +88,16 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let w = ((area.width() - 4.0 * (nch as f32 - 1.0)) / nch as f32).max(3.0);
     for c in 0..nch {
         let r = Rect::from_min_size(pos2(area.min.x + c as f32 * (w + 4.0), area.min.y), vec2(w, area.height()));
-        let m = st.get(c).copied().unwrap_or([-90.0; 2]);
-        crate::widgets::meter_bar(ui.painter(), r, m[0], m[1], &t);
+        let m = st.get(c).copied().unwrap_or(super::mixer::METER_IDLE);
+        let style = app.ui.meter_style;
+        crate::widgets::meter_bar_styled(ui.painter(), r, m[0], m[1], style.color_zones, style.peak_hold, &t);
         app.auto.add(&format!("audioMeters.channel.{}", names[c]), r, &format!("{} {:.1} dB", names[c], m[0]));
     }
+    // hover: dB per channel; right-click: the shared meter appearance menu
+    let resp = ui.interact(area, egui::Id::new("audio-meters-bars"), egui::Sense::click()).on_hover_text(super::mixer::meter_readout(&st, nch));
+    super::mixer::meter_menu(app, &resp, "audioMeters");
     let mut db = 0;
-    while db >= -57 {
+    while app.ui.meter_style.show_scale && db >= -57 {
         let y = area.min.y + area.height() * (-db as f32 / 60.0);
         ui.painter().text(pos2(rect.max.x - 6.0, y), Align2::RIGHT_CENTER, format!("{db}"), Tokens::ui(8.5), t.text_dim);
         db -= 3;

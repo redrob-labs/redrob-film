@@ -178,6 +178,24 @@ pub struct Interpretation {
     /// is edited into a sequence. None = one stereo clip of the first two channels.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audio_channels: Option<AudioChannelMap>,
+    /// Modify ▸ Audio Channels ▸ Audio Streams (Kdenlive: clip properties ▸ audio, per stream):
+    /// gain in dB of each audio stream of the file, by stream index (missing = 0 dB).
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub audio_stream_gain_db: std::collections::BTreeMap<u32, f64>,
+    /// Audio streams switched off (silent wherever they are used), by stream index.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub audio_streams_disabled: Vec<u32>,
+}
+
+impl Interpretation {
+    /// Linear gain of audio stream `stream` (0 when it is switched off).
+    pub fn audio_stream_gain(&self, stream: usize) -> f32 {
+        let k = stream as u32;
+        if self.audio_streams_disabled.contains(&k) {
+            return 0.0;
+        }
+        self.audio_stream_gain_db.get(&k).map_or(1.0, |db| 10f64.powf(db.clamp(-96.0, 24.0) / 20.0) as f32)
+    }
 }
 
 /// Modify ▸ Audio Channels: the clip channel format and, per audio clip, the source channels it

@@ -167,6 +167,10 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which)
     } else {
         video_area
     };
+    if which == Which::Program {
+        // the voice-over countdown is drawn over the Program monitor's picture
+        ctx.data_mut(|d| d.insert_temp(crate::panels::voiceover::program_picture_id(), pic));
+    }
     let saved_clip = ui.clip_rect();
     ui.set_clip_rect(saved_clip.intersect(if mv.zoom.is_some() && !compare { video_area } else { picture_area.expand(12.0) }));
     if show_picture {
@@ -359,6 +363,9 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which)
     egui::Popup::menu(&wresp).show(|ui| {
         ui.set_min_width(240.0);
         monitor_view::wrench_items(app, ui, which);
+        // Kdenlive: each monitor has its own playback volume (independent of the Mix level)
+        let vr = ui.add(egui::Slider::new(&mut monitor_view::view_mut(app, which).volume, 0.0..=100.0).suffix(" %").text(tl!("Volume")));
+        app.auto.add(&format!("{prefix}.settings.volume"), vr.rect, "Volume");
         let mv = monitor_view::view_mut(app, which);
         ui.checkbox(&mut mv.safe_margins, tl!("Safe Margins"));
         ui.checkbox(&mut mv.show_transport, tl!("Show Transport Controls"));
@@ -414,6 +421,59 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which)
     // ---- transport buttons
     let row3 = Rect::from_min_size(pos2(rect.min.x, bar.max.y + 4.0), vec2(rect.width(), 32.0));
     transport(app, ui, row3, which);
+    level_meter(app, ui, row3, which);
+}
+
+/// The monitor's audio level meter (Kdenlive: Show Audio Levels), at the left of the transport
+/// row: one bar per channel of what this monitor plays (the Program mix, or the Source clip), fed by
+/// the monitor's audio tap. With two channels the peak dB is written beside the bars; with more,
+/// only the ticks are shown and hovering gives every channel's dB. Right-click: the shared meter
+/// appearance menu. Also applies the monitor's Volume to its tap.
+fn level_meter(app: &mut FilmcraftApp, ui: &mut egui::Ui, row: Rect, which: Which) {
+    let t = app.tokens;
+    let src = which == Which::Source;
+    let prefix = if src { "source" } else { "program" };
+    let tap = if src { crate::monitor_audio::source() } else { crate::monitor_audio::program() };
+    tap.set_volume(monitor_view::view(app, which).volume);
+    let playing = if src { app.source_playback.clock.playing } else { app.playback.playing };
+    let id = egui::Id::new((prefix, "level-meter"));
+    let mut st: Vec<super::mixer::MeterCh> = ui.data(|d| d.get_temp(id)).unwrap_or_default();
+    let dt = ui.input(|i| i.stable_dt).min(0.1);
+    let fresh = tap.take();
+    super::mixer::meter_step(&mut st, (playing && !fresh.is_empty()).then_some(fresh.as_slice()), dt);
+    if st.is_empty() {
+        st = vec![super::mixer::METER_IDLE; 2];
+    }
+    if playing || st.iter().any(|m| m[0] > -90.0 || m[2] > 0.0) {
+        ui.ctx().request_repaint();
+    }
+    let n = st.len();
+    let bars_w = if n > 2 { 4.0 * n as f32 } else { 12.0 };
+    let r = Rect::from_min_size(pos2(row.min.x + 8.0, row.min.y + 2.0), vec2(bars_w, 26.0));
+    if r.max.x + 40.0 > row.center().x - 6.0 * 30.0 {
+        // the transport needs the room: no meter in a narrow monitor
+        ui.data_mut(|d| d.insert_temp(id, st));
+        return;
+    }
+    let style = app.ui.meter_style;
+    super::mixer::draw_meters(ui, r, &st, n, &t, style);
+    if style.show_scale {
+        for db in [0.0f32, -12.0, -24.0, -48.0] {
+            let y = r.min.y + if style.clip_indicator { 6.0 } else { 0.0 };
+            let h = r.max.y - y;
+            let yy = y + h * (-db / 60.0);
+            ui.painter().line_segment([pos2(r.max.x + 1.0, yy), pos2(r.max.x + 4.0, yy)], Stroke::new(1.0, t.text_faint));
+        }
+    }
+    if n <= 2 {
+        let peak = st.iter().map(|m| m[1]).fold(-90.0f32, f32::max);
+        let text = if peak <= -89.9 { "-∞".to_string() } else { format!("{peak:.0}") };
+        ui.painter().text(pos2(r.max.x + 7.0, r.center().y), Align2::LEFT_CENTER, text, Tokens::ui(9.5), t.text_dim);
+    }
+    let resp = ui.interact(r.expand2(vec2(2.0, 0.0)), id.with("hover"), Sense::click()).on_hover_text(super::mixer::meter_readout(&st, n));
+    super::mixer::meter_menu(app, &resp, &format!("{prefix}.levels"));
+    app.auto.add(&format!("{prefix}.levels"), r, &super::mixer::meter_readout(&st, n));
+    ui.data_mut(|d| d.insert_temp(id, st));
 }
 
 /// How many of a paused monitor's latest requests are remembered ([`asked_before`]): about a

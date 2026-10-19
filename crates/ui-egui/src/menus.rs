@@ -322,6 +322,10 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
             app.toggle_source_play()?;
             return Ok(json!({"playing": app.source_playback.clock.playing}));
         }
+        // Kdenlive: Space pauses / resumes a voice-over take (or starts the one `r` armed)
+        "playback.toggle" if crate::panels::voiceover::space_owned(app, ctx) => {
+            return crate::panels::voiceover::space(app, ctx);
+        }
         "playback.toggle" => {
             app.toggle_play(1.0);
             return Ok(json!({"playing": app.playback.playing}));
