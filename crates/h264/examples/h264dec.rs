@@ -35,9 +35,17 @@ fn main() {
         for p in pics {
             n += 1;
             if let Some(o) = out.as_mut() {
-                o.write_all(&p.y).unwrap();
-                o.write_all(&p.u).unwrap();
-                o.write_all(&p.v).unwrap();
+                if p.bit_depth_luma > 8 || p.bit_depth_chroma > 8 {
+                    // little-endian u16 samples, like ffmpeg's yuv420p10le / yuv422p10le
+                    for plane in [&p.y_hi, &p.u_hi, &p.v_hi] {
+                        let bytes: Vec<u8> = plane.iter().flat_map(|v| v.to_le_bytes()).collect();
+                        o.write_all(&bytes).unwrap();
+                    }
+                } else {
+                    o.write_all(&p.y).unwrap();
+                    o.write_all(&p.u).unwrap();
+                    o.write_all(&p.v).unwrap();
+                }
             }
         }
     };

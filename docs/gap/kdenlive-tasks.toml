@@ -1,0 +1,894 @@
+# Weekly editor tasks: Redrob Film 0.3.0 vs Kdenlive 26.08.2
+#
+# One [[task]] per job an editor does in a normal week. Every task is run in both apps on the
+# same corpus, and each gets a verdict (works / slow / broken / missing) backed by a number or a
+# path under results/<app>/<task-id>/ (see film-gap/RULES.md).
+#
+# Fields
+#   id, group, title, priority   priority 1 = the ten tasks that decide the round
+#   steps                        what to do, in the app under test ("the app")
+#   pass                         the pass criterion, numeric where possible
+#   measure                      how to get the number on Linux, without reading images by eye
+#   kdenlive_manual              the Kdenlive 26.08 manual page describing the feature
+#   film_claim                   what our docs say (file:line under docs/), or "none"
+#
+# Kdenlive is observed as a black box: the manual, release notes and the running AppImage only.
+
+[meta]
+target = "Kdenlive 26.08.2 (official AppImage)"
+ours = "Redrob Film 0.3.0 release binary"
+display = ":0 (shared; never fullscreen, check the active window before every xdotool action)"
+manual_base = "https://docs.kdenlive.org/en/"
+task_count = 60
+
+# Test media the corpus job must produce (names are referenced by the tasks below).
+[meta.corpus]
+"corpus/h264_1080p30_60s.mp4" = "H.264 High 8-bit 4:2:0 1920x1080 30 fps, AAC 48 kHz stereo 1 kHz tone at -12 dBFS, 60 s"
+"corpus/h264_2160p30_60s.mp4" = "H.264 3840x2160 30 fps, AAC 48 kHz, 60 s, GOP 250"
+"corpus/hevc_2160p30_30s.mov" = "HEVC Main 3840x2160 30 fps, AAC 48 kHz, 30 s"
+"corpus/framecode_1080p25_60s.mp4" = "H.264 1080p25, a 32-cell black/white strip in the top 40 px encodes the frame number in binary (decodable with magick pixel reads); silent"
+"corpus/sync_flash_beep_1080p25_30s.mp4" = "1080p25, a full white frame and a 10 ms 1 kHz beep at -6 dBFS once per second, both on the same frame"
+"corpus/prores422_1080p25_10s.mov" = "ProRes 422 1080p25, PCM 48 kHz"
+"corpus/dnxhr_hq_1080p25_10s.mxf" = "DNxHR HQ 1080p25 OP1a"
+"corpus/vp9_1080p30_10s.webm" = "VP9 + Opus"
+"corpus/av1_1080p30_10s.mkv" = "AV1 + Opus"
+"corpus/mkv_2audio_1080p30_10s.mkv" = "H.264 + two audio streams: stream 1 = 440 Hz, stream 2 = 880 Hz"
+"corpus/phone_vfr_hevc_20s.mov" = "variable frame rate HEVC (24-60 fps), AAC 48 kHz, rotation metadata 90"
+"corpus/h264_10bit_422_1080p25_10s.mp4" = "H.264 High 4:2:2 10-bit (camera style)"
+"corpus/tone_48k_stereo.wav" = "PCM 16-bit 48 kHz stereo 1 kHz sine at -12 dBFS, 60 s"
+"corpus/tone_44k1_stereo.wav" = "PCM 16-bit 44.1 kHz stereo 1 kHz sine at -12 dBFS, 60 s"
+"corpus/tone_500hz_48k.wav" = "PCM 48 kHz stereo 500 Hz sine at -12 dBFS, 60 s"
+"corpus/music_44k1.mp3" = "MP3 44.1 kHz stereo, 60 s"
+"corpus/speech_en_30s.wav" = "English read speech, 48 kHz mono, with reference transcript corpus/speech_en_30s.txt"
+"corpus/subs_en.srt" = "12 cues, UTF-8, includes one two-line cue"
+"corpus/still_1920.png" = "PNG 1920x1080 colour bars"
+"corpus/seq_png/" = "100-frame PNG image sequence 0001.png..0100.png"
+"corpus/lut_invert.cube" = "33-point 3D LUT that inverts RGB"
+"corpus/overlap_project" = "per app (.kdenlive / .rfilm): A1 tone_48k_stereo.wav 0-30 s, A2 tone_500hz_48k.wav 10-40 s, V1 h264_1080p30_60s.mp4 0-40 s"
+"corpus/edit_project" = "per app: 10 clips of framecode_1080p25_60s.mp4, each 4 s, butted on V1 with linked audio from tone_48k_stereo.wav on A1, 1080p25 48 kHz project"
+
+[meta.measure]
+needle = "Record the timeline/monitor region with `ffmpeg -f x11grab -framerate 60 -video_size WxH -i :0+X,Y` while a script drives `xdotool mousemove` in 20 px steps every 50 ms and logs `date +%s%N` per step; per captured frame find the needle column with magick (column with the needle colour); latency = time from mouse reaching x to the needle reaching x (p50/p95)."
+frame = "Decode the frame number from the framecode strip with `magick <png> -crop 32x1+0+20 -depth 8 txt:` (cell lit = 1)."
+audio = "`timeout 20 parec -d \"$(pactl get-default-sink).monitor\" --file-format=wav out.wav`; level with `sox out.wav -n stats` or `ffmpeg -i out.wav -af astats -f null -`; dropouts with `ffmpeg -i out.wav -af silencedetect=n=-60dB:d=0.01 -f null -`; pitch with `sox out.wav -n stat` (Rough frequency)."
+files = "`ffprobe -v error -show_streams -show_format -of json`; frame compare with `ffmpeg -lavfi psnr` / `magick compare -metric AE`."
+timing = "Wall clock from `date +%s%N` around the action, against the first screenshot/audio sample showing the effect."
+
+# ---------------------------------------------------------------- playback
+
+[[task]]
+id = "PB-01"
+group = "playback"
+title = "Space starts playback quickly with sound"
+priority = 1
+steps = [
+  "Open corpus/edit_project, park the playhead at 00:00:02:00.",
+  "Start parec on the default sink monitor and the 60 fps x11grab of the program monitor.",
+  "Press Space (log t0), wait 5 s, press Space again.",
+]
+pass = "First changed monitor frame within 500 ms of t0 AND first audio sample above -40 dBFS within 500 ms of t0."
+measure = "x11grab frames: first frame whose decoded frame number differs from the parked one; parec WAV: first 10 ms window with RMS > -40 dBFS, both against the logged t0."
+kdenlive_manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#navigation-and-playback"
+film_claim = "docs/monitors.md:47 (normal forward playback has sound); docs/performance.md:730 (program-monitor playback table)"
+
+[[task]]
+id = "PB-02"
+group = "playback"
+title = "1080p30 playback holds frame rate with no dropped frames"
+priority = 1
+steps = [
+  "Put corpus/h264_1080p30_60s.mp4 on V1/A1 of a 1080p30 project.",
+  "Record the program monitor at 60 fps for 20 s of playback from 00:00:05:00.",
+]
+pass = ">= 590 of 600 distinct frames shown in 20 s (<= 1.7% dropped), no frame shown longer than 100 ms."
+measure = "Count distinct consecutive frames in the x11grab (ffmpeg mpdecimate or per-frame md5 of the monitor crop); max hold = longest run of identical captures x 16.7 ms."
+kdenlive_manual = "https://docs.kdenlive.org/en/user_interface/monitors/project_monitor.html"
+film_claim = "docs/performance.md:734 (H.264 1080p 191/1 shown/dropped in 8 s); docs/gaps.md:152 (Linux playback stutter #617)"
+
+[[task]]
+id = "PB-03"
+group = "playback"
+title = "J/K/L shuttle: speeds and direction"
+priority = 2
+steps = [
+  "Open corpus/edit_project, park at 00:00:20:00.",
+  "Press L, L, L (2 s each), K, then J, J (2 s each), K. Log each key time.",
+]
+pass = "Each L press raises forward speed (measured frames per second of timeline time rises by >= 1.4x per press); J plays backward (frame number decreases); K stops within 100 ms."
+measure = "Decode frame numbers from the 60 fps capture; speed = slope of frame number vs capture time per segment."
+kdenlive_manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#navigation-and-playback"
+film_claim = "docs/monitors.md:47 (L/J double speed up to 8x, K stops; other speeds play without sound)"
+
+[[task]]
+id = "PB-04"
+group = "playback"
+title = "Frame step with arrow keys is exact"
+priority = 2
+steps = [
+  "Open corpus/edit_project, park at frame 100.",
+  "Press Right 10 times (150 ms apart), screenshot; press Left 25 times, screenshot; press Shift+Right once, screenshot.",
+]
+pass = "Displayed frame numbers are exactly 110, 85 and 110 (Shift+Right = +1 s = +25 frames); each step shows within 100 ms."
+measure = "Decode the framecode strip from each screenshot (`import -window <win-id>`), timing from the 60 fps capture."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#seeking-through-your-project"
+film_claim = "docs/monitors.md:48 (left/right frame-step keys step the playhead)"
+
+[[task]]
+id = "PB-05"
+group = "playback"
+title = "Loop a zone / In-Out range"
+priority = 2
+steps = [
+  "Open corpus/edit_project, set In at 00:00:04:00 and Out at 00:00:06:00 (I / O).",
+  "Enable loop (Kdenlive: Loop Zone Ctrl+Shift+Space; ours: Program loop setting + Play In to Out). Record 8 s.",
+]
+pass = ">= 3 full loops in 8 s; every frame shown lies within frames 100..150; the jump from Out back to In takes <= 200 ms."
+measure = "Decoded frame numbers of the 60 fps capture; count wraps from ~150 to ~100 and the gap duration at each wrap."
+kdenlive_manual = "https://docs.kdenlive.org/en/user_interface/timeline.html"
+film_claim = "docs/monitors.md:44 (Program keeps its separate loop setting)"
+
+[[task]]
+id = "PB-06"
+group = "playback"
+title = "4K H.264 / HEVC playback at full and half resolution"
+priority = 2
+steps = [
+  "Put corpus/h264_2160p30_60s.mp4 then corpus/hevc_2160p30_30s.mov on V1 of a 2160p30 project.",
+  "Play 10 s of each at full preview resolution and at 1/2 preview resolution, recording the monitor at 60 fps.",
+]
+pass = ">= 285 of 300 frames shown per 10 s at 1/2 resolution (works); at full resolution report the number (slow if < 285)."
+measure = "Distinct-frame count of the capture per run; also `top -b -n1 -p <pid>` CPU% at the 5 s mark."
+kdenlive_manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film_claim = "docs/performance.md:648 (2160p playback table); docs/target-app-parity.md:218 (4K playback 65% ready)"
+
+# ---------------------------------------------------------------- scrub
+
+[[task]]
+id = "SC-01"
+group = "scrub"
+title = "Needle follows the mouse when dragged on the timeline ruler"
+priority = 1
+steps = [
+  "Open corpus/edit_project, zoom so the 40 s sequence fills the timeline width.",
+  "Start a 60 fps x11grab of the timeline ruler + program monitor region.",
+  "xdotool: press button 1 on the ruler at x0, move right 600 px in 20 px steps every 33 ms, then back, release. Log every step time.",
+]
+pass = "Needle lags the pointer by p50 <= 50 ms and p95 <= 100 ms; needle x within 2 px of pointer x once the pointer stops."
+measure = "Needle column per captured frame (magick: column matching the needle colour in the ruler row) vs the logged pointer x/time."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#seeking-through-your-project"
+film_claim = "docs/performance.md:746 (drag-stop p50 103-281 ms for H.264 1080p); docs/ui-parity.md:28 (scrubbing 80%)"
+
+[[task]]
+id = "SC-02"
+group = "scrub"
+title = "Program monitor shows the right frame during and after a timeline drag"
+priority = 1
+steps = [
+  "Same drag as SC-01 but in the empty track area below the clips (Kdenlive: click/drag in empty timeline area), on corpus/edit_project.",
+  "After release, wait 2 s and screenshot the program monitor.",
+]
+pass = "During the drag the monitor updates at >= 10 distinct frames/s; after release the decoded frame equals the needle's timecode exactly, within 300 ms of release."
+measure = "Decoded framecode from the 60 fps capture vs the timecode shown at the needle (or the app's timecode field read by the framecode strip of the last frame); settle time = release to first exact frame."
+kdenlive_manual = "https://docs.kdenlive.org/en/user_interface/timeline.html"
+film_claim = "docs/performance.md:750 (H.264 1080p seek p50/p95 770-840 / 1389-1567 ms)"
+
+[[task]]
+id = "SC-03"
+group = "scrub"
+title = "Drag the needle on the monitor's own ruler"
+priority = 2
+steps = [
+  "Open corpus/framecode_1080p25_60s.mp4 in the clip/source monitor.",
+  "Drag across the monitor's time ruler 400 px right in 20 px / 33 ms steps; release.",
+]
+pass = "Monitor picture updates at >= 10 distinct frames/s during the drag; final frame matches the ruler position +-1 frame."
+measure = "60 fps capture of the monitor; decoded frame numbers and timing."
+kdenlive_manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film_claim = "docs/monitors.md:40 (scrubbing while playing seeks the Source clock)"
+
+[[task]]
+id = "SC-04"
+group = "scrub"
+title = "Audio is heard while scrubbing"
+priority = 1
+steps = [
+  "Open corpus/overlap_project, park at 00:00:05:00.",
+  "Start parec on the default sink monitor; drag the needle slowly (5 px per 33 ms) for 3 s across the region with A1 tone; release.",
+]
+pass = "Audio RMS > -40 dBFS in >= 50% of 50 ms windows during the drag (scrub audio present); silence within 200 ms of the drag stopping."
+measure = "parec WAV split into 50 ms windows (`sox trim` or ffmpeg astats reset), compared with the drag start/stop times."
+kdenlive_manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
+film_claim = "docs/monitors.md:70 (horizontal drag from an audio waveform scrubs); docs/monitors.md:48 (non-normal shuttle speeds play without sound)"
+
+[[task]]
+id = "SC-05"
+group = "scrub"
+title = "Click to seek on a 4K long-GOP clip"
+priority = 2
+steps = [
+  "Put corpus/h264_2160p30_60s.mp4 on V1 of a 2160p30 project.",
+  "Click the ruler at 10 random positions, 2 s apart; log each click time.",
+]
+pass = "Correct frame shown within 500 ms p50 and 1000 ms p95 after the click."
+measure = "60 fps capture: time from click to the monitor's last change for that seek; compare final frame to an ffmpeg-extracted reference frame at the clicked time (PSNR > 35 dB)."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#seeking-through-your-project"
+film_claim = "docs/performance.md:720 (cold seek H.264 2160p 2274-3394 ms)"
+
+# ---------------------------------------------------------------- audio
+
+[[task]]
+id = "AU-01"
+group = "audio"
+title = "Sound comes out of the default output device"
+priority = 1
+steps = [
+  "Leave the system default sink as is (`pactl get-default-sink`), start the app with default audio settings.",
+  "Put corpus/tone_48k_stereo.wav on A1, play 10 s while parec records the default sink monitor.",
+]
+pass = "Recorded RMS between -15 and -9 dBFS (tone is -12 dBFS at unity) on both channels for >= 9.5 of 10 s; dominant frequency 1000 +- 5 Hz."
+measure = "`sox out.wav -n stats` (RMS lev dB per channel), `sox out.wav -n stat` rough frequency, silencedetect for gaps."
+kdenlive_manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film_claim = "docs/gaps.md:229 (G17: no audio #602, Linux stutter #617); docs/hardware-parity.md:65 (cpal ALSA)"
+
+[[task]]
+id = "AU-02"
+group = "audio"
+title = "Overlapping clips on two tracks play without dropouts"
+priority = 1
+steps = [
+  "Open corpus/overlap_project, play from 00:00:05:00 to 00:00:35:00 while parec records.",
+]
+pass = "Zero silences >= 10 ms between 5 s and 35 s; 10-30 s region contains both 1000 Hz and 500 Hz (two spectral peaks within 3 dB of the expected sum level)."
+measure = "silencedetect n=-60dB d=0.01 on the recording; `sox out.wav -n trim 10 15 spectrogram`-free check: bandpass each tone with `sox ... sinc 950-1050` / `sinc 450-550` and read RMS per band."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html#audio-mixer"
+film_claim = "docs/gaps.md:232 (audio cuts out with overlapping clips #336)"
+
+[[task]]
+id = "AU-03"
+group = "audio"
+title = "44.1 kHz source in a 48 kHz project plays at the right pitch and speed"
+priority = 1
+steps = [
+  "48 kHz project. Put corpus/tone_44k1_stereo.wav on A1 at 0 s and corpus/sync_flash_beep_1080p25_30s.mp4 on V1.",
+  "Play 20 s while parec records; also export 20 s to WAV.",
+]
+pass = "Played and exported tone at 1000 +- 5 Hz (not 1088 Hz or 918 Hz); exported duration 20.00 +- 0.04 s; no clicks (sample-to-sample jump > 0.2 FS count = 0)."
+measure = "`sox out.wav -n stat` rough frequency; ffprobe duration; click count via `ffmpeg -af aderivative,astats` peak of the derivative."
+kdenlive_manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings.html"
+film_claim = "docs/project-files.md:231 (Audio Hardware: sample rate, force document rate); docs/testing.md:115 (MP4 48 kHz read resampled to 44.1 kHz)"
+
+[[task]]
+id = "AU-04"
+group = "audio"
+title = "Default output device changes while the app is open"
+priority = 2
+steps = [
+  "Create a null sink: `pactl load-module module-null-sink sink_name=gaptest` (save the module id).",
+  "Play corpus/tone_48k_stereo.wav for 5 s on the current default, then `pactl set-default-sink gaptest`, keep playing 10 s, record gaptest.monitor.",
+  "Restore the original default sink and unload the module.",
+]
+pass = "Within 2 s of the switch, audio appears on gaptest.monitor at RMS > -40 dBFS without restarting playback or the app (works); needing a stop/play = slow; no sound until restart = broken."
+measure = "parec on gaptest.monitor; first window above -40 dBFS vs the switch time."
+kdenlive_manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film_claim = "docs/gaps.md:231 (Asus Xonar DX output broken #605, no audio #602)"
+
+[[task]]
+id = "AU-05"
+group = "audio"
+title = "Mixer fader, mute and solo"
+priority = 2
+steps = [
+  "Open corpus/overlap_project, open the audio mixer.",
+  "Set A1 fader to -6 dB, play 10-15 s; mute A2, play; solo A2 (unmute), play. Record each run.",
+]
+pass = "1 kHz band level drops by 6 +- 0.5 dB; muted A2 removes the 500 Hz band (< -60 dBFS); solo A2 removes the 1 kHz band (< -60 dBFS)."
+measure = "Band RMS per run with sox sinc filters on the parec recordings."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html#audio-mixer"
+film_claim = "docs/target-app-parity.md:111 (mixer graph, automation); docs/ui-parity.md:28 (mixer values cannot be typed #481)"
+
+[[task]]
+id = "AU-06"
+group = "audio"
+title = "Level meters show the playing level"
+priority = 2
+steps = [
+  "Play corpus/tone_48k_stereo.wav (-12 dBFS) on A1; screenshot the master meter 5 times, 1 s apart.",
+  "Repeat with the A1 fader at +12 dB (signal hits 0 dBFS) and check the clip indicator.",
+]
+pass = "Meter top within 2 dB of -12 dBFS on the meter scale; clip indicator lit at +12 dB."
+measure = "magick: crop the meter, find the lit bar's top pixel row, map rows to dB using the scale tick rows read from the same crop; clip lamp = red pixel count > 0."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html#audio-mixer"
+film_claim = "docs/target-app-parity.md:254 (clip volume, fades, meters)"
+
+[[task]]
+id = "AU-07"
+group = "audio"
+title = "Waveforms are drawn on audio clips"
+priority = 2
+steps = [
+  "New project; import corpus/music_44k1.mp3 and corpus/tone_48k_stereo.wav and drop both on audio tracks; screenshot the clips every 1 s for 10 s.",
+]
+pass = "Waveform visible (non-background pixels > 20% of the clip body) within 5 s of the drop for both clips."
+measure = "magick crop of each clip body; count pixels differing from the clip fill colour (`-fuzz 10% -fill black -opaque <fill> -format %[fx:mean]`)."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#show-audio-thumbnails"
+film_claim = "docs/ui-parity.md:26 (timeline waveforms); docs/performance.md:809 (waveform source peak cached)"
+
+[[task]]
+id = "AU-08"
+group = "audio"
+title = "Audio and video stay in sync during playback"
+priority = 2
+steps = [
+  "Put corpus/sync_flash_beep_1080p25_30s.mp4 on V1/A1; play 20 s recording the monitor at 60 fps and the sink monitor with parec, both started from one script that logs their start times.",
+]
+pass = "Mean |flash time - beep time| <= 45 ms (about 1 frame at 25 fps), max <= 80 ms over 20 events."
+measure = "Flash = capture frames where monitor mean luma > 0.9 (magick %[fx:mean]); beep = parec windows above -20 dBFS; align by the logged start times."
+kdenlive_manual = "https://docs.kdenlive.org/en/user_interface/monitors/project_monitor.html"
+film_claim = "none"
+
+# ---------------------------------------------------------------- timeline editing
+
+[[task]]
+id = "TL-01"
+group = "timeline"
+title = "Cut a clip at the playhead"
+priority = 1
+steps = [
+  "Open corpus/edit_project, select clip 3 (frames 200-299), park at frame 250.",
+  "Cut (Kdenlive Shift+R; ours Razor / Add Edit). Save, then inspect the project via export of frames 245-255.",
+]
+pass = "Two clips 200-249 and 250-299; exported frames 245..255 carry framecodes 245..255 with no repeat or skip; cut appears in the UI within 200 ms."
+measure = "Clip count from the saved project file (grep entries) or the CLI/MCP query; framecode decode of the export; 60 fps capture for UI latency."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#cutting-a-clip"
+film_claim = "docs/target-app-parity.md:210 (insert/overwrite, ripple/roll/slip/slide, razor all work)"
+
+[[task]]
+id = "TL-02"
+group = "timeline"
+title = "Ripple delete a clip and a gap"
+priority = 2
+steps = [
+  "Open corpus/edit_project. Ripple-delete clip 4 (Kdenlive Extract Clip Shift+Del; ours Ripple Delete).",
+  "Then delete clip 6 normally and ripple-delete the gap it leaves (Kdenlive Remove Space).",
+]
+pass = "Sequence length 40 s -> 32 s; no gap remains; A1 stays aligned with V1 (linked audio moves with video, offset 0 frames)."
+measure = "Export, check duration with ffprobe and A/V alignment by framecode vs tone presence; or read clip positions from the saved project."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#cutting-footage-from-multiple-aligned-tracks-ripple-delete"
+film_claim = "docs/ui-parity.md:21 (gap delete #648, #668)"
+
+[[task]]
+id = "TL-03"
+group = "timeline"
+title = "Ripple trim the end of a clip"
+priority = 2
+steps = [
+  "Open corpus/edit_project. With the ripple tool, drag the out point of clip 2 left by 1 s (25 frames).",
+]
+pass = "Clip 2 ends 25 frames earlier; clips 3-10 shift left by exactly 25 frames; total length 39 s."
+measure = "Saved project clip positions or export duration via ffprobe (39.00 +- 0.04 s) and framecode at the new edit point."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#ripple-tool"
+film_claim = "docs/target-app-parity.md:210 (ripple works)"
+
+[[task]]
+id = "TL-04"
+group = "timeline"
+title = "Roll the edit between two clips"
+priority = 2
+steps = [
+  "Open corpus/edit_project. Roll the edit between clip 5 and clip 6 right by 10 frames (Kdenlive: no roll tool documented; try resizing butted clips).",
+]
+pass = "Clip 5 ends 10 frames later, clip 6 starts 10 frames later with its in point +10; total length unchanged (40 s)."
+measure = "Export: framecode at the edit point and ffprobe duration."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-edit-tools"
+film_claim = "docs/target-app-parity.md:210 (roll works)"
+
+[[task]]
+id = "TL-05"
+group = "timeline"
+title = "Slip a clip"
+priority = 2
+steps = [
+  "Open corpus/edit_project. Slip clip 3 by +12 frames (Kdenlive Slip tool + arrow keys).",
+]
+pass = "Clip 3 keeps position and duration; its first exported frame carries framecode in+12."
+measure = "Framecode decode of the exported frame at the clip 3 start; ffprobe duration 40 s."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#slip-tool"
+film_claim = "docs/target-app-parity.md:210 (slip works)"
+
+[[task]]
+id = "TL-06"
+group = "timeline"
+title = "Slide a clip between its neighbours"
+priority = 2
+steps = [
+  "Open corpus/edit_project. Slide clip 5 right by 10 frames (neighbours clip 4 longer, clip 6 shorter).",
+]
+pass = "Clip 5 content unchanged and moved +10 frames; clip 4 +10 frames, clip 6 -10 frames; total 40 s."
+measure = "Framecodes at the three edit points of the export."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-edit-tools"
+film_claim = "docs/target-app-parity.md:210 (slide works)"
+
+[[task]]
+id = "TL-07"
+group = "timeline"
+title = "Three-point edit: insert and overwrite from the source monitor"
+priority = 2
+steps = [
+  "Open corpus/edit_project. Load corpus/h264_1080p30_60s.mp4 in the clip/source monitor, mark In 00:10 and Out 00:12.",
+  "Target V1/A1, park the playhead at 00:08 and Insert (V / comma); then park at 00:20 and Overwrite (B / period).",
+]
+pass = "After insert: length 42 s, 2 s of the new clip at 8-10 s, later clips shifted 2 s. After overwrite: length still 42 s, 20-22 s replaced."
+measure = "Export; ffprobe duration; framecode strip absent (new clip) vs present at the expected times."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#point-editing"
+film_claim = "docs/target-app-parity.md:210 (insert/overwrite work); docs/target-app-parity.md:108 (Source range dragging)"
+
+[[task]]
+id = "TL-08"
+group = "timeline"
+title = "Snapping to clip edges and the playhead"
+priority = 2
+steps = [
+  "Open corpus/edit_project with snapping on. Delete clip 10, drag clip 9 right and release it 4 px from the playhead parked at 00:38:00.",
+  "Repeat with snapping off.",
+]
+pass = "Snapping on: clip 9 start lands exactly on the playhead frame (0 frames off). Off: lands where released (+-1 frame of the pointer)."
+measure = "Clip position from the saved project or framecode at 38 s in the export."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#snap"
+film_claim = "docs/target-app-parity.md:249 (snapping, tracks)"
+
+[[task]]
+id = "TL-09"
+group = "timeline"
+title = "Group clips and move them together"
+priority = 2
+steps = [
+  "Open corpus/edit_project, add corpus/still_1920.png on V2 over clip 2. Group it with clip 2 (Ctrl+G / Group).",
+  "Drag clip 2 by +2 s on the timeline into the empty area after clip 10; ungroup; move the still alone by +1 s.",
+]
+pass = "Grouped move keeps the still's offset to clip 2 at 0 frames; after ungroup the still moves alone (clip 2 unchanged)."
+measure = "Positions from the saved project or the export (still present frames vs framecode)."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html"
+film_claim = "none"
+
+[[task]]
+id = "TL-10"
+group = "timeline"
+title = "Multitrack: four video and four audio tracks"
+priority = 2
+steps = [
+  "New 1080p25 project; add tracks until there are 4 V and 4 A.",
+  "Place clips on V1-V4 (V2-V4 scaled to 50% at corners) and A1-A4 (tones), play 10 s, export 10 s.",
+]
+pass = "All 4 pictures visible in the export (each quadrant region differs from black); all 4 audio tracks summed in the export (RMS per band present); playback >= 240/250 frames."
+measure = "magick mean per quadrant of an exported frame; sox band RMS; x11grab distinct-frame count."
+kdenlive_manual = "https://docs.kdenlive.org/en/user_interface/timeline.html"
+film_claim = "docs/ui-parity.md:21 (new tracks by dropping missing #483)"
+
+# ---------------------------------------------------------------- keyframes
+
+[[task]]
+id = "KF-01"
+group = "keyframes"
+title = "Opacity keyframes interpolate linearly"
+priority = 2
+steps = [
+  "corpus/still_1920.png on V2 over black, 4 s. Opacity keyframes 0% at 0 s and 100% at 2 s, linear.",
+  "Export frames at 0.5, 1.0, 1.5 s.",
+]
+pass = "Mean luma of the exported frames at 25/50/75% of the full-opacity frame's mean, each +-3 percentage points."
+measure = "`magick frame.png -colorspace gray -format %[fx:mean]` vs the frame at 2 s."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframes-in-effects"
+film_claim = "docs/ui-parity.md:23 (keyframes, value/velocity graphs)"
+
+[[task]]
+id = "KF-02"
+group = "keyframes"
+title = "Position keyframes with easing"
+priority = 2
+steps = [
+  "corpus/still_1920.png scaled to 20% on V2. Transform position keyframes x=0 at 0 s, x=1500 px at 2 s; set the second to ease in/out.",
+  "Export frames at 0.25 s steps.",
+]
+pass = "Box position at 1.0 s = 750 +- 15 px; positions at 0.25 s and 1.75 s differ from linear by >= 40 px (easing applied)."
+measure = "magick trim bounding box (`-trim -format %O`) of each exported frame against black."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframes-types-interpolation"
+film_claim = "docs/gaps.md:144 (keyframe curves for Position missing #448)"
+
+[[task]]
+id = "KF-03"
+group = "keyframes"
+title = "Volume keyframes / fades"
+priority = 2
+steps = [
+  "corpus/tone_48k_stereo.wav on A1, 6 s. Fade in over 1 s, volume keyframe -20 dB at 3 s, fade out over the last 1 s. Export WAV.",
+]
+pass = "RMS of 0-50 ms < -40 dBFS; 3.0-3.2 s at -32 +- 1 dBFS; last 50 ms < -40 dBFS."
+measure = "`sox out.wav -n trim <start> <len> stats` per window."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters/audio_effects/volume_and_dynamics/volume_keyframable.html"
+film_claim = "docs/target-app-parity.md:254 (clip volume, fades)"
+
+# ---------------------------------------------------------------- effects & transitions
+
+[[task]]
+id = "FX-01"
+group = "effects"
+title = "Apply an effect and see it in the monitor"
+priority = 2
+steps = [
+  "Open corpus/edit_project, park on clip 1, drag a brightness/exposure effect onto it, set +50%.",
+  "Screenshot the program monitor every 100 ms for 2 s after setting the value; export clip 1.",
+]
+pass = "Monitor reflects the change within 500 ms; exported mean luma rises >= 15% over the unaffected export; effect is per-clip (clip 2 unchanged)."
+measure = "magick mean luma of monitor crop and exported frames."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters.html#how-to-apply-an-effect"
+film_claim = "docs/target-app-parity.md:109 (every effect exists, 100% measured)"
+
+[[task]]
+id = "FX-02"
+group = "effects"
+title = "Cross dissolve between two clips on one track"
+priority = 2
+steps = [
+  "V1: corpus/still_1920.png then a black colour clip, butted. Add a 1 s dissolve on the edit (Kdenlive Mix Clips U).",
+  "Export the frame at the dissolve midpoint.",
+]
+pass = "Midpoint mean luma = 50% of the still's +-5 points; duration of the transition 25 frames +-1."
+measure = "magick mean per exported frame across the transition; count frames between 5% and 95%."
+kdenlive_manual = "https://docs.kdenlive.org/en/compositing/transitions/mixes.html"
+film_claim = "docs/ui-parity.md:27 (transitions 70%)"
+
+[[task]]
+id = "FX-03"
+group = "effects"
+title = "Change clip speed"
+priority = 2
+steps = [
+  "corpus/framecode_1080p25_60s.mp4 4 s on V1: set speed 50%, then a second copy at 200%. Export.",
+]
+pass = "50% clip lasts 8 s +- 1 frame and each source frame appears twice; 200% clip lasts 2 s and framecodes step by 2; audio pitch preserved if the app claims pitch compensation."
+measure = "Framecode sequence of the export; ffprobe durations."
+kdenlive_manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#change-speed-of-clips"
+film_claim = "docs/gaps.md:240 (Optical Flow time interpolation #780)"
+
+[[task]]
+id = "FX-04"
+group = "effects"
+title = "Picture-in-picture with transform scale and position"
+priority = 2
+steps = [
+  "V1 corpus/h264_1080p30_60s.mp4, V2 corpus/still_1920.png scaled 25% at the top-right corner. Export 2 s.",
+]
+pass = "Still occupies a 480x270 +- 4 px box whose right/top edges are within 4 px of the target margin; V1 visible outside it."
+measure = "magick compare against an unprocessed V1 frame; bounding box of the changed area."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/transform.html"
+film_claim = "docs/gaps.md:140 (no on-screen transform handles #639)"
+
+# ---------------------------------------------------------------- titles
+
+[[task]]
+id = "TI-01"
+group = "titles"
+title = "Create a text title over video and export it"
+priority = 2
+steps = [
+  "Open corpus/edit_project; add a title clip 'GAP TEST 123' (white, 96 px) centred on V2 over clip 1, 3 s. Export.",
+]
+pass = "Title present in the exported frames 0-3 s (white pixel bbox centred within 20 px of the frame centre, height 60-140 px) and absent after 3 s."
+measure = "magick threshold 90% + trim bbox on exported frames."
+kdenlive_manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film_claim = "docs/target-app-parity.md:252 (Type tool, templates)"
+
+[[task]]
+id = "TI-02"
+group = "titles"
+title = "Non-Latin text in a title (Korean and Arabic)"
+priority = 2
+steps = [
+  "Add two titles: Korean '편집 테스트' and Arabic 'اختبار التحرير'. Export a frame of each.",
+]
+pass = "Rendered glyph bbox width > 200 px with > 2 connected components per word (not tofu boxes); Arabic is right-to-left joined (glyph count of components < character count)."
+measure = "magick threshold + `-define connected-components:verbose=true -connected-components 8` on the crop."
+kdenlive_manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film_claim = "docs/target-app-parity.md:252 (Arabic text broken #395); docs/gaps.md:207 (Korean needs Hangul fonts #508)"
+
+# ---------------------------------------------------------------- color
+
+[[task]]
+id = "CO-01"
+group = "color"
+title = "Scopes: waveform, vectorscope, histogram follow playback"
+priority = 2
+steps = [
+  "Open the waveform, vectorscope and histogram. Play corpus/sync_flash_beep_1080p25_30s.mp4 for 5 s; screenshot the scopes every 100 ms.",
+]
+pass = "Each scope changes on the white flash frames (scope crop differs from the previous capture) within 200 ms; waveform peak row at 100% on a flash frame."
+measure = "magick compare -metric AE between successive scope crops; brightest row of the waveform crop vs its 0/100 scale rows."
+kdenlive_manual = "https://docs.kdenlive.org/en/tips_and_tricks/scopes/waveform_and_rgb_parade.html"
+film_claim = "docs/target-app-parity.md:113 (Lumetri complete incl. scopes); docs/architecture.md:74 (scopes crate)"
+
+[[task]]
+id = "CO-02"
+group = "color"
+title = "Curves adjust the image"
+priority = 2
+steps = [
+  "corpus/still_1920.png on V1. Add a curves effect, lift the midpoint (input 0.5 -> output 0.75). Export one frame.",
+]
+pass = "The 50% grey bar of the colour bars exports at 0.75 +- 0.03; black and white bars unchanged +-0.02."
+measure = "magick pixel read at the bar centres before and after."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/curves_avfilter.html"
+film_claim = "docs/target-app-parity.md:213 (curves / wheels on CPU)"
+
+[[task]]
+id = "CO-03"
+group = "color"
+title = "Apply a .cube LUT"
+priority = 2
+steps = [
+  "corpus/still_1920.png on V1. Apply corpus/lut_invert.cube. Export one frame.",
+]
+pass = "Every bar equals 1 - original +- 0.02 per channel."
+measure = "magick pixel reads on bar centres, original vs export."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction.html"
+film_claim = "docs/architecture.md:594 (Lumetri Input LUT / Creative Look .cube)"
+
+# ---------------------------------------------------------------- proxies & preview render
+
+[[task]]
+id = "PX-01"
+group = "proxy"
+title = "Generate proxies and play 4K smoothly"
+priority = 2
+steps = [
+  "Import corpus/h264_2160p30_60s.mp4 and corpus/hevc_2160p30_30s.mov, create proxies, time until both are ready.",
+  "Play 10 s of each with proxies on, recording at 60 fps.",
+]
+pass = "Proxies ready within 2x real time (<= 180 s for 90 s of media); >= 290 of 300 frames shown per 10 s with proxies."
+measure = "Wall time from the create action to the proxy files' final size being stable (stat every 2 s, timeout 600); distinct-frame count."
+kdenlive_manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_proxy_clips.html"
+film_claim = "docs/project-files.md:254 (proxies); docs/project-files.md:355 (proxies cut CPU composite 5.7x)"
+
+[[task]]
+id = "PX-02"
+group = "proxy"
+title = "Export uses original media, not proxies"
+priority = 2
+steps = [
+  "With proxies on from PX-01, export 5 s of the 4K clip at 2160p.",
+]
+pass = "Exported frame vs ffmpeg-extracted original frame PSNR >= 40 dB (a proxy upscaled scores far lower); width 3840."
+measure = "ffprobe width; ffmpeg -lavfi psnr between export and the reference."
+kdenlive_manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_settings/proxy_settings.html"
+film_claim = "docs/monitors.md:147 (exports use full-resolution media even with proxies)"
+
+[[task]]
+id = "PX-03"
+group = "proxy"
+title = "Preview render a heavy zone, then play it in real time"
+priority = 2
+steps = [
+  "corpus/h264_1080p30_60s.mp4 with a heavy blur + curves stack, 10 s zone. Start preview render (Kdenlive Shift+Return; ours Render Effects In to Out).",
+  "Time the render, then play the zone recording at 60 fps.",
+]
+pass = "Render finishes within 3x real time (<= 30 s); playback afterwards >= 295/300 frames."
+measure = "Wall time to the render-complete indicator (ruler colour change measured by magick) or render files settling; distinct-frame count."
+kdenlive_manual = "https://docs.kdenlive.org/en/tips_and_tricks/tips_and_tricks/timeline_preview_rendering.html"
+film_claim = "docs/gaps.md:224 (Render Effects In to Out renders only In..Out, #424)"
+
+# ---------------------------------------------------------------- import
+
+[[task]]
+id = "IM-01"
+group = "import"
+title = "Import the common codec set"
+priority = 2
+steps = [
+  "Import h264_1080p30_60s.mp4, hevc_2160p30_30s.mov, prores422_1080p25_10s.mov, dnxhr_hq_1080p25_10s.mxf, vp9_1080p30_10s.webm, av1_1080p30_10s.mkv, music_44k1.mp3, still_1920.png in one drop.",
+  "Put each on the timeline and export frame 1 s (and audio) of each.",
+]
+pass = "8/8 open; each exported frame PSNR >= 35 dB vs ffmpeg decode of the source; audio present where the source has audio."
+measure = "Count clips that open; ffmpeg psnr per file; sox stats on audio."
+kdenlive_manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin.html"
+film_claim = "docs/target-app-parity.md:110 (own decoders for H.264, HEVC, VP9, AV1, ProRes, DNx); docs/gaps.md:118 (WebM shows black #432)"
+
+[[task]]
+id = "IM-02"
+group = "import"
+title = "Phone VFR HEVC clip: duration, rotation, sync"
+priority = 2
+steps = [
+  "Import corpus/phone_vfr_hevc_20s.mov into a 1080p30 project, place it, export it.",
+]
+pass = "Export duration 20.0 +- 0.1 s; picture portrait (rotation honoured: content bbox taller than wide); A/V offset <= 1 frame at start and end."
+measure = "ffprobe duration; magick bbox; sync via the clip's own flash/beep markers if present, else waveform onset vs first non-black frame."
+kdenlive_manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
+film_claim = "docs/gaps.md:118 (export stopped producing frames with iPhone HEVC on Linux #480)"
+
+[[task]]
+id = "IM-03"
+group = "import"
+title = "Clip with two audio streams"
+priority = 2
+steps = [
+  "Import corpus/mkv_2audio_1080p30_10s.mkv, place it, check the clip properties, export.",
+]
+pass = "Both streams usable (two audio clips or a stream selector); export contains 440 Hz and 880 Hz."
+measure = "ffprobe stream count of the import in the app's media info; sox band RMS at 440/880 Hz in the export."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html#multiple-audio-streams"
+film_claim = "docs/gaps.md:119 (only the first audio track imported #397 #416 #601; multi-stream #361)"
+
+[[task]]
+id = "IM-04"
+group = "import"
+title = "Image sequence and 10-bit 4:2:2 camera clip"
+priority = 2
+steps = [
+  "Import corpus/seq_png/ as an image sequence; import corpus/h264_10bit_422_1080p25_10s.mp4. Place both, export.",
+]
+pass = "Sequence becomes one 100-frame clip (4.0 s at 25 fps); 10-bit 4:2:2 clip opens and exports PSNR >= 35 dB vs ffmpeg."
+measure = "ffprobe duration; ffmpeg psnr."
+kdenlive_manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/image_sequence.html"
+film_claim = "docs/gaps.md:66 (G3: H.264 8-bit 4:2:0 only; Linux declines 10-bit 4:2:2)"
+
+# ---------------------------------------------------------------- export
+
+[[task]]
+id = "EX-01"
+group = "export"
+title = "Export H.264 + AAC MP4 at project settings"
+priority = 1
+steps = [
+  "Open corpus/edit_project, export the whole sequence with the default H.264/AAC MP4 preset; time it.",
+]
+pass = "File plays in ffprobe as h264 1920x1080 25 fps + aac 48 kHz stereo; duration 40.00 +- 0.04 s; framecodes 0..999 with none missing or repeated; finishes within 1x real time (<= 40 s)."
+measure = "ffprobe json; framecode decode of all frames (ffmpeg -vf crop to the strip, image2pipe); wall time."
+kdenlive_manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film_claim = "docs/performance.md:770 (export H.264 + AAC 10-12 fps on 1080p23.976); docs/target-app-parity.md:115"
+
+[[task]]
+id = "EX-02"
+group = "export"
+title = "Exported file keeps A/V sync"
+priority = 2
+steps = [
+  "corpus/sync_flash_beep_1080p25_30s.mp4 on V1/A1, cut it twice and add a 1 s gap; export H.264/AAC.",
+]
+pass = "Every flash frame and beep coincide within 1 frame (40 ms) over the whole file."
+measure = "ffmpeg blackdetect/signalstats per frame for flashes, astats or silencedetect for beeps; difference per event."
+kdenlive_manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film_claim = "docs/performance.md:269 (batched export keeps audio/mux interleave)"
+
+[[task]]
+id = "EX-03"
+group = "export"
+title = "Export an intermediate (ProRes or DNxHR)"
+priority = 2
+steps = [
+  "Export corpus/edit_project as ProRes 422 HQ MOV (or DNxHR HQ if ProRes is absent).",
+]
+pass = "ffprobe codec prores (profile HQ) or dnxhd; 1920x1080; PSNR >= 45 dB vs the source frames."
+measure = "ffprobe; ffmpeg psnr vs framecode source."
+kdenlive_manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film_claim = "docs/target-app-parity.md:115 (ProRes, DNxHR export)"
+
+[[task]]
+id = "EX-04"
+group = "export"
+title = "Export only the In-Out zone"
+priority = 2
+steps = [
+  "Open corpus/edit_project, set In 00:10:00 Out 00:15:00, export with 'selected zone' / In to Out.",
+]
+pass = "Duration 5.00 +- 0.04 s; first framecode 250, last 374."
+measure = "ffprobe; framecode decode of first and last frames."
+kdenlive_manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film_claim = "none"
+
+[[task]]
+id = "EX-05"
+group = "export"
+title = "Audio-only export at a loudness target"
+priority = 2
+steps = [
+  "Open corpus/overlap_project, export audio only as WAV 48 kHz 24-bit; if the app has loudness normalisation, set -23 LUFS.",
+]
+pass = "WAV 48000 Hz, 2 ch, duration 40 s +- 0.02; with normalisation, integrated loudness -23 +- 0.5 LUFS."
+measure = "ffprobe; `ffmpeg -i out.wav -af ebur128 -f null -` integrated loudness."
+kdenlive_manual = "https://docs.kdenlive.org/en/exporting/render.html"
+film_claim = "docs/gaps.md:200 (AAC audio-only .m4a, #814); docs/target-app-parity.md:214 (loudness)"
+
+# ---------------------------------------------------------------- subtitles & speech to text
+
+[[task]]
+id = "ST-01"
+group = "subtitles"
+title = "Import, edit and re-export SRT"
+priority = 2
+steps = [
+  "Import corpus/subs_en.srt onto the subtitle track; change the text of cue 3 and move cue 5 by +1 s; add a new cue at the playhead (Kdenlive Shift+S); export SRT.",
+]
+pass = "Exported SRT has 13 cues; untouched cues match the input timings to the millisecond and text byte-for-byte; cue 5 is +1000 ms."
+measure = "diff/parse of the SRTs with a small awk script."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html"
+film_claim = "docs/captions.md:24 (SRT read/write)"
+
+[[task]]
+id = "ST-02"
+group = "subtitles"
+title = "Burn subtitles into the video"
+priority = 2
+steps = [
+  "With corpus/subs_en.srt on corpus/edit_project, export H.264 with subtitles burned in.",
+]
+pass = "Text pixels present in the lower third during every cue and absent between cues (>= 11/12 cues correct)."
+measure = "magick white-pixel count in the bottom 25% of a frame at each cue midpoint and gap midpoint."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html"
+film_claim = "docs/captions.md:74 (burn-in on export)"
+
+[[task]]
+id = "ST-03"
+group = "subtitles"
+title = "Speech to text creates subtitles"
+priority = 2
+steps = [
+  "Put corpus/speech_en_30s.wav on A1, run speech to text (Kdenlive: Whisper/VOSK model; ours: transcript.generate / Transcribe), export the result as SRT.",
+]
+pass = "Word error rate <= 20% vs corpus/speech_en_30s.txt; cues within 0.5 s of the speech; finishes within 2x real time after the model is present."
+measure = "WER with a small python script over normalised words; wall time."
+kdenlive_manual = "https://docs.kdenlive.org/en/effects_and_filters/speech_to_text.html"
+film_claim = "docs/gaps.md:248 (G19: speech to text off in release builds); docs/transcripts.md:41 (Whisper on candle)"
+
+# ---------------------------------------------------------------- project
+
+[[task]]
+id = "PJ-01"
+group = "project"
+title = "Save, close, reopen: identical result"
+priority = 2
+steps = [
+  "Open corpus/edit_project, make TL-01..TL-03 edits plus FX-01, save, export A; quit, reopen, export B.",
+]
+pass = "A and B identical: every frame PSNR = inf (or >= 60 dB) and audio sample-identical; reopen within 5 s."
+measure = "ffmpeg psnr and `ffmpeg -f framemd5` on audio; wall time to the first drawn timeline."
+kdenlive_manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/project_files.html"
+film_claim = "docs/target-app-parity.md:257 (.rfilm, auto-save, recovery prompt)"
+
+[[task]]
+id = "PJ-02"
+group = "project"
+title = "Autosave writes a copy on schedule"
+priority = 2
+steps = [
+  "Set autosave to 1 minute, make an edit, wait 150 s without saving, list the autosave/backup folder.",
+]
+pass = ">= 1 new autosave/backup file within 90 s of the edit, containing the edit."
+measure = "`stat -c %Y` on the backup folder files; grep the edit (clip count) in the newest file."
+kdenlive_manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/auto_save.html"
+film_claim = "docs/project-files.md:129 (autoSave.enabled on, interval 5 min)"
+
+[[task]]
+id = "PJ-03"
+group = "project"
+title = "Recover unsaved work after a crash"
+priority = 2
+steps = [
+  "Open corpus/edit_project, make 5 edits without saving, wait 70 s, then `kill -9 <saved PID>` (the PID you launched).",
+  "Relaunch the app and accept the recovery prompt.",
+]
+pass = "Recovery offered at launch; >= 4 of 5 edits restored."
+measure = "Clip positions from the recovered project vs the expected list."
+kdenlive_manual = "https://docs.kdenlive.org/en/project_and_asset_management/file_management/backup.html"
+film_claim = "docs/project-files.md:133 (recovery copy of unsaved changes on)"
+
+[[task]]
+id = "PJ-04"
+group = "project"
+title = "Undo and redo 20 steps"
+priority = 2
+steps = [
+  "Open corpus/edit_project, perform 20 mixed edits (cut, move, trim, effect, keyframe), undo 20 times, redo 20 times; save after each phase.",
+]
+pass = "After 20 undos the project equals the original (same clip list/positions); after 20 redos it equals the edited state; each undo applies within 200 ms."
+measure = "Diff the saved project's clip list (or export framemd5) per phase; 60 fps capture for per-step latency."
+kdenlive_manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#general"
+film_claim = "docs/target-app-parity.md:251 (snapshot undo for every command, 95%)"

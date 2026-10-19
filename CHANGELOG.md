@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.5.0 -- 2026-10-19
+
+### Fixed
+
+- Playhead (Windows): pressing on the timeline opened a new WASAPI stream for scrub audio on the
+  UI thread, so the needle sat still for ~3 s on the first drag. Scrub audio now goes through the
+  output that is kept open between plays. The needle is drawn after input in the same frame.
+- Play start: Space no longer waits for the audio device clock and a 6-frame preroll. The picture
+  starts at once on the wall clock and the sound joins when the device runs; preroll is 3 frames,
+  at most 0.15 s.
+- Start-up: the GPU adapter is chosen explicitly and falls back to the CPU compositor; `--safe-mode`
+  starts with the CPU compositor and default layout, and is used automatically after a crash during
+  the previous start; WASAPI tries 7 output formats before giving up; a crash leaves a notice file
+  the next start reports.
+
+### Added
+
+- Premiere Pro projects (`.prproj`) open from File ▸ Open and File ▸ Import, by drag and drop and on
+  the command line: gzip or plain XML, CS6 to Premiere 2026. Sequences, tracks, clips, speed,
+  links, markers, bins, labels, transitions, Motion, Opacity and Volume; anything not carried over
+  is listed in the Events panel. Not yet: Lumetri, graphics and titles, multicam, mixer state.
+- 10-bit and 4:2:2 camera media without hardware decoding: H.264 High 10 and High 4:2:2 (8 and
+  10-bit), HEVC Main 4:2:2 10.
+- Real-world media corpus: `tests/corpus/manifest.toml` (106 entries), `scripts/corpus.py`
+  generator and an engine acceptance harness (import, cut, move, effect, export, ffprobe checks),
+  run by hand before a release.
+
 ## 0.4.0 -- 2026-10-19
 
 ### Fixed

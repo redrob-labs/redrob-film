@@ -1,0 +1,74 @@
+# Redrob Film 0.3.0 (release binary) -- stage-2 results for docs/gap/kdenlive-tasks.toml, priority-1 tasks.
+# Host: 32 cores, llvmpipe (no GPU, CPU compositor), :0 1920x1080 xfwm4, PulseAudio null sink "dcv" (Film -> ALSA default -> pulse).
+# Window 1600x980, client area at +5,+56 (not maximised). Driven with the same XTest scripts as the Kdenlive run
+# (xdrag.py / xkey.py, active window checked), plus the control port (127.0.0.1:9876) for setup and perf.stats.
+# Evidence paths are relative to /home/ubuntu/workplace/film-gap/ (not in git).
+# corpus/edit_project = results/film/projects/edit_project.rfilm: 1080p25 48 kHz sequence, framecode_tone_1080p25_60s.mov
+# 0-40 s on V1/A1 (linked), Add Edit to All Tracks every 4 s = 10 x 4 s clips, same content as the Kdenlive project.
+# Timeline fit to the 40 s sequence: 17.149 px/s = 0.686 px/frame (Kdenlive 1.051), frame 0 at screen x 743.4.
+# Film scans use tools/film_capscan.py (capscan.py with Film's needle colour: blue #507FFF line, white while snapped)
+# and the unchanged scrub_lat.py / audwin.py / distinct.py / fcdecode.py; film_settle.py adds a snap-proof settle
+# (target = control-port playheadFrame) and the control-port lag (perf.stats monitor.frame vs playheadFrame, ~60 ms poll).
+# Snap is on (default): a release next to an edit snaps the playhead to it (817 px -> frame 100 at 812 px).
+# Latency numbers include one 60 fps capture interval (~8 ms mean quantisation) and the xfwm4 compositor.
+# All runs happen while the app repaints continuously at ~80-120 fps and keeps ~6-9 cores busy (see results/film/idle_repaint.md).
+
+[SC-01]
+verdict = "slow"
+value = "needle 68 ms p50 / 104 ms p95 (n=120, 3 runs of 20 x 30 px / 16 ms + back; Kdenlive 53 / 66); task cadence 20 px / 33 ms: 74 / 114 ms (Kdenlive 52 / 59); monitor exact frame 61 / 80 ms p50/p95 for 43 of 120 targets (Kdenlive 121 / 151 for 28); settle after stop 52-83 ms warm, 436 ms on the first (cold) drag (Kdenlive 144 p50 / 170 max); control port: playheadFrame == monitor.frame in 49 of 81 polls during the drag, monitor.frame reaches playheadFrame 74-175 ms after the stop"
+evidence = "results/film/SC-01/all.txt, run1..run3/{cap.mkv,drag.log,scan.txt,latency.txt,perf.log}, run4_task/"
+note = "Needle lags the pointer by ~4 capture frames and moves in ~2-step jumps (UI ~30 fps under drag); p50 68 ms is past the 50 ms limit and p95 104 past 100 ms. It lands on the pointer x after stop (1417 = 1417) or snaps to the edit at frame 100 (812 vs 817). The monitor follows better than Kdenlive's (21-48 distinct frames/s vs 13-14) once the decoder is warm."
+
+[SC-02]
+verdict = "works"
+value = "monitor 40-45 distinct frames/s during a 16 ms-step drag at the needle in the empty V2 area (Kdenlive 13-16); final picture = needle frame (981 = 981, 100 = 100) 54-79 ms after the last move, before release (Kdenlive 147-150); after release + 2 s monitor 100 = playhead 100"
+evidence = "results/film/SC-02/run1..run3/{cap.mkv,drag.log,scan.txt,latency.txt,perf.log}, all.txt, after_release.png"
+note = "Press at the needle in the empty V2 lane grabs and drags the playhead (same start point as the Kdenlive run); needle 67 / 86 ms p50/p95, monitor exact frame 64 / 75 ms p50/p95 for 54 of 120 targets."
+
+[PB-01]
+verdict = "slow"
+value = "first new monitor frame 894 / 118 / 115 ms (runs 1-3), 194 / 109 / 115 ms (runs 4-6, sink kept running), 244 ms (run 7, first Space after a fresh launch); first audio window > -40 dBFS 0-88 ms after Space (Kdenlive 60-87 ms picture / 59-88 ms sound); level -33.1 dBFS = source"
+evidence = "results/film/PB-01/run1..run6, run7_cold/{cap.mkv,aud.mka,keys.log,scan.txt,perf.log}"
+note = "The first play after opening a project holds the picture 244-894 ms while sound already plays, and the picture never catches up: sound ends 236 / ~700 ms before the stop key and the picture stops 3 frames short (171 vs 174), i.e. A/V out of sync by the start delay for the whole play. Warm runs pass (109-194 ms). Film's recorded audio ends 13-40 ms before the stop key even when warm (Kdenlive 57-77 ms after), so its audio timestamps read ~0.1 s early (ALSA-plugin buffering); sound onset is therefore close to the picture when warm. First frame shown is 51 (no skip)."
+
+[PB-02]
+verdict = "slow"
+value = "317 distinct frames in 20.0 s (15.8 fps), app counters shown 326 / dropped 263 (44.7%), max hold 600 ms; audio 0 underruns, minLead 107 ms (Kdenlive 600 distinct, 29.98 fps, 0 dropped, max hold 50 ms)"
+evidence = "results/film/PB-02/run1/{cap.mkv,aud.mka,keys.log,distinct.txt,perf_after.txt}"
+note = "1080p30 48 kHz sequence, h264_1080p30_60s.mp4 on V1/A1, played from 00:00:05:00 at the default 1/2 playback resolution on llvmpipe with the CPU compositor; sound is continuous, picture drops almost every second frame."
+
+[SC-04]
+verdict = "works"
+value = "scrub audio in 58/59, 51/59, 51/59 (98 / 86 / 86%) 50 ms windows while dragging 5 px / 33 ms (~5.5x); first sound with the press, 21-31 ms before the first move; sound stops 35 ms after the last move in run 1 and 358-367 ms BEFORE it in runs 2-3 (Kdenlive 100%, first sound 39 ms after the first move, keeps playing 322-327 ms after the stop)"
+evidence = "results/film/SC-04/run1..run3/{aud.mka,drag.log,win50.txt}, results/film/projects/gap_project.rfilm (sequence overlap)"
+note = "Default settings (audio.scrubAudio = true). Scrub audio is normal-pitch chunks (1000 Hz and 500 Hz bands -34.1 dB each, source -33.1), with 13-55 ms digital-silence holes inside the drag and a cut-out over the last ~0.4 s of the drag (needle ~27-29 s, A2 still under it). Recorded with a silent pacat stream keeping dcv running so the monitor timestamps are continuous."
+
+[AU-01]
+verdict = "works"
+value = "-33.06 / -33.06 dBFS RMS L/R (source -33.05), 998.8 Hz; 9.52 s of 10 ms windows within 3 dB in a 9.54 s loud span (keys 9.80 s apart; Kdenlive -33.05 for 9.70 of 9.70 s, 1000.0 Hz); one 12.4 ms digital-silence dropout at 6.57 s"
+evidence = "results/film/AU-01/run1/{aud.mka,win10.txt,stats.txt}"
+note = "Default sink dcv, default audio settings (Film opens ALSA default -> pulse at 44.1 kHz on play), tone1k_48k_30s.wav on A1 of sequence overlap, played 0-9.8 s. Level exact; the dropout fails no pass condition of this task but is the same defect as AU-02."
+
+[AU-02]
+verdict = "broken"
+value = "2 silences >= 10 ms (10.1 ms at 21.5 s, 12.5 ms at 34.9 s) + one 2.3 ms in 30 s of playback (5-35 s), app counters 0 underruns / 0 missing frames; 12-28 s: 1000 Hz band -33.07 dBFS, 500 Hz band -33.07 dBFS (each = source) (Kdenlive 0 silences, -33.07 / -33.07)"
+evidence = "results/film/AU-02/run1/{aud.mka,win10.txt,bands.txt}, results/film/projects/gap_project.rfilm (sequence overlap)"
+note = "A1 1 kHz 0-30 s, A2 500 Hz 10-40 s, V1 video-only h264 0-40 s. Mix levels are exact, but the output has digital-zero holes (tools/gaps.py, both channels < -60 dBFS) that the app's own underrun counter does not see; the exported mix of the same material has none, so the holes are in the live output path."
+
+[AU-03]
+verdict = "works"
+value = "playback 1000.00 Hz, -33.07 dBFS, 0 clicks, 0 gaps over 19 s; export WAV 48000 Hz 20.000 s, 999.98 Hz, 0 clicks, rendered in 0.05 s (Kdenlive 1000.00 Hz; export 999.98 Hz, 20.000 s, 2.0 s)"
+evidence = "results/film/AU-03/{play/aud.mka,play/freq.txt,export.wav,export_probe.txt,export_freq.txt,export_time.txt}"
+note = "tone1k_44k1_20s.wav (44.1 kHz) on A1 of a 48 kHz 1080p25 sequence, sync_flash_beep video-only on V1 (its own audio not placed); resampled correctly in both playback and export (file.exportMedia format wav)."
+
+[TL-01]
+verdict = "works"
+value = "Ctrl+K (Add Edit) at frame 250 on selected clip 3 -> V1 and A1 both 200-249 + 250-299; cut drawn 75 ms after the key (Kdenlive 149 ms); exported frames 245..255 = framecodes 245..255"
+evidence = "results/film/TL-01/{tl01.rfilm,seq_after.json,run/cap.mkv,run/keys.log,export.mp4,export_fc.txt}"
+note = "Linked audio is cut with the video; the export of 9.80-10.24 s (file.exportMedia h264, custom range) has no repeated or skipped frame at the cut. The full 1000-frame check is EX-01 (same sequence, cut undone)."
+
+[EX-01]
+verdict = "works"
+value = "40 s sequence rendered in 30.4 s (1.31x real time, 32.9 fps; Kdenlive 10.7 s, 3.7x); h264 High 1920x1080 25/1 + aac LC 48000 Hz 2 ch, duration 40.000 s, framecodes 0..999 with 0 missing/repeated; audio 999.99 Hz -33.05 dBFS, 0 gaps"
+evidence = "results/film/EX-01/{export.mp4,ffprobe.txt,export_fc.txt,job.json,export_audio.wav}"
+note = "file.exportMedia format h264 with the default settings (preset 'Match Source - Adaptive High Bitrate', ~20 Mbit/s), range entire, through the control port while the UI stays open; within the 40 s limit but 2.8x slower than Kdenlive's command-line render."

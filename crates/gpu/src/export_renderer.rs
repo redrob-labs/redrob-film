@@ -125,7 +125,16 @@ impl ExportRenderer {
         if device_failed() {
             return None;
         }
-        let compositor = GpuCompositor::new(&device, &queue);
+        // Building the pipelines can panic where the driver's shader compiler rejects a kernel
+        // (FXC on DirectX 12 with fx.wgsl, #1458): that GPU then exports on the CPU instead of
+        // ending the export (or the app).
+        let compositor = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| GpuCompositor::new(&device, &queue))) {
+            Ok(c) => c,
+            Err(_) => {
+                mark_device_failed("GPU compositor could not be created");
+                return None;
+            }
+        };
         Some(Self { _instance: instance, device, queue, compositor })
     }
 

@@ -585,16 +585,10 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     // ---- top block: timecode + toggles, ruler
     draw_top(app, ui, rect, &seq, &layout, &t, seq_id);
 
-    // ---- playhead
-    let ph = app.session.playhead();
-    let px = layout.x_of(ph);
-    if px >= content.min.x - 1.0 && px <= content.max.x + 1.0 {
-        // a short head on the tick row, as in Effect Controls, so it leaves the markers and timecodes clear
-        let (top, tip) = (ruler.max.y - 13.0, ruler.max.y);
-        let head = [pos2(px - 5.0, top), pos2(px + 5.0, top), pos2(px + 5.0, tip - 5.0), pos2(px, tip), pos2(px - 5.0, tip - 5.0)];
-        painter.add(egui::Shape::convex_polygon(head.to_vec(), t.playhead, Stroke::NONE));
-        painter.line_segment([pos2(px, tip), pos2(px, content.max.y)], Stroke::new(1.0, t.playhead));
-    }
+    // ---- playhead: its place in the paint order is kept here (over the clips), but it is drawn
+    // after `interact` below, so a press or drag on the ruler shows the needle at the pointer on
+    // the same frame instead of where the playhead was before this frame's input
+    let needle_slot = painter.add(egui::Shape::Noop);
     // snap indicator
     if let Some(sx) = app.tl.snap_x.take() {
         painter.line_segment([pos2(sx, ruler.max.y), pos2(sx, content.max.y)], Stroke::new(1.0, Color32::from_rgb(250, 250, 250)));
@@ -633,6 +627,7 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
 
     // ---- interaction
     interact(app, ui, &seq, &layout, rect);
+    painter.set(needle_slot, needle_shape(layout.x_of(app.session.playhead()), content, ruler, t.playhead));
     super::timeline_volume::interact(app, ui, &seq, &layout, aclip);
     // track keyframes (drawn and edited on top of the clips)
     super::timeline_automation::show(app, ui, &seq, &layout, aclip);
@@ -640,6 +635,20 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         super::timeline_captions::interact(app, ui, &seq, caption_area, &layout);
     }
     let _ = (visible, TICKS_PER_SECOND);
+}
+
+/// The playhead at screen `px`: a short head on the tick row, as in Effect Controls (so it leaves
+/// the markers and timecodes clear), and a line down the tracks. Nothing when it is scrolled out.
+fn needle_shape(px: f32, content: Rect, ruler: Rect, color: Color32) -> egui::Shape {
+    if !(px >= content.min.x - 1.0 && px <= content.max.x + 1.0) {
+        return egui::Shape::Noop;
+    }
+    let (top, tip) = (ruler.max.y - 13.0, ruler.max.y);
+    let head = vec![pos2(px - 5.0, top), pos2(px + 5.0, top), pos2(px + 5.0, tip - 5.0), pos2(px, tip), pos2(px - 5.0, tip - 5.0)];
+    egui::Shape::Vec(vec![
+        egui::Shape::convex_polygon(head, color, Stroke::NONE),
+        egui::Shape::line_segment([pos2(px, tip), pos2(px, content.max.y)], Stroke::new(1.0, color)),
+    ])
 }
 
 fn empty_state(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {

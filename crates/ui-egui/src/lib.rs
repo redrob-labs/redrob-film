@@ -227,7 +227,11 @@ pub struct Playback {
     audio_tries: u8,
     /// A reopened output has not consumed any samples yet: the wall clock keeps driving until
     /// it does, so waiting on a device that may never wake does not freeze the playhead.
-    audio_waking: bool,
+    pub audio_waking: bool,
+    /// Where the current output's sound starts (the playhead `start_audio` mixed from).
+    audio_from: Tick,
+    /// The sound of this play was started again at the picture once (it joined too late).
+    audio_rejoined: bool,
     /// Audio underruns for the current (or last) play (desktop: sound is mixed ahead).
     #[cfg(not(target_arch = "wasm32"))]
     pub audio_stats: std::sync::Arc<play_ahead::AudioStats>,
@@ -261,6 +265,21 @@ pub const AUDIO_STALL_S: f64 = 1.0;
 /// Bluetooth): measured here as a 1.5–2 s pause after the first callback, which the 1 s wait
 /// took for a stall, so every sequence played without sound.
 pub const AUDIO_START_STALL_S: f64 = 4.0;
+
+/// A starting output that first plays more than this far (wall-clock s) off the picture is
+/// started again at the picture rather than taking the clock out of sync ([`audio_join`]).
+pub const AUDIO_JOIN_S: f64 = 0.06;
+
+/// A starting output has played `played_s` seconds (device time) while the picture, on the wall
+/// clock, got to `shown`; its sound started at `from`. Returns the clock anchor that carries the
+/// picture on from `shown` without a jump, and whether the sound is more than [`AUDIO_JOIN_S`]
+/// off the picture (it should then start again at the picture).
+pub fn audio_join(shown: Tick, played_s: f64, speed: f64, from: Tick) -> (Tick, bool) {
+    let played = Tick::from_seconds_f64(played_s * speed);
+    let anchor = if shown > played { shown - played } else { Tick::ZERO };
+    let off = (anchor.seconds() - from.seconds()).abs() / speed.abs().max(1e-9);
+    (anchor, off > AUDIO_JOIN_S)
+}
 
 /// After the audio output is lost mid-play, the first try to open it again waits this long; each
 /// later try waits one step longer.
@@ -343,6 +362,8 @@ pub struct FilmcraftApp {
     styled: bool,
     /// A panic in the UI pass, shown in an error window until dismissed (see [`crash`]).
     pub ui_error: Option<String>,
+    /// Said once at start-up, until dismissed: the previous session's crash report, safe mode.
+    pub start_notice: Option<String>,
     /// Fault injection for robustness tests: the next UI pass panics.
     #[doc(hidden)]
     pub panic_next_frame: bool,
@@ -571,6 +592,7 @@ impl FilmcraftApp {
             next_token: 1,
             styled: false,
             ui_error: None,
+            start_notice: None,
             panic_next_frame: false,
             quit_confirmed: false,
             fonts_ready: false,
@@ -975,6 +997,7 @@ impl FilmcraftApp {
         self.playback.audio_retry = None;
         self.playback.audio_tries = 0;
         self.playback.audio_waking = false;
+        self.playback.audio_rejoined = false;
         if let Some(a) = self.audio.as_mut() {
             a.stop();
         }
@@ -1001,6 +1024,13 @@ impl FilmcraftApp {
         self.playback.anchor_tick = self.session.playhead();
         self.playback.audio_seen = (0, now);
         self.start_audio();
+        // The picture starts now, on the wall clock; the sound joins it when the device first
+        // plays (`advance_playback`). Driving the picture by the device clock from the start held
+        // it still until the output woke (0.5–1 s on Windows/WASAPI after Space).
+        self.playback.audio_rejoined = false;
+        if self.playback.audio_clock {
+            self.playback.audio_waking = true;
+        }
         // Audio Track Mixer: an automation pass runs while playing forward in real time
         if (self.playback.speed - 1.0).abs() < 1e-9 && !self.session.mixrec.active() {
             let t = self.session.playhead();
@@ -1071,6 +1101,7 @@ impl FilmcraftApp {
     fn start_audio(&mut self) {
         let Some(seq_id) = self.session.state.active_sequence else { return };
         let start_tick = self.session.playhead();
+        self.playback.audio_from = start_tick;
         let Some(a) = self.audio.as_mut() else { return };
         let sr = a.sample_rate();
         // Mix at a lower effective rate for forward shuttle playback, then hand the
@@ -1162,13 +1193,29 @@ impl FilmcraftApp {
         if let Some((f, sr)) = reading {
             let stall = now - self.playback.audio_seen.1;
             if f != self.playback.audio_seen.0 {
+                // the first buffer is filled the moment a stream opens, before the device runs:
+                // only a second callback shows it is playing
+                let first = self.playback.audio_seen.0 == 0;
                 self.playback.audio_seen = (f, now);
-                if self.playback.audio_waking && sr > 0 {
-                    // the reopened output plays: its clock takes over from the displayed frame
-                    self.playback.audio_waking = false;
+                if self.playback.audio_waking && sr > 0 && !first {
                     let shown = self.session.playhead();
-                    let played = Tick::from_seconds_f64(f as f64 / f64::from(sr) * self.playback.speed);
-                    self.playback.anchor_tick = if shown > played { shown - played } else { Tick::ZERO };
+                    let (anchor, late) = audio_join(shown, f as f64 / f64::from(sr), self.playback.speed, self.playback.audio_from);
+                    if late && !self.playback.audio_rejoined {
+                        // the device woke after the picture had moved on: its sound would lag
+                        // the picture, so start it again where the picture is (the device runs
+                        // now, so it joins at once); the wall clock goes on driving meanwhile
+                        self.playback.audio_rejoined = true;
+                        self.playback.audio_seen = (0, now);
+                        self.start_audio();
+                        if !self.playback.audio_clock {
+                            self.playback.audio_waking = false;
+                            self.schedule_audio_retry(now);
+                        }
+                    } else {
+                        // the output plays: its clock takes over from the displayed frame
+                        self.playback.audio_waking = false;
+                        self.playback.anchor_tick = anchor;
+                    }
                 }
             } else if stall >= audio_stall_limit(f, sr) {
                 // the device stopped consuming samples: continue from where the audio got to on
@@ -1353,6 +1400,27 @@ impl FilmcraftApp {
 
     // ---------------------------------------------------------------- files
 
+    /// After a Premiere Pro project was opened or imported (`file.open` / `file.import` result): say
+    /// in the status bar how many things did not carry over. Each one is listed, with its name, in
+    /// the Events panel (the engine logs the import report there).
+    pub fn note_premiere_import(&mut self, result: &Value) {
+        let docs: Vec<&Value> = match result.get("documents").and_then(Value::as_array) {
+            Some(d) => d.iter().collect(),
+            None => vec![result],
+        };
+        let premiere: Vec<&&Value> =
+            docs.iter().filter(|d| d.get("format").and_then(Value::as_str) == Some(redrob_film_interchange::Format::Prproj.name())).collect();
+        if premiere.is_empty() {
+            return;
+        }
+        let count: u64 = premiere.iter().filter_map(|d| d.get("warnings").and_then(Value::as_u64)).sum();
+        self.ui.status = if count == 0 {
+            tl!("Premiere Pro project imported").to_string()
+        } else {
+            tlf!("Premiere Pro project imported; {count} thing(s) did not carry over (listed in the Events panel)", count)
+        };
+    }
+
     /// Destination of imports started from the currently shown Project panel view.
     pub fn import_bin(&self) -> redrob_film_project::BinId {
         panels::project::view_of(self, panels::project::shown_inst(self)).bin
@@ -1365,7 +1433,7 @@ impl FilmcraftApp {
                     .iter()
                     .chain(redrob_film_media::AUDIO_EXTENSIONS)
                     .chain(redrob_film_media::STILL_EXTENSIONS)
-                    .chain(&["srt", "vtt", "scc", "edl", "xml", "fcpxml", "otio", "aaf", "omf"])
+                    .chain(&["srt", "vtt", "scc", "edl", "xml", "fcpxml", "otio", "aaf", "omf", "prproj"])
                     .copied()
                     .collect();
                 let paths = self.hooks.pick_files.as_mut().map(|f| f(&exts)).unwrap_or_default();
@@ -1374,6 +1442,9 @@ impl FilmcraftApp {
                 }
                 let bin = params.get("bin").cloned().unwrap_or_else(|| json!(self.import_bin().0));
                 let r = self.session.execute("file.import", json!({"paths": paths, "bin": bin})).map_err(|e| e.to_string());
+                if let Ok(v) = &r {
+                    self.note_premiere_import(v);
+                }
                 if let Ok(v) = &r
                     && let Some(errs) = v.get("errors").and_then(Value::as_array)
                     && !errs.is_empty()
@@ -1401,7 +1472,11 @@ impl FilmcraftApp {
             }
             "file.open" => {
                 let Some(path) = self.hooks.pick_open_project.as_mut().and_then(|f| f()) else { return Ok(Value::Null) };
-                self.session.execute("file.open", json!({"path": path})).map_err(|e| e.to_string())
+                let r = self.session.execute("file.open", json!({"path": path})).map_err(|e| e.to_string());
+                if let Ok(v) = &r {
+                    self.note_premiere_import(v);
+                }
+                r
             }
             // File ▸ Open Archived Project…: a .tar.gz / .zip made by Project Manager ▸ Archive
             "file.openArchive" => {
@@ -1507,6 +1582,9 @@ impl FilmcraftApp {
         if !paths.is_empty() {
             let pointer = self.drop_pointer(ctx);
             let imported = self.session.execute("file.import", json!({"paths": paths, "bin": self.import_bin().0}));
+            if let Ok(v) = &imported {
+                self.note_premiere_import(v);
+            }
             if let Ok(v) = imported
                 && let Some(pos) = pointer
                 && self.session.prefs.timeline.drop_import_to_timeline
@@ -2191,6 +2269,30 @@ impl FilmcraftApp {
             self.ui_error = None;
         }
     }
+
+    /// The start-up notice (a crash report from the last session, safe mode). Automation id:
+    /// `startNotice.dismiss`.
+    fn start_notice_window(&mut self, ctx: &egui::Context) {
+        let Some(msg) = self.start_notice.clone() else { return };
+        let mut close = false;
+        // the product name is not translated
+        egui::Window::new("Redrob Film")
+            .id(egui::Id::new("start notice"))
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .show(ctx, |ui| {
+                ui.set_max_width(460.0);
+                ui.label(msg.as_str());
+                ui.add_space(8.0);
+                let ok = ui.button(tl!("OK"));
+                self.auto.add("startNotice.dismiss", ok.rect, "OK");
+                close |= ok.clicked();
+            });
+        if close {
+            self.start_notice = None;
+        }
+    }
 }
 
 impl eframe::App for FilmcraftApp {
@@ -2299,6 +2401,7 @@ impl eframe::App for FilmcraftApp {
             self.playback.playing = false;
         }
         self.error_window(ui.ctx());
+        self.start_notice_window(ui.ctx());
         let ctx = ui.ctx().clone();
         self.last_ui_time = ctx.input(|i| i.time);
         if !self.synthetic.is_empty() {
@@ -2624,6 +2727,40 @@ mod audio_recovery_tests {
         assert_eq!(app.session.playhead(), displayed);
         assert!(app.ui.status.contains("Audio output failed"));
         app.stop();
+    }
+
+    /// Space starts the picture at once: the wall clock drives while the device has not played
+    /// yet (a waking WASAPI endpoint held the picture still for 0.5–1 s).
+    #[test]
+    fn play_moves_the_picture_before_the_device_plays() {
+        let mut session = Session::default();
+        session.execute("file.openDemoProject", json!({})).unwrap();
+        let ctx = egui::Context::default();
+        let mut app = FilmcraftApp::new(session);
+        app.audio = Some(Box::new(Device { ready: true, starts: Arc::new(AtomicUsize::new(0)), reading: Some(0) }));
+        app.session.set_playhead(Tick::ZERO);
+        app.play(1.0);
+        app.end_preroll(0.0);
+        assert!(app.playback.audio_clock && app.playback.audio_waking);
+        let mut output = ctx.run_ui(egui::RawInput { time: Some(0.5), ..Default::default() }, |ui| app.advance_playback(ui.ctx()));
+        output.textures_delta.clear();
+        assert!(app.playback.playing);
+        assert!(app.session.playhead() >= Tick::from_seconds_f64(0.4), "the picture moved on the wall clock");
+        app.stop();
+    }
+
+    #[test]
+    fn sound_that_starts_late_joins_the_picture() {
+        let s = Tick::from_seconds_f64;
+        // in step: the clock carries on from the picture
+        let (anchor, late) = audio_join(s(1.0), 0.98, 1.0, Tick::ZERO);
+        assert!(!late);
+        assert!((anchor.seconds() - 0.02).abs() < 1e-3);
+        // the device woke 0.8 s after the picture started: start the sound again at the picture
+        let (_, late) = audio_join(s(1.0), 0.2, 1.0, Tick::ZERO);
+        assert!(late);
+        // never anchored before the start
+        assert_eq!(audio_join(s(0.1), 0.5, 1.0, Tick::ZERO).0, Tick::ZERO);
     }
 }
 
