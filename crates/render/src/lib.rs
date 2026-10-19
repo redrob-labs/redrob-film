@@ -499,12 +499,12 @@ pub(crate) fn item_layer_ex(
         Some((src, frame, n)) => media_image(project, seq, item, t, &src, &frame, n, want),
         None => base_layer(project, seq, item, t, opts, sources, want)?,
     };
-    let px_scale = layer.w as f32 / src_size.0.max(1) as f32;
+    let mut px_scale = layer.w as f32 / src_size.0.max(1) as f32;
     // layer px → source px → sequence px → output px
-    let m = Affine::scale(opts.scale as f64, opts.scale as f64).then_apply(&motion).then_apply(&Affine::scale(1.0 / px_scale as f64, 1.0 / px_scale as f64));
+    let mut m = Affine::scale(opts.scale as f64, opts.scale as f64).then_apply(&motion).then_apply(&Affine::scale(1.0 / px_scale as f64, 1.0 / px_scale as f64));
     if opts.effects {
         let env = vfx::ItemEnv { project, seq, item, t, opts, sources, want, layer_size: (layer.w, layer.h), layer_to_output: m, tc };
-        let cx = effects::FxCtx {
+        let mut cx = effects::FxCtx {
             t: mt,
             px_scale,
             seconds: (t - item.start).seconds(),
@@ -517,6 +517,17 @@ pub(crate) fn item_layer_ex(
         for e in item.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e)) {
             if redrob_film_media::cancel::cancelled() {
                 return None;
+            }
+            // a pixel-art magnifier on a clip shown larger than its pixels enlarges the layer
+            // itself; the effects after it and the placement see the bigger layer
+            if e.enabled && e.masks.is_empty() && vfx::is_magnifier(&e.effect) {
+                let shown = (m.a * m.a + m.b * m.b).sqrt().max((m.c * m.c + m.d * m.d).sqrt());
+                if let Some(n) = vfx::magnify(&mut layer, e, shown) {
+                    px_scale *= n as f32;
+                    cx.px_scale = px_scale;
+                    m = m.then_apply(&Affine::scale(1.0 / n as f64, 1.0 / n as f64));
+                    continue;
+                }
             }
             mask::apply_effect(&mut layer, e, &cx);
         }

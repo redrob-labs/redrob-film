@@ -1085,8 +1085,9 @@ pub(super) fn morph(img: &mut Image, e: &EffectInstance, cx: &FxCtx, dilate: boo
     });
 }
 
-/// The pixel-art magnifiers: `n`× magnification by the chosen rule set, then area-averaged back
-/// to the clip's own size (the layer keeps its size; edges come back smoothed).
+/// The pixel-art magnifiers: `n`× magnification by the chosen rule set. On a clip shown larger
+/// than its pixels the layer itself is enlarged (see [`magnify`], called by the clip renderer);
+/// otherwise the magnified picture is area-averaged back to the layer's size.
 #[derive(Clone, Copy)]
 pub(super) enum Scaler {
     Epx,
@@ -1095,78 +1096,98 @@ pub(super) enum Scaler {
     Xbr,
 }
 
-pub(super) fn pixel_scaler(img: &mut Image, e: &EffectInstance, kind: Scaler) {
-    let n = match kind {
+fn scaler_of(id: &str) -> Option<Scaler> {
+    match id {
+        "k_epx" => Some(Scaler::Epx),
+        "k_hqx" => Some(Scaler::Hqx),
+        "k_super2xsai" => Some(Scaler::Sai),
+        "k_xbr" => Some(Scaler::Xbr),
+        _ => None,
+    }
+}
+
+fn scale_factor(e: &EffectInstance, kind: Scaler) -> usize {
+    match kind {
         Scaler::Sai => 2,
         Scaler::Epx => [2, 3][pick(e, "n").min(1) as usize],
         Scaler::Hqx | Scaler::Xbr => [2, 3, 4][pick(e, "n").min(2) as usize],
-    };
-    let d = Disp::of(img);
-    let (w, h) = (d.w, d.h);
-    if w < 2 || h < 2 {
-        return;
     }
+}
+
+/// Sub-pixel (`sx`, `sy`) of the `n`×`n` cell that source pixel (`x`, `y`) magnifies into.
+fn scaler_sample(d: &Disp, kind: Scaler, n: usize, x: isize, y: isize, sx: usize, sy: usize) -> [f32; 4] {
     let same = |a: [f32; 4], b: [f32; 4]| {
         let (ya, yb) = (to_yuv(a), to_yuv(b));
         (ya[0] - yb[0]).abs() < 48.0 / 255.0 && (ya[1] - yb[1]).abs() < 7.0 / 255.0 && (ya[2] - yb[2]).abs() < 6.0 / 255.0 && (a[3] - b[3]).abs() < 0.1
     };
     let mix = |a: [f32; 4], b: [f32; 4], t: f32| [0, 1, 2, 3].map(|k| a[k] + (b[k] - a[k]) * t);
-    // each output pixel: (sub-pixel u, v in 0..1 within source pixel x, y)
+    let p = d.get(x, y);
+    let (a, b, c, dd) = (d.get(x, y - 1), d.get(x + 1, y), d.get(x - 1, y), d.get(x, y + 1));
+    let (u, v) = ((sx as f32 + 0.5) / n as f32, (sy as f32 + 0.5) / n as f32);
+    // the corner this sub-pixel leans to: its two edge neighbours and diagonal
+    let (h_n, v_n) = (if u < 0.5 { c } else { b }, if v < 0.5 { a } else { dd });
+    let diag = d.get(if u < 0.5 { x - 1 } else { x + 1 }, if v < 0.5 { y - 1 } else { y + 1 });
+    let centre = (u - 0.5).abs() < 0.17 && (v - 0.5).abs() < 0.17 && n == 3;
+    let edge = same(h_n, v_n) && !same(h_n, p);
+    match kind {
+        // EPX: a corner takes the colour of its two edge neighbours when they agree and neither
+        // continues into the opposite neighbour across the pixel (3x: the corners of the cell)
+        Scaler::Epx => {
+            let (oh, ov) = (if u < 0.5 { b } else { c }, if v < 0.5 { dd } else { a });
+            let corner = !centre && (u - 0.5).abs() > 0.2 && (v - 0.5).abs() > 0.2;
+            if corner && same(h_n, v_n) && !same(v_n, oh) && !same(h_n, ov) { h_n } else { p }
+        }
+        // HQx: blend toward the agreeing neighbours, weighted by closeness to the corner, more
+        // when the diagonal continues the edge
+        Scaler::Hqx => {
+            if edge {
+                let k = ((u - 0.5).abs() + (v - 0.5).abs()).clamp(0.0, 1.0);
+                let t = if same(diag, h_n) { 0.75 * k } else { 0.5 * k };
+                mix(p, h_n, t)
+            } else {
+                p
+            }
+        }
+        // 2xSaI-style: corners blend half with the agreeing pair, the pixel otherwise
+        // interpolates along the dominant diagonal
+        Scaler::Sai => {
+            if edge {
+                mix(p, h_n, 0.5)
+            } else if same(p, diag) {
+                p
+            } else {
+                mix(p, mix(h_n, v_n, 0.5), 0.25)
+            }
+        }
+        // xBR: an edge across the corner (neighbours agree, the diagonal differs from them) is
+        // cut along the anti-diagonal with a soft border
+        Scaler::Xbr => {
+            if edge && !same(diag, p) {
+                let dist = (u - 0.5).abs() + (v - 0.5).abs();
+                mix(p, h_n, smooth(0.45, 0.75, dist))
+            } else {
+                p
+            }
+        }
+    }
+}
+
+/// In-place form (the layer keeps its size): each pixel becomes the average of its magnified cell.
+pub(super) fn pixel_scaler(img: &mut Image, e: &EffectInstance, kind: Scaler) {
+    let n = scale_factor(e, kind);
+    let d = Disp::of(img);
+    let (w, h) = (d.w, d.h);
+    if w < 2 || h < 2 {
+        return;
+    }
     let out: Vec<[f32; 4]> = (0..w * h)
         .into_par_iter()
         .map(|i| {
             let (x, y) = ((i % w) as isize, (i / w) as isize);
-            let p = d.get(x, y);
-            let (a, b, c, dd) = (d.get(x, y - 1), d.get(x + 1, y), d.get(x - 1, y), d.get(x, y + 1));
             let mut acc = [0.0f32; 4];
             for sy in 0..n {
                 for sx in 0..n {
-                    let (u, v) = ((sx as f32 + 0.5) / n as f32, (sy as f32 + 0.5) / n as f32);
-                    // the corner this sub-pixel leans to: its two edge neighbours and diagonal
-                    let (h_n, v_n, diag) = (if u < 0.5 { c } else { b }, if v < 0.5 { a } else { dd }, d.get(if u < 0.5 { x - 1 } else { x + 1 }, if v < 0.5 { y - 1 } else { y + 1 }));
-                    let centre = (u - 0.5).abs() < 0.17 && (v - 0.5).abs() < 0.17 && n == 3;
-                    let edge = same(h_n, v_n) && !same(h_n, p);
-                    let s = match kind {
-                        // EPX / Scale3x: the corner takes its edge neighbours' colour when they
-                        // agree, unless the opposite neighbours agree too
-                        Scaler::Epx => {
-                            let (oh, ov) = (if u < 0.5 { b } else { c }, if v < 0.5 { dd } else { a });
-                            if !centre && edge && !same(oh, ov) && (u - 0.5).abs() > 0.2 && (v - 0.5).abs() > 0.2 { h_n } else { p }
-                        }
-                        // HQx: blend toward the agreeing neighbours, weighted by closeness to the
-                        // corner, keeping the diagonal's own colour in mind
-                        Scaler::Hqx => {
-                            if edge {
-                                let k = ((u - 0.5).abs() + (v - 0.5).abs()).clamp(0.0, 1.0);
-                                let t = if same(diag, h_n) { 0.75 * k } else { 0.5 * k };
-                                mix(p, h_n, t)
-                            } else {
-                                p
-                            }
-                        }
-                        // 2xSaI-style: corners blend half with the agreeing pair, the pixel
-                        // otherwise interpolates along the dominant diagonal
-                        Scaler::Sai => {
-                            if edge {
-                                mix(p, h_n, 0.5)
-                            } else if same(p, diag) {
-                                p
-                            } else {
-                                mix(p, mix(h_n, v_n, 0.5), 0.25)
-                            }
-                        }
-                        // xBR: an edge across the corner (neighbours agree, the diagonal differs
-                        // from them) is cut along the anti-diagonal with a soft border
-                        Scaler::Xbr => {
-                            if edge && !same(diag, p) {
-                                let dist = (u - 0.5).abs() + (v - 0.5).abs();
-                                let t = smooth(0.45, 0.75, dist);
-                                mix(p, h_n, t)
-                            } else {
-                                p
-                            }
-                        }
-                    };
+                    let s = scaler_sample(&d, kind, n, x, y, sx, sy);
                     for k in 0..4 {
                         acc[k] += s[k];
                     }
@@ -1177,6 +1198,36 @@ pub(super) fn pixel_scaler(img: &mut Image, e: &EffectInstance, kind: Scaler) {
         .collect();
     Disp { w, h, px: out }.store(img);
 }
+
+/// Enlarging form, for a layer shown at `shown` output pixels per layer pixel: when that is at
+/// least 2, replace the picture by its magnification (factor capped by `shown` and by a pixel
+/// budget) and return the factor; `None` leaves the effect to [`pixel_scaler`].
+pub(crate) fn magnify(img: &mut Image, e: &EffectInstance, shown: f64) -> Option<usize> {
+    let kind = scaler_of(&e.effect)?;
+    let n = scale_factor(e, kind).min(shown.ceil().max(1.0) as usize);
+    let (w, h) = (img.w, img.h);
+    if n < 2 || w < 2 || h < 2 || w * h * n * n > 16_000_000 {
+        return None;
+    }
+    let d = Disp::of(img);
+    let (ow, oh) = (w * n, h * n);
+    let px: Vec<[f32; 4]> = (0..ow * oh)
+        .into_par_iter()
+        .map(|i| {
+            let (ox, oy) = (i % ow, i / ow);
+            scaler_sample(&d, kind, n, (ox / n) as isize, (oy / n) as isize, ox % n, oy % n)
+        })
+        .collect();
+    *img = Image::new(ow, oh);
+    Disp { w: ow, h: oh, px }.store(img);
+    Some(n)
+}
+
+/// Whether `id` is one of the magnifiers [`magnify`] can enlarge a layer with.
+pub(crate) fn is_magnifier(id: &str) -> bool {
+    scaler_of(id).is_some()
+}
+
 #[inline]
 fn smooth(e0: f32, e1: f32, x: f32) -> f32 {
     let t = ((x - e0) / (e1 - e0)).clamp(0.0, 1.0);

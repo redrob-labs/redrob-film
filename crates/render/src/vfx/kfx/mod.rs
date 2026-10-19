@@ -11,6 +11,7 @@
 
 mod gps;
 mod kcolor;
+pub(crate) use kcolor::{is_magnifier, magnify};
 mod noise;
 mod stylize;
 mod temporal;

@@ -18,6 +18,7 @@ pub(crate) use color::cdl;
 mod distort;
 mod immersive;
 mod kfx;
+pub(crate) use kfx::{is_magnifier, magnify};
 mod lights;
 mod stylize;
 mod temporal;
