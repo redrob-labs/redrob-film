@@ -1,0 +1,3777 @@
+# Kdenlive 26.08 manual -> Redrob Film parity inventory, area 3: video effects, compositions,
+# transitions, titles, colour correction, masks, effect stacks/zones/presets, keyframing.
+# Source: https://docs.kdenlive.org (manual only; clean room, PARITY-RULES.md).
+# film: full = our timeline does what the manual describes; partial = subset / different model /
+# only in Effects mode (crafts/effectcraft, reachable as a composition clip); none = missing.
+# Evidence is our file:line (registry entry) from grepping crates/ and crafts/effectcraft.
+
+[[row]]
+id = "K3-001"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Alpha Gradient"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/alpha_gradient.html"
+film = "partial"
+evidence = "crates/project/src/effect/vfx.rs:966 (linear_wipe_legacy); crates/project/src/effect/vfx.rs:954 (gradient_wipe_legacy)"
+gap = "a feathered Linear/Gradient Wipe effect gives a gradient alpha; no dedicated gradient-alpha effect with operations"
+
+[[row]]
+id = "K3-002"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Alpha Operations"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/alpha_operations.html"
+film = "partial"
+evidence = "crates/project/src/effect/vfx.rs:454 (alpha_adjust); crafts/effectcraft/crates/effects/src/matte.rs:294 (ec.matte.simplechoker, Effects mode)"
+gap = "Alpha Adjust inverts/scales alpha; no threshold, shrink/grow (soft/hard) on the timeline"
+
+[[row]]
+id = "K3-003"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Alpha Shapes"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/alpha_shapes.html"
+film = "full"
+evidence = "crates/project/src/mask.rs:286 (MaskMode add/subtract/intersect…); crates/project/src/effect.rs:284 (opacity)"
+gap = "rectangle/ellipse/polygon/pen masks on Opacity; triangle/diamond drawn with the pen"
+
+[[row]]
+id = "K3-004"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Alpha Shapes (Mask)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/alpha_shapes_mask.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:110 (EffectInstance.masks, per-effect masks); crates/project/src/mask.rs:378"
+gap = "none"
+
+[[row]]
+id = "K3-005"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Alpha Strobing"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/alpha_strobing.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:574 (strobe)"
+gap = "Strobe Light flashes a colour; no strobing of alpha (transparent flashes)"
+
+[[row]]
+id = "K3-006"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Backgroundkey"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/backgroundkey.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/keying2.rs:405 (ec.key.differencematte, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect; no timeline difference/background key"
+
+[[row]]
+id = "K3-007"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Bluescreen0r"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/bluescreen0r.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:717 (color_key); crates/project/src/effect.rs:689 (ultra_key)"
+gap = "none"
+
+[[row]]
+id = "K3-008"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Chroma Key: Basic"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/chroma_key.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:717 (color_key)"
+gap = "none"
+
+[[row]]
+id = "K3-009"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Chroma Key: Advanced"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/chroma_key_advanced.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:689 (ultra_key)"
+gap = "none"
+
+[[row]]
+id = "K3-010"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Despill"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/despill.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:689 (ultra_key, Spill Suppression group); crafts/effectcraft/crates/effects/src/keying.rs:682 (ec.key.spill, Effects mode)"
+gap = "none"
+
+[[row]]
+id = "K3-011"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "HSV Keying"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/hsvkey.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/keying.rs:633 (ec.key.colorrange, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect; Lumetri HSL Secondary selects but does not key alpha"
+
+[[row]]
+id = "K3-012"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Key Spill Mop Up"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/key_spill_mop_up.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:689 (ultra_key, Matte Cleanup / Spill); crafts/effectcraft/crates/effects/src/keying.rs:693 (ec.key.advancedspill, Effects mode)"
+gap = "edge-only spill mop-up not separate from Ultra Key's global spill suppression"
+
+[[row]]
+id = "K3-013"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Lumakey"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/lumakey.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:728 (luma_key)"
+gap = "none"
+
+[[row]]
+id = "K3-014"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Mask Apply"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/mask_apply.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:110 (masks live on the effect instance)"
+gap = "different model: each effect carries its own masks; no bracket-style Mask Apply effect"
+
+[[row]]
+id = "K3-015"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Motion Tracker"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/motion_tracker.html"
+film = "partial"
+evidence = "crates/engine/src/masks.rs:576 (masks.track); crates/project/src/mask.rs:350 (TrackMethod)"
+gap = "tracks masks only; no region tracker that emits keyframes for other effects, no built-in blur/pixelate types"
+
+[[row]]
+id = "K3-016"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Object Mask"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/object_mask.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/object_matte.rs:41 (ec.matte.objectmatte, Effects mode); crafts/effectcraft/crates/effects/src/roto.rs:44 (ec.matte.rotobrush, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect; no AI object mask on timeline clips"
+
+[[row]]
+id = "K3-017"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Obscure"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/obscure.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:551 (mosaic); crates/project/src/effect.rs:474 (gaussian_blur); crates/engine/src/masks.rs:576 (tracked mask)"
+gap = "none"
+
+[[row]]
+id = "K3-018"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Premultiply or Unpremultiply"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/premultiply.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/keying2.rs:451 (ec.key.unmult, Effects mode); crafts/effectcraft/crates/effects/src/channel.rs:476 (ec.channel.removecolormatting, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-019"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Rectangular Alpha Mask"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/rectangular_alpha_mask.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:592 (crop); crates/project/src/effect.rs:607 (edge_feather)"
+gap = "none"
+
+[[row]]
+id = "K3-020"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Rotoscoping"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/rotoscoping.html"
+film = "full"
+evidence = "crates/project/src/mask.rs:54 (MaskPath bezier, keyframed path)"
+gap = "none"
+
+[[row]]
+id = "K3-021"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Rotoscoping (Mask)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/rotoscoping_mask.html"
+film = "full"
+evidence = "crates/project/src/mask.rs:54; crates/project/src/effect.rs:110"
+gap = "none"
+
+[[row]]
+id = "K3-022"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Secondary Color Correction Area Selection (Mask)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/secondary_color_selection_mask.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:398 (lumetri, HSL Secondary)"
+gap = "colour-range selection only drives Lumetri's own secondary, cannot mask other effects"
+
+[[row]]
+id = "K3-023"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Shape Alpha"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/shape_alpha.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:707 (track_matte)"
+gap = "matte comes from another video track, not from an image/video file chosen in the effect"
+
+[[row]]
+id = "K3-024"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Shape Alpha (Mask)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/shape_alpha_mask.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no file- or track-based matte that limits other effects"
+
+[[row]]
+id = "K3-025"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Spill Suppress"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/spillsuppress.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:689 (ultra_key); crafts/effectcraft/crates/effects/src/keying.rs:682 (ec.key.spill, Effects mode)"
+gap = "none"
+
+[[row]]
+id = "K3-026"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Spot Remover"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/spot_remover.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no delogo/spot fill from surrounding pixels"
+
+[[row]]
+id = "K3-027"
+group = "Video effects / Alpha, Mask and Keying"
+feature = "Transparency"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/transparency.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:284 (opacity)"
+gap = "none"
+
+[[row]]
+id = "K3-028"
+group = "Video effects / Blur and Sharpen"
+feature = "Average Blur"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/blur_and_sharpen/average_blur.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:474 (gaussian_blur); crafts/effectcraft/crates/effects/src/misc.rs:563 (ec.blur.fastbox, Effects mode)"
+gap = "no box/average blur with independent H/V radii on the timeline"
+
+[[row]]
+id = "K3-029"
+group = "Video effects / Blur and Sharpen"
+feature = "Bilateral"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/blur_and_sharpen/bilateral.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/blur2.rs:652 (ec.blur.bilateral, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-030"
+group = "Video effects / Blur and Sharpen"
+feature = "BoxBlur"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/blur_and_sharpen/boxblur.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:474 (gaussian_blur); crafts/effectcraft/crates/effects/src/misc.rs:563 (ec.blur.fastbox, Effects mode)"
+gap = "box blur only in Effects mode"
+
+[[row]]
+id = "K3-031"
+group = "Video effects / Blur and Sharpen"
+feature = "Contrast Adaptive Sharpen (CAS)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/blur_and_sharpen/contrast_adaptive_sharpen.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:490 (sharpen); crates/project/src/effect.rs:491 (unsharp_mask)"
+gap = "no contrast-adaptive sharpening"
+
+[[row]]
+id = "K3-032"
+group = "Video effects / Blur and Sharpen"
+feature = "Directional Blur (Dblur)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/blur_and_sharpen/dblur.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:484 (directional_blur)"
+gap = "none"
+
+[[row]]
+id = "K3-033"
+group = "Video effects / Blur and Sharpen"
+feature = "Gaussian Blur"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/blur_and_sharpen/gaussian_blur.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:474 (gaussian_blur)"
+gap = "none"
+
+[[row]]
+id = "K3-034"
+group = "Video effects / Blur and Sharpen"
+feature = "Planes Blur"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/blur_and_sharpen/planes_blur.html"
+film = "partial"
+evidence = "crates/project/src/effect/vfx.rs:224 (channel_blur)"
+gap = "per-RGB/alpha channel blur; no per-YUV-plane blur"
+
+[[row]]
+id = "K3-035"
+group = "Video effects / Blur and Sharpen"
+feature = "Shape Adaptive Blur"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/blur_and_sharpen/shape_adaptive_blur.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/blur2.rs:662 (ec.blur.smart, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-036"
+group = "Video effects / Blur and Sharpen"
+feature = "Sharp/Unsharp"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/blur_and_sharpen/sharp_unsharp.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:491 (unsharp_mask)"
+gap = "none"
+
+[[row]]
+id = "K3-037"
+group = "Video effects / Blur and Sharpen"
+feature = "Smartblur"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/blur_and_sharpen/smartblur.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/blur2.rs:662 (ec.blur.smart, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-038"
+group = "Video effects / Blur and Sharpen"
+feature = "Square Blur"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/blur_and_sharpen/square_blur.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:474 (gaussian_blur); crafts/effectcraft/crates/effects/src/misc.rs:563 (ec.blur.fastbox, Effects mode)"
+gap = "square (box) kernel only in Effects mode"
+
+[[row]]
+id = "K3-039"
+group = "Video effects / Color and Image Correction"
+feature = "3-Point Balance"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/3_point_balance.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:516 (levels); crates/ui-egui/src/state.rs:401 (Lumetri WB eyedropper)"
+gap = "no black/grey/white point pickers"
+
+[[row]]
+id = "K3-040"
+group = "Video effects / Color and Image Correction"
+feature = "CMYK Adjust"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/CMYK_adjust.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/catalog.rs:231 (ec.color.selectivecolor, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-041"
+group = "Video effects / Color and Image Correction"
+feature = "Apply LUT"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/applylut.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, Input LUT / Look LUT); crates/render/src/luts.rs:5; crates/engine/src/color.rs:88"
+gap = "none"
+
+[[row]]
+id = "K3-042"
+group = "Video effects / Color and Image Correction"
+feature = "Bezier Curves"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/bezier_curves.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, RGB Curves)"
+gap = "none"
+
+[[row]]
+id = "K3-043"
+group = "Video effects / Color and Image Correction"
+feature = "Brightness"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/brightness.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:343 (brightness_contrast)"
+gap = "none"
+
+[[row]]
+id = "K3-044"
+group = "Video effects / Color and Image Correction"
+feature = "Intensity"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/brightness_keyframable.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:528 (proc_amp)"
+gap = "none"
+
+[[row]]
+id = "K3-045"
+group = "Video effects / Color and Image Correction"
+feature = "Bw0r"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/bw0r.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:502 (black_white)"
+gap = "none"
+
+[[row]]
+id = "K3-046"
+group = "Video effects / Color and Image Correction"
+feature = "Channel Extractor BLUE / GREEN / RED"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/channel_extractors.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:407 (channel_mix)"
+gap = "none"
+
+[[row]]
+id = "K3-047"
+group = "Video effects / Color and Image Correction"
+feature = "Chroma Hold"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/chroma_hold.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:376 (leave_color)"
+gap = "none"
+
+[[row]]
+id = "K3-048"
+group = "Video effects / Color and Image Correction"
+feature = "Chroma Keep"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/chroma_keep.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:376 (leave_color)"
+gap = "none"
+
+[[row]]
+id = "K3-049"
+group = "Video effects / Color and Image Correction"
+feature = "Color Balance"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/color_balance.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:359 (color_balance)"
+gap = "none"
+
+[[row]]
+id = "K3-050"
+group = "Video effects / Color and Image Correction"
+feature = "Color Channel Mixer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/color_channel_mixer.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:407 (channel_mix)"
+gap = "none"
+
+[[row]]
+id = "K3-051"
+group = "Video effects / Color and Image Correction"
+feature = "Color Contrast"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/color_contrast.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no opposite-colour-pair contrast effect"
+
+[[row]]
+id = "K3-052"
+group = "Video effects / Color and Image Correction"
+feature = "Color Correct"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/color_correct.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:359 (color_balance)"
+gap = "none"
+
+[[row]]
+id = "K3-053"
+group = "Video effects / Color and Image Correction"
+feature = "Color Hold"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/color_hold.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:376 (leave_color)"
+gap = "none"
+
+[[row]]
+id = "K3-054"
+group = "Video effects / Color and Image Correction"
+feature = "Color Levels"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/color_levels.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:516 (levels)"
+gap = "none"
+
+[[row]]
+id = "K3-055"
+group = "Video effects / Color and Image Correction"
+feature = "Color Overlay"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/color_overlay.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/color_fx.rs:997 (ec.generate.fill, Effects mode); crates/project/src/effect.rs:284 (opacity, blend modes)"
+gap = "colour fill with blend only in Effects mode; on the timeline needs a colour matte + blend mode"
+
+[[row]]
+id = "K3-056"
+group = "Video effects / Color and Image Correction"
+feature = "Color Temperature"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/color_temperature.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, Temperature)"
+gap = "none"
+
+[[row]]
+id = "K3-057"
+group = "Video effects / Color and Image Correction"
+feature = "Colorize"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/colorize.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:349 (tint); crates/project/src/effect.rs:387 (change_to_color); crafts/effectcraft/crates/effects/src/catalog.rs:222 (ec.color.huesaturation, Effects mode)"
+gap = "Hue/Saturation Colorize only in Effects mode"
+
+[[row]]
+id = "K3-058"
+group = "Video effects / Color and Image Correction"
+feature = "Contrast"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/contrast.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:343 (brightness_contrast)"
+gap = "none"
+
+[[row]]
+id = "K3-059"
+group = "Video effects / Color and Image Correction"
+feature = "Curves (avfilter)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/curves_avfilter.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, Curves)"
+gap = "no named curve presets (vintage, cross-process…)"
+
+[[row]]
+id = "K3-060"
+group = "Video effects / Color and Image Correction"
+feature = "Curves (frei0r)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/curves_frei0r.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, Curves)"
+gap = "none"
+
+[[row]]
+id = "K3-061"
+group = "Video effects / Color and Image Correction"
+feature = "Equaliz0r"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/equaliz0r.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/color2.rs:982 (ec.color.equalize, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-062"
+group = "Video effects / Color and Image Correction"
+feature = "Exposure"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/exposure.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, Exposure)"
+gap = "none"
+
+[[row]]
+id = "K3-063"
+group = "Video effects / Color and Image Correction"
+feature = "FFT-based FIR"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/fft-based_fir.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no FFT frequency-domain image filter"
+
+[[row]]
+id = "K3-064"
+group = "Video effects / Color and Image Correction"
+feature = "Gamma"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/gamma.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:509 (gamma_correction)"
+gap = "none"
+
+[[row]]
+id = "K3-065"
+group = "Video effects / Color and Image Correction"
+feature = "Gamma (keyframable)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/gamma_keyframe.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:509 (gamma_correction)"
+gap = "none"
+
+[[row]]
+id = "K3-066"
+group = "Video effects / Color and Image Correction"
+feature = "Gradient Map"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/gradientmap.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/color_fx.rs:1105 (ec.color.colorama, Effects mode); crafts/effectcraft/crates/effects/src/color_fx.rs:889 (ec.color.tritone, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-067"
+group = "Video effects / Color and Image Correction"
+feature = "Grayworld"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/grayworld.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/color2.rs:980 (ec.color.autocolor, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect; no grey-world auto white balance on the timeline"
+
+[[row]]
+id = "K3-068"
+group = "Video effects / Color and Image Correction"
+feature = "Greyscale"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/greyscale.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:502 (black_white)"
+gap = "none"
+
+[[row]]
+id = "K3-069"
+group = "Video effects / Color and Image Correction"
+feature = "Histogram Equalizer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/histogram_equalizer.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/color2.rs:982 (ec.color.equalize, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-070"
+group = "Video effects / Color and Image Correction"
+feature = "HSL Primaries"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/hsl_primaries.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, Hue vs Hue / Hue vs Sat / Hue vs Luma)"
+gap = "none"
+
+[[row]]
+id = "K3-071"
+group = "Video effects / Color and Image Correction"
+feature = "HSL Range"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/hsl_range.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, HSL Secondary)"
+gap = "none"
+
+[[row]]
+id = "K3-072"
+group = "Video effects / Color and Image Correction"
+feature = "HSV Hold"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/hsvhold.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:376 (leave_color)"
+gap = "none"
+
+[[row]]
+id = "K3-073"
+group = "Video effects / Color and Image Correction"
+feature = "Hue Shift"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/hue_shift.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:528 (proc_amp, Hue)"
+gap = "none"
+
+[[row]]
+id = "K3-074"
+group = "Video effects / Color and Image Correction"
+feature = "Hue Saturation Intensity"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/huesaturation.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:528 (proc_amp)"
+gap = "none"
+
+[[row]]
+id = "K3-075"
+group = "Video effects / Color and Image Correction"
+feature = "Invert / Invert0r"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/invert.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:510 (invert)"
+gap = "none"
+
+[[row]]
+id = "K3-076"
+group = "Video effects / Color and Image Correction"
+feature = "Levels"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/levels.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:516 (levels)"
+gap = "none"
+
+[[row]]
+id = "K3-077"
+group = "Video effects / Color and Image Correction"
+feature = "Lift/Gamma/Gain"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/lift_gamma_gain.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, Color Wheels); crates/project/src/effect/vfx.rs:264 (asc_cdl)"
+gap = "none"
+
+[[row]]
+id = "K3-078"
+group = "Video effects / Color and Image Correction"
+feature = "Limiter"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/limiter.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:281 (video_limiter)"
+gap = "none"
+
+[[row]]
+id = "K3-079"
+group = "Video effects / Color and Image Correction"
+feature = "LumaLiftGainGamma"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/lumaliftgammagain.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, wheel lightness sliders)"
+gap = "none"
+
+[[row]]
+id = "K3-080"
+group = "Video effects / Color and Image Correction"
+feature = "Luminance"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/luminance.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:502 (black_white)"
+gap = "none"
+
+[[row]]
+id = "K3-081"
+group = "Video effects / Color and Image Correction"
+feature = "Monochrome"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/monochrome.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:349 (tint)"
+gap = "none"
+
+[[row]]
+id = "K3-082"
+group = "Video effects / Color and Image Correction"
+feature = "Negate"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/negate.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:510 (invert)"
+gap = "none"
+
+[[row]]
+id = "K3-083"
+group = "Video effects / Color and Image Correction"
+feature = "Normaliz0r"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/normaliz0r.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/color2.rs:978 (ec.color.autolevels, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-084"
+group = "Video effects / Color and Image Correction"
+feature = "Normalize RGB Video"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/normalize_rgb_video.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/color2.rs:978 (ec.color.autolevels, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-085"
+group = "Video effects / Color and Image Correction"
+feature = "RGB Adjustment"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/rgb_adjustment.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:407 (channel_mix); crates/project/src/effect.rs:516 (levels)"
+gap = "none"
+
+[[row]]
+id = "K3-086"
+group = "Video effects / Color and Image Correction"
+feature = "SOP/Sat"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/sat.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:264 (asc_cdl)"
+gap = "none"
+
+[[row]]
+id = "K3-087"
+group = "Video effects / Color and Image Correction"
+feature = "Saturation"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/saturation.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, Saturation)"
+gap = "none"
+
+[[row]]
+id = "K3-088"
+group = "Video effects / Color and Image Correction"
+feature = "Sepia"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/sepia.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:349 (tint)"
+gap = "none"
+
+[[row]]
+id = "K3-089"
+group = "Video effects / Color and Image Correction"
+feature = "Swapuv"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/swapuv.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no U/V chroma swap"
+
+[[row]]
+id = "K3-090"
+group = "Video effects / Color and Image Correction"
+feature = "Technicolor"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/technicolor.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no two/three-strip Technicolor look"
+
+[[row]]
+id = "K3-091"
+group = "Video effects / Color and Image Correction"
+feature = "Tint0r"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/tint.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:349 (tint)"
+gap = "none"
+
+[[row]]
+id = "K3-092"
+group = "Video effects / Color and Image Correction"
+feature = "Vibrance"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/vibrance.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, Vibrance)"
+gap = "none"
+
+[[row]]
+id = "K3-093"
+group = "Video effects / Color and Image Correction"
+feature = "Video Equalizer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/video_equalizer.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:528 (proc_amp); crates/project/src/effect.rs:509 (gamma_correction)"
+gap = "none"
+
+[[row]]
+id = "K3-094"
+group = "Video effects / Color and Image Correction"
+feature = "White Balance"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/white_balance.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, Temperature/Tint + WB eyedropper)"
+gap = "none"
+
+[[row]]
+id = "K3-095"
+group = "Video effects / Color and Image Correction"
+feature = "White Balance (LMS)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/white_balance_lms.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:398 (lumetri, Temperature/Tint)"
+gap = "no LMS-space chromatic adaptation"
+
+[[row]]
+id = "K3-096"
+group = "Video effects / Generate"
+feature = "Cairogradient"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/generate/cairogradient.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:391 (gradient); crates/project/src/effect.rs:742 (ramp)"
+gap = "none"
+
+[[row]]
+id = "K3-097"
+group = "Video effects / Generate"
+feature = "Draw Box"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/generate/drawbox.html"
+film = "partial"
+evidence = "crates/engine/src/graphics.rs:765 (graphics.newRectangle)"
+gap = "rectangle exists as a graphic layer, not as a keyframable effect on a clip"
+
+[[row]]
+id = "K3-098"
+group = "Video effects / Generate"
+feature = "Draw Grid"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/generate/drawgrid.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:766 (grid)"
+gap = "none"
+
+[[row]]
+id = "K3-099"
+group = "Video effects / Generate"
+feature = "Drop Shadow"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/generate/drop_shadow.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:665 (drop_shadow)"
+gap = "none"
+
+[[row]]
+id = "K3-100"
+group = "Video effects / Generate"
+feature = "Dynamic Text"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/generate/dynamic_text.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:790 (metadata_burnin); crates/project/src/effect.rs:787 (timecode); crates/project/src/effect.rs:797 (clip_name)"
+gap = "keyword set differs (no %s-style free mixing in one field)"
+
+[[row]]
+id = "K3-101"
+group = "Video effects / Generate"
+feature = "GPS Graphic"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/generate/gps_graphic.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no GPS track import/graphic"
+
+[[row]]
+id = "K3-102"
+group = "Video effects / Generate"
+feature = "GPS Text"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/generate/gps_text.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no GPS data text"
+
+[[row]]
+id = "K3-103"
+group = "Video effects / Generate"
+feature = "Scanline0r"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/generate/scanline0r.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no scanline overlay"
+
+[[row]]
+id = "K3-104"
+group = "Video effects / Generate"
+feature = "Timer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/generate/timer.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:787 (timecode)"
+gap = "timecode display only; no count-up/count-down timer with start/end"
+
+[[row]]
+id = "K3-105"
+group = "Video effects / Generate"
+feature = "Video Grid"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/generate/video_grid.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:573 (replicate)"
+gap = "none"
+
+[[row]]
+id = "K3-106"
+group = "Video effects / Generate"
+feature = "Vignette"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/generate/vignette.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:298 (vignette)"
+gap = "none"
+
+[[row]]
+id = "K3-107"
+group = "Video effects / Generate"
+feature = "Vignette Effect"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/generate/vignette_effect.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:298 (vignette); crates/project/src/effect.rs:398 (lumetri, Vignette)"
+gap = "none"
+
+[[row]]
+id = "K3-108"
+group = "Video effects / Grain and Noise"
+feature = "3D FFT Denoiser"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/grain_and_noise/3d_fft_denoiser.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/lib.rs:1013 (ec.noise.removegrain, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect; no video denoiser on the timeline"
+
+[[row]]
+id = "K3-109"
+group = "Video effects / Grain and Noise"
+feature = "Chroma Noise Reduction"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/grain_and_noise/chroma_noise_reduction.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/lib.rs:1013 (ec.noise.removegrain, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-110"
+group = "Video effects / Grain and Noise"
+feature = "HQ 3D Denoiser"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/grain_and_noise/denoise_hqdn3d.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/lib.rs:1013 (ec.noise.removegrain, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-111"
+group = "Video effects / Grain and Noise"
+feature = "Dither"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/grain_and_noise/dither.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no ordered/random dither effect"
+
+[[row]]
+id = "K3-112"
+group = "Video effects / Grain and Noise"
+feature = "Dust"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/grain_and_noise/dust.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no dust-overlay (old film) generator"
+
+[[row]]
+id = "K3-113"
+group = "Video effects / Grain and Noise"
+feature = "Film Grain"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/grain_and_noise/filmgrain.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:585 (noise); crafts/effectcraft/crates/effects/src/migrate.rs:156 (ec.noise.addgrain, Effects mode)"
+gap = "Add Grain only in Effects mode; timeline Noise is uniform noise"
+
+[[row]]
+id = "K3-114"
+group = "Video effects / Grain and Noise"
+feature = "Gradfun"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/grain_and_noise/gradfun.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no deband (gradfun)"
+
+[[row]]
+id = "K3-115"
+group = "Video effects / Grain and Noise"
+feature = "Median"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/grain_and_noise/median.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:591 (median)"
+gap = "none"
+
+[[row]]
+id = "K3-116"
+group = "Video effects / Grain and Noise"
+feature = "Scratch Lines"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/grain_and_noise/scratchlines.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no film scratch generator"
+
+[[row]]
+id = "K3-117"
+group = "Video effects / Grain and Noise"
+feature = "Wavelet Denoiser"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/grain_and_noise/vague_denoiser.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/lib.rs:1013 (ec.noise.removegrain, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-118"
+group = "Video effects / Grain and Noise"
+feature = "Video Noise Generator"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/grain_and_noise/video_noise_generator.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:585 (noise)"
+gap = "none"
+
+[[row]]
+id = "K3-119"
+group = "Video effects / Image Adjustments"
+feature = "Color Matrix"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/color_matrix.html"
+film = "partial"
+evidence = "crates/render/src/colorman.rs (colour management)"
+gap = "matrix is set by colour management/Interpret Footage, not per-clip effect"
+
+[[row]]
+id = "K3-120"
+group = "Video effects / Image Adjustments"
+feature = "Color Space"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/color_space.html"
+film = "partial"
+evidence = "crates/render/src/colorman.rs; crafts/effectcraft/crates/effects/src/lib.rs:1054 (ec.color.ociocolorspace, Effects mode)"
+gap = "OCIO colour space effect only in Effects mode"
+
+[[row]]
+id = "K3-121"
+group = "Video effects / Image Adjustments"
+feature = "Deband"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/deband.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no debanding"
+
+[[row]]
+id = "K3-122"
+group = "Video effects / Image Adjustments"
+feature = "Dilation"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/dilation.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/channel.rs:436 (ec.channel.minimax, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-123"
+group = "Video effects / Image Adjustments"
+feature = "EPX Scaler"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/epx_scaler.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no pixel-art upscaler"
+
+[[row]]
+id = "K3-124"
+group = "Video effects / Image Adjustments"
+feature = "Erosion"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/erosion.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/channel.rs:436 (ec.channel.minimax, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-125"
+group = "Video effects / Image Adjustments"
+feature = "HQ*X Interpolator"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/hqx_interpolator.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no hqx pixel-art scaler"
+
+[[row]]
+id = "K3-126"
+group = "Video effects / Image Adjustments"
+feature = "Interlace Field Order"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/interlace_field_order.html"
+film = "full"
+evidence = "crates/project/src/lib.rs:623 (Field Options, reverse field dominance)"
+gap = "none"
+
+[[row]]
+id = "K3-127"
+group = "Video effects / Image Adjustments"
+feature = "Interleave - Deinterleave"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/interleave_deinterleave.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no field interleave/deinterleave"
+
+[[row]]
+id = "K3-128"
+group = "Video effects / Image Adjustments"
+feature = "Kernel Deinterlacer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/kernel_deinterlacer.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:623 (AlwaysDeinterlace)"
+gap = "one built-in deinterlacer; no kernel choice/threshold"
+
+[[row]]
+id = "K3-129"
+group = "Video effects / Image Adjustments"
+feature = "Motion Compensation Deinterlacer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/motion_compensation_deinterlacer.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:623"
+gap = "no motion-compensated deinterlace"
+
+[[row]]
+id = "K3-130"
+group = "Video effects / Image Adjustments"
+feature = "Phase"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/phase.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no field phase shift"
+
+[[row]]
+id = "K3-131"
+group = "Video effects / Image Adjustments"
+feature = "Set Range"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/set_range.html"
+film = "partial"
+evidence = "crates/project/src/effect/vfx.rs:281 (video_limiter)"
+gap = "no full/limited range re-tag per clip"
+
+[[row]]
+id = "K3-132"
+group = "Video effects / Image Adjustments"
+feature = "Super2xSaI"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/super2xsai.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no 2xSaI scaler"
+
+[[row]]
+id = "K3-133"
+group = "Video effects / Image Adjustments"
+feature = "XBR Interpolator"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/image_adjustment/xbr_interpolator.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no xBR scaler"
+
+[[row]]
+id = "K3-134"
+group = "Video effects / Misc"
+feature = "Alphaextract"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/misc/alphaextract.html"
+film = "partial"
+evidence = "crates/project/src/effect/vfx.rs:454 (alpha_adjust, Mask Only); crafts/effectcraft/crates/effects/src/channel.rs:412 (ec.channel.shiftchannels, Effects mode)"
+gap = "alpha-to-luma output only via Effects mode Shift Channels"
+
+[[row]]
+id = "K3-135"
+group = "Video effects / Misc"
+feature = "Alphamerge"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/misc/alphamerge.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:707 (track_matte, Matte Luma)"
+gap = "none"
+
+[[row]]
+id = "K3-136"
+group = "Video effects / Misc"
+feature = "Xine Deinterlacer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/misc/xine_deinterlacer.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:623"
+gap = "single deinterlacer, no Xine methods"
+
+[[row]]
+id = "K3-137"
+group = "Video effects / Motion"
+feature = "Baltan"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/motion/baltan.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:805 (echo)"
+gap = "none"
+
+[[row]]
+id = "K3-138"
+group = "Video effects / Motion"
+feature = "Camera Shake"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/motion/camerashake.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:654 (camera_shake)"
+gap = "none"
+
+[[row]]
+id = "K3-139"
+group = "Video effects / Motion"
+feature = "Fade In"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/motion/fade_in.html"
+film = "full"
+evidence = "crates/project/src/vtransition.rs:146 (dip_to_black); crates/project/src/effect.rs:284 (opacity, keyframes)"
+gap = "no one-click fade-in effect; done with a transition at the clip head"
+
+[[row]]
+id = "K3-140"
+group = "Video effects / Motion"
+feature = "Fade Out"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/motion/fade_out.html"
+film = "full"
+evidence = "crates/project/src/vtransition.rs:146 (dip_to_black); crates/project/src/effect.rs:284 (opacity, keyframes)"
+gap = "no one-click fade-out effect; done with a transition at the clip tail"
+
+[[row]]
+id = "K3-141"
+group = "Video effects / Motion"
+feature = "Freeze"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/motion/freeze.html"
+film = "full"
+evidence = "crates/project/src/lib.rs:540 (frame_hold); crates/engine (clip.frameHold)"
+gap = "none"
+
+[[row]]
+id = "K3-142"
+group = "Video effects / Motion"
+feature = "Gate Weave"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/motion/gate_weave.html"
+film = "partial"
+evidence = "crates/project/src/effect/vfx.rs:654 (camera_shake); crates/project/src/effect/vfx.rs:727 (wiggle)"
+gap = "no film gate-weave model"
+
+[[row]]
+id = "K3-143"
+group = "Video effects / Motion"
+feature = "Glitching (rows and color)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/motion/glitching_glitch0r.html"
+film = "partial"
+evidence = "crates/project/src/vtransition.rs:170 (glitch); crates/project/src/effect/vfx.rs:141 (vr_digital_glitch)"
+gap = "glitch exists as a transition and a VR effect, not as a flat clip effect"
+
+[[row]]
+id = "K3-144"
+group = "Video effects / Motion"
+feature = "Glitching (rows only)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/motion/glitching_pixs0r.html"
+film = "partial"
+evidence = "crates/project/src/vtransition.rs:170 (glitch); crates/project/src/effect/vfx.rs:141 (vr_digital_glitch)"
+gap = "same as above"
+
+[[row]]
+id = "K3-145"
+group = "Video effects / Motion"
+feature = "Lag Fun"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/motion/lagfun.html"
+film = "partial"
+evidence = "crates/project/src/effect/vfx.rs:805 (echo)"
+gap = "no max-luma trail mode"
+
+[[row]]
+id = "K3-146"
+group = "Video effects / Motion"
+feature = "Nervous"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/motion/nervous.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no random frame-order effect"
+
+[[row]]
+id = "K3-147"
+group = "Video effects / Motion"
+feature = "Shake0scillate"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/motion/shake0scillate.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:654 (camera_shake); crates/project/src/effect/vfx.rs:727 (wiggle)"
+gap = "none"
+
+[[row]]
+id = "K3-148"
+group = "Video effects / Motion"
+feature = "Vertigo"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/motion/vertigo.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no vertigo feedback zoom/rotate"
+
+[[row]]
+id = "K3-149"
+group = "Video effects / On Master"
+feature = "Audio Level Visualization Filter"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/on_master/audio_level_visualization_filter.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/generate3.rs:2015 (ec.generate.audiowaveform, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-150"
+group = "Video effects / On Master"
+feature = "Audio Spectrum Filter"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/on_master/audio_spectrum_filter.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/generate3.rs:1985 (ec.generate.audiospectrum, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-151"
+group = "Video effects / On Master"
+feature = "Audio Wave"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/on_master/audio_wave.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/generate3.rs:2015 (ec.generate.audiowaveform, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-152"
+group = "Video effects / On Master"
+feature = "Audio Waveform Filter"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/on_master/audio_waveform_filter.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/generate3.rs:2015 (ec.generate.audiowaveform, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-153"
+group = "Video effects / On Master"
+feature = "Dance"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/on_master/dance.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no audio-driven motion of the image"
+
+[[row]]
+id = "K3-154"
+group = "Video effects / On Master"
+feature = "Light Show"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/on_master/light_show.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no audio-driven light show"
+
+[[row]]
+id = "K3-155"
+group = "Video effects / Stylize"
+feature = "3-Level Threshold"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/3-level_threshold.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:550 (posterize); crafts/effectcraft/crates/effects/src/misc.rs:642 (ec.stylize.threshold, Effects mode)"
+gap = "no 3-level (black/grey/white) threshold"
+
+[[row]]
+id = "K3-156"
+group = "Video effects / Stylize"
+feature = "Analog Video Echo"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/aech0r.html"
+film = "partial"
+evidence = "crates/project/src/effect/vfx.rs:805 (echo)"
+gap = "no analog-style decaying echo"
+
+[[row]]
+id = "K3-157"
+group = "Video effects / Stylize"
+feature = "Binarize"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/binarize.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/misc.rs:642 (ec.stylize.threshold, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-158"
+group = "Video effects / Stylize"
+feature = "Binarize Dynamically"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/binarize_dynamically.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no adaptive threshold"
+
+[[row]]
+id = "K3-159"
+group = "Video effects / Stylize"
+feature = "Burning TV"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/burning_tv.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no burning-edge TV effect"
+
+[[row]]
+id = "K3-160"
+group = "Video effects / Stylize"
+feature = "Cartoon"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/cartoon.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/stylize2.rs:570 (ec.stylize.cartoon, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-161"
+group = "Video effects / Stylize"
+feature = "Charcoal"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/charcoal.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:561 (find_edges)"
+gap = "no charcoal sketch look"
+
+[[row]]
+id = "K3-162"
+group = "Video effects / Stylize"
+feature = "Chroma Shift"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/chroma_shift.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:530 (rgb_split)"
+gap = "none"
+
+[[row]]
+id = "K3-163"
+group = "Video effects / Stylize"
+feature = "Color Distance"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/color_distance.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no colour-distance map"
+
+[[row]]
+id = "K3-164"
+group = "Video effects / Stylize"
+feature = "Color Effect"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/color_effect.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:349 (tint); crates/project/src/effect.rs:510 (invert); crates/project/src/effect.rs:502 (black_white)"
+gap = "no single effect with sepia/negative/x-ray/… presets"
+
+[[row]]
+id = "K3-165"
+group = "Video effects / Stylize"
+feature = "Edge Detection"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/edge_detection.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:561 (find_edges)"
+gap = "none"
+
+[[row]]
+id = "K3-166"
+group = "Video effects / Stylize"
+feature = "Edge Glow"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/edge_glow.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:488 (edge_glow)"
+gap = "none"
+
+[[row]]
+id = "K3-167"
+group = "Video effects / Stylize"
+feature = "Emboss"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/emboss.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:562 (emboss); crates/project/src/effect/vfx.rs:598 (color_emboss)"
+gap = "none"
+
+[[row]]
+id = "K3-168"
+group = "Video effects / Stylize"
+feature = "Glow"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/glow.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:555 (wonder_glow); crates/project/src/effect/vfx.rs:474 (echo_glow)"
+gap = "none"
+
+[[row]]
+id = "K3-169"
+group = "Video effects / Stylize"
+feature = "Heatmap0r"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/heatmap0r.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/color_fx.rs:1105 (ec.color.colorama, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-170"
+group = "Video effects / Stylize"
+feature = "Kaleidoscope"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/kaleid0sc0pe.html"
+film = "partial"
+evidence = "crates/project/src/vtransition.rs:183 (kaleidoscope); crafts/effectcraft/crates/effects/src/stylize2.rs:673 (ec.stylize.cckaleida, Effects mode)"
+gap = "timeline has Kaleidoscope as a transition only; effect only in Effects mode"
+
+[[row]]
+id = "K3-171"
+group = "Video effects / Stylize"
+feature = "Kirsch"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/kirsch.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:561 (find_edges)"
+gap = "no Kirsch operator choice"
+
+[[row]]
+id = "K3-172"
+group = "Video effects / Stylize"
+feature = "Light Graffiti"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/lightgraffiti.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no light-painting accumulation"
+
+[[row]]
+id = "K3-173"
+group = "Video effects / Stylize"
+feature = "NDVI Filter"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/ndvi_filter.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no NDVI false colour"
+
+[[row]]
+id = "K3-174"
+group = "Video effects / Stylize"
+feature = "NTSC"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/ntsc.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no NTSC/VHS signal simulation effect"
+
+[[row]]
+id = "K3-175"
+group = "Video effects / Stylize"
+feature = "Old Film Simulator"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/oldfilm.html"
+film = "partial"
+evidence = "crates/project/src/vtransition.rs:192 (vhs_damage)"
+gap = "only a VHS Damage transition; no old-film effect (scratches, flicker, dust)"
+
+[[row]]
+id = "K3-176"
+group = "Video effects / Stylize"
+feature = "Photosensitivity Filter"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/photosensitivity.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no flash-reduction filter"
+
+[[row]]
+id = "K3-177"
+group = "Video effects / Stylize"
+feature = "Pixelize (basic)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/pixeliz0r.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:551 (mosaic)"
+gap = "none"
+
+[[row]]
+id = "K3-178"
+group = "Video effects / Stylize"
+feature = "Pixelize (advanced)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/pixelize.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:551 (mosaic)"
+gap = "no block shapes / blend modes"
+
+[[row]]
+id = "K3-179"
+group = "Video effects / Stylize"
+feature = "Pixels0rt"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/pixels0rt.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no pixel sorting"
+
+[[row]]
+id = "K3-180"
+group = "Video effects / Stylize"
+feature = "Posterize"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/posterize.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:550 (posterize)"
+gap = "none"
+
+[[row]]
+id = "K3-181"
+group = "Video effects / Stylize"
+feature = "Posterize (ELBG)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/posterize_elbg.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:550 (posterize)"
+gap = "no palette-quantising (ELBG) posterize"
+
+[[row]]
+id = "K3-182"
+group = "Video effects / Stylize"
+feature = "Prewitt"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/prewitt.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:561 (find_edges)"
+gap = "no Prewitt operator choice"
+
+[[row]]
+id = "K3-183"
+group = "Video effects / Stylize"
+feature = "Primaries"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/primaries.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no reduce-to-primaries effect"
+
+[[row]]
+id = "K3-184"
+group = "Video effects / Stylize"
+feature = "Pseudo Color"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/pseudocolor.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/color_fx.rs:1105 (ec.color.colorama, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-185"
+group = "Video effects / Stylize"
+feature = "RGBA Shift"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/rgba_shift.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:530 (rgb_split)"
+gap = "none"
+
+[[row]]
+id = "K3-186"
+group = "Video effects / Stylize"
+feature = "RGB Splitter"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/rgbsplit0r.html"
+film = "partial"
+evidence = "crates/project/src/effect/vfx.rs:530 (rgb_split)"
+gap = "channel offsets only; no split-view of channels"
+
+[[row]]
+id = "K3-187"
+group = "Video effects / Stylize"
+feature = "Roberts"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/roberts.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:561 (find_edges)"
+gap = "no Roberts operator"
+
+[[row]]
+id = "K3-188"
+group = "Video effects / Stylize"
+feature = "Scharr"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/scharr.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:561 (find_edges)"
+gap = "no Scharr operator"
+
+[[row]]
+id = "K3-189"
+group = "Video effects / Stylize"
+feature = "Sigmoidal Transfer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/sigmoidal_transfer.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, Curves)"
+gap = "none"
+
+[[row]]
+id = "K3-190"
+group = "Video effects / Stylize"
+feature = "Sobel"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/sobel.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:561 (find_edges)"
+gap = "no Sobel operator choice"
+
+[[row]]
+id = "K3-191"
+group = "Video effects / Stylize"
+feature = "Sobel with Planes"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/sobel_planes.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:561 (find_edges)"
+gap = "no per-plane Sobel"
+
+[[row]]
+id = "K3-192"
+group = "Video effects / Stylize"
+feature = "Soft Glow"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/soft_glow.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:555 (wonder_glow)"
+gap = "none"
+
+[[row]]
+id = "K3-193"
+group = "Video effects / Stylize"
+feature = "Squigglevision"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/squigglevision.html"
+film = "partial"
+evidence = "crates/project/src/effect/vfx.rs:337 (turbulent_displace)"
+gap = "no frame-stepped squiggle wobble"
+
+[[row]]
+id = "K3-194"
+group = "Video effects / Stylize"
+feature = "Threshold"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/threshold.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/misc.rs:642 (ec.stylize.threshold, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-195"
+group = "Video effects / Stylize"
+feature = "Typewriter"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/stylize/typewriter.html"
+film = "partial"
+evidence = "crates/project/src/vtransition.rs:272 (typewriter); crafts/effectcraft/crates/effects/src/lib.rs:1119 (ec.text.numbers, Effects mode)"
+gap = "typewriter is a transition on graphics; no per-title frame step/variation/seed"
+
+[[row]]
+id = "K3-196"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Corners"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/corners.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:311 (corner_pin)"
+gap = "none"
+
+[[row]]
+id = "K3-197"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Crop by Padding"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/crop_padding.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:592 (crop)"
+gap = "none"
+
+[[row]]
+id = "K3-198"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Crop, Scale and Tilt"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/crop_scale_tilt.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:592 (crop); crates/project/src/effect.rs:608 (transform)"
+gap = "none"
+
+[[row]]
+id = "K3-199"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Defish"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/defish.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:628 (lens_distortion)"
+gap = "none"
+
+[[row]]
+id = "K3-200"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Distort"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/distort.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:648 (wave_warp)"
+gap = "none"
+
+[[row]]
+id = "K3-201"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Edge Crop"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/edge_crop.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:592 (crop)"
+gap = "none"
+
+[[row]]
+id = "K3-202"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Elastic Scale"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/elastic_scale_filter.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no non-linear (centre-preserving) stretch"
+
+[[row]]
+id = "K3-203"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Fill Borders"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/fill_borders.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no border fill (smear/mirror/colour)"
+
+[[row]]
+id = "K3-204"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Flip Horizontally"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/flip_horizontally.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:605 (horizontal_flip)"
+gap = "none"
+
+[[row]]
+id = "K3-205"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Flip Vertically"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/flip_vertically.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:606 (vertical_flip)"
+gap = "none"
+
+[[row]]
+id = "K3-206"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Flippo"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/flippo.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:605 (horizontal_flip); crates/project/src/effect.rs:606 (vertical_flip)"
+gap = "two effects instead of one with both checkboxes"
+
+[[row]]
+id = "K3-207"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Lens Correction (avfilter)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/lens_correction_avfilter.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:628 (lens_distortion)"
+gap = "none"
+
+[[row]]
+id = "K3-208"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Lens Correction (frei0r)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/lens_correction_frei0r.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:628 (lens_distortion)"
+gap = "none"
+
+[[row]]
+id = "K3-209"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Letter-boxing"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/letterb0xed.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:592 (crop)"
+gap = "crop leaves transparency; no letterbox with colour/size presets"
+
+[[row]]
+id = "K3-210"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Mirror"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/mirror.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:626 (mirror)"
+gap = "none"
+
+[[row]]
+id = "K3-211"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Nosync0r (Broken TV)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/nosync0r.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no vertical-roll broken-sync effect"
+
+[[row]]
+id = "K3-212"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Pillar Echo"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/pillar_echo.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no blurred-copy fill for pillar/letterbox"
+
+[[row]]
+id = "K3-213"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Position and Zoom"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/position_and_zoom.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:265 (motion)"
+gap = "none"
+
+[[row]]
+id = "K3-214"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "3-way Rotate"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/rotate_3_way.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:659 (basic_3d); crates/project/src/effect/vfx.rs:630 (rotate_3d)"
+gap = "none"
+
+[[row]]
+id = "K3-215"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Scroll"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/scroll.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:627 (offset)"
+gap = "none"
+
+[[row]]
+id = "K3-216"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Shear"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/shear.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:608 (transform, Skew)"
+gap = "none"
+
+[[row]]
+id = "K3-217"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Transform"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/transform.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:265 (motion); crates/project/src/effect.rs:608 (transform)"
+gap = "none"
+
+[[row]]
+id = "K3-218"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Transpose"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/transpose.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:265 (motion, Rotation)"
+gap = "none"
+
+[[row]]
+id = "K3-219"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Wave"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/wave.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:648 (wave_warp)"
+gap = "none"
+
+[[row]]
+id = "K3-220"
+group = "Video effects / Transform, Distort and Perspective"
+feature = "Zoom Pan"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/transform_distort_perspective/zoom_pan.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:265 (motion, keyframed Scale/Position)"
+gap = "none"
+
+[[row]]
+id = "K3-221"
+group = "Video effects / Utility"
+feature = "CIE Scope"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/utility/ciescope.html"
+film = "none"
+evidence = "crates/scopes/src/lib.rs:49 (ScopeKind)"
+gap = "no CIE chromaticity scope"
+
+[[row]]
+id = "K3-222"
+group = "Video effects / Utility"
+feature = "Data Scope"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/utility/datascope.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no pixel-value data scope"
+
+[[row]]
+id = "K3-223"
+group = "Video effects / Utility"
+feature = "Histogram"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/utility/histogram.html"
+film = "partial"
+evidence = "crates/scopes/src/lib.rs:52 (Histogram); crates/ui-egui/src/dock.rs:96 (Lumetri Scopes)"
+gap = "scope panel only, cannot be burnt into the rendered video"
+
+[[row]]
+id = "K3-224"
+group = "Video effects / Utility"
+feature = "Nikon D90 Stairstepping Fix"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/utility/nikon_d90_stairstepping_fix.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "camera-specific fix not provided"
+
+[[row]]
+id = "K3-225"
+group = "Video effects / Utility"
+feature = "Oscilloscope (simple)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/utility/oscilloscope.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no line oscilloscope"
+
+[[row]]
+id = "K3-226"
+group = "Video effects / Utility"
+feature = "Oscilloscope (advanced)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/utility/oscilloscope_advanced.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no line oscilloscope"
+
+[[row]]
+id = "K3-227"
+group = "Video effects / Utility"
+feature = "RGB Parade"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/utility/rgb_parade.html"
+film = "partial"
+evidence = "crates/scopes/src/lib.rs:53 (Parade)"
+gap = "scope panel only, not a video effect"
+
+[[row]]
+id = "K3-228"
+group = "Video effects / Utility"
+feature = "Timeout Indicator"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/utility/timeout_indicator.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no remaining-time indicator"
+
+[[row]]
+id = "K3-229"
+group = "Video effects / Utility"
+feature = "Vectorscope"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/utility/vectorscope.html"
+film = "partial"
+evidence = "crates/scopes/src/lib.rs:50 (VectorscopeYuv)"
+gap = "scope panel only, not a video effect"
+
+[[row]]
+id = "K3-230"
+group = "Video effects / Utility"
+feature = "Vectorscope (advanced)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/utility/vectorscope_advanced.html"
+film = "partial"
+evidence = "crates/scopes/src/lib.rs:51 (VectorscopeHls)"
+gap = "scope panel only, not a video effect"
+
+[[row]]
+id = "K3-231"
+group = "Video effects / Utility"
+feature = "Video Values"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/utility/video_values.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no on-image pixel value readout"
+
+[[row]]
+id = "K3-232"
+group = "Video effects / Utility"
+feature = "Video Waveform Monitor"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/utility/video_waveform_monitor.html"
+film = "partial"
+evidence = "crates/scopes/src/lib.rs:55 (Waveform)"
+gap = "scope panel only, not a video effect"
+
+[[row]]
+id = "K3-233"
+group = "Video effects / VR360 and 3D"
+feature = "Stereoscopic 3D"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/vr360_and_3d/stereoscopic_3d.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no stereo 3D format conversion (anaglyph etc.)"
+
+[[row]]
+id = "K3-234"
+group = "Video effects / VR360 and 3D"
+feature = "VR360 Cap Top and Bottom"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/vr360_and_3d/vr360_cap.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no pole cap fill"
+
+[[row]]
+id = "K3-235"
+group = "Video effects / VR360 and 3D"
+feature = "VR360 Equirectangular to Rectilinear"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/vr360_and_3d/vr360_equi2rect.html"
+film = "partial"
+evidence = "crates/project/src/effect/vfx.rs:191 (vr_projection); crafts/effectcraft/crates/effects/src/vr.rs:1134 (ec.vr.spheretoplane, Effects mode)"
+gap = "Sphere to Plane only in Effects mode"
+
+[[row]]
+id = "K3-236"
+group = "Video effects / VR360 and 3D"
+feature = "VR360 Equirectangular to Stereo"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/vr360_and_3d/vr360_equi2stereo.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no stereographic (little planet) projection"
+
+[[row]]
+id = "K3-237"
+group = "Video effects / VR360 and 3D"
+feature = "VR360 Equirectangular Mask"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/vr360_and_3d/vr360_equi_mask.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no equirectangular mask"
+
+[[row]]
+id = "K3-238"
+group = "Video effects / VR360 and 3D"
+feature = "VR360 Hemispherical to Equirectangular"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/vr360_and_3d/vr360_hemi2equi.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/migrate.rs:107 (ec.vr.converter, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-239"
+group = "Video effects / VR360 and 3D"
+feature = "VR360 Rectilinear to Equirectangular"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/vr360_and_3d/vr360_rect2equi.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:180 (vr_plane_to_sphere)"
+gap = "none"
+
+[[row]]
+id = "K3-240"
+group = "Video effects / VR360 and 3D"
+feature = "VR360 Stabilize"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/vr360_and_3d/vr360_stabilize.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no 360 stabilisation"
+
+[[row]]
+id = "K3-241"
+group = "Video effects / VR360 and 3D"
+feature = "VR360 Transform"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/vr360_and_3d/vr360_transform.html"
+film = "full"
+evidence = "crates/project/src/effect/vfx.rs:202 (vr_rotate_sphere)"
+gap = "none"
+
+[[row]]
+id = "K3-242"
+group = "Video effects / VR360 and 3D"
+feature = "VR360 Wrap"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/vr360_and_3d/vr360_wrap.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no 360 wrap"
+
+[[row]]
+id = "K3-243"
+group = "Video effects / Deprecated"
+feature = "Blur"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/deprecated/blur.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:474 (gaussian_blur)"
+gap = "none"
+
+[[row]]
+id = "K3-244"
+group = "Video effects / Deprecated"
+feature = "Box Blur"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/deprecated/box_blur.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/misc.rs:563 (ec.blur.fastbox, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-245"
+group = "Video effects / Deprecated"
+feature = "Denoiser"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/deprecated/denoiser.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/lib.rs:1013 (ec.noise.removegrain, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-246"
+group = "Video effects / Deprecated"
+feature = "Grain"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/deprecated/grain.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:585 (noise); crafts/effectcraft/crates/effects/src/migrate.rs:156 (ec.noise.addgrain, Effects mode)"
+gap = "film grain only in Effects mode"
+
+[[row]]
+id = "K3-247"
+group = "Video effects / Deprecated"
+feature = "Hqdn3d"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/deprecated/hqdn3d.html"
+film = "partial"
+evidence = "crafts/effectcraft/crates/effects/src/lib.rs:1013 (ec.noise.removegrain, Effects mode)"
+gap = "Effects mode only: a composition sent back as a clip (apps/redrob-film-app/src/shell.rs), not a timeline clip effect"
+
+[[row]]
+id = "K3-248"
+group = "Video effects / Deprecated"
+feature = "K-Means Clustering"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/deprecated/k-means_clustering.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:550 (posterize)"
+gap = "no k-means palette"
+
+[[row]]
+id = "K3-249"
+group = "Video effects / Deprecated"
+feature = "Medians"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/deprecated/medians.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:591 (median)"
+gap = "none"
+
+[[row]]
+id = "K3-250"
+group = "Video effects / Deprecated"
+feature = "rgbnoise"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/deprecated/rgbnoise.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:585 (noise)"
+gap = "none"
+
+[[row]]
+id = "K3-251"
+group = "Video effects / Deprecated"
+feature = "Rotate and Shear"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/deprecated/rotate_and_shear.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:608 (transform)"
+gap = "none"
+
+[[row]]
+id = "K3-252"
+group = "Video effects / Deprecated"
+feature = "Rotate (keyframable)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/deprecated/rotate_keyframable.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:265 (motion)"
+gap = "none"
+
+[[row]]
+id = "K3-253"
+group = "Video effects / Deprecated"
+feature = "Sharpen"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/deprecated/sharpen.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:490 (sharpen)"
+gap = "none"
+
+[[row]]
+id = "K3-254"
+group = "Video effects / Deprecated"
+feature = "Speed"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/deprecated/speed.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:295 (time_remap)"
+gap = "none"
+
+[[row]]
+id = "K3-255"
+group = "Effects / Effects tab"
+feature = "Effects tab with categories"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effects-tab"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effects.rs:1 (folder tree)"
+gap = "none"
+
+[[row]]
+id = "K3-256"
+group = "Effects / Effects tab"
+feature = "Show video only / audio only filters"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effects-tab"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effects.rs:1 (Video Effects / Audio Effects folders)"
+gap = "none"
+
+[[row]]
+id = "K3-257"
+group = "Effects / Effects tab"
+feature = "Search effects"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effects-tab"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effects.rs:23 (effects_search)"
+gap = "none"
+
+[[row]]
+id = "K3-258"
+group = "Effects / Effects tab"
+feature = "Custom effects category (saved stacks)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effects-tab"
+film = "full"
+evidence = "crates/ui-egui/src/panels/presets.rs:1 (Presets bin); crates/engine/src/presets.rs:198"
+gap = "none"
+
+[[row]]
+id = "K3-259"
+group = "Effects / Effects tab"
+feature = "Favorite effects (+ timeline toolbar list)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effects-tab"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no favourites for effects or a favourites menu in the timeline"
+
+[[row]]
+id = "K3-260"
+group = "Effects / Effects tab"
+feature = "Download new effects from KDE Store"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effects-tab"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no online asset store (by design: offline product)"
+
+[[row]]
+id = "K3-261"
+group = "Effects / Effects tab"
+feature = "Only show reviewed assets / 10-bit compatible filter"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effects-tab"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/effects.rs:100 (Accelerated / 32-bit / YUV badges)"
+gap = "badges shown, but no filter toggles"
+
+[[row]]
+id = "K3-262"
+group = "Effects / Effects tab"
+feature = "Effect description pane with doc link"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effects-tab"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no description pane or per-effect documentation link"
+
+[[row]]
+id = "K3-263"
+group = "Effects / Built-in effects"
+feature = "Built-in Transform/Flip/Volume on every clip"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#built-in-effects"
+film = "full"
+evidence = "crates/project/src/effect.rs:265 (motion); crates/project/src/effect.rs:284 (opacity); crates/project/src/effect.rs:306 (volume, intrinsic effects)"
+gap = "built-ins are always on (Motion/Opacity/Time Remap/Volume); flip is not built-in, no global enable switch"
+
+[[row]]
+id = "K3-264"
+group = "Effects / Effect stack"
+feature = "Save effect stack as custom effect"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-composition-stack-functions"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs:200 (Save Preset…, multi-effect); crates/engine/src/presets.rs:1"
+gap = "none"
+
+[[row]]
+id = "K3-265"
+group = "Effects / Effect stack"
+feature = "Compare effect (split before/after monitor)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-composition-stack-functions"
+film = "partial"
+evidence = "crates/ui-egui/src/state.rs:318 (Comparison View)"
+gap = "comparison view compares two frames; no with/without-effects split"
+
+[[row]]
+id = "K3-266"
+group = "Effects / Effect stack"
+feature = "Enable/disable whole stack (strike-through on clip)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-composition-stack-functions"
+film = "partial"
+evidence = "crates/engine/src/commands.rs (effects.toggleEnabled per effect)"
+gap = "per-effect fx toggle only; no one-click stack bypass shown on the clip"
+
+[[row]]
+id = "K3-267"
+group = "Effects / Effect stack"
+feature = "Show/hide keyframes in timeline"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-composition-stack-functions"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline_automation.rs:102 (Show Keyframes)"
+gap = "toggle exists for audio track lanes; clip effect keyframes not drawn on video clips"
+
+[[row]]
+id = "K3-268"
+group = "Effects / Effect functions"
+feature = "Collapse/expand effect (Shift = all)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs:190 (collapsed_fx)"
+gap = "no Shift+click to collapse all"
+
+[[row]]
+id = "K3-269"
+group = "Effects / Effect functions"
+feature = "Disable single effect"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
+film = "full"
+evidence = "crates/project/src/effect.rs:107 (enabled); effects.toggleEnabled"
+gap = "none"
+
+[[row]]
+id = "K3-270"
+group = "Effects / Effect functions"
+feature = "Effect presets menu / reset to defaults"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs:185 (Reset Effect); crates/ui-egui/src/panels/effect_controls.rs:626 (Reset Parameter)"
+gap = "no per-effect preset list in the effect header"
+
+[[row]]
+id = "K3-271"
+group = "Effects / Effect functions"
+feature = "Save single effect"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs:200 (Save Preset…)"
+gap = "none"
+
+[[row]]
+id = "K3-272"
+group = "Effects / Effect functions"
+feature = "Open effect documentation"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no per-effect help link"
+
+[[row]]
+id = "K3-273"
+group = "Effects / Effect functions"
+feature = "Move effect up/down in stack"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
+film = "none"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs:153 (fixed order: standard then intrinsic)"
+gap = "effects cannot be reordered (no command, no drag)"
+
+[[row]]
+id = "K3-274"
+group = "Effects / Effect functions"
+feature = "Delete effect"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs:206 (Clear → effects.remove)"
+gap = "none"
+
+[[row]]
+id = "K3-275"
+group = "Effects / Effect functions"
+feature = "Math expressions in value fields"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "spin boxes do not evaluate + - * / ( )"
+
+[[row]]
+id = "K3-276"
+group = "Effects / Effect functions"
+feature = "%x/%y… references to other fields"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no cross-field references"
+
+[[row]]
+id = "K3-277"
+group = "Effects / Effect functions"
+feature = "Timecode field relative entry (+/- hh:mm:ss:ff short forms)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no +/- relative or short-form timecode entry found"
+
+[[row]]
+id = "K3-278"
+group = "Effects / Effect functions"
+feature = "Middle-click resets value"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs:626 (Reset Parameter button)"
+gap = "reset by button/menu, not middle-click"
+
+[[row]]
+id = "K3-279"
+group = "Effects / Applying"
+feature = "Effect on a Project Bin clip (all instances)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#where-to-apply-an-effect"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no source/bin-clip effects"
+
+[[row]]
+id = "K3-280"
+group = "Effects / Applying"
+feature = "Effect on a timeline clip"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#where-to-apply-an-effect"
+film = "full"
+evidence = "crates/project/src/lib.rs:532 (TrackItem.effects); effects.apply"
+gap = "none"
+
+[[row]]
+id = "K3-281"
+group = "Effects / Applying"
+feature = "Drag effect onto clip"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#how-to-apply-an-effect"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effects.rs:1"
+gap = "none"
+
+[[row]]
+id = "K3-282"
+group = "Effects / Applying"
+feature = "Double-click applies to all selected clips"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#how-to-apply-an-effect"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effects.rs:1 (double-click applies to the selection)"
+gap = "none"
+
+[[row]]
+id = "K3-283"
+group = "Effects / Applying"
+feature = "Sequence menu ▸ Add Effect"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#how-to-apply-an-effect"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no Add Effect menu entry"
+
+[[row]]
+id = "K3-284"
+group = "Effects / Applying"
+feature = "Copy/paste effects between clips"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#how-to-apply-an-effect"
+film = "full"
+evidence = "crates/ui-egui/src/panels/clip_dialogs.rs:13 (Paste Attributes); edit.removeAttributes"
+gap = "none"
+
+[[row]]
+id = "K3-285"
+group = "Effects / Track & master"
+feature = "Track effect (video track)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#track-effect"
+film = "partial"
+evidence = "crates/project/src/lib.rs:759 (audio Track.effects); crates/project/src/lib.rs:279 (AdjustmentLayer)"
+gap = "video tracks carry no effects; workaround is an adjustment layer above"
+
+[[row]]
+id = "K3-286"
+group = "Effects / Track & master"
+feature = "Track effect (audio track)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#track-effect"
+film = "full"
+evidence = "crates/project/src/lib.rs:759 (mixer inserts 1–5)"
+gap = "none"
+
+[[row]]
+id = "K3-287"
+group = "Effects / Track & master"
+feature = "Master effect (video)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#master-effect"
+film = "partial"
+evidence = "crates/project/src/lib.rs:279 (AdjustmentLayer)"
+gap = "no master video stack; an adjustment layer over all tracks is the workaround"
+
+[[row]]
+id = "K3-288"
+group = "Effects / Track & master"
+feature = "Master effect (audio)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#master-effect"
+film = "full"
+evidence = "crates/project/src/lib.rs:981 (master_effects)"
+gap = "none"
+
+[[row]]
+id = "K3-289"
+group = "Effects / Effect zones"
+feature = "Track effect zone"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-zones"
+film = "partial"
+evidence = "crates/project/src/lib.rs:279 (AdjustmentLayer duration)"
+gap = "zone emulated by trimming an adjustment layer; no zone bar on track effects"
+
+[[row]]
+id = "K3-290"
+group = "Effects / Effect zones"
+feature = "Master (timeline) effect zone"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-zones"
+film = "partial"
+evidence = "crates/project/src/lib.rs:279"
+gap = "same: adjustment layer, no master zone bar"
+
+[[row]]
+id = "K3-291"
+group = "Effects / Effect zones"
+feature = "Clip effect zone (Use effect zone)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "an effect always spans the whole clip"
+
+[[row]]
+id = "K3-292"
+group = "Effects / Masking"
+feature = "Masking effects 3-step workflow (mask, effects, Mask Apply)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#masking-effects"
+film = "full"
+evidence = "crates/project/src/effect.rs:110; crates/ui-egui/src/panels/masks.rs"
+gap = "per-effect masks replace the bracket workflow"
+
+[[row]]
+id = "K3-293"
+group = "Effects / Masking"
+feature = "Multiple masks per clip"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#masking-effects"
+film = "full"
+evidence = "crates/project/src/mask.rs:378 (Vec<Mask> per effect, modes)"
+gap = "none"
+
+[[row]]
+id = "K3-294"
+group = "Effects / Masking"
+feature = "Invert mask"
+manual = "https://docs.kdenlive.org/en/compositing/masking_and_tracking/masking.html"
+film = "full"
+evidence = "crates/project/src/mask.rs:389 (inverted)"
+gap = "none"
+
+[[row]]
+id = "K3-295"
+group = "Effects / Masking"
+feature = "Mask feather / expansion"
+manual = "https://docs.kdenlive.org/en/compositing/masking_and_tracking/masking.html"
+film = "full"
+evidence = "crates/project/src/mask.rs:383 (feather); crates/project/src/mask.rs:387 (expansion)"
+gap = "none"
+
+[[row]]
+id = "K3-296"
+group = "Effects / Tracking"
+feature = "Track object, copy tracker keyframes into Transform"
+manual = "https://docs.kdenlive.org/en/compositing/masking_and_tracking/tracking.html"
+film = "partial"
+evidence = "crates/engine/src/masks.rs:576; crafts/effectcraft/crates/effects/src/camera_tracker.rs:32 (ec.perspective.cameratracker, Effects mode)"
+gap = "tracked data stays on the mask; no keyframe export to Motion/Transform"
+
+[[row]]
+id = "K3-297"
+group = "Effects / Time remapping"
+feature = "Time remapping (speed keyframes, ramps)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#time-remapping"
+film = "full"
+evidence = "crates/project/src/effect.rs:295 (time_remap)"
+gap = "none"
+
+[[row]]
+id = "K3-298"
+group = "Effects / Keyframes"
+feature = "Keyframable parameters with interpolation"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframes-in-effects"
+film = "full"
+evidence = "crates/project/src/keyframe.rs:144 (Keyframe); crates/ui-egui/src/panels/effect_controls.rs:515 (Stopwatch)"
+gap = "none"
+
+[[row]]
+id = "K3-299"
+group = "Effects / Keyframes"
+feature = "Linear keyframe"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframes-types-interpolation"
+film = "full"
+evidence = "crates/project/src/keyframe.rs:111"
+gap = "none"
+
+[[row]]
+id = "K3-300"
+group = "Effects / Keyframes"
+feature = "Discrete keyframe"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframes-types-interpolation"
+film = "full"
+evidence = "crates/project/src/keyframe.rs:112 (Hold)"
+gap = "none"
+
+[[row]]
+id = "K3-301"
+group = "Effects / Keyframes"
+feature = "Smooth (Catmull-Rom) keyframe"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframes-types-interpolation"
+film = "full"
+evidence = "crates/project/src/keyframe.rs:114 (AutoBezier)"
+gap = "Auto Bezier, not exactly centripetal Catmull-Rom"
+
+[[row]]
+id = "K3-302"
+group = "Effects / Keyframes"
+feature = "Easing keyframes (cubic/exponential/circular/elastic/bounce, in/out/in-out)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframes-types-interpolation"
+film = "partial"
+evidence = "crates/project/src/keyframe.rs:116 (EaseIn/EaseOut, Bezier handles)"
+gap = "no elastic/bounce/circular/exponential presets"
+
+[[row]]
+id = "K3-303"
+group = "Effects / Keyframes"
+feature = "Keyframe ruler with zoom bar"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframe-ruler"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs (keyframe lane, time ruler)"
+gap = "none"
+
+[[row]]
+id = "K3-304"
+group = "Effects / Keyframes"
+feature = "Copy/paste keyframes (Ctrl+C/V)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframe-ruler"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no keyframe clipboard"
+
+[[row]]
+id = "K3-305"
+group = "Effects / Keyframes"
+feature = "Keyframe curve editor"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframe-curve-editor"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs:1096 (value/velocity graph)"
+gap = "none"
+
+[[row]]
+id = "K3-306"
+group = "Effects / Keyframes"
+feature = "Automatic keyframes while playing"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#automatic-keyframe-generation"
+film = "partial"
+evidence = "crates/project/src/mixer.rs:20 (audio Latch/Touch/Write)"
+gap = "auto-record only for audio mixer automation, not video effect params"
+
+[[row]]
+id = "K3-307"
+group = "Effects / Keyframes"
+feature = "Limit automatic keyframe interval"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#automatic-keyframe-generation"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no video auto-keyframing"
+
+[[row]]
+id = "K3-308"
+group = "Effects / Keyframes"
+feature = "Move selected keyframe to cursor"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#working-with-keyframes-in-the-effect-stack"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:2767 (effects.moveKeyframe)"
+gap = "keyframes are dragged; no 'move to playhead' action"
+
+[[row]]
+id = "K3-309"
+group = "Effects / Keyframes"
+feature = "Duplicate keyframe at cursor"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#working-with-keyframes-in-the-effect-stack"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs:618 (Add/Remove Keyframe)"
+gap = "adds a keyframe with the interpolated value, not a copy of a chosen one"
+
+[[row]]
+id = "K3-310"
+group = "Effects / Keyframes"
+feature = "Apply current value to selected keyframes"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#working-with-keyframes-in-the-effect-stack"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no bulk value apply"
+
+[[row]]
+id = "K3-311"
+group = "Effects / Keyframes"
+feature = "Multi-select keyframes (Ctrl/Shift)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#working-with-keyframes-in-the-effect-stack"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs:92 (keyframe_select)"
+gap = "single selection only"
+
+[[row]]
+id = "K3-312"
+group = "Effects / Keyframes"
+feature = "Move multiple keyframes at once"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#working-with-keyframes-in-the-effect-stack"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no group keyframe move"
+
+[[row]]
+id = "K3-313"
+group = "Effects / Keyframes"
+feature = "Next/previous keyframe navigation"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#working-with-keyframes-in-the-effect-stack"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs:397"
+gap = "none"
+
+[[row]]
+id = "K3-314"
+group = "Effects / Keyframes"
+feature = "Export keyframes to clipboard"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#exchanging-keyframes-across-effects"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no keyframe export"
+
+[[row]]
+id = "K3-315"
+group = "Effects / Keyframes"
+feature = "Import keyframes with mapping/offset"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#exchanging-keyframes-across-effects"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no keyframe import"
+
+[[row]]
+id = "K3-316"
+group = "Effects / Keyframes"
+feature = "On-monitor handles for geometry params"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/monitor_view.rs:7 (graphic/motion drags)"
+gap = "none"
+
+[[row]]
+id = "K3-317"
+group = "Compositions / Tab"
+feature = "Compositions tab (lumas only / transitions only / favourites)"
+manual = "https://docs.kdenlive.org/en/compositing/compositions.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/effects.rs:1 (Video Transitions folders)"
+gap = "folders, no luma-only filter or favourites"
+
+[[row]]
+id = "K3-318"
+group = "Compositions / Tab"
+feature = "Animated icon previews of transitions"
+manual = "https://docs.kdenlive.org/en/compositing/compositions.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "list only, no animated previews"
+
+[[row]]
+id = "K3-319"
+group = "Compositions / Tab"
+feature = "Download new wipes"
+manual = "https://docs.kdenlive.org/en/compositing/compositions.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no online store"
+
+[[row]]
+id = "K3-320"
+group = "Compositions / Adding"
+feature = "Add composition by clip corner dot"
+manual = "https://docs.kdenlive.org/en/compositing/compositions.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "Premiere model: transitions dropped on edit points; no corner dot"
+
+[[row]]
+id = "K3-321"
+group = "Compositions / Adding"
+feature = "Insert composition from clip context menu"
+manual = "https://docs.kdenlive.org/en/compositing/compositions.html"
+film = "partial"
+evidence = "crates/engine/src/trim.rs:344 (apply default transitions); effects.setDefaultTransition"
+gap = "default transition at edit point only"
+
+[[row]]
+id = "K3-322"
+group = "Compositions / Adding"
+feature = "Drag composition onto clip and trim its bar"
+manual = "https://docs.kdenlive.org/en/compositing/compositions.html"
+film = "full"
+evidence = "crates/project/src/lib.rs:745 (Track.transitions); crates/ui-egui/src/panels/effects.rs:1"
+gap = "none"
+
+[[row]]
+id = "K3-323"
+group = "Compositions / Adding"
+feature = "Composition track (choose base track below)"
+manual = "https://docs.kdenlive.org/en/compositing/compositions.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:707 (track_matte, Track selector)"
+gap = "tracks always composite top-down; no per-composition base track"
+
+[[row]]
+id = "K3-324"
+group = "Compositions / Composite & Transform"
+feature = "Composite and Transform with keyframed geometry + opacity"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/composite_and_transform.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:265 (motion); crates/project/src/effect.rs:284 (opacity, keyframed, blend mode)"
+gap = "achieved per clip, not as a composition object"
+
+[[row]]
+id = "K3-325"
+group = "Compositions / Composite & Transform"
+feature = "Compositing methods (alpha blend, plus, multiply, screen, overlay, darken, lighten, dodge, burn, hard/soft light, difference, exclusion)"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/composite_and_transform.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES)"
+gap = "none"
+
+[[row]]
+id = "K3-326"
+group = "Compositions / Composite & Transform"
+feature = "Bitwise or/and/xor/nor/nand/not-xor"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/composite_and_transform.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no bitwise compositing"
+
+[[row]]
+id = "K3-327"
+group = "Compositions / Composite & Transform"
+feature = "Xor / Destination in / Destination out"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/composite_and_transform.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:707 (track_matte, Matte Alpha, Reverse)"
+gap = "via Track Matte Key, not as compositing method"
+
+[[row]]
+id = "K3-328"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Addition"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Linear Dodge (Add)')"
+gap = "none"
+
+[[row]]
+id = "K3-329"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Burn"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Color Burn')"
+gap = "none"
+
+[[row]]
+id = "K3-330"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Color Only"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Color')"
+gap = "none"
+
+[[row]]
+id = "K3-331"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Darken"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Darken')"
+gap = "none"
+
+[[row]]
+id = "K3-332"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Difference"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Difference')"
+gap = "none"
+
+[[row]]
+id = "K3-333"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Divide"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Divide')"
+gap = "none"
+
+[[row]]
+id = "K3-334"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Dodge"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Color Dodge')"
+gap = "none"
+
+[[row]]
+id = "K3-335"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Grain Extract"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no grain extract blend mode"
+
+[[row]]
+id = "K3-336"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Grain Merge"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no grain merge blend mode"
+
+[[row]]
+id = "K3-337"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Hardlight"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Hard Light')"
+gap = "none"
+
+[[row]]
+id = "K3-338"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Hue"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Hue')"
+gap = "none"
+
+[[row]]
+id = "K3-339"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Lighten"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Lighten')"
+gap = "none"
+
+[[row]]
+id = "K3-340"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Multiply"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Multiply')"
+gap = "none"
+
+[[row]]
+id = "K3-341"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Overlay"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Overlay')"
+gap = "none"
+
+[[row]]
+id = "K3-342"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Saturation"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Saturation')"
+gap = "none"
+
+[[row]]
+id = "K3-343"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Screen"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Screen')"
+gap = "none"
+
+[[row]]
+id = "K3-344"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Softlight"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Soft Light')"
+gap = "none"
+
+[[row]]
+id = "K3-345"
+group = "Compositions / Blend modes"
+feature = "Blend composition: Subtract"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/blend_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:144 (BLEND_MODES 'Subtract')"
+gap = "none"
+
+[[row]]
+id = "K3-346"
+group = "Compositions / Blend modes"
+feature = "Cairo Blend composition (keyframable opacity + blend mode)"
+manual = "https://docs.kdenlive.org/en/compositing/blending_modes.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:284 (opacity, Opacity + Blend Mode, keyframable)"
+gap = "none"
+
+[[row]]
+id = "K3-347"
+group = "Compositions / Alpha operations"
+feature = "Alpha OVER (default composite)"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/alpha_operations.html"
+film = "full"
+evidence = "crates/render/src/blend.rs (Normal)"
+gap = "none"
+
+[[row]]
+id = "K3-348"
+group = "Compositions / Alpha operations"
+feature = "Alpha ATOP"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/alpha_operations.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no atop operator"
+
+[[row]]
+id = "K3-349"
+group = "Compositions / Alpha operations"
+feature = "Alpha IN"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/alpha_operations.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:707 (track_matte, Matte Alpha)"
+gap = "via Track Matte Key"
+
+[[row]]
+id = "K3-350"
+group = "Compositions / Alpha operations"
+feature = "Alpha OUT"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/alpha_operations.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:707 (track_matte, Reverse)"
+gap = "via Track Matte Key Reverse"
+
+[[row]]
+id = "K3-351"
+group = "Compositions / Alpha operations"
+feature = "Alpha XOR"
+manual = "https://docs.kdenlive.org/en/compositing/compositions/alpha_operations.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no xor operator"
+
+[[row]]
+id = "K3-352"
+group = "Compositions / Alpha"
+feature = "Clips with alpha stack without compositions"
+manual = "https://docs.kdenlive.org/en/compositing.html"
+film = "full"
+evidence = "crates/render/src/blend.rs"
+gap = "none"
+
+[[row]]
+id = "K3-353"
+group = "Transitions / Mixes"
+feature = "Same-track mix between adjacent clips"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/mixes.html"
+film = "full"
+evidence = "crates/project/src/lib.rs:745 (Track.transitions); crates/project/src/vtransition.rs:145 (cross_dissolve)"
+gap = "none"
+
+[[row]]
+id = "K3-354"
+group = "Transitions / Mixes"
+feature = "Add mix with U / double-click / toolbar"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/mixes.html"
+film = "partial"
+evidence = "crates/engine/src/trim.rs:344 (trim.applyDefaultTransition)"
+gap = "default-transition command exists; no double-click on the cut"
+
+[[row]]
+id = "K3-355"
+group = "Transitions / Mixes"
+feature = "Mix duration and alignment"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/mixes.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/transition_controls.rs:17 (duration, alignment)"
+gap = "none"
+
+[[row]]
+id = "K3-356"
+group = "Transitions / Composite"
+feature = "Composite transition between overlapping clips on two tracks"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/composite_transitions.html"
+film = "partial"
+evidence = "crates/project/src/effect.rs:284 (opacity, keyframes)"
+gap = "transitions live on one track; cross-track fade needs opacity keyframes"
+
+[[row]]
+id = "K3-357"
+group = "Transitions / Types"
+feature = "Dissolve"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/transitions_list.html"
+film = "full"
+evidence = "crates/project/src/vtransition.rs:145 (cross_dissolve)"
+gap = "none"
+
+[[row]]
+id = "K3-358"
+group = "Transitions / Types"
+feature = "Luma (greyscale map transition)"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/wipe.html"
+film = "partial"
+evidence = "crates/project/src/vtransition.rs:150 (luma_fade); crates/project/src/vtransition.rs:379 (gradient_wipe)"
+gap = "fixed set; no arbitrary luma file on the Luma transition"
+
+[[row]]
+id = "K3-359"
+group = "Transitions / Types"
+feature = "Wipe with built-in wipe methods"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/wipe.html"
+film = "partial"
+evidence = "crates/project/src/vtransition.rs:312 (linear_wipe); crates/project/src/vtransition.rs:311 (clock_wipe); crates/project/src/vtransition.rs:333 (radial_wipe); crates/project/src/vtransition.rs:363 (iris_box); crates/project/src/vtransition.rs:366 (iris_round); crates/project/src/vtransition.rs:354 (barn_doors); crates/project/src/vtransition.rs:381 (venetian_blinds); crates/project/src/vtransition.rs:376 (checker_wipe); crates/project/src/vtransition.rs:335 (star_wipe)"
+gap = "~40 Kdenlive luma methods (matrix snake, spiral, cloud, curtain…) not all present"
+
+[[row]]
+id = "K3-360"
+group = "Transitions / Types"
+feature = "Custom wipe from .pgm/greyscale image"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/wipe.html"
+film = "partial"
+evidence = "crates/project/src/vtransition.rs:379 (gradient_wipe, Gradient Layer)"
+gap = "gradient comes from a track layer; no .pgm file picker"
+
+[[row]]
+id = "K3-361"
+group = "Transitions / Types"
+feature = "Wipe softness / invert / reverse"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/wipe.html"
+film = "full"
+evidence = "crates/project/src/vtransition.rs:379 (gradient_wipe, softness, invert)"
+gap = "none"
+
+[[row]]
+id = "K3-362"
+group = "Transitions / Types"
+feature = "Slide with start/end positions"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/slide.html"
+film = "full"
+evidence = "crates/project/src/vtransition.rs:248 (slide); crates/project/src/vtransition.rs:246 (push)"
+gap = "direction choices instead of 9 start/end cells"
+
+[[row]]
+id = "K3-363"
+group = "Transitions / Types"
+feature = "Circle Wipe"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/transitions_list.html"
+film = "full"
+evidence = "crates/project/src/vtransition.rs:366 (iris_round)"
+gap = "none"
+
+[[row]]
+id = "K3-364"
+group = "Transitions / Types"
+feature = "Horizontal / Vertical Barn Door Wipe"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/transitions_list.html"
+film = "full"
+evidence = "crates/project/src/vtransition.rs:354 (barn_doors)"
+gap = "none"
+
+[[row]]
+id = "K3-365"
+group = "Transitions / Types"
+feature = "Push Down/Up/Left/Right"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/transitions_list.html"
+film = "full"
+evidence = "crates/project/src/vtransition.rs:246 (push)"
+gap = "none"
+
+[[row]]
+id = "K3-366"
+group = "Transitions / Types"
+feature = "Rectangular Wipe"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/transitions_list.html"
+film = "full"
+evidence = "crates/project/src/vtransition.rs:363 (iris_box)"
+gap = "none"
+
+[[row]]
+id = "K3-367"
+group = "Transitions / Types"
+feature = "Slide Down/Up/Left/Right (with gap bar)"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/transitions_list.html"
+film = "full"
+evidence = "crates/project/src/vtransition.rs:248 (slide)"
+gap = "none"
+
+[[row]]
+id = "K3-368"
+group = "Transitions / Types"
+feature = "Wipe Down/Up/Left/Right"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/transitions_list.html"
+film = "full"
+evidence = "crates/project/src/vtransition.rs:312 (linear_wipe); crates/project/src/vtransition.rs:373 (wipe)"
+gap = "none"
+
+[[row]]
+id = "K3-369"
+group = "Transitions / Types"
+feature = "Wipe method Spiral / Matrix Snake / Waterfall"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/wipe.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no spiral or matrix-snake wipes"
+
+[[row]]
+id = "K3-370"
+group = "Transitions / Types"
+feature = "Wipe method Clock / Symmetric Clock / Radial"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/wipe.html"
+film = "full"
+evidence = "crates/project/src/vtransition.rs:311 (clock_wipe); crates/project/src/vtransition.rs:333 (radial_wipe)"
+gap = "none"
+
+[[row]]
+id = "K3-371"
+group = "Transitions / Types"
+feature = "Wipe method Blinds / Checkerboard"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/wipe.html"
+film = "full"
+evidence = "crates/project/src/vtransition.rs:381 (venetian_blinds); crates/project/src/vtransition.rs:376 (checker_wipe)"
+gap = "none"
+
+[[row]]
+id = "K3-372"
+group = "Transitions / Types"
+feature = "Wipe method Burst / Cloud / Curtain / Double Iris"
+manual = "https://docs.kdenlive.org/en/compositing/transitions/wipe.html"
+film = "partial"
+evidence = "crates/project/src/vtransition.rs:364 (iris_cross); crates/project/src/vtransition.rs:365 (iris_diamond); crates/project/src/vtransition.rs:255 (shape_dissolve)"
+gap = "no burst, cloud or curtain shapes"
+
+[[row]]
+id = "K3-373"
+group = "Titles / Title clips"
+feature = "Title clip with text, rectangles, ellipses and images"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "full"
+evidence = "crates/project/src/graphic.rs:235 (LayerContent Text/Shape); crates/engine/src/graphics.rs:765 (newFromFile)"
+gap = "none"
+
+[[row]]
+id = "K3-374"
+group = "Titles / Title clips"
+feature = "Title clips carry alpha and overlay lower tracks"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "full"
+evidence = "crates/project/src/lib.rs (ItemKind::Graphic)"
+gap = "none"
+
+[[row]]
+id = "K3-375"
+group = "Titles / Title app"
+feature = "Title editor (modal window)"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/graphics.rs; crates/ui-egui/src/panels/monitor_view.rs:7"
+gap = "edited in place in the Program Monitor + Properties, not a separate window"
+
+[[row]]
+id = "K3-376"
+group = "Titles / Title app"
+feature = "Safe zones (action/title) in editor"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "full"
+evidence = "crates/project/src/lib.rs:1145 (Action and Title Safe Areas)"
+gap = "none"
+
+[[row]]
+id = "K3-377"
+group = "Titles / Title app"
+feature = "Create title from Project Bin"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "full"
+evidence = "crates/engine/src/graphics.rs:765 (graphics.newText)"
+gap = "none"
+
+[[row]]
+id = "K3-378"
+group = "Titles / Title app"
+feature = "Edit title / update all instances"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "partial"
+evidence = "crates/project/src/graphic_design.rs:445 (SourceGraphic)"
+gap = "graphics are per timeline clip; source graphic updates differ from bin-clip edit"
+
+[[row]]
+id = "K3-379"
+group = "Titles / Title app"
+feature = "Split title and Add as new Title (replace / keep)"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no split-and-replace flow"
+
+[[row]]
+id = "K3-380"
+group = "Titles / Objects"
+feature = "Add text (Alt+T)"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_text.html"
+film = "full"
+evidence = "crates/engine/src/graphics.rs (graphics.newText)"
+gap = "none"
+
+[[row]]
+id = "K3-381"
+group = "Titles / Objects"
+feature = "Add rectangle (Alt+R)"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_shapes.html"
+film = "full"
+evidence = "crates/engine/src/graphics.rs (graphics.newRectangle)"
+gap = "none"
+
+[[row]]
+id = "K3-382"
+group = "Titles / Objects"
+feature = "Add ellipse (Alt+E)"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_shapes.html"
+film = "full"
+evidence = "crates/engine/src/graphics.rs (graphics.newEllipse)"
+gap = "none"
+
+[[row]]
+id = "K3-383"
+group = "Titles / Objects"
+feature = "Add image (Alt+I)"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_images.html"
+film = "full"
+evidence = "crates/engine/src/graphics.rs:765 (graphics.newFromFile)"
+gap = "none"
+
+[[row]]
+id = "K3-384"
+group = "Titles / Objects"
+feature = "Z-index / raise / lower / to front / to back"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "full"
+evidence = "crates/engine/src/graphics.rs:818 (bringToFront…)"
+gap = "none"
+
+[[row]]
+id = "K3-385"
+group = "Titles / Objects"
+feature = "Snapping to elements, frame edge, safe zone"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:323 (snap to guides, edges, centre)"
+gap = "no snapping to other layers' edges"
+
+[[row]]
+id = "K3-386"
+group = "Titles / Selection"
+feature = "Select all / keep only text, image or rectangle items"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "partial"
+evidence = "crates/engine/src/graphics.rs (graphics.select / selectLayer)"
+gap = "no select-by-type filters"
+
+[[row]]
+id = "K3-387"
+group = "Titles / Selection"
+feature = "Copy/paste objects (offset paste)"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "partial"
+evidence = "crates/engine/src/graphic_templates.rs:952; edit.copy/edit.paste (clip level)"
+gap = "copy/paste works on clips; no layer-level paste with offset found"
+
+[[row]]
+id = "K3-388"
+group = "Titles / Adjust"
+feature = "Move with Shift / Shift+Alt axis constraint"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/monitor_view.rs"
+gap = "no axis-constrained drag"
+
+[[row]]
+id = "K3-389"
+group = "Titles / Adjust"
+feature = "Rotate X/Y/Z per object"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "partial"
+evidence = "crates/project/src/graphic.rs:187 (LayerTransform rotation)"
+gap = "2D rotation only, no X/Y rotation"
+
+[[row]]
+id = "K3-390"
+group = "Titles / Adjust"
+feature = "Zoom (scale) per object"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "full"
+evidence = "crates/project/src/graphic.rs:187 (LayerTransform scale)"
+gap = "none"
+
+[[row]]
+id = "K3-391"
+group = "Titles / Adjust"
+feature = "Align left/right/top/bottom/centre stepping safe boxes"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/titles.html"
+film = "full"
+evidence = "crates/engine/src/graphics.rs:437 (graphics.align); graphics.distribute*"
+gap = "aligns to frame, not stepping through safe boxes"
+
+[[row]]
+id = "K3-392"
+group = "Titles / Text"
+feature = "Font, size, weight"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_text.html"
+film = "full"
+evidence = "crates/project/src/graphic.rs:196 (TextProps)"
+gap = "none"
+
+[[row]]
+id = "K3-393"
+group = "Titles / Text"
+feature = "Underline / italic"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_text.html"
+film = "full"
+evidence = "crates/project/src/graphic_design.rs:55 (CharStyle: faux italic, underline)"
+gap = "none"
+
+[[row]]
+id = "K3-394"
+group = "Titles / Text"
+feature = "Unicode character picker"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_text.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no special-character dialog"
+
+[[row]]
+id = "K3-395"
+group = "Titles / Text"
+feature = "Solid colour or gradient fill + gradient editor"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_text.html"
+film = "full"
+evidence = "crates/project/src/graphic.rs:27 (FILL_KIND_OPTS Linear Gradient)"
+gap = "linear gradients only"
+
+[[row]]
+id = "K3-396"
+group = "Titles / Text"
+feature = "Outline width and colour"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_text.html"
+film = "full"
+evidence = "crates/project/src/graphic.rs:25 (STROKE_OPTS)"
+gap = "none"
+
+[[row]]
+id = "K3-397"
+group = "Titles / Text"
+feature = "Drop shadow (blur, colour, offset)"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_text.html"
+film = "full"
+evidence = "crates/project/src/graphic.rs:176 (Shadow)"
+gap = "none"
+
+[[row]]
+id = "K3-398"
+group = "Titles / Text"
+feature = "Alignment left/centre/right"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_text.html"
+film = "full"
+evidence = "crates/project/src/graphic.rs:23 (ALIGN_OPTS)"
+gap = "none"
+
+[[row]]
+id = "K3-399"
+group = "Titles / Text"
+feature = "Letter spacing / line spacing"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_text.html"
+film = "full"
+evidence = "crates/project/src/graphic_design.rs:4 (tracking, leading)"
+gap = "none"
+
+[[row]]
+id = "K3-400"
+group = "Titles / Text"
+feature = "Typewriter effect (step, variation, seed, by char/word/line)"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_text.html"
+film = "partial"
+evidence = "crates/project/src/vtransition.rs:272 (typewriter)"
+gap = "transition-based; no variation/seed or word/line modes"
+
+[[row]]
+id = "K3-401"
+group = "Titles / Shapes"
+feature = "Shape solid/gradient fill, border colour and width"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_shapes.html"
+film = "full"
+evidence = "crates/project/src/graphic.rs:224 (ShapeProps); crates/project/src/graphic.rs:163 (Appearance)"
+gap = "none"
+
+[[row]]
+id = "K3-402"
+group = "Titles / Shapes"
+feature = "Rounded rectangle corners"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_shapes.html"
+film = "none"
+evidence = "crates/project/src/graphic.rs:26 (SHAPE_OPTS)"
+gap = "no corner radius on rectangle layers"
+
+[[row]]
+id = "K3-403"
+group = "Titles / Images"
+feature = "Image object preserve aspect ratio / W,H / zoom"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_images.html"
+film = "full"
+evidence = "crates/engine/src/graphics.rs:134 (imported picture keeps its size)"
+gap = "none"
+
+[[row]]
+id = "K3-404"
+group = "Titles / Workspace"
+feature = "Coordinate origin +X/-X, +Y/-Y"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_manage_workspace.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "fixed top-left origin"
+
+[[row]]
+id = "K3-405"
+group = "Titles / Workspace"
+feature = "Grid / guides with line count and colour"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_manage_workspace.html"
+film = "partial"
+evidence = "crates/ui-egui/src/state.rs:323 (guides)"
+gap = "monitor guides, no grid snapping or line-count setup"
+
+[[row]]
+id = "K3-406"
+group = "Titles / Workspace"
+feature = "Fit zoom / 1:1 / zoom slider"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_manage_workspace.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/monitor.rs:335 (Fit / zoom levels)"
+gap = "none"
+
+[[row]]
+id = "K3-407"
+group = "Titles / Workspace"
+feature = "Show timeline below / checkered / black / white background"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_manage_workspace.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/monitor_view.rs:325 (transparent areas shown black)"
+gap = "no checkered/white background choice for the title canvas"
+
+[[row]]
+id = "K3-408"
+group = "Titles / File"
+feature = "Open / save title files"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_file_operations.html"
+film = "partial"
+evidence = "crates/project/src/gtemplate.rs:165 (.fcgt graphics templates)"
+gap = "saves as our template format, no .kdenlivetitle"
+
+[[row]]
+id = "K3-409"
+group = "Titles / File"
+feature = "Download title templates from store"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_file_operations.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no online store"
+
+[[row]]
+id = "K3-410"
+group = "Titles / Templates"
+feature = "Title templates (reuse in other projects)"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_file_operations.html"
+film = "full"
+evidence = "crates/project/src/gtemplate.rs:474 (builtin_templates); crates/ui-egui/src/panels/graphics_templates.rs"
+gap = "none"
+
+[[row]]
+id = "K3-411"
+group = "Titles / Templates"
+feature = "Template titles with %s placeholder and auto-update"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_template_titles.html"
+film = "partial"
+evidence = "crates/project/src/gtemplate.rs:54 (ControlKind editable text)"
+gap = "templates expose editable fields, but titles do not re-follow a changed template"
+
+[[row]]
+id = "K3-412"
+group = "Titles / Patterns"
+feature = "Patterns (save object groups, insert into titles)"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_patterns.html"
+film = "none"
+evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+gap = "no pattern library"
+
+[[row]]
+id = "K3-413"
+group = "Titles / Animation"
+feature = "Scrolling titles (start/end viewport)"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/graphics_and_animations/title_scrolling.html"
+film = "full"
+evidence = "crates/project/src/graphic_design.rs:285 (RollMode Roll/Crawl)"
+gap = "roll/crawl modes instead of free start/end viewports"
+
+[[row]]
+id = "K3-414"
+group = "Titles / Animation"
+feature = "Glaxnimate vector animation clips"
+manual = "https://docs.kdenlive.org/en/titles_and_graphics/graphics_and_animations/animations.html"
+film = "partial"
+evidence = "apps/redrob-film-app/src/shell.rs (Effects mode composition as clip)"
+gap = "animation done in Effects mode, no Lottie/Glaxnimate clip"
+
+[[row]]
+id = "K3-415"
+group = "Color correction / Tools"
+feature = "3-way colour wheels (lift/gamma/gain)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/lift_gamma_gain.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, wheel_shadows/midtones/highlights)"
+gap = "none"
+
+[[row]]
+id = "K3-416"
+group = "Color correction / Tools"
+feature = "Hue/sat curves"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html"
+film = "full"
+evidence = "crates/project/src/effect.rs:398 (lumetri, Hue vs Sat, Hue vs Hue, Luma vs Sat, Sat vs Sat)"
+gap = "none"
+
+[[row]]
+id = "K3-417"
+group = "Color correction / Tools"
+feature = "LUT import library (.cube/.3dl)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/color_image_correction/apply_lut.html"
+film = "full"
+evidence = "crates/engine/src/color.rs:88; crates/render/src/luts.rs:5"
+gap = "none"
+
+[[row]]
+id = "K3-418"
+group = "Color correction / Tools"
+feature = "Scopes while grading (waveform, vectorscope, parade, histogram)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors.html"
+film = "full"
+evidence = "crates/scopes/src/lib.rs:49; crates/ui-egui/src/dock.rs:96"
+gap = "none"
+
+[[row]]
+id = "K3-419"
+group = "Color correction / Tools"
+feature = "Colour presets / looks"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html"
+film = "full"
+evidence = "crates/render/src/lumetri_presets.rs:160; crates/ui-egui/src/panels/effects.rs:4 (Lumetri Presets)"
+gap = "none"
