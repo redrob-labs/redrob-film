@@ -1018,3 +1018,6 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	Cache
 	ClipJobs	Tarefas de clipe
+# Kdenlive parity p12: preferences, project notes, menus, workspaces, shortcuts
+	Monitor	Monitor
+	Tool	Ferramenta

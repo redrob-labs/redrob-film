@@ -284,6 +284,13 @@ pub fn panel_menu_popup(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
                 app.set_workspace(&w);
                 close = true;
             }
+            // the panel in a floating window of its own (closing the window docks it back)
+            let r = ui.button(tl!("Undock Panel"));
+            app.auto.add(&format!("panel.menu.{}.undock", p.id()), r.rect, "Undock Panel");
+            if r.clicked() {
+                app.float_panel(p);
+                close = true;
+            }
             if p == PanelKind::Timeline {
                 ui.separator();
                 let r = ui.add_enabled(app.session.state.active_sequence.is_some(), egui::Button::new(tl!("Reveal Sequence in Project")));
