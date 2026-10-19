@@ -11,7 +11,7 @@ use redrob_film_project::{ItemId, Project};
 use redrob_film_render::{Image, RenderOptions, SourceProvider};
 use redrob_film_time::FrameRate;
 
-use crate::settings::{ExportEffects, Placement, Scaling, TextOverlay};
+use crate::settings::{Deinterlace, ExportEffects, Placement, ScaleFilter, Scaling, TextOverlay};
 use crate::{ExportError, ExportSettings, FrameRenderer, GpuRendering, Result, build_frame_renderer, note_gpu_fallback, note_gpu_frame};
 
 /// Where the rendered picture lands in the output frame.
@@ -30,7 +30,8 @@ pub(crate) struct Geometry {
 impl Geometry {
     pub fn new(settings: &ExportSettings, seq_w: u32, seq_h: u32, w: u32, h: u32) -> Self {
         let (sw, sh) = (seq_w.max(1) as f32, seq_h.max(1) as f32);
-        if settings.frame_size.is_none() && settings.pixel_aspect.is_none() && !settings.max_render_quality {
+        let filtered = settings.scale_filter != ScaleFilter::Area;
+        if settings.frame_size.is_none() && settings.pixel_aspect.is_none() && !settings.max_render_quality && !filtered {
             // the sequence size times `scale`, rendered directly (even-size crop/pad at the edge)
             return Geometry { w, h, render_scale: w as f32 / sw, content: None, offset: (0, 0) };
         }
@@ -44,7 +45,8 @@ impl Geometry {
         };
         let cw = (sw * sx / par).round().max(1.0) as usize;
         let ch = (sh * sy).round().max(1.0) as usize;
-        let render_scale = if settings.max_render_quality { 1.0f32.max(sy).max(sx / par) } else { sy.max(sx / par) }.clamp(0.01, 4.0);
+        // a chosen interpolation filter resizes the full-size render (like Maximum Render Quality)
+        let render_scale = if settings.max_render_quality || filtered { 1.0f32.max(sy).max(sx / par) } else { sy.max(sx / par) }.clamp(0.01, 4.0);
         Geometry { w, h, render_scale, content: Some((cw, ch)), offset: ((w as i64 - cw as i64) / 2, (h as i64 - ch as i64) / 2) }
     }
 }
@@ -119,6 +121,9 @@ pub(crate) struct Pipeline {
     pub h: u32,
     geom: Geometry,
     opts: RenderOptions,
+    /// Scaling interpolation and deinterlacer of the export.
+    filter: ScaleFilter,
+    deinterlace: Deinterlace,
     pub hdr_out: bool,
     /// Keep straight alpha in the RGBA8 output instead of flattening over black.
     alpha: bool,
@@ -200,6 +205,8 @@ impl Pipeline {
             h: r.height,
             geom,
             opts,
+            filter: settings.scale_filter,
+            deinterlace: settings.deinterlace,
             hdr_out,
             alpha: settings.keeps_alpha(),
             out_tf,
@@ -242,6 +249,7 @@ impl Pipeline {
             }
         };
         let mut img = self.place(img);
+        deinterlace(&mut img, self.deinterlace);
         self.overlays(&mut img, t);
         let lim = &self.effects.video_limiter;
         if let Some(tf) = self.out_tf.as_ref().filter(|_| self.hdr_out) {
@@ -271,7 +279,7 @@ impl Pipeline {
     fn place(&self, img: Image) -> Image {
         let (w, h) = (self.w as usize, self.h as usize);
         let img = match self.geom.content {
-            Some((cw, ch)) if (cw, ch) != (img.w, img.h) => resample(&img, cw, ch),
+            Some((cw, ch)) if (cw, ch) != (img.w, img.h) => resample_with(&img, cw, ch, self.filter),
             _ => img,
         };
         if img.w == w && img.h == h && self.geom.offset == (0, 0) {
@@ -308,7 +316,11 @@ impl Pipeline {
         }
         if fx.timecode_overlay.enabled {
             let frame = self.seq_rate.frame_at(t) + self.start_tc;
-            let tc = redrob_film_time::format_timecode_frames(frame, self.seq_rate, self.drop_frame);
+            let tc = if fx.timecode_overlay.frame_count {
+                self.seq_rate.frame_at(t).to_string()
+            } else {
+                redrob_film_time::format_timecode_frames(frame, self.seq_rate, self.drop_frame)
+            };
             let text = if fx.timecode_overlay.text.trim().is_empty() { tc } else { format!("{} {tc}", fx.timecode_overlay.text.trim()) };
             self.text(img, &fx.timecode_overlay, &text);
         }
@@ -394,19 +406,79 @@ fn load_overlay(path: &str, width: f32) -> Result<Image> {
 /// Separable resample of a premultiplied image with a triangle filter widened by the reduction
 /// factor (area-correct when downscaling, bilinear when enlarging).
 pub(crate) fn resample(src: &Image, nw: usize, nh: usize) -> Image {
-    let tmp = resample_axis(src, nw, true);
-    resample_axis(&tmp, nh, false)
+    resample_with(src, nw, nh, ScaleFilter::Area)
 }
 
-fn weights(n_src: usize, n_dst: usize) -> Vec<(usize, Vec<f32>)> {
+/// Separable resample with the chosen interpolation filter ([`ScaleFilter`]).
+pub(crate) fn resample_with(src: &Image, nw: usize, nh: usize, filter: ScaleFilter) -> Image {
+    let tmp = resample_axis(src, nw, true, filter);
+    resample_axis(&tmp, nh, false, filter)
+}
+
+/// Kernel value at distance `x` (in source pixels, already divided by the widening) and its
+/// support radius.
+fn kernel(filter: ScaleFilter, x: f32) -> f32 {
+    let x = x.abs();
+    match filter {
+        ScaleFilter::Area | ScaleFilter::Bilinear => (1.0 - x).max(0.0),
+        ScaleFilter::Nearest => {
+            if x < 0.5 {
+                1.0
+            } else {
+                0.0
+            }
+        }
+        ScaleFilter::Bicubic => {
+            // Catmull-Rom (B = 0, C = 0.5)
+            if x < 1.0 {
+                1.5 * x * x * x - 2.5 * x * x + 1.0
+            } else if x < 2.0 {
+                -0.5 * x * x * x + 2.5 * x * x - 4.0 * x + 2.0
+            } else {
+                0.0
+            }
+        }
+        ScaleFilter::Lanczos => {
+            if x < 1e-6 {
+                1.0
+            } else if x < 3.0 {
+                let px = std::f32::consts::PI * x;
+                3.0 * px.sin() * (px / 3.0).sin() / (px * px)
+            } else {
+                0.0
+            }
+        }
+    }
+}
+
+fn radius(filter: ScaleFilter) -> f32 {
+    match filter {
+        ScaleFilter::Area | ScaleFilter::Bilinear => 1.0,
+        ScaleFilter::Nearest => 0.5,
+        ScaleFilter::Bicubic => 2.0,
+        ScaleFilter::Lanczos => 3.0,
+    }
+}
+
+fn weights(n_src: usize, n_dst: usize, filter: ScaleFilter) -> Vec<(usize, Vec<f32>)> {
     let scale = n_src as f32 / n_dst as f32;
-    let support = scale.max(1.0);
+    // widened by the reduction factor when shrinking (area-correct); bilinear and nearest stay
+    // two-tap / one-tap whatever the factor
+    let widen = match filter {
+        ScaleFilter::Bilinear | ScaleFilter::Nearest => 1.0,
+        _ => scale.max(1.0),
+    };
+    let support = radius(filter) * widen;
     (0..n_dst)
         .map(|i| {
             let c = (i as f32 + 0.5) * scale - 0.5;
+            if filter == ScaleFilter::Nearest {
+                let j = ((i as f32 + 0.5) * scale).floor().clamp(0.0, (n_src.max(1) - 1) as f32) as usize;
+                return (j, vec![1.0]);
+            }
             let lo = ((c - support).ceil() as i64).max(0) as usize;
             let hi = ((c + support).floor() as i64).min(n_src as i64 - 1).max(lo as i64) as usize;
-            let mut ws: Vec<f32> = (lo..=hi).map(|j| (1.0 - (j as f32 - c).abs() / support).max(0.0)).collect();
+            let mut ws: Vec<f32> = (lo..=hi).map(|j| kernel(filter, (j as f32 - c) / widen)).collect();
             let sum: f32 = ws.iter().sum();
             if sum > 0.0 {
                 ws.iter_mut().for_each(|w| *w /= sum);
@@ -421,12 +493,12 @@ fn weights(n_src: usize, n_dst: usize) -> Vec<(usize, Vec<f32>)> {
         .collect()
 }
 
-fn resample_axis(src: &Image, n: usize, horizontal: bool) -> Image {
+fn resample_axis(src: &Image, n: usize, horizontal: bool, filter: ScaleFilter) -> Image {
     let (w, h) = if horizontal { (n, src.h) } else { (src.w, n) };
     if (horizontal && n == src.w) || (!horizontal && n == src.h) {
         return src.clone();
     }
-    let ws = weights(if horizontal { src.w } else { src.h }, n);
+    let ws = weights(if horizontal { src.w } else { src.h }, n, filter);
     let mut out = Image::new(w, h);
     out.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
         for x in 0..w {
@@ -439,10 +511,67 @@ fn resample_axis(src: &Image, n: usize, horizontal: bool) -> Image {
                     acc[c] += p[c] * wt;
                 }
             }
+            // negative lobes (bicubic, Lanczos) can ring below zero: keep premultiplied values legal
+            if !matches!(filter, ScaleFilter::Area | ScaleFilter::Bilinear | ScaleFilter::Nearest) {
+                acc[3] = acc[3].clamp(0.0, 1.0);
+                let hi = acc[3] * 64.0;
+                for v in acc.iter_mut().take(3) {
+                    *v = v.clamp(0.0, hi);
+                }
+            }
             row[x * 4..x * 4 + 4].copy_from_slice(&acc);
         }
     });
     out
+}
+
+/// Make an interlaced picture progressive in place (premultiplied RGBA floats). Lines 0, 2, 4…
+/// are the upper field.
+pub(crate) fn deinterlace(img: &mut Image, mode: Deinterlace) {
+    let (w, h) = (img.w, img.h);
+    if mode == Deinterlace::None || h < 3 || w == 0 {
+        return;
+    }
+    let src = img.px.clone();
+    let row = |y: usize| &src[y * w * 4..(y + 1) * w * 4];
+    img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, out)| match mode {
+        Deinterlace::None => {}
+        Deinterlace::LinearBlend => {
+            let (a, b, c) = (row(y.saturating_sub(1)), row(y), row((y + 1).min(h - 1)));
+            for (o, ((a, b), c)) in out.iter_mut().zip(a.iter().zip(b).zip(c)) {
+                *o = 0.25 * a + 0.5 * b + 0.25 * c;
+            }
+        }
+        Deinterlace::OneField | Deinterlace::EdgeDirected => {
+            if y % 2 == 0 {
+                return;
+            }
+            let a = row(y - 1);
+            let c = if y + 1 < h { row(y + 1) } else { row(y - 1) };
+            if mode == Deinterlace::OneField {
+                for (o, (a, c)) in out.iter_mut().zip(a.iter().zip(c)) {
+                    *o = 0.5 * (a + c);
+                }
+                return;
+            }
+            for x in 0..w {
+                // pick the direction (−1, 0, +1) whose upper and lower neighbours differ least
+                let mut best = (f32::MAX, 0i64);
+                for d in [-1i64, 0, 1] {
+                    let (xa, xc) = ((x as i64 + d).clamp(0, w as i64 - 1) as usize, (x as i64 - d).clamp(0, w as i64 - 1) as usize);
+                    let diff: f32 = (0..3).map(|k| (a[xa * 4 + k] - c[xc * 4 + k]).abs()).sum();
+                    if diff < best.0 {
+                        best = (diff, d);
+                    }
+                }
+                let d = best.1;
+                let (xa, xc) = ((x as i64 + d).clamp(0, w as i64 - 1) as usize, (x as i64 - d).clamp(0, w as i64 - 1) as usize);
+                for (k, o) in out[x * 4..x * 4 + 4].iter_mut().enumerate() {
+                    *o = 0.5 * (a[xa * 4 + k] + c[xc * 4 + k]);
+                }
+            }
+        }
+    });
 }
 
 /// Keep BT.709 luma of display-encoded RGBA8 inside [min, max] percent: above the ceiling the

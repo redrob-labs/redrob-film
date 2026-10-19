@@ -205,6 +205,52 @@ pub struct TimelineView {
     /// (`volume`, `pan`, `mute`, `send.<i>.level`, `fx.<slot>.<param>`).
     #[serde(default)]
     pub track_lanes: std::collections::BTreeMap<u64, String>,
+    /// Timeline wrench ▸ Separate Audio Channels: one waveform lane per channel of a clip.
+    #[serde(default)]
+    pub separate_channels: bool,
+    /// Timeline wrench ▸ Audio Waveform Colors: the waveform colour of each channel (sRGB).
+    #[serde(default = "default_waveform_colors")]
+    pub waveform_colors: Vec<[u8; 3]>,
+    /// Heights of single tracks (track id → points) set by dragging one header's edge; tracks
+    /// without one use `video_track_h` / `audio_track_h`.
+    #[serde(default)]
+    pub track_heights: std::collections::BTreeMap<u64, f32>,
+    /// Waveform zoom: ×1, ×2, ×4, ×8 (0…3), on top of the display gain.
+    #[serde(default)]
+    pub waveform_zoom: u8,
+    /// Waveforms drawn at their recorded level instead of normalised.
+    #[serde(default)]
+    pub waveform_raw: bool,
+    /// Wrench menu display toggles: clip names, clip label colours (off: one neutral colour),
+    /// marker comments written next to the markers on the ruler.
+    #[serde(default)]
+    pub hide_clip_names: bool,
+    #[serde(default)]
+    pub hide_clip_labels: bool,
+    #[serde(default)]
+    pub show_marker_comments: bool,
+    /// Wheel / pinch zoom keeps the playhead in place instead of the time under the pointer.
+    #[serde(default)]
+    pub zoom_on_playhead: bool,
+    /// Times in the Timeline (playhead field, ruler, position readout) in frames, not timecode.
+    #[serde(default)]
+    pub time_in_frames: bool,
+}
+
+/// Default waveform colours of channels 1–6 (channel 1 keeps the timeline's usual blue).
+pub fn default_waveform_colors() -> Vec<[u8; 3]> {
+    vec![[0x79, 0xc0, 0xf9], [0x7f, 0xd8, 0x9a], [0xf0, 0xc0, 0x5a], [0xd8, 0x8c, 0xf0], [0xf0, 0x8c, 0x8c], [0x8c, 0xe0, 0xe0]]
+}
+
+impl TimelineView {
+    /// The height of track `id` of `kind` (its own, else the default of its kind).
+    pub fn track_h(&self, id: u64, kind: redrob_film_project::TrackKind) -> f32 {
+        self.track_heights.get(&id).copied().unwrap_or(if kind == redrob_film_project::TrackKind::Video { self.video_track_h } else { self.audio_track_h })
+    }
+    /// The waveform zoom factor (1, 2, 4, 8).
+    pub fn waveform_zoom_factor(&self) -> f32 {
+        f32::from(1u8 << self.waveform_zoom.min(3))
+    }
 }
 
 impl TimelineView {
@@ -234,6 +280,16 @@ impl Default for TimelineView {
             fit_pending: true,
             fit_empty: None,
             track_lanes: Default::default(),
+            separate_channels: false,
+            waveform_colors: default_waveform_colors(),
+            track_heights: Default::default(),
+            waveform_zoom: 0,
+            waveform_raw: false,
+            hide_clip_names: false,
+            hide_clip_labels: false,
+            show_marker_comments: false,
+            zoom_on_playhead: false,
+            time_in_frames: false,
         }
     }
 }
@@ -323,7 +379,41 @@ pub struct MonitorView {
     /// Snap in Program Monitor: graphic drags snap to guides, the frame edges and centre.
     pub snap: bool,
     pub guides: Vec<Guide>,
+    /// Playback volume of this monitor, percent (Settings ▸ Volume): scales what the monitor plays
+    /// without changing the Mix level or the other monitor (Kdenlive's per-monitor volume).
+    pub volume: f32,
+    /// Grid over the picture (View ▸ Grid…): lines across and down (0 = off), and their colour.
+    /// Graphic drags snap to it with Snap in Program Monitor on.
+    pub grid_lines: u32,
+    pub grid_color: [u8; 4],
+    /// Kdenlive's Monitor Info Overlay: one switch for the info drawn over the picture (the
+    /// timecode, playback FPS, the marker under the playhead, the audio waveform strip).
+    pub info_overlay: bool,
+    pub overlay_timecode: bool,
+    pub overlay_fps: bool,
+    pub overlay_markers: bool,
+    /// The audio waveform strip along the bottom of the picture (Source Monitor).
+    pub overlay_waveform: bool,
+    /// Always show the Source Monitor's waveform strip (else it shows while the pointer is over the
+    /// bottom of the picture).
+    pub always_audio_thumbnails: bool,
+    /// The guide pattern over the picture ([`OVERLAY_PATTERNS`]; 0 = none). Change Overlay cycles it.
+    pub overlay_pattern: u8,
+    /// The overlay toolbar sits at the left of the picture (else the right).
+    pub toolbar_left: bool,
+    /// Edit Mode: the editing handles over the picture (graphics, masks, clip transform and crop).
+    pub edit_handles: bool,
+    /// Show the Source clip's embedded start timecode instead of counting from zero.
+    pub source_timecode: bool,
+    /// Multitrack View (Program): every video track of the sequence in a grid.
+    pub multitrack: bool,
+    /// Automatic keyframes (the overlay toolbar's red dot): every change made with the monitor's
+    /// handles writes a keyframe at the playhead.
+    pub auto_keyframe: bool,
 }
+
+/// Change Overlay patterns: none, rule of thirds, centre cross, diagonals, 4 x 4 grid, golden ratio.
+pub const OVERLAY_PATTERNS: [&str; 6] = ["None", "Rule of Thirds", "Center Cross", "Diagonals", "Grid", "Golden Ratio"];
 
 impl Default for MonitorView {
     fn default() -> Self {
@@ -345,6 +435,21 @@ impl Default for MonitorView {
             lock_guides: false,
             snap: true,
             guides: Vec::new(),
+            volume: 100.0,
+            grid_lines: 0,
+            grid_color: [255, 255, 255, 90],
+            info_overlay: false,
+            overlay_timecode: true,
+            overlay_fps: true,
+            overlay_markers: true,
+            overlay_waveform: true,
+            always_audio_thumbnails: false,
+            overlay_pattern: 0,
+            toolbar_left: false,
+            edit_handles: true,
+            source_timecode: false,
+            multitrack: false,
+            auto_keyframe: false,
         }
     }
 }
@@ -426,6 +531,10 @@ pub struct UiState {
     pub mode: Mode,
     pub workspace: String,
     pub dock: DockNode,
+    /// Panels taken out of the dock into floating windows (panel menu ▸ Undock Panel, or a tab
+    /// dropped outside every group).
+    #[serde(default)]
+    pub floating: Vec<PanelKind>,
     /// Focused panel (blue outline, receives shortcuts).
     pub focused: PanelKind,
     pub timeline: TimelineView,
@@ -446,6 +555,13 @@ pub struct UiState {
     /// share of the panel). Dragging the divider sets it (#643).
     #[serde(default)]
     pub effect_controls_split: f32,
+    /// Effect Controls ▸ Apply to Group: a parameter changed on a grouped clip changes on every
+    /// clip of its group with the same effect; with `fx_group_equal_only`, only where the value
+    /// was the same.
+    #[serde(default)]
+    pub fx_group_edit: bool,
+    #[serde(default)]
+    pub fx_group_equal_only: bool,
     pub show_menu_bar: bool,
     /// The header bar (Home, Import, Edit, Export, workspaces). An app that embeds Redrob Film can hide it.
     #[serde(default = "shown")]
@@ -505,6 +621,10 @@ pub struct UiState {
     /// Audio Track Mixer ▸ Meter Input(s) Only: record-armed track meters show the recording input.
     #[serde(default)]
     pub mixer_meter_input_only: bool,
+    /// Level meter appearance (right-click a meter), shared by the mixers, Audio Meters and both
+    /// monitors' level meters.
+    #[serde(default)]
+    pub meter_style: crate::panels::mixer::MeterStyle,
     /// Audio Gain dialog draft (mode, dB values).
     #[serde(default)]
     pub audio_gain: AudioGainDraft,
@@ -576,6 +696,9 @@ pub struct UiState {
     /// `panels::menu_dialogs`.
     #[serde(default)]
     pub extras: crate::panels::menu_dialogs::Extras,
+    /// The clip job dialogs (speed change, transcode, custom jobs). See `panels::clip_jobs`.
+    #[serde(default)]
+    pub clip_jobs: crate::panels::clip_jobs::ClipJobsUi,
     /// Essential Graphics ▸ Browse and the graphics template / Replace Fonts dialogs. See
     /// `panels::graphics_templates`.
     #[serde(default)]
@@ -595,6 +718,17 @@ pub struct UiState {
     /// Media Browser view state (tree, path field, Edit Columns…). See `panels::media_browser`.
     #[serde(default)]
     pub media_browser: crate::panels::media_browser::MediaBrowserUi,
+    /// Favourite effects, Effects panel filters, keyframe clipboard, automatic keyframes, effect
+    /// comparison. See `panels::effect_stack`.
+    #[serde(default)]
+    pub fx: crate::panels::effect_stack::FxStackUi,
+    /// Markers panel view, marker dialogs and ruler marker drags. See `panels::marker_ui`.
+    #[serde(default)]
+    pub markers: crate::panels::marker_ui::MarkerUi,
+    /// Kdenlive-parity extras of the timeline, subtitles, speech, keyframes and the command bar.
+    /// See `panels::kparity`.
+    #[serde(default)]
+    pub kp: crate::panels::kparity::KpUi,
 }
 
 /// An open Edit / Clip / File menu dialog: the engine command it runs on OK and the parameters
@@ -756,6 +890,8 @@ pub struct ProjectManagerDraft {
     pub include_proxies: bool,
     pub include_previews: bool,
     pub destination: String,
+    /// Archive Project: "" (a folder), "tarGz" or "zip".
+    pub archive: String,
     /// Last dry-run estimate: (original bytes, resulting bytes, files).
     pub estimate: Option<(u64, u64, usize)>,
     pub message: String,
@@ -772,6 +908,7 @@ impl Default for ProjectManagerDraft {
             include_proxies: true,
             include_previews: false,
             destination: String::new(),
+            archive: String::new(),
             estimate: None,
             message: String::new(),
         }
@@ -860,6 +997,12 @@ pub struct SequenceSettingsDraft {
     pub working_space: String,
     pub wide_gamut: bool,
     pub auto_tone_map: bool,
+    /// Sequence Presets tab: the frame rate the list is narrowed to (`num/den`; empty = every
+    /// rate), and the preset picked or the name to save the settings under.
+    pub preset_filter: String,
+    pub preset_name: String,
+    /// Video Previews ▸ Codec (`previews::PREVIEW_CODECS`).
+    pub preview_codec: String,
 }
 
 impl Default for SequenceSettingsDraft {
@@ -882,6 +1025,9 @@ impl Default for SequenceSettingsDraft {
             working_space: "rec709".into(),
             wide_gamut: false,
             auto_tone_map: true,
+            preset_filter: String::new(),
+            preset_name: String::new(),
+            preview_codec: "ProRes 422 HQ".into(),
         }
     }
 }
@@ -949,6 +1095,7 @@ impl Default for UiState {
             mode: Mode::Edit,
             workspace: "Editing".into(),
             dock: crate::dock::workspace("Editing"),
+            floating: Vec::new(),
             focused: PanelKind::Timeline,
             timeline: TimelineView::default(),
             program: MonitorView::default(),
@@ -960,6 +1107,8 @@ impl Default for UiState {
             lumetri_grid_folder: None,
             collapsed_fx: vec![],
             effect_controls_split: 0.0,
+            fx_group_edit: false,
+            fx_group_equal_only: false,
             show_menu_bar: true,
             show_header: true,
             show_status_bar: true,
@@ -979,6 +1128,7 @@ impl Default for UiState {
             mixer_fx_open: false,
             mixer_hidden: Vec::new(),
             mixer_meter_input_only: false,
+            meter_style: Default::default(),
             settings: None,
             account_feature: None,
             audio_gain: AudioGainDraft::default(),
@@ -1004,11 +1154,15 @@ impl Default for UiState {
             workspace_dialog: None,
             clip_dialog: None,
             extras: Default::default(),
+            clip_jobs: Default::default(),
             gfx_templates: Default::default(),
             panels: Default::default(),
             keys: Default::default(),
             project_panel: Default::default(),
             media_browser: Default::default(),
+            fx: Default::default(),
+            markers: Default::default(),
+            kp: Default::default(),
         }
     }
 }

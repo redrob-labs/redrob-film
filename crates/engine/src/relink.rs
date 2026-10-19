@@ -728,7 +728,37 @@ pub fn commands() -> Vec<CommandSpec> {
             },
             journal: false,
         },
+        CommandSpec {
+            id: "media.removeMissing",
+            label: "Remove Missing Clips",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"items":[id]?}  (remove missing clips from the project, with their timeline clips; all missing ones when no items)"#,
+            enabled: always,
+            run: remove_missing,
+            journal: true,
+        },
     ]
+}
+
+/// Missing clips dialog ▸ Remove: delete missing items (and their timeline uses) from the project.
+fn remove_missing(s: &mut Session, p: &Value) -> Result<Value> {
+    refresh(s);
+    let asked: Option<Vec<ItemId>> = p.get("items").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_u64).map(ItemId).collect());
+    let items: Vec<ItemId> = match asked {
+        Some(a) => a.into_iter().filter(|i| s.offline.missing.contains(i)).collect(),
+        None => s.offline.missing.clone(),
+    };
+    if items.is_empty() {
+        return Ok(json!({"removed": 0}));
+    }
+    let ids: Vec<u64> = items.iter().map(|i| i.0).collect();
+    s.execute("project.delete", json!({"items": ids}))?;
+    s.offline.missing.retain(|i| !items.contains(i));
+    if s.offline.missing.is_empty() {
+        s.offline.prompt = false;
+    }
+    Ok(json!({"removed": ids.len(), "items": ids}))
 }
 
 /// After a project opens: find missing files and ask for them.

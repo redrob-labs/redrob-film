@@ -385,6 +385,9 @@ pub fn commands() -> Vec<CommandSpec> {
         spec("captions.split", "Split Caption", &[], None, r#"{"caption":id?,"time":ticks?}"#, has_captions, |s, p| {
             let t = time_p(s, p, "").unwrap_or(s.playhead());
             let explicit = u64_p(p, "caption").map(ClipId);
+            // Settings ▸ Timeline ▸ Caption split: both halves keep the text, or the first line
+            // stays and the other lines go to the second half
+            let split_lines = s.prefs.timeline.caption_split_mode == "splitLines";
             let ids = s.edit_sequence("Split Caption", |q, ctx, st| {
                 let ids = match explicit {
                     Some(c) => vec![edit::captions::split_caption(q, c, t, ctx)?],
@@ -392,6 +395,23 @@ pub fn commands() -> Vec<CommandSpec> {
                 };
                 if ids.is_empty() {
                     return Err(edit::EditError::Nothing.into());
+                }
+                // Split After First Line (Kdenlive's subtitle split mode): the first part keeps
+                // the first line, the second part takes the lines after it
+                if split_lines || st.caption_split_after_first_line {
+                    for id in &ids {
+                        for tr in q.caption_tracks.iter_mut() {
+                            let Some(right) = tr.caption(*id).cloned() else { continue };
+                            let Some((first, rest)) = right.text.split_once('\n') else { continue };
+                            let (first, rest) = (first.to_string(), rest.to_string());
+                            if let Some(left) = tr.captions.iter_mut().find(|c| c.id != *id && c.end() == right.start && c.text == right.text) {
+                                left.text = first;
+                                if let Some(r) = tr.caption_mut(*id) {
+                                    r.text = rest;
+                                }
+                            }
+                        }
+                    }
                 }
                 st.caption_selection = ids.clone();
                 Ok(ids)
@@ -488,19 +508,34 @@ pub fn commands() -> Vec<CommandSpec> {
         spec("captions.previous", "Go to Previous Caption Segment", &["Sequence", "Captions"], Some("Cmd+Alt+Up"), "{}", has_captions, |s, _| step(s, false)),
         spec("captions.showAll", "Show All Caption Tracks", &["Sequence", "Captions"], None, "{}", has_caption_track, |s, _| show_all(s, true)),
         spec("captions.hideAll", "Hide All Caption Tracks", &["Sequence", "Captions"], None, "{}", has_caption_track, |s, _| show_all(s, false)),
-        spec("captions.import", "Import Captions…", &[], None, r#"{"path":str,"name":str?}"#, always, |s, p| {
-            let path = str_p(p, "path").ok_or_else(|| bad("captions.import", "need `path`"))?.to_string();
-            let bytes = s.services.read_file(&path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
-            let ext = std::path::Path::new(&path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
-            let format = redrob_film_captions::detect(&bytes, ext.as_deref()).ok_or_else(|| EngineError::Other(format!("{path}: not a caption file")))?;
-            import(s, &path, &bytes, format, str_p(p, "name"))
-        }),
+        spec(
+            "captions.import",
+            "Import Captions…",
+            &[],
+            None,
+            r#"{"path":str,"name":str?,"encoding":"utf-8|utf-16le|utf-16be|windows-1252|latin-1"? (default: detected),"format":"srt|vtt|scc|mcc|stl|ttml|dfxp|ass|sbv"?}"#,
+            always,
+            |s, p| {
+                let path = str_p(p, "path").ok_or_else(|| bad("captions.import", "need `path`"))?.to_string();
+                let mut bytes = s.services.read_file(&path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+                // Encoding override: read the text as that encoding instead of the detected one
+                if let Some(enc) = str_p(p, "encoding").filter(|e| !e.is_empty() && *e != "auto") {
+                    bytes = redrob_film_captions::reencode(&bytes, enc).ok_or_else(|| bad("captions.import", format!("unknown encoding `{enc}`")))?;
+                }
+                let ext = std::path::Path::new(&path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
+                let format = match str_p(p, "format").and_then(Format::from_name) {
+                    Some(f) => f,
+                    None => redrob_film_captions::detect(&bytes, ext.as_deref()).ok_or_else(|| EngineError::Other(format!("{path}: not a caption file")))?,
+                };
+                import(s, &path, &bytes, format, str_p(p, "name"))
+            },
+        ),
         spec(
             "captions.export",
             "Captions…",
             &["File", "Export"],
             None,
-            r#"{"path":str,"format":"srt|vtt|scc|mcc|stl|ttml|dfxp"? (default: from the extension),"track":id|"C1"?,"dropFrame":bool=true}"#,
+            r#"{"path":str,"format":"srt|vtt|scc|mcc|stl|ttml|dfxp|ass|sbv"? (default: from the extension),"track":id|"C1"?,"dropFrame":bool=true}"#,
             has_caption_track,
             export,
         ),

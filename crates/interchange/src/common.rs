@@ -519,6 +519,9 @@ pub(crate) fn empty_sequence(settings: SequenceSettings) -> Sequence {
         multicam: None,
         merged: None,
         split: Default::default(),
+        timeline_options: Default::default(),
+        preview_zones: Vec::new(),
+        auto_preview: false,
     }
 }
 
@@ -646,6 +649,7 @@ pub(crate) fn transition_effect(name: &str, audio: bool, report: &mut Report) ->
         post_fader: false,
         essential: false,
         layer: None,
+        zone: None,
     })
 }
 

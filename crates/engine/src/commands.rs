@@ -115,6 +115,13 @@ fn has_previews(s: &Session) -> std::result::Result<(), String> {
     has_seq(s)?;
     if s.previews.count() == 0 { Err("there are no render files".into()) } else { Ok(()) }
 }
+fn has_preview_zones(s: &Session) -> std::result::Result<(), String> {
+    let seq = s.active_sequence().ok_or("no sequence is open")?;
+    if seq.preview_zones.is_empty() { Err("the sequence has no preview zones".into()) } else { Ok(()) }
+}
+fn preview_rendering(s: &Session) -> std::result::Result<(), String> {
+    if crate::previews::rendering(s) { Ok(()) } else { Err("no preview is rendering".into()) }
+}
 pub(crate) fn has_project_selection(s: &Session) -> std::result::Result<(), String> {
     if s.state.project_selection.is_empty() { Err("select an item in the Project panel".into()) } else { Ok(()) }
 }
@@ -321,6 +328,8 @@ fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
     if listed.is_empty() {
         return Err(bad(CMD, "need `moves`"));
     }
+    // grouped clips (Clip ▸ Group) move with the listed clip of their group
+    crate::timeline_ops::add_group_partners(s, &mut listed);
     let follow = bool_p(p, "linked").unwrap_or(s.state.linked_selection);
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     // (clip, destination track, new start, where a partner starts now). `time` is any i64: the
@@ -350,8 +359,15 @@ fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
         let start = i64::try_from(start + late).ok().map(Tick).filter(|t| *t <= Tick::MAX).ok_or_else(|| bad(CMD, "`time` is out of range"))?;
         moves.push((clip, track, start));
     }
-    let ins = bool_p(p, "insert").unwrap_or(false);
+    let ins = bool_p(p, "insert").unwrap_or(s.state.edit_mode == crate::timeline_ops::EditMode::Insert);
     let copy = bool_p(p, "copy").unwrap_or(false);
+    // Normal edit mode: a move or copy that would cover another clip is refused
+    if !ins && s.state.edit_mode == crate::timeline_ops::EditMode::Normal {
+        let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+        let spans: Vec<(TrackId, Tick, Tick)> = moves.iter().filter_map(|&(c, t, at)| q.find_item(c).map(|(_, i)| (t, at, at + i.duration))).collect();
+        let moving: Vec<ClipId> = if copy { Vec::new() } else { moves.iter().map(|m| m.0).collect() };
+        crate::timeline_ops::refuse_overlap(q, &spans, &moving)?;
+    }
     // every clip on the sequence now: id -> (track, start, end, project item)
     let spots = |s: &Session| -> Vec<(u64, TrackId, Tick, Tick, ItemId)> {
         let q = s.active_sequence();
@@ -762,6 +778,12 @@ pub(crate) fn place_item(
         let seq = p.sequence_mut(seq_id).ok_or(EngineError::NoSequence)?;
         let mut ctx = edit::EditCtx { next_id: &mut next, media_duration: &durations, media_start: &starts, min_duration: min };
         let span = placements.iter().map(|x| x.1.start).min().zip(placements.iter().map(|x| x.1.end()).max());
+        // Normal edit mode: a drop (Place Clip) that would cover a clip is refused; an explicit
+        // Overwrite still overwrites
+        if !insert && label == "Place Clip" && st.edit_mode == crate::timeline_ops::EditMode::Normal {
+            let spans: Vec<(TrackId, Tick, Tick)> = placements.iter().map(|(t, it)| (*t, it.start, it.end())).collect();
+            crate::timeline_ops::refuse_overlap(seq, &spans, &[])?;
+        }
         let ids = if insert { edit::insert(seq, placements, &mut ctx)? } else { edit::overwrite(seq, placements, &mut ctx)? };
         if insert
             && st.ripple_sequence_markers
@@ -814,8 +836,8 @@ pub(crate) fn source_range(s: &Session) -> Option<(ItemId, TimeRange)> {
 fn edit_at_source(s: &mut Session, insert: bool) -> Result<Value> {
     let (item, range) = source_range(s).ok_or_else(|| EngineError::Other("no source clip".into()))?;
     let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
-    // Three-point editing: sequence In wins over the playhead.
-    let at = seq.mark_in.unwrap_or(s.playhead());
+    // Three-point editing: sequence In wins over the playhead (unless the timeline zone is not used).
+    let at = seq.mark_in.filter(|_| !s.state.ignore_timeline_zone).unwrap_or(s.playhead());
     let tg = s.targeting();
     let label = if insert { "Insert" } else { "Overwrite" };
     // split points: each channel takes its own range, offset by the difference of the In points
@@ -915,8 +937,15 @@ fn build() -> Vec<CommandSpec> {
                 let n = s.project.sequences().count() + 1;
                 let name = str_p(p, "name").map(str::to_string).unwrap_or_else(|| format!("Sequence {n:02}"));
                 let seq_label = s.prefs.labels.defaults.sequence;
+                let seq_bin = s.prefs.timeline.sequences_bin.trim().to_string();
                 let id = s.edit("New Sequence", |pr, st2| {
-                    let id = pr.new_sequence(&name, st, nv as usize, na as usize, None);
+                    // Project Settings ▸ default folder for new sequences; else Settings ▸ Timeline ▸
+                    // Default bin for new sequences (made in the root when missing)
+                    let folder = match pr.default_bin(pr.settings.sequence_bin) {
+                        Some(b) => Some(b),
+                        None => (!seq_bin.is_empty()).then(|| crate::timeline_ops::root_bin_named(pr, &seq_bin)),
+                    };
+                    let id = pr.new_sequence(&name, st, nv as usize, na as usize, folder);
                     if let Some(it) = pr.item_mut(id) {
                         it.label = seq_label;
                     }
@@ -982,6 +1011,61 @@ fn build() -> Vec<CommandSpec> {
             s,
             Generator::CountingLeader,
             "Universal Counting Leader",
+            Label::Lavender,
+            p
+        )),
+        cmd!(
+            "file.newColorBars",
+            "Color Bars…",
+            ["File", "New"],
+            None,
+            r#"{"pattern":"pal|palRed|bbc|ebu|smpte|pm5544|fubk|fubkSimple"=smpte,"seconds":f64=5}"#,
+            always,
+            |s, p| {
+                let pattern = match str_p(p, "pattern") {
+                    Some(n) => redrob_film_media::BarsPattern::from_name(n).ok_or_else(|| bad("file.newColorBars", format!("unknown pattern `{n}`")))?,
+                    None => redrob_film_media::BarsPattern::default(),
+                };
+                new_generator(s, Generator::ColorBars { pattern }, pattern.label(), Label::Lavender, p)
+            }
+        ),
+        cmd!(
+            "file.newCounter",
+            "Counter…",
+            ["File", "New"],
+            None,
+            r#"{"countUp":bool=false,"noBackground":bool=false,"style":"secondsTo1|secondsTo0|frames|timecode|clock"=secondsTo1,"sound":"silent|beforeEnd|eachSecond"=silent,"seconds":f64=10}"#,
+            always,
+            |s, p| {
+                const CMD: &str = "file.newCounter";
+                let style = match str_p(p, "style") {
+                    Some(n) => redrob_film_media::CounterStyle::from_name(n).ok_or_else(|| bad(CMD, format!("unknown style `{n}`")))?,
+                    None => Default::default(),
+                };
+                let sound = match str_p(p, "sound") {
+                    Some(n) => redrob_film_media::CounterSound::from_name(n).ok_or_else(|| bad(CMD, format!("unknown sound `{n}`")))?,
+                    None => Default::default(),
+                };
+                let secs = f64_p(p, "seconds").unwrap_or(10.0);
+                if !(1.0..=3600.0).contains(&secs) {
+                    return Err(bad(CMD, "`seconds` is 1–3600"));
+                }
+                let g = Generator::Counter {
+                    count_up: bool_p(p, "countUp").unwrap_or(false),
+                    no_background: bool_p(p, "noBackground").unwrap_or(false),
+                    style,
+                    sound,
+                    seconds: secs.round() as u32,
+                };
+                let mut q = p.clone();
+                q["seconds"] = json!(secs.round());
+                new_generator(s, g, "Counter", Label::Lavender, &q)
+            }
+        ),
+        cmd!("file.newWhiteNoise", "White Noise…", ["File", "New"], None, r#"{"seconds":f64=5}"#, always, |s, p| new_generator(
+            s,
+            Generator::WhiteNoise,
+            "White Noise",
             Label::Lavender,
             p
         )),
@@ -1107,6 +1191,14 @@ fn build() -> Vec<CommandSpec> {
                     Value::Null
                 }
             };
+            // Preferences ▸ Media ▸ Proxy Clips: camera proxies and automatic proxies
+            let proxies = match crate::proxies::auto_proxies(s, &item_ids) {
+                Ok(v) => v,
+                Err(e) => {
+                    errors.push(format!("proxies: {e}"));
+                    Value::Null
+                }
+            };
             let mut out = if !ingest.is_null() {
                 json!({"items": ids, "sequences": sequences, "documents": reports, "errors": errors, "ingest": ingest})
             } else if reports.is_empty() {
@@ -1116,6 +1208,9 @@ fn build() -> Vec<CommandSpec> {
             };
             if !image_sequences.is_empty() {
                 out["imageSequences"] = json!(image_sequences);
+            }
+            if !proxies.is_null() {
+                out["proxies"] = proxies;
             }
             // Newly imported files may resolve paths the project already listed as offline
             // (issue #110): rebuild s.offline.missing so the "Media missing" badge clears, and drop
@@ -1268,6 +1363,17 @@ fn build() -> Vec<CommandSpec> {
             s.set_prefs(next).map_err(|e| EngineError::Other(format!("saving preferences: {e}")))?;
             Ok(s.prefs.to_value())
         }),
+        // Settings ▸ Playback ▸ Jog Shuttle ▸ Detect: the first ShuttlePRO / ShuttleXpress event
+        // device the system lists (Linux /dev/input/by-id) becomes the device, and the shuttle is on
+        cmd!("prefs.detectJogShuttle", "Detect Jog Shuttle", [], None, "{}", always, |s, _| {
+            let found = crate::settings::detect_jog_shuttle()
+                .ok_or_else(|| EngineError::Other("no ShuttlePRO or ShuttleXpress was found (Linux event devices under /dev/input/by-id)".into()))?;
+            let mut next = s.prefs.clone();
+            next.playback.jog_shuttle.device = found.clone();
+            next.playback.jog_shuttle.enabled = true;
+            s.set_prefs(next).map_err(|e| EngineError::Other(format!("saving preferences: {e}")))?;
+            Ok(json!({"device": found}))
+        }),
         cmd!("prefs.reset", "Reset Preferences", [], None, r#"{"category":str?}"#, always, |s, p| {
             let next = match str_p(p, "category") {
                 Some(c) => {
@@ -1317,6 +1423,13 @@ fn build() -> Vec<CommandSpec> {
         cmd!("edit.paste", "Paste", ["Edit"], Some("Cmd+V"), "{}", has_clipboard, |s, _| paste(s, false)),
         cmd!("edit.pasteInsert", "Paste Insert", ["Edit"], Some("Cmd+Shift+V"), "{}", has_clipboard, |s, _| paste(s, true)),
         cmd!("edit.clear", "Clear", ["Edit"], Some("Backspace"), r#"{"clips":[id]?}"#, has_any_selection, |s, p| {
+            // Insert edit mode: deleting clips ripples, closing the space they leave
+            if s.state.edit_mode == crate::timeline_ops::EditMode::Insert
+                && (p.get("clips").is_some() || p.get("clip").is_some() || !s.state.selection.is_empty())
+                && let Some(ripple) = find("edit.rippleDelete")
+            {
+                return (ripple.run)(s, p);
+            }
             if p.get("clips").is_none() && p.get("clip").is_none() && s.state.selection.is_empty() {
                 // a selected transition (clicked in the Timeline) goes, as a clip would
                 if !s.state.transition_selection.is_empty() {
@@ -1433,7 +1546,7 @@ fn build() -> Vec<CommandSpec> {
             "Speed/Duration…",
             ["Clip"],
             Some("Cmd+R"),
-            r#"{"clips":[id]?,"speed":percent=100,"reverse":bool,"ripple":bool,"interpolation":"frameSampling|frameBlending|opticalFlow"?}"#,
+            r#"{"clips":[id]?,"speed":percent=100,"reverse":bool,"ripple":bool,"interpolation":"frameSampling|frameBlending|opticalFlow"?,"maintainPitch":bool?}"#,
             has_selection,
             |s, p| {
                 let speed = f64_p(p, "speed").unwrap_or(100.0) / 100.0;
@@ -1471,6 +1584,12 @@ fn build() -> Vec<CommandSpec> {
                     }
                     Ok(())
                 })?;
+                // Maintain Audio Pitch: a Pitch Shifter undoes the speed's pitch change on the audio clips
+                if let Some(on) = bool_p(p, "maintainPitch")
+                    && let Some(c) = find("clip.pitchCompensation")
+                {
+                    (c.run)(s, &json!({"clips": sel.iter().map(|c| c.0).collect::<Vec<_>>(), "on": on}))?;
+                }
                 Ok(Value::Null)
             }
         ),
@@ -1612,6 +1731,38 @@ fn build() -> Vec<CommandSpec> {
             |s, p| crate::mixer::audio_gain(s, p)
         ),
         query!("clip.audioPeak", "Audio Clip Peak Amplitude", r#"{"clips":[id]?}"#, |s, p| crate::mixer::audio_peak(s, p)),
+        // Kdenlive's Switch Track Target Audio Stream: the selected audio clips play the next audio
+        // stream of their media (or `stream`), wrapping around
+        cmd!("clip.switchAudioStream", "Switch Audio Stream", ["Clip", "Audio Options"], None, r#"{"clips":[id]?,"stream":n?}"#, has_selection, |s, p| {
+            let sel = clips_p(s, p);
+            let want = u64_p(p, "stream").map(|v| v as usize);
+            let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
+            let mut plan: Vec<(ClipId, usize)> = Vec::new();
+            for c in &sel {
+                let Some((tid, it)) = seq.find_item(*c) else { continue };
+                if !seq.audio_tracks.iter().any(|t| t.id == tid) {
+                    continue;
+                }
+                let n = s.project.item(it.item).and_then(|i| i.as_media()).map_or(1, |m| m.info.audio_streams.len().max(1));
+                let next = want.map_or((it.audio_stream + 1) % n, |w| w.min(n - 1));
+                if n > 1 && next != it.audio_stream {
+                    plan.push((*c, next));
+                }
+            }
+            if plan.is_empty() {
+                return Err(bad("clip.switchAudioStream", "no selected audio clip has another audio stream"));
+            }
+            let out: Vec<Value> = plan.iter().map(|(c, k)| json!({"clip": c.0, "stream": k})).collect();
+            s.edit_sequence("Switch Audio Stream", move |q, _, _| {
+                for (c, k) in &plan {
+                    if let Some((_, i)) = q.find_item_mut(*c) {
+                        i.audio_stream = *k;
+                    }
+                }
+                Ok(())
+            })?;
+            Ok(json!({"clips": out}))
+        }),
         cmd!("clip.frameHold", "Add Frame Hold", ["Clip", "Video Options"], None, r#"{"clips":[id]?,"time":ticks?}"#, has_seq, |s, p| {
             crate::clip_ops::add_frame_hold(s, p)
         }),
@@ -1805,7 +1956,7 @@ fn build() -> Vec<CommandSpec> {
             "Sequence Settings…",
             ["Sequence"],
             None,
-            r#"{"width":u32?,"height":u32?,"fps":f64?,"name":str?,"sampleRate":u32?,"mix":"Stereo|Mono|5.1|Adaptive"?,"dropFrame":bool?,"maxRenderQuality":bool?,"workingSpace":"rec709"|"rec2100-pq"|"rec2100-hlg"?,"wideGamut":bool?,"autoToneMap":bool?,"scaleMotion":bool=false}"#,
+            r#"{"width":u32?,"height":u32?,"fps":f64?,"name":str?,"sampleRate":u32?,"mix":"Stereo|Mono|5.1|Adaptive"?,"dropFrame":bool?,"maxRenderQuality":bool?,"workingSpace":"rec709"|"rec2100-pq"|"rec2100-hlg"?,"wideGamut":bool?,"autoToneMap":bool?,"previewCodec":"ProRes 422 HQ|ProRes 422|ProRes 422 LT|ProRes 422 Proxy"?,"scaleMotion":bool=false}"#,
             has_seq,
             |s, p| {
                 const CMD: &str = "sequence.settings";
@@ -1820,6 +1971,16 @@ fn build() -> Vec<CommandSpec> {
                     None => None,
                 };
                 let drop_frame = bool_p(p, "dropFrame");
+                let preview_codec = match str_p(p, "previewCodec") {
+                    Some(c) => Some(
+                        crate::previews::PREVIEW_CODECS
+                            .iter()
+                            .find(|x| x.0.eq_ignore_ascii_case(c))
+                            .map(|x| x.0.to_string())
+                            .ok_or_else(|| bad(CMD, format!("unknown preview codec `{c}`")))?,
+                    ),
+                    None => None,
+                };
                 let rate = fps.or_else(|| s.active_sequence().map(|q| q.settings.frame_rate)).unwrap_or(FrameRate::FPS_23_976);
                 if drop_frame == Some(true) && !rate.supports_drop_frame() {
                     return Err(bad(CMD, format!("drop-frame timecode needs a 29.97, 59.94 or 119.88 fps timebase, not {rate}")));
@@ -1852,6 +2013,9 @@ fn build() -> Vec<CommandSpec> {
                     }
                     if let Some(v) = bool_p(&p, "maxRenderQuality") {
                         q.settings.max_render_quality = v;
+                    }
+                    if let Some(c) = &preview_codec {
+                        q.settings.preview_codec = c.clone();
                     }
                     let c = &mut q.settings.color;
                     if let Some(w) = working {
@@ -1886,6 +2050,43 @@ fn build() -> Vec<CommandSpec> {
             crate::previews::delete(s, true)
         }),
         query!("sequence.renderBar", "Render Bar", "{}", |s, _| crate::previews::bar_json(s)),
+        // Kdenlive Timeline Preview: preview zones rendered in one pass, Automatic Preview, Stop
+        cmd!("sequence.startPreviewRender", "Start Preview Render", ["Sequence", "Timeline Preview"], None, r#"{"wait":bool=false}"#, has_seq, |s, p| {
+            crate::previews::render(s, crate::previews::RenderMode::Zones, p)
+        }),
+        cmd!("sequence.stopPreviewRender", "Stop Preview Render", ["Sequence", "Timeline Preview"], None, "{}", preview_rendering, |s, _| {
+            crate::previews::stop(s)
+        }),
+        cmd!(
+            "sequence.addPreviewZone",
+            "Add Preview Zone",
+            ["Sequence", "Timeline Preview"],
+            None,
+            r#"{"start":f64?,"end":f64?}"#,
+            has_seq,
+            crate::previews::add_preview_zone
+        ),
+        cmd!(
+            "sequence.removePreviewZone",
+            "Remove Preview Zone",
+            ["Sequence", "Timeline Preview"],
+            None,
+            r#"{"start":f64?,"end":f64?}"#,
+            has_preview_zones,
+            crate::previews::remove_preview_zone
+        ),
+        cmd!("sequence.removeAllPreviewZones", "Remove All Preview Zones", ["Sequence", "Timeline Preview"], None, "{}", has_preview_zones, |s, _| {
+            crate::previews::remove_all_preview_zones(s)
+        }),
+        cmd!(
+            "sequence.autoPreview",
+            "Automatic Preview",
+            ["Sequence", "Timeline Preview"],
+            None,
+            r#"{"enabled":bool?}"#,
+            has_seq,
+            crate::previews::set_auto_preview
+        ),
         cmd!("sequence.matchFrame", "Match Frame", ["Sequence"], Some("F"), "{}", has_seq, |s, _| {
             let t = s.playhead();
             let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
@@ -2002,7 +2203,7 @@ fn build() -> Vec<CommandSpec> {
                 let t = time_p(s, p, "").unwrap_or(ph);
                 let name = str_p(p, "name").unwrap_or("").to_string();
                 let comment = str_p(p, "comment").unwrap_or("").to_string();
-                let color = str_p(p, "color").and_then(Label::from_name).unwrap_or(Label::Green);
+                let color = str_p(p, "color").and_then(Label::from_name).unwrap_or_else(|| s.project.settings.default_marker_color());
                 let dur = p.get("durationFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)).unwrap_or_default();
                 let id = s.edit_sequence("Add Marker", |q, ctx, _| {
                     let id = MarkerId(ctx.alloc());
@@ -2070,7 +2271,7 @@ fn build() -> Vec<CommandSpec> {
             "Edit Marker…",
             [],
             None,
-            r#"{"target":"program|source","marker":id,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?}"#,
+            r#"{"target":"program|source","marker":id,"name":str?,"comment":str?,"color":label?,"durationFrames":i64?,"time":ticks?|"frame":i64?|"seconds":f64?|"timecode":str? (moves it)}"#,
             always,
             |s, p| {
                 if let Some(v) = crate::source_monitor::route(s, "markers.edit", p)? {
@@ -2078,8 +2279,15 @@ fn build() -> Vec<CommandSpec> {
                 }
                 let id = u64_p(p, "marker").map(MarkerId).ok_or_else(|| bad("markers.edit", "need `marker`"))?;
                 let rate = s.sequence_rate();
+                // a new position (Edit Marker ▸ Position, or dragging the marker on the ruler)
+                let moved = time_p(s, p, "").map(|t| rate.snap_nearest(t.max(Tick::ZERO)));
                 let p = p.clone();
                 s.edit_sequence("Edit Marker", |q, _, _| {
+                    if let Some(t) = moved {
+                        let m = q.markers.iter_mut().find(|m| m.id == id).ok_or_else(|| bad("markers.edit", "no such marker"))?;
+                        m.start = t;
+                        q.markers.sort_by_key(|m| m.start);
+                    }
                     let m = q.markers.iter_mut().find(|m| m.id == id).ok_or_else(|| bad("markers.edit", "no such marker"))?;
                     if let Some(n) = str_p(&p, "name") {
                         m.name = n.into();
@@ -2236,7 +2444,8 @@ fn build() -> Vec<CommandSpec> {
                 };
                 let sin = p.get("sourceIn").and_then(Value::as_i64).map(Tick).or(mi).unwrap_or_default();
                 let dur = p.get("duration").and_then(Value::as_i64).map(Tick).unwrap_or_else(|| mo.unwrap_or(full) - sin);
-                let ids = place_item(s, item, TimeRange::new(sin, dur), at, v, a, bool_p(p, "insert").unwrap_or(false), "Place Clip", None)?;
+                let insert = bool_p(p, "insert").unwrap_or(s.state.edit_mode == crate::timeline_ops::EditMode::Insert);
+                let ids = place_item(s, item, TimeRange::new(sin, dur), at, v, a, insert, "Place Clip", None)?;
                 Ok(json!({"clips": ids.iter().map(|c| c.0).collect::<Vec<_>>()}))
             }
         ),
@@ -2246,7 +2455,7 @@ fn build() -> Vec<CommandSpec> {
             }
             let clips: Vec<ClipId> =
                 p.get("clips").and_then(Value::as_array).map(|a| a.iter().filter_map(|v| v.as_u64().map(ClipId)).collect()).unwrap_or_default();
-            let clips = with_links(s, &clips);
+            let clips = crate::timeline_ops::with_groups(s, &clips);
             // selecting clips leaves trim mode (Premiere: clip and edit point selections are exclusive)
             s.state.edit_points.clear();
             s.state.trim_shift = Default::default();
@@ -2415,22 +2624,38 @@ fn build() -> Vec<CommandSpec> {
             let x = s.edit_sequence("Rolling Edit", |q, ctx, _| Ok(edit::roll(q, l, r, d, ctx)?))?;
             Ok(json!({"delta": x.0}))
         }),
-        cmd!("timeline.slip", "Slip", [], None, r#"{"clip":id,"delta":ticks|"deltaFrames":i64}"#, has_seq, |s, p| {
-            let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.slip", "need `clip`"))?;
-            let d = p
-                .get("delta")
-                .and_then(Value::as_i64)
-                .map(Tick)
-                .or_else(|| p.get("deltaFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)))
-                .unwrap_or_default();
-            let clips = with_links(s, &[c]);
-            s.edit_sequence("Slip", |q, ctx, _| {
-                // clamp across all linked partners, then slip them by the common delta
-                let deltas: Vec<(ClipId, Tick)> = clips.iter().map(|c| (*c, d)).collect();
-                slip_together(q, ctx, &deltas)
-            })?;
-            Ok(Value::Null)
-        }),
+        cmd!(
+            "timeline.slip",
+            "Slip",
+            [],
+            None,
+            r#"{"clip":id,"clips":[id]? (several clips slip together),"delta":ticks|"deltaFrames":i64}"#,
+            has_seq,
+            |s, p| {
+                let c = clip_p(p, "clip")
+                    .or_else(|| p.get("clips").and_then(|v| v.get(0)).and_then(Value::as_u64).map(ClipId))
+                    .ok_or_else(|| bad("timeline.slip", "need `clip`"))?;
+                let d = p
+                    .get("delta")
+                    .and_then(Value::as_i64)
+                    .map(Tick)
+                    .or_else(|| p.get("deltaFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)))
+                    .unwrap_or_default();
+                let listed: Vec<ClipId> = match p.get("clips").and_then(Value::as_array) {
+                    Some(a) => a.iter().filter_map(|v| v.as_u64().map(ClipId)).chain([c]).collect(),
+                    None => vec![c],
+                };
+                let mut clips = with_links(s, &listed);
+                clips.sort_unstable();
+                clips.dedup();
+                s.edit_sequence("Slip", |q, ctx, _| {
+                    // clamp across all linked partners, then slip them by the common delta
+                    let deltas: Vec<(ClipId, Tick)> = clips.iter().map(|c| (*c, d)).collect();
+                    slip_together(q, ctx, &deltas)
+                })?;
+                Ok(Value::Null)
+            }
+        ),
         cmd!("timeline.slide", "Slide", [], None, r#"{"clip":id,"delta":ticks|"deltaFrames":i64}"#, has_seq, |s, p| {
             let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.slide", "need `clip`"))?;
             let d = p
@@ -2444,31 +2669,46 @@ fn build() -> Vec<CommandSpec> {
             s.edit_sequence("Slide", |q, ctx, _| Ok(edit::slide_items(q, &clips, d, ctx)?))?;
             Ok(Value::Null)
         }),
-        cmd!("timeline.rateStretch", "Rate Stretch", [], None, r#"{"clip":id,"edge":"in|out","delta":ticks}"#, has_seq, |s, p| {
-            let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.rateStretch", "need `clip`"))?;
-            let edge = if str_p(p, "edge") == Some("in") { Edge::In } else { Edge::Out };
-            let d = p
-                .get("delta")
-                .and_then(Value::as_i64)
-                .map(Tick)
-                .or_else(|| p.get("deltaFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)))
-                .unwrap_or_default();
-            let clips = with_links(s, &[c]);
-            let sp = s.edit_sequence("Rate Stretch", |q, ctx, _| {
-                let mut sp = 1.0;
-                for c in &clips {
-                    sp = edit::rate_stretch(q, *c, edge, d, ctx)?;
-                }
-                Ok(sp)
-            })?;
-            Ok(json!({"speed": sp}))
-        }),
+        cmd!(
+            "timeline.rateStretch",
+            "Rate Stretch",
+            [],
+            None,
+            r#"{"clip":id,"clips":[id]? (several clips stretch together),"edge":"in|out","delta":ticks}"#,
+            has_seq,
+            |s, p| {
+                let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.rateStretch", "need `clip`"))?;
+                let edge = if str_p(p, "edge") == Some("in") { Edge::In } else { Edge::Out };
+                let d = p
+                    .get("delta")
+                    .and_then(Value::as_i64)
+                    .map(Tick)
+                    .or_else(|| p.get("deltaFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)))
+                    .unwrap_or_default();
+                let listed: Vec<ClipId> = match p.get("clips").and_then(Value::as_array) {
+                    Some(a) => a.iter().filter_map(|v| v.as_u64().map(ClipId)).chain([c]).collect(),
+                    None => vec![c],
+                };
+                let mut clips = with_links(s, &listed);
+                clips.sort_unstable();
+                clips.dedup();
+                let sp = s.edit_sequence("Rate Stretch", |q, ctx, _| {
+                    let mut sp = 1.0;
+                    for c in &clips {
+                        sp = edit::rate_stretch(q, *c, edge, d, ctx)?;
+                    }
+                    Ok(sp)
+                })?;
+                Ok(json!({"speed": sp}))
+            }
+        ),
         cmd!("timeline.razor", "Razor", [], None, r#"{"time":ticks,"track":"V1"|id?,"clip":id?}"#, has_seq, |s, p| {
             let t = time_p(s, p, "").unwrap_or(s.playhead());
             let tr = track_p(s, p, "track", "timeline.razor")?;
             let clip = clip_p(p, "clip");
             let n = if let Some(c) = clip {
-                let clips = with_links(s, &[c]);
+                // linked partners and the rest of the clip's group are cut at the same point
+                let clips = crate::timeline_ops::with_groups(s, &[c]);
                 s.edit_sequence("Razor", |q, ctx, _| Ok(edit::razor_items(q, &clips, t, ctx)))?
             } else {
                 let tracks: Vec<TrackId> = tr.into_iter().collect();
@@ -2578,6 +2818,19 @@ fn build() -> Vec<CommandSpec> {
                 }
                 Ok(n)
             })?;
+            // Settings ▸ Timeline ▸ "Move the playhead to the clip when adding an effect": the
+            // monitor then shows the effect (when the playhead is over none of the clips)
+            if s.prefs.timeline.seek_to_clip_on_add_effect {
+                let ph = s.playhead();
+                let spans: Vec<(Tick, Tick)> = s
+                    .active_sequence()
+                    .map(|q| clips.iter().filter_map(|c| q.find_item(*c).map(|(_, i)| i)).map(|i| (i.start, i.end())).collect())
+                    .unwrap_or_default();
+                if !spans.is_empty() && !spans.iter().any(|(a, b)| ph >= *a && ph < *b) {
+                    let first = spans.iter().map(|(a, _)| *a).min().unwrap_or(ph);
+                    s.set_playhead(first);
+                }
+            }
             Ok(Value::Null)
         }),
         cmd!("effects.remove", "Remove Effect", [], None, r#"{"clip":id,"index":n}"#, has_seq, |s, p| {
@@ -2777,7 +3030,7 @@ fn build() -> Vec<CommandSpec> {
             "Keyframe Interpolation",
             [],
             None,
-            r#"{"clip":id,"effect":str|index,"param":str,"mediaTime":ticks,"interpolation":"linear|bezier|autoBezier|continuousBezier|hold|easeIn|easeOut"}"#,
+            r#"{"clip":id,"effect":str|index,"param":str,"mediaTime":ticks,"interpolation":"linear|bezier|autoBezier|continuousBezier|hold|easeIn|easeOut|<cubic|exponential|circular|elastic|bounce><In|Out|InOut>"}"#,
             has_seq,
             |s, p| keyframe_op(s, p, "interp")
         ),
@@ -2940,9 +3193,15 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::relink::commands());
     v.extend(crate::proxies::commands());
     v.extend(crate::project_manager::commands());
+    v.extend(crate::archive::commands());
+    v.extend(crate::backups::commands());
+    v.extend(crate::cache_manager::commands());
+    v.extend(crate::clip_jobs::commands());
     v.extend(crate::masks::commands());
+    v.extend(crate::effect_stack::commands());
     v.extend(crate::presets::commands());
     v.extend(crate::export_tools::commands());
+    v.extend(crate::render_jobs::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
     v.extend(crate::scopes::commands());
@@ -2951,8 +3210,18 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::narration::commands());
     v.extend(crate::keyboard::commands());
     v.extend(crate::project_panel::commands());
+    v.extend(crate::bin_tags::commands());
+    v.extend(crate::clip_props::commands());
+    v.extend(crate::library::commands());
     v.extend(crate::media_browser::commands());
+    v.extend(crate::sequence_presets::commands());
     v.extend(crate::paste_media::commands());
+    // Kdenlive-parity marker tools: categories, interval, chapters export/import, lock
+    v.extend(crate::marker_tools::commands());
+    // Kdenlive-parity timeline operations: duplicate, restore A/V, one-second seek, gap clips
+    v.extend(crate::kparity_ops::commands());
+    // Kdenlive-parity timeline commands: edit modes, current track, spaces, snap points…
+    v.extend(crate::timeline_ops::commands());
     // Edit ▸ Label ▸ <colour>, Paste Attributes, subclips, Video / Audio Options, Replace With Clip…
     // and their menu order
     crate::clip_ops::apply_layout(&mut v);
@@ -3055,15 +3324,8 @@ fn keyframe_op(s: &mut Session, p: &Value, op: &str) -> Result<Value> {
             }
             _ => {
                 let at = mtime.unwrap_or(mt_now);
-                let kind = match interp.as_deref().unwrap_or("linear").to_ascii_lowercase().as_str() {
-                    "bezier" => redrob_film_project::Interpolation::Bezier,
-                    "autobezier" => redrob_film_project::Interpolation::AutoBezier,
-                    "continuousbezier" => redrob_film_project::Interpolation::ContinuousBezier,
-                    "hold" => redrob_film_project::Interpolation::Hold,
-                    "easein" => redrob_film_project::Interpolation::EaseIn,
-                    "easeout" => redrob_film_project::Interpolation::EaseOut,
-                    _ => redrob_film_project::Interpolation::Linear,
-                };
+                // linear, bezier, …, and the easing curves (`cubicIn`, `bounceInOut`, …)
+                let kind = redrob_film_project::Interpolation::from_key(interp.as_deref().unwrap_or("linear")).unwrap_or_default();
                 let k = prm.keyframes.iter_mut().find(|k| k.time == at).ok_or_else(|| bad("keyframe", "no keyframe at that time"))?;
                 k.interp = kind;
             }
@@ -3835,6 +4097,10 @@ fn write_project(s: &mut Session, path: &str, adopt: bool) -> Result<Value> {
     }
     s.services.write_file(path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     if adopt {
+        // Open Backup File: every save keeps a dated copy
+        crate::backups::on_save(s, path, &bytes);
+    }
+    if adopt {
         s.path = Some(path.to_string());
         s.previews_follow_path();
         s.note_recent_project();
@@ -3847,6 +4113,11 @@ fn write_project(s: &mut Session, path: &str, adopt: bool) -> Result<Value> {
 fn schema_backup_path(path: &str, schema: u32) -> String {
     let stem = redrob_film_format::strip_project_extension(path);
     format!("{stem} (schema v{schema} backup).rfilm")
+}
+
+/// Make `proj` the session's project as an unsaved version of `path` (a restored backup).
+pub(crate) fn install_unsaved(s: &mut Session, proj: redrob_film_project::Project, path: Option<String>) {
+    install_project(s, proj, path, false);
 }
 
 /// Make `proj` the session's project (fresh history, media pool and editor state).
@@ -3893,7 +4164,8 @@ fn open_project(s: &mut Session, path: &str) -> Result<Value> {
         s.toast(format!("Upgraded project from schema v{from} to v{}; the original is kept as a backup when you save", redrob_film_format::SCHEMA_VERSION));
     }
     let missing = crate::relink::on_open(s);
-    Ok(json!({"path": path, "schemaVersion": from, "migrated": migrated, "missingMedia": missing}))
+    let proxy_job = crate::proxies::recreate_missing(s, false);
+    Ok(json!({"path": path, "schemaVersion": from, "migrated": migrated, "missingMedia": missing, "recreatingProxies": proxy_job}))
 }
 
 /// Load a recovery candidate (newest when `id` is None) as the current, unsaved project.

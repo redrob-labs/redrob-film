@@ -583,6 +583,12 @@ pub fn monitor_overlay(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect, fra
     let id = egui::Id::new("gfx-overlay");
     let resp = ui.interact(pic, id, if graphics_tool { Sense::click_and_drag() } else { Sense::hover() });
     let hover = resp.hover_pos();
+    // the Program monitor's own click actions (Play/pause on monitor click, double-click full
+    // screen) read this: a click that lands on no graphic layer belongs to the picture
+    let on_layer = resp.interact_pointer_pos().or(hover).is_some_and(|p| views.iter().any(|v| v.hit(p)));
+    // read the response before taking the data lock: clicked() locks the context itself
+    let picture_click = (resp.clicked() && !on_layer, resp.double_clicked() && !on_layer);
+    ui.data_mut(|d| d.insert_temp(egui::Id::new("gfx-overlay-click"), picture_click));
     let mut actions: Vec<(String, Value)> = Vec::new();
     let drag_id = id.with("drag");
     let mut drag: Option<DragState> = ui.data(|d| d.get_temp(drag_id));
@@ -694,6 +700,12 @@ pub fn monitor_overlay(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect, fra
                 crate::panels::monitor_view::snap_move(app, pic, frame, Rect::from_points(&v.quad()), cur - d.start)
             }
             _ => (cur - d.start, Vec::new()),
+        };
+        // Kdenlive's titles: Shift moves only vertically, Shift+Alt only horizontally
+        let snap_off = match (d.kind, ui.input(|i| (i.modifiers.shift, i.modifiers.alt))) {
+            (DragKind::Move, (true, true)) => (vec2(snap_off.0.x, 0.0), snap_off.1),
+            (DragKind::Move, (true, false)) => (vec2(0.0, snap_off.0.y), snap_off.1),
+            _ => snap_off,
         };
         match d.kind {
             DragKind::Move => {
@@ -910,11 +922,14 @@ pub fn monitor_overlay(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect, fra
         });
     }
     // ---- run
-    for (cmd, p) in actions {
+    for (cmd, mut p) in actions {
         let (cmd, then_edit) = match cmd.strip_suffix("#edit") {
             Some(c) => (c.to_string(), true),
             None => (cmd, false),
         };
+        if cmd == "graphics.set" {
+            crate::panels::effect_stack::auto_keyframe_graphics(app, &mut p);
+        }
         match app.session.execute(&cmd, p) {
             Ok(r) => {
                 if then_edit && let (Some(c), Some(l)) = (r["clip"].as_u64(), r["layer"].as_u64()) {

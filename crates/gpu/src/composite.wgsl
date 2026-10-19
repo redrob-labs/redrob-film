@@ -233,6 +233,22 @@ fn sep(mode: u32, b: f32, s: f32) -> f32 {
             if s <= 0.0 { return 1.0; }
             return min(b / s, 1.0);
         }
+        case 27u: { return clamp(b - s + 0.5, 0.0, 1.0); }  // Grain Extract
+        case 28u: { return clamp(b + s - 0.5, 0.0, 1.0); }  // Grain Merge
+        case 29u, 30u, 31u, 32u, 33u, 34u: {                 // bitwise on 8-bit values
+            let x = u32(round(clamp(b, 0.0, 1.0) * 255.0));
+            let y = u32(round(clamp(s, 0.0, 1.0) * 255.0));
+            var r = ~(x ^ y);                                // Not Xor
+            switch mode {
+                case 29u: { r = x | y; }
+                case 30u: { r = x & y; }
+                case 31u: { r = x ^ y; }
+                case 32u: { r = ~(x | y); }
+                case 33u: { r = ~(x & y); }
+                default: {}
+            }
+            return f32(r & 255u) / 255.0;
+        }
         default: { return s; }
     }
 }
@@ -296,6 +312,17 @@ fn fs_blend(in: VOut) -> @location(0) vec4<f32> {
     }
     let d = textureLoad(backdrop, vec2<i32>(in.pos.xy), 0);
     let da = d.a;
+    // Porter-Duff alpha operations (premultiplied), as `blend::alpha_op`
+    let mode = u32(u.p3.x);
+    if mode == 35u {                                         // Alpha Atop
+        return vec4(sp.rgb * da + d.rgb * (1.0 - sa), da);
+    }
+    if mode == 36u {                                         // Alpha Xor
+        return sp * (1.0 - da) + d * (1.0 - sa);
+    }
+    if mode == 37u {                                         // Destination Out
+        return d * (1.0 - sa);
+    }
     if da <= 0.0 {
         return sp + d * (1.0 - sa);
     }

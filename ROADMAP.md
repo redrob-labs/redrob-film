@@ -2,6 +2,20 @@
 
 ## Changes
 
+## 0.4.0
+
+Kdenlive parity, and an editor that goes idle.
+
+- **No more idle repaint on Linux.** An empty window title made the shell re-send its title every
+  frame; the window now sleeps when nothing changes (idle CPU from 6 cores to near zero), so
+  playback and the playhead get the CPU back.
+- **Audio comes back.** A lost or stalled output is reopened during playback instead of staying
+  silent for the rest of the play, and the output is kept awake between plays, so the first
+  picture after Space no longer waits ~0.9 s for a suspended sound device.
+- **Kdenlive parity.** 1,202 Kdenlive 26.08.2 features inventoried clean-room
+  (`docs/parity/kdenlive-*.toml`): 1,046 fully available (from 538), 126 partly, 30 not, each with
+  its reason.
+
 ## 0.3.0
 
 The editor answers to Redrob Code.

@@ -17,8 +17,9 @@
 //! the macOS Control key.
 //!
 //! Built-in presets: **Redrob Film Default** (each command's default plus the Premiere-default audit,
-//! see [`Shortcuts::audit`]), **Premiere Pro Compatible**, **Final Cut Pro Compatible** and
-//! **Avid Media Composer Compatible** ([`crate::shortcut_presets`]). Custom presets are JSON files in
+//! see [`Shortcuts::audit`]), **Premiere Pro Compatible**, **Final Cut Pro Compatible**,
+//! **Avid Media Composer Compatible** and **Kdenlive Compatible** ([`crate::shortcut_presets`]).
+//! Custom presets are JSON files in
 //! `<data dir>/Keyboard Shortcuts/`; the active set persists in `active.json` there.
 //!
 //! Commands the frontend owns (tools, transport, panels, workspaces) are registered with
@@ -60,7 +61,8 @@ pub const DEFAULT_PRESET: &str = "Redrob Film Default";
 pub const PREMIERE_PRESET: &str = "Premiere Pro Compatible";
 pub const FCP_PRESET: &str = "Final Cut Pro Compatible";
 pub const AVID_PRESET: &str = "Avid Media Composer Compatible";
-pub const BUILTIN_PRESETS: [&str; 4] = [DEFAULT_PRESET, PREMIERE_PRESET, FCP_PRESET, AVID_PRESET];
+pub const KDENLIVE_PRESET: &str = "Kdenlive Compatible";
+pub const BUILTIN_PRESETS: [&str; 5] = [DEFAULT_PRESET, PREMIERE_PRESET, FCP_PRESET, AVID_PRESET, KDENLIVE_PRESET];
 
 const FILE_FORMAT: &str = "filmcraft-keyboard-shortcuts";
 const DIR_NAME: &str = "Keyboard Shortcuts";
@@ -620,6 +622,7 @@ impl Shortcuts {
             PREMIERE_PRESET => presets::premiere(),
             FCP_PRESET => presets::FINAL_CUT.to_vec(),
             AVID_PRESET => presets::AVID.to_vec(),
+            KDENLIVE_PRESET => presets::KDENLIVE.to_vec(),
             _ => return None,
         };
         self.apply_table(&mut b, &table);
@@ -1093,6 +1096,47 @@ fn list(s: &Session, p: &Value) -> Value {
     json!(rows)
 }
 
+/// The assigned shortcuts as a printable HTML page (one table per category, in the platform's key
+/// notation), for Keyboard Shortcuts ▸ Print… (`shortcuts.print`).
+pub fn printable_html(s: &Session, plat: Platform) -> String {
+    fn esc(t: &str) -> String {
+        t.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
+    }
+    let sc = &s.shortcuts;
+    let mut by_cat: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
+    for c in sc.commands() {
+        let keys: Vec<String> = sc
+            .for_command(&c.id)
+            .into_iter()
+            .map(|b| {
+                let k = b.chord().map(|ch| ch.display(plat)).unwrap_or_else(|| b.keys.clone());
+                match &b.panel {
+                    Some(panel) => format!("{k} ({panel})"),
+                    None => k,
+                }
+            })
+            .collect();
+        if keys.is_empty() {
+            continue;
+        }
+        by_cat.entry(c.category.clone()).or_default().push((c.label.clone(), keys.join(", ")));
+    }
+    let mut html = String::from(
+        "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><title>Redrob Film keyboard shortcuts</title>\n<style>body{font:11pt sans-serif;margin:2em}h1{font-size:16pt}h2{font-size:12pt;margin:1.4em 0 .3em;break-after:avoid}table{border-collapse:collapse;width:100%;break-inside:auto}td{border-bottom:1px solid #ccc;padding:2px 6px;vertical-align:top}td.k{font-family:monospace;white-space:nowrap;width:40%}tr{break-inside:avoid}@media print{body{margin:0}}</style></head><body>\n",
+    );
+    html.push_str(&format!("<h1>Redrob Film keyboard shortcuts: {}{}</h1>\n", esc(&sc.preset), if sc.modified { " (modified)" } else { "" }));
+    for (cat, mut rows) in by_cat {
+        rows.sort();
+        html.push_str(&format!("<h2>{}</h2>\n<table>\n", esc(&cat)));
+        for (label, keys) in rows {
+            html.push_str(&format!("<tr><td>{}</td><td class=\"k\">{}</td></tr>\n", esc(&label), esc(&keys)));
+        }
+        html.push_str("</table>\n");
+    }
+    html.push_str("</body></html>\n");
+    html
+}
+
 pub fn commands() -> Vec<CommandSpec> {
     macro_rules! sc {
         ($id:literal, $label:literal, $params:literal, $journal:expr, $run:expr) => {
@@ -1172,6 +1216,12 @@ pub fn commands() -> Vec<CommandSpec> {
             let path = str_p(p, "path").ok_or_else(|| bad("shortcuts.export", "need `path`"))?;
             s.shortcuts.export(Path::new(path)).map_err(err("shortcuts.export"))?;
             Ok(json!({"path": path, "bindings": s.shortcuts.bindings.len()}))
+        }),
+        sc!("shortcuts.print", "Print Keyboard Shortcuts", r#"{"path":str,"platform":"mac|windows|linux"?}"#, false, |s, p| {
+            let path = str_p(p, "path").ok_or_else(|| bad("shortcuts.print", "need `path` (an .html file)"))?;
+            let html = printable_html(s, platform_p(p));
+            std::fs::write(path, html).map_err(|e| bad("shortcuts.print", format!("writing {path}: {e}")))?;
+            Ok(json!({"path": path}))
         }),
         sc!("shortcuts.import", "Import Keyboard Shortcuts", r#"{"path":str,"activate":bool=true}"#, true, |s, p| {
             let path = str_p(p, "path").ok_or_else(|| bad("shortcuts.import", "need `path`"))?;

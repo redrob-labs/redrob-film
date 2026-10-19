@@ -1,0 +1,1975 @@
+# Kdenlive 26.08 parity inventory, area 2: timeline editing.
+# Source: the user manual at docs.kdenlive.org only (clean room, see PARITY-RULES.md).
+# film = full | partial | none, judged against OUR code (evidence = file:line or command id).
+# Inventory only: no code was changed for this file.
+
+# ---------------------------------------------------------------- tools
+[[row]]
+id = "K2-001"
+group = "tools"
+feature = "Selection tool (select/move clips, Esc returns to it)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#selection-tool"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:12 Tool::Selection (V); tool.selection"
+gap = "Default key is V (Premiere map), Kdenlive uses S; Esc-to-selection not verified"
+
+[[row]]
+id = "K2-002"
+group = "tools"
+feature = "Razor tool (click to cut; Shift-click cuts all tracks)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#razor-tool"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:19 Tool::Razor (C); crates/engine/src/commands.rs:2466 timeline.razor; crates/ui-egui/src/lib.rs:1831"
+gap = "Key is C, Kdenlive X"
+
+[[row]]
+id = "K2-003"
+group = "tools"
+feature = "Spacer tool (temporarily group everything after a point and drag to open/close space)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#spacer-tool"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:14 Tool::TrackSelectForward / TrackSelectBackward (A / Shift+A)"
+gap = "Same behaviour under Premiere's Track Select name; Kdenlive key M"
+
+[[row]]
+id = "K2-004"
+group = "tools"
+feature = "Slip tool (shift In/Out together, keep duration) by mouse"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#slip-tool"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:20 Tool::Slip; crates/engine/src/commands.rs:2418 timeline.slip; crates/edit/src/lib.rs:910"
+gap = ""
+
+[[row]]
+id = "K2-005"
+group = "tools"
+feature = "Slip several selected clips at once"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#slip-tool"
+film = "full"
+evidence = "crates/engine/src/commands.rs timeline.slip `clips` (selection slips together, slip_together); crates/ui-egui/src/panels/timeline.rs Drag::Slip release passes the selection"
+gap = ""
+
+[[row]]
+id = "K2-006"
+group = "tools"
+feature = "Slip with arrow keys and monitor toolbar buttons"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#slip-tool"
+film = "full"
+evidence = "crates/engine/src/keyboard.rs:729 timeline.slipLeft/Right(5); crates/ui-egui/src/panels/trim_monitor.rs"
+gap = ""
+
+[[row]]
+id = "K2-007"
+group = "tools"
+feature = "Ripple tool (trim and shift following clips)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#ripple-tool"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:15 Tool::Ripple; crates/ui-egui/src/panels/timeline_hit.rs:271; crates/edit/src/lib.rs:760 ripple_trim_group"
+gap = ""
+
+[[row]]
+id = "K2-008"
+group = "tools"
+feature = "Roll edit (move a cut between two clips)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#timeline-toolbar"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:16 Tool::Rolling; crates/engine/src/commands.rs:2404 timeline.roll"
+gap = ""
+
+[[row]]
+id = "K2-009"
+group = "tools"
+feature = "Slide edit (move clip between neighbours keeping its content)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#timeline-toolbar"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:21 Tool::Slide; crates/engine/src/commands.rs:2434 timeline.slide; crates/engine/src/keyboard.rs:733"
+gap = ""
+
+[[row]]
+id = "K2-010"
+group = "tools"
+feature = "Ripple trim to playhead: ( and ) cut and close space on the active track"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#ripple-trim-to-playhead"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2388 trim.ripplePrevious (Q), :2392 trim.rippleNext (W)"
+gap = "Keys Q/W instead of ( )"
+
+[[row]]
+id = "K2-011"
+group = "tools"
+feature = "Resize Item Start / End to playhead (trim without ripple)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#timeline"
+film = "full"
+evidence = "crates/engine/src/keyboard.rs trim.extendPreviousEdit / trim.extendNextEdit (Shift+Q/W); crates/engine/src/commands.rs:2387 trim.extendToPlayhead"
+gap = ""
+
+[[row]]
+id = "K2-012"
+group = "tools"
+feature = "Multicam tool: cut between tracks with number keys while playing"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#multicam-tool"
+film = "partial"
+evidence = "crates/engine/src/multicam.rs:13 multicam.cutToCamera1-9, :11 recordStart/cut/recordStop; crates/ui-egui/src/panels/multicam.rs"
+gap = "Ours switches angles inside a multicam source clip; a stacked-tracks multicam mode (lift the other timeline tracks with number keys) is a separate render/monitor feature, not ported in this pass"
+
+[[row]]
+id = "K2-013"
+group = "tools"
+feature = "Multicam tool turns on Multitrack View in the project monitor and click-to-pick track"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#multicam-tool"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:93 multicam.toggleView; view.display.multicam"
+gap = "Grid shows angles of a multicam clip, not every video track of the sequence; needs the stacked-tracks multicam mode (K2-012), not ported in this pass"
+
+[[row]]
+id = "K2-014"
+group = "tools"
+feature = "Speed change by Ctrl+drag on a clip edge (applies to all selected clips)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#change-speed-of-clips"
+film = "partial"
+evidence = "crates/engine/src/commands.rs timeline.rateStretch `clips`; crates/ui-egui/src/panels/timeline.rs Drag::Stretch release stretches the selection"
+gap = "Rate stretch now applies to every selected clip, but Ctrl on a Selection-tool edge stays Premiere's roll/ripple modifier, so the speed drag still needs the Rate Stretch tool (R)"
+
+[[row]]
+id = "K2-015"
+group = "tools"
+feature = "Hand / Zoom tools (pan and zoom the timeline)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#scrolling-and-panning"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:24 Tool::Hand, :25 Tool::Zoom"
+gap = "Kdenlive pans with Ctrl+LMB or middle-button drag instead of a tool; middle-drag not found in timeline.rs"
+
+# ---------------------------------------------------------------- edit modes, insert/overwrite
+[[row]]
+id = "K2-016"
+group = "edit-modes"
+feature = "Normal edit mode (drop refuses to overlap clips on the same track)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#normal-mode"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs EditMode::Normal, refuse_overlap; timeline.editMode.normal (Sequence > Edit Mode, wrench menu); crates/engine/src/commands.rs move_clips / place_item check"
+gap = "Default stays Overwrite (Premiere); Normal is a Sequence > Edit Mode choice"
+
+[[row]]
+id = "K2-017"
+group = "edit-modes"
+feature = "Overwrite edit mode (drag overwrites what is under it)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#overwrite-mode"
+film = "full"
+evidence = "crates/edit/src/lib.rs:502 move_items(insert_mode=false), :251 overwrite"
+gap = ""
+
+[[row]]
+id = "K2-018"
+group = "edit-modes"
+feature = "Insert edit mode (drag inserts and shifts the destination track)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#insert-mode"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs EditMode::Insert, timeline.editMode.insert; commands.rs move_clips / timeline.place insert default; crates/ui-egui/src/panels/timeline.rs drop and move release use the mode; mode shown in the ruler readout"
+gap = ""
+
+[[row]]
+id = "K2-019"
+group = "insert-overwrite"
+feature = "Insert Clip Zone in Timeline (V)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2179 source.insert"
+gap = "Key is , (Premiere), Kdenlive V"
+
+[[row]]
+id = "K2-020"
+group = "insert-overwrite"
+feature = "Overwrite Clip Zone in Timeline (B)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2180 source.overwrite"
+gap = "Key is ., Kdenlive B"
+
+[[row]]
+id = "K2-021"
+group = "insert-overwrite"
+feature = "Use / do not use timeline zone toggle for insert and overwrite"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs sequence.useTimelineZone (EditorState::ignore_timeline_zone); crates/engine/src/commands.rs edit_at_source"
+gap = ""
+
+[[row]]
+id = "K2-022"
+group = "insert-overwrite"
+feature = "Lift Timeline Zone (Z)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:294 sequence.lift; crates/edit/src/lib.rs:334"
+gap = ""
+
+[[row]]
+id = "K2-023"
+group = "insert-overwrite"
+feature = "Extract Timeline Zone (Shift+X), unlocked tracks, playhead to In"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#cutting-footage-from-multiple-aligned-tracks-ripple-delete"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:295 sequence.extract; crates/edit/src/lib.rs:346"
+gap = ""
+
+[[row]]
+id = "K2-024"
+group = "insert-overwrite"
+feature = "Extract Clip (Shift+Del): delete clip and close its gap"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1343 edit.rippleDelete; crates/edit/src/lib.rs:434"
+gap = ""
+
+[[row]]
+id = "K2-025"
+group = "insert-overwrite"
+feature = "Delete in Insert mode ripples automatically"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#cutting-footage-from-multiple-aligned-tracks-ripple-delete"
+film = "full"
+evidence = "crates/engine/src/commands.rs edit.clear runs edit.rippleDelete in Insert mode"
+gap = ""
+
+[[row]]
+id = "K2-026"
+group = "insert-overwrite"
+feature = "Adjust timeline zone to selected clips (Shift+Z)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#adjust-timeline-zone"
+film = "full"
+evidence = "crates/engine/src/sequence_tools.rs:140 markers.markSelection"
+gap = ""
+
+[[row]]
+id = "K2-027"
+group = "insert-overwrite"
+feature = "Timeline zone bar on the ruler: drag middle to move, edges to resize"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#timeline-ruler"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1351 In/Out band painted on ruler; markers.markIn/markOut"
+gap = "Band is still display-only: a move/resize drag would sit inside the ruler press/scrub path, which is being reworked for latency, so it was left alone in this pass"
+
+# ---------------------------------------------------------------- three-point editing / tracks targeting
+[[row]]
+id = "K2-028"
+group = "three-point"
+feature = "Source connectors (green) per track for the bin clip"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#source"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1108 timeline.setTargeting sourcePatch"
+gap = ""
+
+[[row]]
+id = "K2-029"
+group = "three-point"
+feature = "Target tracks (yellow) react to edits even without a source"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#target"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1136 timeline.setTargeting targeted; crates/engine/src/commands.rs:2520"
+gap = ""
+
+[[row]]
+id = "K2-030"
+group = "three-point"
+feature = "Toggle track active (A), all tracks active (Shift+A), switch all (Alt+Shift+A)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#active-track"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs timeline.toggleTargetCurrent / toggleAllTargets / invertAllTargets"
+gap = "No default keys (A / Shift+A are Premiere tool keys here); bindable in Keyboard Shortcuts"
+
+[[row]]
+id = "K2-031"
+group = "three-point"
+feature = "Toggle track target/source on the selected track (Shift+T)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#timeline"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs timeline.toggleSourceCurrent (current track)"
+gap = "Shift+T is Trim Edit in the default map; bindable"
+
+[[row]]
+id = "K2-032"
+group = "three-point"
+feature = "Select video track 1-9 / audio track Alt+1-9 / Up-Down to change track"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#timeline"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs timeline.selectVideoTrack1-9 / selectAudioTrack1-9 / trackUp / trackDown (EditorState::current_track); crates/ui-egui/src/panels/timeline.rs draw_headers highlight, header click"
+gap = "Keys unbound by default (number keys are multicam, Up/Down edit points); bindable"
+
+[[row]]
+id = "K2-033"
+group = "three-point"
+feature = "Select Target 1-9 (Ctrl+1..9)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#editing"
+film = "partial"
+evidence = "crates/engine/src/keyboard.rs timeline.toggleTargetV1..V8 (no default key)"
+gap = "Target commands exist (timeline.toggleTargetV1..A8) but Ctrl+1..9 stays on multicam cuts in the default map; needs a Kdenlive shortcut preset (shortcuts area)"
+
+[[row]]
+id = "K2-034"
+group = "three-point"
+feature = "Switch track target audio stream (')"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#timeline"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs timeline.cycleAudioTarget (next audio track takes the source audio)"
+gap = "' unbound by default; bindable"
+
+[[row]]
+id = "K2-035"
+group = "three-point"
+feature = "Double-click empty track area makes it active and moves the playhead"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#active-track"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs interact: double-click empty track -> timeline.selectTrack + playhead.set"
+gap = ""
+
+# ---------------------------------------------------------------- cut / resize / duration
+[[row]]
+id = "K2-036"
+group = "cut-resize"
+feature = "Cut Clip at playhead on the active track (Shift+R)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#cutting-a-clip"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:288 sequence.addEdit (Cmd+K)"
+gap = "Targeted tracks instead of one active track"
+
+[[row]]
+id = "K2-037"
+group = "cut-resize"
+feature = "Cut All Clips at playhead (Ctrl+Shift+R), skips locked tracks"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#timeline"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:289 sequence.addEditAllTracks"
+gap = ""
+
+[[row]]
+id = "K2-038"
+group = "cut-resize"
+feature = "Resize a clip by dragging its edges"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#resizing-a-clip"
+film = "full"
+evidence = "crates/edit/src/lib.rs:705 trim; crates/engine/src/commands.rs timeline.trim"
+gap = ""
+
+[[row]]
+id = "K2-039"
+group = "cut-resize"
+feature = "Clip Duration dialog on double-click (position, in, duration, out)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#resizing-a-clip"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs clip.setTiming (Clip > Clip Duration..., clip menu); crates/ui-egui/src/panels/clip_dialogs.rs position / in / duration / out"
+gap = "Double-click still opens the Source monitor (Premiere); the dialog is on the clip and Clip menus"
+
+[[row]]
+id = "K2-040"
+group = "cut-resize"
+feature = "Apply duration to all selected items, with and without ripple"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#resizing-multiple-timeline-items"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1432 clip.speedDuration on selection; crates/edit/src/lib.rs:1037 set_speed_group(ripple)"
+gap = "Changes speed to fit, not a pure duration trim"
+
+[[row]]
+id = "K2-041"
+group = "cut-resize"
+feature = "Shift+resize trims only the audio or video half of an A/V clip"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#resizing-a-clip"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:2186 Alt selects one side of a link; sequence.linkedSelection toggle"
+gap = "Alt modifier (Premiere) instead of Shift"
+
+[[row]]
+id = "K2-042"
+group = "cut-resize"
+feature = "Alt+move moves only the audio or video part to another track"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#resizing-a-clip"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:2186 alt-click picks one side; :2195 but alt drag sets copy=true"
+gap = "Alt-drag stays Premiere's duplicate; moving one part = Alt-click it (selects one side / one group member) then drag"
+
+[[row]]
+id = "K2-043"
+group = "cut-resize"
+feature = "Clip monitor shows a yellow indicator of the original length while resizing"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#resizing-a-clip"
+film = "none"
+evidence = "no resize overlay in crates/ui-egui/src/panels/monitor.rs"
+gap = "Not ported: needs an original-length overlay in the Source monitor while trimming"
+
+[[row]]
+id = "K2-044"
+group = "cut-resize"
+feature = "Double-click an animation clip opens it in Glaxnimate"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#edit-an-animation"
+film = "none"
+evidence = "edit.editOriginal crates/engine/src/commands.rs opens the media in the system app"
+gap = "Out of scope: no vector animation clip type or Glaxnimate round-trip in Redrob Film"
+
+[[row]]
+id = "K2-045"
+group = "cut-resize"
+feature = "Remove Space (gap) on one track via right-click"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#removing-space-between-clips"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:296 sequence.closeGap; crates/ui-egui/src/panels/timeline.rs:1853 gap_menu Ripple Delete"
+gap = ""
+
+[[row]]
+id = "K2-046"
+group = "cut-resize"
+feature = "Remove Space in All Tracks"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#empty-space-in-timeline"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs sequence.removeSpaceAllTracks (Sequence menu)"
+gap = ""
+
+[[row]]
+id = "K2-047"
+group = "cut-resize"
+feature = "Remove All Spaces After Cursor (current track)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#removing-space-between-clips"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs sequence.removeAllSpacesAfter (current track, Sequence menu)"
+gap = ""
+
+[[row]]
+id = "K2-048"
+group = "cut-resize"
+feature = "Remove All Clips After Cursor (A/V as one element)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs sequence.removeAllClipsAfter (linked partners go too)"
+gap = ""
+
+[[row]]
+id = "K2-049"
+group = "cut-resize"
+feature = "Insert Space dialog (blank space of given length on one track)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#empty-space-in-timeline"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs sequence.insertSpace (Insert Space... dialog: duration, current / all tracks); crates/ui-egui/src/panels/clip_dialogs.rs"
+gap = ""
+
+[[row]]
+id = "K2-050"
+group = "cut-resize"
+feature = "Identify Gaps: range markers at every gap (all tracks or selected track)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#identify-timeline-gaps"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs markers.identifyGaps (all tracks or one; Markers menu, track header menu)"
+gap = ""
+
+# ---------------------------------------------------------------- timeline toolbar / status bar / view
+[[row]]
+id = "K2-051"
+group = "timeline-view"
+feature = "Enable Track Compositing checkbox (automatic alpha compositing of tracks on/off)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#track-compositing"
+film = "full"
+evidence = "crates/project/src/lib.rs TimelineOptions::no_track_compositing; crates/render/src/lib.rs topmost_track_at; crates/engine/src/timeline_ops.rs sequence.trackCompositing (Sequence menu, wrench menu)"
+gap = ""
+
+[[row]]
+id = "K2-052"
+group = "timeline-view"
+feature = "Disable timeline effects (bypass all effects globally)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "partial"
+evidence = "crates/project/src/lib.rs TimelineOptions::effects_disabled; crates/render/src/lib.rs render_seq_tracks, plan.rs plan_frame; crates/engine/src/timeline_ops.rs sequence.disableTimelineEffects"
+gap = "Video clip effects are bypassed in monitors and export; audio clip effects still play (the audio mix has no sequence-level switch yet)"
+
+[[row]]
+id = "K2-053"
+group = "timeline-view"
+feature = "Mixed / split / split-reverse audio track layout"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#switching-between-mixed-or-split-audio"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs:4 fixed split layout (video above, audio below)"
+gap = "Only the split layout; mixed (A1,V1,A2,V2) or reversed order needs the timeline rows/headers rebuilt around an interleaved order, not done in this pass"
+
+[[row]]
+id = "K2-054"
+group = "timeline-view"
+feature = "Position indicator: hover time and total length, timecode or frames"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs draw_top position readout (time under the pointer / sequence length), wrench > Show Time in Frames"
+gap = ""
+
+[[row]]
+id = "K2-055"
+group = "timeline-view"
+feature = "Mix Clips (U): same-track transition at the cut under the playhead"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:293 trim.applyDefaultTransition; sequence.applyVideoTransition / applyAudioTransition"
+gap = "Keys Cmd+D / Shift+D instead of U; double-click on a cut does not mix"
+
+[[row]]
+id = "K2-056"
+group = "timeline-view"
+feature = "Favorite Effects toolbar button"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "none"
+evidence = "grep favorite: only export presets (crates/engine/src/export_tools.rs:4)"
+gap = "No favourite-effects list; belongs with the Effects panel work, not ported in this pass"
+
+[[row]]
+id = "K2-057"
+group = "timeline-view"
+feature = "Preview render: start/stop, add/remove zones, render status bar on ruler"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:281 sequence.renderInToOut/renderSelection/deleteRenderFiles; crates/ui-egui/src/panels/timeline.rs:1392 render bar"
+gap = "Zones are In/Out or selection, not a list of named preview zones"
+
+[[row]]
+id = "K2-058"
+group = "timeline-view"
+feature = "Automatic preview render and preview using proxy clips"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "none"
+evidence = "grep autoRender: nothing"
+gap = "Renders only on request; background auto-render of changed zones not built"
+
+[[row]]
+id = "K2-059"
+group = "timeline-view"
+feature = "Manage Cached Data (preview/thumbnail cache)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "partial"
+evidence = "mediaCache.clean; sequence.deleteRenderFiles(InToOut)"
+gap = "No per-project cache size/usage dialog; cleaning exists as mediaCache.clean / sequence.deleteRenderFiles"
+
+[[row]]
+id = "K2-060"
+group = "timeline-view"
+feature = "Show/Hide Audio Mixer and Subtitles from the toolbar"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#timeline-toolbar"
+film = "full"
+evidence = "crates/ui-egui/src/dock.rs:94 PanelKind::AudioTrackMixer; crates/ui-egui/src/panels/timeline.rs:1265 captions toggle"
+gap = ""
+
+[[row]]
+id = "K2-061"
+group = "timeline-view"
+feature = "Status bar: hover hints and key-binding info for the current tool"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#status-bar"
+film = "full"
+evidence = "crates/ui-egui/src/lib.rs:1820 per-tool hint text"
+gap = "Hint is per tool, not per hovered item; no hovered clip name"
+
+[[row]]
+id = "K2-062"
+group = "timeline-view"
+feature = "Show video thumbnails (In / In-Out / all frames / none)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#show-video-thumbnails"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1291 Show Video Thumbnails + Head / Head and Tail / Continuous"
+gap = ""
+
+[[row]]
+id = "K2-063"
+group = "timeline-view"
+feature = "Show audio thumbnails, waveform zoom x1/2/4/8"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#show-audio-thumbnails"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs draw_waveform: wrench > Waveform Zoom x1/x2/x4/x8 (TimelineView::waveform_zoom), Show Audio Waveform"
+gap = ""
+
+[[row]]
+id = "K2-064"
+group = "timeline-view"
+feature = "Normalize audio thumbnails / separate channels per audio track"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-right-click-menu"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs wrench > Normalize Audio Waveforms (TimelineView::waveform_raw)"
+gap = "Normalisation can be switched off; one lane per audio stream, no separate per-channel lanes of a stereo stream"
+
+[[row]]
+id = "K2-065"
+group = "timeline-view"
+feature = "Toggles for marker comments, clip names, colour tags on clips"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#status-bar"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs wrench > Show Clip Names / Show Clip Label Colors / Show Marker Comments (draw_clip, draw_top)"
+gap = ""
+
+[[row]]
+id = "K2-066"
+group = "timeline-view"
+feature = "Mouse zoom centred on playhead switch"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#status-bar"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs interact wheel zoom: wrench > Zoom Centered on Playhead"
+gap = ""
+
+[[row]]
+id = "K2-067"
+group = "timeline-view"
+feature = "Fit Zoom to Project, zoom in/out, zoom slider"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#fit-zoom-to-project"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:46 view.zoomIn/zoomOut/zoomToSequence"
+gap = ""
+
+[[row]]
+id = "K2-068"
+group = "timeline-view"
+feature = "Zoombar: drag scrollbar edges to zoom"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#zoombars"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1458 zoom_scrollbar"
+gap = ""
+
+[[row]]
+id = "K2-069"
+group = "timeline-view"
+feature = "Wheel scrolls horizontally, Shift+wheel vertically (invertible)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#scrolling-and-panning"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1923 wheel_input; :2030 alt+wheel zoom"
+gap = "Invert option not verified"
+
+[[row]]
+id = "K2-070"
+group = "timeline-view"
+feature = "Pan with Ctrl+LMB or middle-button drag"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#scrolling-and-panning"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs interact: middle-button drag pans with any tool; Ctrl/Cmd+drag on empty space pans"
+gap = ""
+
+[[row]]
+id = "K2-071"
+group = "timeline-view"
+feature = "Fixed centred playhead during playback"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#timeline-cursor-position-caret-playhead"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:318 auto_scroll smoothScroll keeps playhead centred"
+gap = "Only during playback, not while scrubbing/seeking"
+
+[[row]]
+id = "K2-072"
+group = "timeline-view"
+feature = "Return playhead to start position on stop"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#timeline-cursor-position-caret-playhead"
+film = "full"
+evidence = "crates/ui-egui/src/lib.rs stop(): Settings > Timeline > Return the playhead to its start position when playback stops (timeline.returnToStartOnStop)"
+gap = ""
+
+[[row]]
+id = "K2-073"
+group = "timeline-view"
+feature = "Split A/V automatically when dropping an A/V clip"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#split-audio-and-video-automatically"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2183 timeline.place video/audio tracks, linked clips"
+gap = ""
+
+[[row]]
+id = "K2-074"
+group = "timeline-view"
+feature = "Disable/enable a clip's whole effect stack by clicking the effect badge on the clip"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#disable-enable-effect-stack-of-a-clip"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs clip.toggleEffectStack; crates/ui-egui/src/panels/timeline.rs fx_badge_hit (click the fx badge, dimmed when off)"
+gap = ""
+
+[[row]]
+id = "K2-075"
+group = "timeline-view"
+feature = "Disable / enable a clip (no audio, no video)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#disabling-individual-clips"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1479 clip.enable"
+gap = ""
+
+[[row]]
+id = "K2-076"
+group = "timeline-view"
+feature = "Loop Zone playback (Ctrl+Shift+Space) and Play Zone (Ctrl+Space)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#continuously-loop-playback"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:45 playback.loop, :386; playback.inToOut (Alt+K)"
+gap = "Different default keys"
+
+# ---------------------------------------------------------------- tracks
+[[row]]
+id = "K2-077"
+group = "tracks"
+feature = "Lock track"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1125 timeline.setTrack locked; crates/project/src/lib.rs:746"
+gap = ""
+
+[[row]]
+id = "K2-078"
+group = "tracks"
+feature = "Mute audio track"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1176 timeline.setTrack muted"
+gap = ""
+
+[[row]]
+id = "K2-079"
+group = "tracks"
+feature = "Hide video track"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1161 timeline.setTrack enabled (eye)"
+gap = ""
+
+[[row]]
+id = "K2-080"
+group = "tracks"
+feature = "Enable/disable track effects from the header"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "partial"
+evidence = "crates/project/src/lib.rs:759 Track.effects (audio inserts in the Track Mixer)"
+gap = "No video track effects in the model; audio track inserts live in the Track Mixer with no header bypass switch"
+
+[[row]]
+id = "K2-081"
+group = "tracks"
+feature = "Track name: click to rename"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs draw_headers: double-click the name (or track menu > Rename Track) edits it inline -> timeline.setTrack name"
+gap = "Double-click, not single click: a single click makes the track current"
+
+[[row]]
+id = "K2-082"
+group = "tracks"
+feature = "Expand/collapse a track; Shift-click for all of a type"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs draw_headers: double-click / track menu Expand or Collapse Track per track (TimelineView::track_heights); Shift+double-click all of the kind"
+gap = ""
+
+[[row]]
+id = "K2-083"
+group = "tracks"
+feature = "Resize tracks individually; Shift resizes all of a type; Shift+double-click resets height"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#resizing-tracks"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs draw_headers height edge: one track, Shift = all of the kind; double-click resets (Shift: all)"
+gap = ""
+
+[[row]]
+id = "K2-084"
+group = "tracks"
+feature = "Fit all tracks to view height"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#fit-tracks-to-view-height"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs fit_tracks (wrench / track menu > Fit Tracks to View; timeline.fitTracks)"
+gap = ""
+
+[[row]]
+id = "K2-085"
+group = "tracks"
+feature = "Track header right-click menu (insert/delete/move/fit/identify/thumbnails)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-right-click-menu"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/timeline.rs draw_headers context menu: insert, delete, move up/down, lock, select all, identify gaps, rename, expand/collapse, fit"
+gap = "No per-track thumbnail switch in the menu (thumbnails are one Timeline-wide setting)"
+
+[[row]]
+id = "K2-086"
+group = "tracks"
+feature = "Add Track dialog (type, position, count)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#adding-tracks"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:309 sequence.addTracks"
+gap = ""
+
+[[row]]
+id = "K2-087"
+group = "tracks"
+feature = "Delete Track dialog (choose tracks, warn when not empty)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#deleting-tracks"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:310 sequence.deleteTracks; crates/engine/src/commands.rs:1794 sequence.deleteTrack"
+gap = "Empty-track warning not verified"
+
+[[row]]
+id = "K2-088"
+group = "tracks"
+feature = "Move track up / down (reorder within type)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#reordering-tracks"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs timeline.moveTrackUp / moveTrackDown (track header menu)"
+gap = ""
+
+[[row]]
+id = "K2-089"
+group = "tracks"
+feature = "Show record controls on an audio track"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-right-click-menu"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1230 voiceover action; crates/project/src/mixer.rs:182 record_arm"
+gap = ""
+
+[[row]]
+id = "K2-090"
+group = "tracks"
+feature = "Toggle Track Lock (Shift+L) / All Track Lock (Ctrl+Shift+L) on the selected track"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#editing"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs timeline.toggleLockCurrent / toggleLockAll"
+gap = "Shift+L / Ctrl+Shift+L unbound by default; bindable"
+
+[[row]]
+id = "K2-091"
+group = "tracks"
+feature = "Toggle Track Hidden/Mute (Ctrl+Shift+H) and Track Disabled (Shift+H)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#timeline"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs timeline.toggleOutputCurrent (video: output, audio: mute) on the current track"
+gap = "Hidden/mute and disabled are one output switch per track in our model; keys bindable"
+
+[[row]]
+id = "K2-092"
+group = "tracks"
+feature = "Sync lock and solo per track"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#track-header"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1142 syncLock, :1190 solo"
+gap = "Film extra (not in Kdenlive)"
+
+# ---------------------------------------------------------------- grouping
+[[row]]
+id = "K2-093"
+group = "grouping"
+feature = "Group / Ungroup clips (Ctrl+G / Ctrl+Shift+G)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html#how-to-group-clips"
+film = "full"
+evidence = "crates/engine/src/commands.rs clip.group / clip.ungroup; crates/engine/src/timeline_ops.rs with_groups, add_group_partners (selection, move, razor read the group)"
+gap = ""
+
+[[row]]
+id = "K2-094"
+group = "grouping"
+feature = "Click one grouped clip selects the whole group; move as one"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html#how-to-group-clips"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs with_groups in timeline.select; add_group_partners in timeline.move"
+gap = ""
+
+[[row]]
+id = "K2-095"
+group = "grouping"
+feature = "Alt+click edits one item inside a group (red border)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html#edit-grouped-clips"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs interact: Alt-click selects only the clicked clip (link side or group member)"
+gap = "No red border; the single clip shows the normal selection outline"
+
+[[row]]
+id = "K2-096"
+group = "grouping"
+feature = "Cutting a grouped clip cuts its group partners at the same point"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html#cutting-grouped-clips"
+film = "full"
+evidence = "crates/engine/src/commands.rs timeline.razor with `clip` cuts with_groups partners (edit::razor_items)"
+gap = ""
+
+[[row]]
+id = "K2-097"
+group = "grouping"
+feature = "Apply effect parameter change to all clips in the group (optionally only equal values)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html#effects-on-grouped-clips"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs effects.setParamGroup (onlyEqual); crates/ui-egui/src/panels/effect_controls.rs Apply to Group / Only Equal Values"
+gap = "Keyframe toggling and mask parameters stay per clip"
+
+[[row]]
+id = "K2-098"
+group = "grouping"
+feature = "Shift+click / Shift+drag rubber-band multi-select"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/grouping.html#how-to-group-clips"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:2183 shift toggles; marquee select (lib.rs:1822 hint)"
+gap = "Marquee without Shift (Premiere)"
+
+# ---------------------------------------------------------------- timeline markers (guides) and clip markers
+[[row]]
+id = "K2-099"
+group = "markers"
+feature = "Add/Remove timeline marker at playhead (menu, G, ruler/timeline right-click)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#ways-to-add-timeline-markers"
+film = "full"
+evidence = "crates/engine/src/sequence_tools.rs:166 markers.add (M); crates/ui-egui/src/panels/timeline.rs:1281 toolbar marker button"
+gap = "Add only; pressing again on an existing marker does not remove it (markers.clearCurrent does)"
+
+[[row]]
+id = "K2-100"
+group = "markers"
+feature = "Numpad 1-0 add markers of category 1-10"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#ways-to-add-timeline-markers"
+film = "full"
+evidence = "markers.addCategory1 … markers.addCategory10 (crates/engine/src/marker_tools.rs:41, a marker of project category N at the playhead); Kdenlive Compatible preset binds 1-0 (crates/engine/src/shortcut_presets.rs KDENLIVE; numpad digits arrive as the same keys)"
+gap = ""
+
+[[row]]
+id = "K2-101"
+group = "markers"
+feature = "Double-click the ruler adds a timeline marker there"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#ways-to-add-timeline-markers"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs interact: double-click on the ruler -> marker_ui::ruler_double_click (crates/ui-egui/src/panels/marker_ui.rs:198) adds a marker there, or opens Edit Marker on a marker"
+gap = ""
+
+[[row]]
+id = "K2-102"
+group = "markers"
+feature = "Ruler right-click menu (add/edit/lock markers, export, go to, zone in/out, marker from zone, note, subtitle)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#timeline-ruler-right-click-menu"
+film = "full"
+evidence = "crates/ui-egui/src/panels/marker_ui.rs:239 ruler_menu: Add/Remove Timeline Marker, Edit Timeline Marker…, Timeline Markers Locked, Export Markers…, Go To Marker…, Set Zone In/Out, Adjust Timeline Zone to Selection, Create Marker from Zone (Quickly), Add Project Note, Add Subtitle (+ the marker's Clear entries)"
+gap = ""
+
+[[row]]
+id = "K2-103"
+group = "markers"
+feature = "Range marker with duration (Edit Marker: Range Marker)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#timeline-marker-with-range"
+film = "full"
+evidence = "crates/project/src/lib.rs:482 Marker.duration; crates/engine/src/sequence_tools.rs:169 markers.addRange / addRangeInOut"
+gap = ""
+
+[[row]]
+id = "K2-104"
+group = "markers"
+feature = "Create marker from zone / quickly from zone"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#timeline-ruler-right-click-menu"
+film = "full"
+evidence = "crates/engine/src/sequence_tools.rs markers.addRangeInOut"
+gap = "No dialog variant from the ruler menu"
+
+[[row]]
+id = "K2-105"
+group = "markers"
+feature = "Marker categories (project-specific, colours, names, reassign on delete)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#categories"
+film = "partial"
+evidence = "markers.categories / markers.deleteCategory (crates/engine/src/marker_tools.rs:226, :275; ProjectSettings.marker_categories crates/project/src/lib.rs); Marker Categories… dialog (crates/ui-egui/src/panels/marker_ui.rs:560): add, rename, recolour, delete with reassign or delete markers"
+gap = "A category's colour is picked from the 16 marker label colours, not any RGB colour (markers store a Label)"
+
+[[row]]
+id = "K2-106"
+group = "markers"
+feature = "Edit Marker dialog (position, comment, category, duration)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#move-and-edit-timeline-markers"
+film = "full"
+evidence = "Edit Marker dialog (crates/ui-egui/src/panels/marker_ui.rs:348: position, category, name, comment, range + duration) -> markers.edit with time/frame (crates/engine/src/commands.rs markers.edit); double-click a ruler marker, F2 or ✎ in the Markers panel, Markers ▸ Edit Timeline Marker…"
+gap = ""
+
+[[row]]
+id = "K2-107"
+group = "markers"
+feature = "Drag a timeline marker on the ruler to move it"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#move-and-edit-timeline-markers"
+film = "full"
+evidence = "crates/ui-egui/src/panels/marker_ui.rs:209 ruler_drag (press a ruler marker and drag; snapped; one markers.edit on release; locked markers do not drag)"
+gap = ""
+
+[[row]]
+id = "K2-108"
+group = "markers"
+feature = "Timeline Markers Locked option: markers stay or move with clips (spacer)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#move-timeline-markers-with-spacer-tool"
+film = "full"
+evidence = "crates/engine/src/sequence_tools.rs:21 markers.rippleSequenceMarkers"
+gap = ""
+
+[[row]]
+id = "K2-109"
+group = "markers"
+feature = "Markers view: list, click to seek"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#markers-view"
+film = "full"
+evidence = "crates/ui-egui/src/panels/misc.rs:62 markers panel; :113 click seeks"
+gap = ""
+
+[[row]]
+id = "K2-110"
+group = "markers"
+feature = "Markers view: show only chosen categories"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#markers-view"
+film = "full"
+evidence = "crates/ui-egui/src/panels/misc.rs:84 markers.filterColors"
+gap = ""
+
+[[row]]
+id = "K2-111"
+group = "markers"
+feature = "Markers view: search text, sort (category/time/comment), multi-select, F2 edit, delete"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#markers-view"
+film = "full"
+evidence = "crates/ui-egui/src/panels/marker_ui.rs:799 panel: search, sort by time/category/comment asc/desc, Ctrl/Shift multi-select, Cmd+A, Up/Down, double-click/F2 edit, delete (markers.delete crates/engine/src/marker_tools.rs:194)"
+gap = ""
+
+[[row]]
+id = "K2-112"
+group = "markers"
+feature = "Markers view: add several markers at an interval"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#markers-view"
+film = "full"
+evidence = "markers.addInterval (crates/engine/src/marker_tools.rs:160); Markers panel ▸ +… Add Markers at Interval dialog (crates/ui-egui/src/panels/marker_ui.rs:519)"
+gap = ""
+
+[[row]]
+id = "K2-113"
+group = "markers"
+feature = "Markers view: thumbnails, show markers of all clips, default category"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#markers-view"
+film = "full"
+evidence = "crates/ui-egui/src/panels/marker_ui.rs:799 panel: Thumbnails toggle (FilmcraftApp::thumbnail per marker), All Clips (bin clip markers), default category combo (markers.categories default; ProjectSettings.default_marker_category)"
+gap = ""
+
+[[row]]
+id = "K2-114"
+group = "markers"
+feature = "Export markers as chapters (YouTube text / JSON, format tokens, offset, copy to clipboard)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#export-timeline-markers-as-chapters-description"
+film = "full"
+evidence = "markers.exportChapters (crates/engine/src/marker_tools.rs:331 chapters: {{timecode}} {{comment}} {{frame}} {{index}} {{nexttimecode}} {{realtimecode}}, JSON, offset, category filter, YouTube checks); Export Markers dialog with Copy to Clipboard / Save (crates/ui-egui/src/panels/marker_ui.rs:421)"
+gap = ""
+
+[[row]]
+id = "K2-115"
+group = "markers"
+feature = "Import markers"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#markers-view"
+film = "full"
+evidence = "markers.import (crates/engine/src/marker_tools.rs:395: exported JSON or `0:00 Title` chapter text, offset); Markers ▸ Import Markers… and the Markers panel menu"
+gap = ""
+
+[[row]]
+id = "K2-116"
+group = "markers"
+feature = "Go to marker (next/previous, Go To Marker list)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#timeline-ruler-right-click-menu"
+film = "full"
+evidence = "crates/ui-egui/src/panels/marker_ui.rs:239 ruler menu ▸ Go To Marker… lists every marker; markers.goNext / goPrev"
+gap = ""
+
+[[row]]
+id = "K2-117"
+group = "markers"
+feature = "Clip markers added in the clip monitor (move with every instance of the clip)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/markers.html#ways-to-add-markers"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1998 markers.add routed to source; crates/engine/src/source_monitor.rs:142 MediaClip.markers"
+gap = ""
+
+[[row]]
+id = "K2-118"
+group = "markers"
+feature = "Clip markers shown and draggable on timeline clips; range markers resizable"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/markers.html#move-and-edit-markers"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs draw_clip (bin clip markers drawn as flags / range bars, clip_marker_spans) and interact (clip_marker_hit: drag a flag to move, drag a range end to resize) -> markers.moveClipMarker (crates/engine/src/marker_tools.rs:449)"
+gap = ""
+
+[[row]]
+id = "K2-119"
+group = "markers"
+feature = "Drag a zone marker from the markers view into the timeline"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/markers.html#markers-with-range"
+film = "full"
+evidence = "crates/ui-egui/src/panels/marker_ui.rs:799 panel (All Clips): dragging a clip's range marker starts a SourceDrag of that part of the clip, dropped on the Timeline like a Source monitor drag"
+gap = ""
+
+[[row]]
+id = "K2-120"
+group = "markers"
+feature = "Markers snap targets"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#snap"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:1586 snap candidates include markers"
+gap = ""
+
+# ---------------------------------------------------------------- snapping / selection
+[[row]]
+id = "K2-121"
+group = "snapping"
+feature = "Snap to clip edges, playhead, markers across tracks (toggle)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#snap"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:301 sequence.snap (S); crates/ui-egui/src/panels/timeline.rs:1569 snap_to"
+gap = "Key S instead of Alt+M"
+
+[[row]]
+id = "K2-122"
+group = "snapping"
+feature = "Go to next / previous snap point (Alt+Right/Left)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#navigation-and-playback"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs playhead.nextSnapPoint / prevSnapPoint (clip edges, clip and sequence markers, In/Out)"
+gap = "Alt+Left/Right are Trim Backward/Forward here; bindable"
+
+[[row]]
+id = "K2-123"
+group = "selection"
+feature = "Select clip under playhead (+), add to selection (Alt++), deselect (-)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/sequence_menu.html#selection"
+film = "full"
+evidence = "crates/engine/src/keyboard.rs timeline.selectClipAtPlayhead; crates/engine/src/timeline_ops.rs timeline.addClipAtPlayhead / deselectClipAtPlayhead"
+gap = "+ / Alt++ / - unbound by default; bindable"
+
+[[row]]
+id = "K2-124"
+group = "selection"
+feature = "Select / add / deselect transition under playhead"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/sequence_menu.html#selection"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs timeline.selectTransitionAtPlayhead / addTransitionAtPlayhead / deselectTransitionAtPlayhead"
+gap = ""
+
+[[row]]
+id = "K2-125"
+group = "selection"
+feature = "Select All (Ctrl+A), Deselect (Ctrl+Shift+A), Select All in Current Track"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/sequence_menu.html#tracks"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs timeline.selectAllInTrack (current track; track header menu)"
+gap = ""
+
+[[row]]
+id = "K2-126"
+group = "selection"
+feature = "Grab Current Item (Shift+G) then move with arrow keys"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#keyboard-navigation"
+film = "full"
+evidence = "crates/engine/src/keyboard.rs:723 timeline.nudgeLeft/Right(5), :727 nudgeUp/Down"
+gap = "Nudge keys move the selection directly; no grab state"
+
+# ---------------------------------------------------------------- clip right-click menu
+[[row]]
+id = "K2-127"
+group = "clip-menu"
+feature = "Copy / Paste clips"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1313 edit.copy, :1317 edit.paste, :1318 edit.pasteInsert"
+gap = ""
+
+[[row]]
+id = "K2-128"
+group = "clip-menu"
+feature = "Duplicate Clip (Ctrl+D) places a copy right after the clip"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "timeline.duplicateClip (crates/engine/src/kparity_ops.rs:167: copy right after the selection, inserted when the space is taken); clip menu ▸ Duplicate Clip, Clip menu; Kdenlive preset Ctrl+D"
+gap = ""
+
+[[row]]
+id = "K2-129"
+group = "clip-menu"
+feature = "Paste Effects / Remove Effects"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/clip_ops.rs:84 edit.pasteAttributes, :93 edit.removeAttributes"
+gap = ""
+
+[[row]]
+id = "K2-130"
+group = "clip-menu"
+feature = "Restore audio / video (bring back the missing A or V part)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "clip.restoreAudio / clip.restoreVideo (crates/engine/src/kparity_ops.rs:191: the missing part from the clip's media, linked, on the first track with room); clip menu ▸ Restore Audio / Restore Video"
+gap = ""
+
+[[row]]
+id = "K2-131"
+group = "clip-menu"
+feature = "Replace with Bin Selection (with confirm)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/clip_ops.rs:241 clip.replaceFromBin, :228 clip.replaceFromSource"
+gap = ""
+
+[[row]]
+id = "K2-132"
+group = "clip-menu"
+feature = "Save Clip Part to Bin (sub-clip from a timeline clip)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/clip_ops.rs:123 clip.makeSubclip (clip param)"
+gap = ""
+
+[[row]]
+id = "K2-133"
+group = "clip-menu"
+feature = "Align audio / timecode to a reference clip"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/multicam.rs:140 clip.synchronize method audio|timecode|in|out|marker, reference"
+gap = "One dialog instead of set-reference then align"
+
+[[row]]
+id = "K2-134"
+group = "clip-menu"
+feature = "Clip in Project Bin (reveal)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1621 clip.revealInProject"
+gap = ""
+
+[[row]]
+id = "K2-135"
+group = "clip-menu"
+feature = "Insert Effect / Insert Composition quick submenus"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effect_stack.rs:206 timeline_menu: clip menu ▸ Insert an Effect (favourites, Add Effect…) and Insert a Transition (compositions are transitions here)"
+gap = ""
+
+[[row]]
+id = "K2-136"
+group = "clip-menu"
+feature = "Empty space menu: Add Clip (colour/title) directly on the track"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#empty-space-in-timeline"
+film = "full"
+evidence = "timeline.addClipInGap (crates/engine/src/kparity_ops.rs:245: colour matte or title filling the gap); empty space menu ▸ Add Clip ▸ Color Clip / Title Clip (crates/ui-egui/src/panels/timeline.rs gap_menu)"
+gap = ""
+
+[[row]]
+id = "K2-137"
+group = "clip-menu"
+feature = "Clip in Timeline (list instances of a bin clip, jump to one)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html#clip-in-timeline"
+film = "full"
+evidence = "clip.instances / clip.goToInstance (crates/engine/src/clip_jobs.rs:752); Project panel item menu ▸ Clip in Timeline lists every use and jumps to it (crates/ui-egui/src/panels/clip_jobs.rs:61)"
+gap = ""
+
+[[row]]
+id = "K2-138"
+group = "clip-menu"
+feature = "Insert at Timecode (place clip at its metadata timecode)"
+manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/project_bin_use_context_menu.html"
+film = "full"
+evidence = "clip.insertAtTimecode (crates/engine/src/clip_jobs.rs:757); Project panel item menu ▸ Insert at Timecode (crates/ui-egui/src/panels/clip_jobs.rs:91)"
+gap = ""
+
+[[row]]
+id = "K2-139"
+group = "clip-menu"
+feature = "Add timeline selection to Library (reusable across projects)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/sequence_menu.html#add-timeline-selection-to-library"
+film = "full"
+evidence = "library.addSelection (crates/engine/src/library.rs:103); Libraries panel ▸ Add Timeline Selection to Library (crates/ui-egui/src/panels/library.rs:94)"
+gap = ""
+
+# ---------------------------------------------------------------- sequences / nesting
+[[row]]
+id = "K2-140"
+group = "sequences"
+feature = "Add sequence (bin, tab-bar plus button)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#add-sequence"
+film = "full"
+evidence = "file.newSequence (crates/engine/src/commands.rs:873); sequence.open :1640"
+gap = "Tab bar plus button not verified"
+
+[[row]]
+id = "K2-141"
+group = "sequences"
+feature = "Create Sequence from Selection (replace clips with nested sequence)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#create-a-nested-sequence"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1618 clip.nest"
+gap = ""
+
+[[row]]
+id = "K2-142"
+group = "sequences"
+feature = "Copy Selection to New Sequence (originals stay)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:306 sequence.makeSubsequence"
+gap = ""
+
+[[row]]
+id = "K2-143"
+group = "sequences"
+feature = "Nested sequence is a live reference (edits propagate)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html"
+film = "full"
+evidence = "crates/engine/src/nest_fidelity_tests.rs; crates/engine/src/commands.rs:1780 sequence.nestSequences toggle"
+gap = ""
+
+[[row]]
+id = "K2-144"
+group = "sequences"
+feature = "Double-click a nested sequence opens its tab at the matching position"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#open-a-sequence-for-editing"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:2411 double-click -> sequence.revealNested (crates/engine/src/keyboard.rs:715)"
+gap = ""
+
+[[row]]
+id = "K2-145"
+group = "sequences"
+feature = "Sequence tabs: reorder by drag, close"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#change-order-of-sequence-tab"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1673 sequence.moveTab, :1651 sequence.close, sequence.closeOthers"
+gap = ""
+
+[[row]]
+id = "K2-146"
+group = "sequences"
+feature = "Switch to next/previous sequence tab (Ctrl+Tab / Ctrl+Shift+Tab)"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#toggle-between-sequence-tabs"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs sequence.nextTab / prevTab (Ctrl+Tab / Ctrl+Shift+Tab)"
+gap = ""
+
+[[row]]
+id = "K2-147"
+group = "sequences"
+feature = "Sequence timecode offset (shown in monitor, ruler, markers, render)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#sequence-timecode-offset"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs draw_top timecode field and ruler; crates/ui-egui/src/panels/monitor.rs Program timecode; crates/ui-egui/src/panels/misc.rs markers list; export already uses start_timecode (crates/export/src/pipeline.rs)"
+gap = ""
+
+[[row]]
+id = "K2-148"
+group = "sequences"
+feature = "Duplicate a sequence"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#duplicate-a-sequence"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1378 edit.duplicate on project selection"
+gap = ""
+
+[[row]]
+id = "K2-149"
+group = "sequences"
+feature = "Default target folder for new sequences"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#define-default-sequences-folder"
+film = "full"
+evidence = "crates/engine/src/settings.rs timeline.sequencesBin; crates/engine/src/commands.rs file.newSequence; crates/engine/src/timeline_ops.rs root_bin_named"
+gap = ""
+
+[[row]]
+id = "K2-150"
+group = "sequences"
+feature = "Sequence clip waveform built and refreshed when switching tabs"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#update-the-sequence-clip-waveforms"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs:900 request_sequence_peaks (mixed sequence audio)"
+gap = ""
+
+[[row]]
+id = "K2-151"
+group = "sequences"
+feature = "Per-sequence settings differ from project profile"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/sequence.html#change-the-settings-for-an-individual-sequence"
+film = "full"
+evidence = "crates/project/src/lib.rs:838 SequenceSettings per sequence; crates/engine/src/project_tools.rs:279 sequence.settings"
+gap = "Film exceeds Kdenlive here"
+
+# ---------------------------------------------------------------- keyframes
+[[row]]
+id = "K2-152"
+group = "keyframes"
+feature = "Keyframe types Linear / Discrete / Smooth"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframes-types-interpolation"
+film = "full"
+evidence = "crates/project/src/keyframe.rs:109 Interpolation Linear/Hold/Bezier/AutoBezier/ContinuousBezier; crates/engine/src/commands.rs:2776 effects.setInterpolation"
+gap = ""
+
+[[row]]
+id = "K2-153"
+group = "keyframes"
+feature = "Easing keyframe types (Penner: cubic, exponential, circular, elastic, bounce, in/out/in-out)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframes-types-interpolation"
+film = "full"
+evidence = "crates/project/src/keyframe.rs:176 penner (cubic / exponential / circular / elastic / bounce × in / out / in-out, Interpolation::Penner)"
+gap = ""
+
+[[row]]
+id = "K2-154"
+group = "keyframes"
+feature = "Add / delete / move keyframes in the effect keyframe ruler"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#working-with-keyframes-in-the-effect-stack"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2755 effects.addKeyframe, :2763 deleteKeyframe, :2767 moveKeyframe"
+gap = ""
+
+[[row]]
+id = "K2-155"
+group = "keyframes"
+feature = "Previous / next keyframe navigation and assignable shortcuts"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#shortcuts-for-keyframe-functions"
+film = "full"
+evidence = "keyframes.prev / keyframes.next / keyframes.toggle (crates/ui-egui/src/menus.rs UI_COMMANDS; crates/ui-egui/src/panels/kparity.rs route: the selected keyframe's clip or the selected clip), rebindable in Keyboard Shortcuts"
+gap = ""
+
+[[row]]
+id = "K2-156"
+group = "keyframes"
+feature = "Multi-select keyframes (Ctrl/Shift) and move them together"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#working-with-keyframes-in-the-effect-stack"
+film = "full"
+evidence = "crates/ui-egui/src/state.rs:467 keyframe_selection; crates/ui-egui/src/panels/effect_controls.rs:91"
+gap = ""
+
+[[row]]
+id = "K2-157"
+group = "keyframes"
+feature = "Copy / paste keyframes (Ctrl+C/V) across effects and clips"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframe-ruler"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effect_stack.rs:343 copy_keyframes / :380 paste_keyframes (Ctrl+C / Ctrl+V in Effect Controls, across effects and clips); effects.pasteKeyframes"
+gap = ""
+
+[[row]]
+id = "K2-158"
+group = "keyframes"
+feature = "Move selected keyframe to cursor; apply current value to selected keyframes"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#working-with-keyframes-in-the-effect-stack"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs keyframe menu ▸ Move Keyframe to Playhead and Apply Current Value to Selected Keyframes (effects.applyValueToKeyframes crates/engine/src/effect_stack.rs:394)"
+gap = ""
+
+[[row]]
+id = "K2-159"
+group = "keyframes"
+feature = "Export / import keyframes via clipboard with data mapping and offset"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#exchanging-keyframes-across-effects"
+film = "full"
+evidence = "effects.exportKeyframes (crates/engine/src/effect_stack.rs:190, Copy Keyframes to Clipboard); Import Keyframes dialog with time offset, value offset and X/Y component mapping (crates/ui-egui/src/panels/effect_stack.rs:736)"
+gap = ""
+
+[[row]]
+id = "K2-160"
+group = "keyframes"
+feature = "Keyframe curve editor (value curves, Ctrl for vertical-only)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframe-curve-editor"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs:496 value/velocity graphs for animated scalar and point params"
+gap = ""
+
+[[row]]
+id = "K2-161"
+group = "keyframes"
+feature = "Keyframe ruler zoom bar"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#keyframe-ruler"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/effect_controls.rs keyframe lane with its time ruler"
+gap = "No zoom bar: the keyframe lane always spans the whole clip"
+
+[[row]]
+id = "K2-162"
+group = "keyframes"
+feature = "Automatic keyframes while playing (record monitor handle moves)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#automatic-keyframe-generation"
+film = "full"
+evidence = "crates/ui-egui/src/panels/effect_stack.rs auto_keyframe (any Effect Controls / Properties value, Motion position and scale included, changed while playing) and auto_keyframe_graphics (layers dragged on the Program monitor)"
+gap = ""
+
+[[row]]
+id = "K2-163"
+group = "keyframes"
+feature = "Timeline keyframes on clips: double-click adds, drag moves, drag out deletes"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#keyframe-handling"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline.rs interact: clip_keyframe_at on a clip's keyframe strip (Show Keyframes in Timeline) - double-click adds keyframes to its animated parameters (effects.addKeyframe), dragging a diamond moves it (effects.shiftKeyframes), dropping it off the clip deletes it (effects.deleteKeyframe); every effect, video and audio"
+gap = ""
+
+[[row]]
+id = "K2-164"
+group = "keyframes"
+feature = "Move a timeline keyframe with arrow keys, change value with +/-, Alt+arrow to next keyframe"
+manual = "https://docs.kdenlive.org/en/user_interface/timeline.html#keyboard-navigation"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/kparity.rs:130 effect_controls_keys: Left / Right move the selected keyframes one frame, Alt+Left / Alt+Right go to the previous / next keyframe"
+gap = "No +/- keys to change the selected keyframe's value; the keys act on keyframes selected in Effect Controls, not on a keyframe picked on the timeline clip"
+
+[[row]]
+id = "K2-165"
+group = "keyframes"
+feature = "Hide / show keyframes of an effect in the timeline"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-composition-stack-functions"
+film = "full"
+evidence = "Effect Controls ▸ effect menu ▸ Show Keyframes in Timeline per effect (crates/ui-egui/src/panels/effect_controls.rs; KpUi.hidden_timeline_keyframes) filters the diamonds drawn and edited on the timeline clip (crates/ui-egui/src/panels/timeline.rs draw_clip)"
+gap = ""
+
+# ---------------------------------------------------------------- speed / time remap
+[[row]]
+id = "K2-166"
+group = "speed"
+feature = "Change Speed dialog: speed %, reverse"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1432 clip.speedDuration speed/reverse/ripple/interpolation"
+gap = ""
+
+[[row]]
+id = "K2-167"
+group = "speed"
+feature = "Pitch compensation on speed-changed audio"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/timeline_ops.rs clip.pitchCompensation; clip.speedDuration `maintainPitch` (Speed/Duration dialog > Maintain Audio Pitch)"
+gap = "A Pitch Shifter effect undoes the speed's pitch: fully compensated from 50 % to 200 % (the shifter's +-12 semitones)"
+
+[[row]]
+id = "K2-168"
+group = "speed"
+feature = "Speed change on several selected clips at once"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#change-speed-of-clips"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1464 set_speed_group per contiguous group"
+gap = ""
+
+[[row]]
+id = "K2-169"
+group = "speed"
+feature = "Status bar error when there is no room to expand the slowed clips"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#change-speed-of-clips"
+film = "full"
+evidence = "crates/edit/src/lib.rs:1037 set_speed_group returns Err; UI shows app.ui.status"
+gap = ""
+
+[[row]]
+id = "K2-170"
+group = "speed"
+feature = "Time Remapping: keyframed speed ramps"
+manual = "https://docs.kdenlive.org/en/effects_and_filters.html#time-remapping"
+film = "partial"
+evidence = "crates/project/src/effect.rs:295 time_remap intrinsic param exists; crates/project/src/lib.rs:634 source_time_at ignores time remapping keyframes"
+gap = "Param is editable but the renderer does not apply it: the speed-ramp integral would change source_time_at on every video/audio path, not done in this pass"
+
+[[row]]
+id = "K2-171"
+group = "speed"
+feature = "Frame hold / freeze frame"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/right_click_menu.html#clip-in-timeline"
+film = "full"
+evidence = "crates/engine/src/clip_ops.rs:301 clip.frameHold, clip.insertFrameHoldSegment"
+gap = "Film extra"
+
+[[row]]
+id = "K2-172"
+group = "speed"
+feature = "Duplicate Clip with Speed Change (bin job, pitch, Speed Change folder)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html#duplicate-clip-with-speed-change"
+film = "none"
+evidence = "speed lives on timeline clips only"
+gap = "No bin-level speed-changed duplicate (speed lives on timeline clips only); not ported in this pass"
+
+# ---------------------------------------------------------------- subtitles
+[[row]]
+id = "K2-173"
+group = "subtitles"
+feature = "Subtitle track in the timeline (show/hide)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline_captions.rs; crates/engine/src/captions.rs:225 captions.newTrack"
+gap = ""
+
+[[row]]
+id = "K2-174"
+group = "subtitles"
+feature = "Add subtitle at playhead (Shift+S, ruler menu, double-click in track)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#add-subtitles"
+film = "full"
+evidence = "captions.add (crates/engine/src/captions.rs:358); double-click an empty caption lane adds one there (crates/ui-egui/src/panels/timeline_captions.rs interact); ruler menu ▸ Add Subtitle; Kdenlive preset Shift+S"
+gap = ""
+
+[[row]]
+id = "K2-175"
+group = "subtitles"
+feature = "Move and resize subtitles by dragging; set in/out with ( )"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#resize"
+film = "full"
+evidence = "crates/ui-egui/src/panels/timeline_captions.rs:3 drag body moves, edges trim; crates/engine/src/captions.rs captions.setTimes"
+gap = ""
+
+[[row]]
+id = "K2-176"
+group = "subtitles"
+feature = "Razor splits a two-line subtitle after the first line"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#split-subtitle-after-first-line"
+film = "full"
+evidence = "captions.splitMode (crates/engine/src/kparity_ops.rs) + captions.split (crates/engine/src/captions.rs: with Split After First Line the first part keeps line 1, the second the rest); Text panel ¶ toggle"
+gap = ""
+
+[[row]]
+id = "K2-177"
+group = "subtitles"
+feature = "Subtitle window: edit text, < > navigation, add, cut, apply"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#subtitle-window"
+film = "full"
+evidence = "crates/ui-egui/src/panels/text.rs Captions tab; crates/engine/src/captions.rs:487 captions.next/previous"
+gap = ""
+
+[[row]]
+id = "K2-178"
+group = "subtitles"
+feature = "Merge subtitles"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#subtitle-window"
+film = "full"
+evidence = "crates/engine/src/captions.rs:401 captions.merge"
+gap = ""
+
+[[row]]
+id = "K2-179"
+group = "subtitles"
+feature = "Character count, edit-window zoom"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#character-count-and-zoom"
+film = "full"
+evidence = "crates/ui-egui/src/panels/text.rs captions list: character count and longest line under each caption, A− / A+ edit-window zoom (KpUi.caption_font)"
+gap = ""
+
+[[row]]
+id = "K2-180"
+group = "subtitles"
+feature = "Spell check in the subtitle editor"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#spell-check"
+film = "none"
+evidence = "no spell check"
+gap = "Needs a spelling dictionary (hunspell or similar), which the app neither bundles nor reads from the system"
+
+[[row]]
+id = "K2-181"
+group = "subtitles"
+feature = "Subtitle styles: create/edit/duplicate, global or per file, style editor with live preview"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#style-subtitles"
+film = "partial"
+evidence = "crates/engine/src/captions.rs:295 captions.setStyle; Text panel align/position/box"
+gap = "Style per caption track; no named style library to share across tracks or files"
+
+[[row]]
+id = "K2-182"
+group = "subtitles"
+feature = "ASS override tags with highlighter, auto-complete, tag buttons; simple editor"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#override-style-with-tags"
+film = "none"
+evidence = "no ASS override support in crates/captions/src"
+gap = "Captions render plain text with the track style; ASS import drops override blocks, so tags, highlighter and tag buttons have nothing to drive"
+
+[[row]]
+id = "K2-183"
+group = "subtitles"
+feature = "Multi-layer subtitles (layer per event, Shift-drag creates layer, default style per layer)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#multi-layer-subtitling"
+film = "partial"
+evidence = "crates/engine/src/captions.rs:225 several caption tracks (C1, C2…)"
+gap = "Tracks, not stacked layers; no Shift-drag layer creation"
+
+[[row]]
+id = "K2-184"
+group = "subtitles"
+feature = "Subtitle manager: several subtitle files per project, one active for render"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#subtitle-manager"
+film = "partial"
+evidence = "crates/engine/src/captions.rs captions.setTrack / showActiveOnly; captions.export picks a track"
+gap = "No manager dialog: caption tracks stand in for subtitle files and the burn-in / export track is picked per export"
+
+[[row]]
+id = "K2-185"
+group = "subtitles"
+feature = "Import SRT / ASS / VTT / SBV (encoding override, new track option)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#import-and-export-subtitles"
+film = "partial"
+evidence = "crates/captions/src/ass.rs, crates/captions/src/sbv.rs (Format::Ass / Format::Sbv in crates/captions/src/lib.rs detect/parse); captions.import encoding override (crates/captions/src/lib.rs reencode) and the Import Subtitle File dialog (crates/ui-egui/src/panels/kparity.rs caption_import)"
+gap = "Always imports into a new caption track; no option to add to the current one"
+
+[[row]]
+id = "K2-186"
+group = "subtitles"
+feature = "Export ASS / SRT"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#import-and-export-subtitles"
+film = "full"
+evidence = "captions.export to .ass (crates/captions/src/ass.rs write) and .sbv; Export captions… picker lists ASS / SBV"
+gap = ""
+
+[[row]]
+id = "K2-187"
+group = "subtitles"
+feature = "Scrolling subtitles (direction, speed, bounds)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#scrolling"
+film = "none"
+evidence = "none"
+gap = "The caption renderer has no scrolling animation (direction, speed, bounds)"
+
+[[row]]
+id = "K2-188"
+group = "subtitles"
+feature = "MKV embedded subtitle streams listed in clip properties"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/subtitles.html#mkv-subtitles"
+film = "partial"
+evidence = "crates/matroska/src/codec.rs:48 S_TEXT/UTF8, WEBVTT, ASS codecs recognised"
+gap = "Embedded subtitle streams are not listed in clip properties or imported as captions (needs subtitle-track demuxing)"
+
+# ---------------------------------------------------------------- speech to text
+[[row]]
+id = "K2-189"
+group = "speech"
+feature = "Automatic subtitling from timeline zone or selected clips"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/speech_to_text.html#creating-subtitles-using-whisper-speech-recognition"
+film = "full"
+evidence = "crates/engine/src/project_tools.rs:307 sequence.transcribe; crates/engine/src/transcript.rs:484 transcript.createCaptions"
+gap = "Whole sequence or items; zone-limited run not verified"
+
+[[row]]
+id = "K2-190"
+group = "speech"
+feature = "Whisper model choice and language autodetect"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/speech_to_text.html#creating-subtitles-using-whisper-speech-recognition"
+film = "full"
+evidence = "crates/engine/src/transcript.rs:442 transcript.generate model/language=auto; crates/speech/src/models.rs:61"
+gap = "Needs the `whisper` engine feature at build time (transcript.rs:9)"
+
+[[row]]
+id = "K2-191"
+group = "speech"
+feature = "Maximum characters per line for generated subtitles"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/speech_to_text.html#creating-subtitles-using-whisper-speech-recognition"
+film = "full"
+evidence = "crates/engine/src/transcript.rs:382 maxChars"
+gap = ""
+
+[[row]]
+id = "K2-192"
+group = "speech"
+feature = "Translate to English (Whisper) / SeamlessM4T translation"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/speech_to_text.html#creating-subtitles-using-whisper-speech-recognition"
+film = "partial"
+evidence = "transcript.generate / sequence.transcribe `translate` (Whisper translate task: crates/speech/src/whisper/mod.rs prompt, crates/speech/src/lib.rs Options.translate); Transcribe Sequence ▸ Translate to English"
+gap = "Only Whisper's translation into English; no SeamlessM4T or other target languages"
+
+[[row]]
+id = "K2-193"
+group = "speech"
+feature = "VOSK engine as an alternative"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/speech_to_text.html#creating-subtitles-using-vosk-speech-recognition"
+film = "none"
+evidence = "crates/speech/src/whisper only"
+gap = "Single engine (Whisper); a VOSK engine would need its models and runtime, which are not bundled"
+
+[[row]]
+id = "K2-194"
+group = "speech"
+feature = "Speech editor: transcribe a bin clip (optionally In/Out zone only)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/speech_to_text.html#creating-clips-using-speech-recognition"
+film = "full"
+evidence = "crates/engine/src/transcript.rs:439 transcript.generate items; Text panel Transcript tab"
+gap = "Zone-only option not found"
+
+[[row]]
+id = "K2-195"
+group = "speech"
+feature = "Speech editor: select text and insert into timeline / create new sequence from it"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/speech_to_text.html#creating-clips-using-speech-recognition"
+film = "full"
+evidence = "transcript.insertSelection / transcript.selectionToSequence (crates/engine/src/kparity_ops.rs: the media under the selected words, inserted at the playhead or in a new sequence); Text panel ▸ Transcript toolbar"
+gap = ""
+
+[[row]]
+id = "K2-196"
+group = "speech"
+feature = "Speech editor: search, font size, add marker at text, delete selection"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/speech_to_text.html#creating-clips-using-speech-recognition"
+film = "full"
+evidence = "transcript.addMarker (crates/engine/src/kparity_ops.rs, a marker named after the selected words); Text panel ▸ Transcript A− / A+ text size (KpUi.transcript_font); search and delete as before"
+gap = ""
+
+[[row]]
+id = "K2-197"
+group = "speech"
+feature = "Remove non-speech zones / silence detection"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/speech_to_text.html#silence-detection"
+film = "full"
+evidence = "crates/engine/src/transcript.rs:474 transcript.removePauses; crates/speech/src/vad.rs"
+gap = ""
+
+[[row]]
+id = "K2-198"
+group = "speech"
+feature = "Save edited text as a playlist clip in the bin"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/speech_to_text.html#creating-clips-using-speech-recognition"
+film = "full"
+evidence = "transcript.selectionToSequence (crates/engine/src/kparity_ops.rs): the edited text as a new sequence clip in the Project panel"
+gap = ""
+
+# ---------------------------------------------------------------- clip jobs
+[[row]]
+id = "K2-199"
+group = "clip-jobs"
+feature = "Automatic Scene Split: threshold, markers, cut into sub-clips"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html#automatic-scene-split"
+film = "full"
+evidence = "crates/engine/src/scene_detect.rs:30 clip.sceneEditDetection; crates/ui-egui/src/panels/menu_dialogs.rs:330 applyCuts/createSubclips/generateMarkers/sensitivity"
+gap = ""
+
+[[row]]
+id = "K2-200"
+group = "clip-jobs"
+feature = "Stabilize (accuracy, shakiness, smoothing, max shift/angle, crop, zoom, optimal zoom, sharpen, tripod)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html#stabilize"
+film = "partial"
+evidence = "clip.stabilizeJob renders the clip through Warp Stabilizer into a new bin clip (crates/engine/src/clip_jobs.rs:721); Project panel ▸ Clip Jobs ▸ Stabilize"
+gap = "Parameters are Warp Stabilizer's (smoothness, method, framing); no tripod, max shift / angle, accuracy, shakiness or optimal-zoom settings"
+
+[[row]]
+id = "K2-201"
+group = "clip-jobs"
+feature = "Reverse a clip"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html#duplicate-clip-with-speed-change"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1432 clip.speedDuration reverse"
+gap = "Timeline clip only"
+
+[[row]]
+id = "K2-202"
+group = "clip-jobs"
+feature = "Custom clip jobs (external executable with {source} {param} {output})"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html#configure-clip-jobs"
+film = "full"
+evidence = "clipJobs.save / list / delete / run (crates/engine/src/clip_jobs.rs:741: external program with {input} / {output} arguments, result added to the bin); Clip Jobs ▸ Configure… (crates/ui-egui/src/panels/clip_jobs.rs)"
+gap = ""
+
+[[row]]
+id = "K2-203"
+group = "clip-jobs"
+feature = "Job progress shown on the clip, cancel a running job"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/media_menu.html#media-jobs"
+film = "full"
+evidence = "jobs.cancel; crates/ui-egui/src/dock.rs PanelKind::Progress"
+gap = "Progress in a panel, not as a clip-monitor overlay"
+
+# ---------------------------------------------------------------- undo history
+[[row]]
+id = "K2-204"
+group = "undo"
+feature = "Undo / Redo (Ctrl+Z / Ctrl+Shift+Z)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#general"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1301 edit.undo, :1302 edit.redo"
+gap = ""
+
+[[row]]
+id = "K2-205"
+group = "undo"
+feature = "Undo History view: list of steps, click to jump"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/view_menu.html#undo-history"
+film = "full"
+evidence = "crates/ui-egui/src/panels/misc.rs:9 History panel; crates/engine/src/commands.rs:2926 history.list"
+gap = ""
+
+# ---------------------------------------------------------------- keyboard shortcuts and navigation
+[[row]]
+id = "K2-206"
+group = "shortcuts"
+feature = "Configure keyboard shortcuts dialog (search, assign, conflicts)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/shortcuts_dialog.rs:1; crates/engine/src/shortcuts.rs:1113 shortcuts.set"
+gap = ""
+
+[[row]]
+id = "K2-207"
+group = "shortcuts"
+feature = "Download / import keyboard schemes"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html"
+film = "partial"
+evidence = "Kdenlive Compatible built-in preset (crates/engine/src/shortcut_presets.rs KDENLIVE, crates/engine/src/shortcuts.rs KDENLIVE_PRESET); shortcuts import / export"
+gap = "Kdenlive's own keyboard scheme files cannot be imported and there is no KDE Store download"
+
+[[row]]
+id = "K2-208"
+group = "shortcuts"
+feature = "Command search bar / Find Action (Ctrl+Alt+I)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#command-search-bar"
+film = "full"
+evidence = "window.commandBar Find Action… (crates/ui-egui/src/panels/kparity.rs command_bar: every menu and frontend command, search, Enter / click runs; Help menu, Cmd+Shift+P, Kdenlive preset Ctrl+Alt+I)"
+gap = ""
+
+[[row]]
+id = "K2-209"
+group = "shortcuts"
+feature = "Raise a docked widget with an assignable shortcut"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#raise-widgets-with-shortcuts"
+film = "full"
+evidence = "crates/ui-egui/src/panels/keyboard.rs window.* panel commands; Window menu panel items"
+gap = ""
+
+[[row]]
+id = "K2-210"
+group = "shortcuts"
+feature = "Seek 1 frame (arrows) and 1 second (Shift+arrows)"
+manual = "https://docs.kdenlive.org/en/cutting_and_assembling/editing.html#seeking-through-your-project"
+film = "full"
+evidence = "playhead.stepForwardSecond / stepBackSecond (crates/engine/src/kparity_ops.rs); the Kdenlive Compatible preset binds them to Shift+Right / Shift+Left"
+gap = ""
+
+[[row]]
+id = "K2-211"
+group = "shortcuts"
+feature = "J/K/L shuttle with speed cycling 1x..10x"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#navigation-and-playback"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:38 playback.forward (L), :40 playback.reverse (J), playback.stop"
+gap = ""
+
+[[row]]
+id = "K2-212"
+group = "shortcuts"
+feature = "Go to clip start/end (Home/End), project start/end (Ctrl+Home/End)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#navigation-and-playback"
+film = "full"
+evidence = "crates/engine/src/keyboard.rs:713 playhead.selectedClipStart/End (Shift+Home/End); commands.rs:2131 playhead.start (Home), :2135 playhead.end"
+gap = "Keys swapped versus Kdenlive"
+
+[[row]]
+id = "K2-213"
+group = "shortcuts"
+feature = "Go to zone start/end (Shift+I / Shift+O)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#navigation-and-playback"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1934 markers.goToIn (Shift+I), markers.goToOut (Shift+O)"
+gap = ""
+
+[[row]]
+id = "K2-214"
+group = "shortcuts"
+feature = "Go to next / previous timeline marker (Ctrl+Right/Left)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#navigation-and-playback"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2016 markers.goNext (Shift+M), :2027 markers.goPrev (Cmd+Shift+M)"
+gap = "Different keys"
+
+[[row]]
+id = "K2-215"
+group = "shortcuts"
+feature = "Align playhead to mouse position (P)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#navigation-and-playback"
+film = "full"
+evidence = "playhead.alignToMouse (crates/ui-egui/src/panels/marker_ui.rs route; MarkerUi.hover_time from the Timeline); Kdenlive preset P"
+gap = ""
+
+[[row]]
+id = "K2-216"
+group = "shortcuts"
+feature = "Switch monitor between clip and project (T); focus timecode (=)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#editing"
+film = "full"
+evidence = "window.toggleMonitorFocus (T) and window.focusTimecode (=, crates/ui-egui/src/panels/kparity.rs route: Program monitor timecode enters editing) in the Kdenlive Compatible preset"
+gap = ""
+
+[[row]]
+id = "K2-217"
+group = "shortcuts"
+feature = "Set zone In / Out (I / O)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html#editing"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1900 markers.markIn, :1901 markers.markOut"
+gap = ""

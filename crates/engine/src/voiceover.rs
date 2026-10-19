@@ -144,12 +144,67 @@ pub struct VoiceOverPrefs {
     pub preroll_seconds: f64,
     /// Playback continues this long after the punch-out (Out) point (seconds).
     pub postroll_seconds: f64,
+    /// Input level (dB) applied to what is recorded and to the input meter: the record-armed
+    /// track's fader sets it in monitoring mode (Kdenlive).
+    pub input_gain_db: f64,
+    /// Count the pre-roll down in the Program monitor before recording starts.
+    pub show_countdown: bool,
+    /// Capture volume: gain applied to the recording (dB, -40…+20).
+    pub volume_db: f64,
+    /// Sample format of the recorded file: `f32` (32-bit float), `s24` or `s16` (integer PCM).
+    pub sample_format: String,
 }
 
 impl Default for VoiceOverPrefs {
     fn default() -> Self {
-        Self { source: String::new(), input_channel: 0, name: "Voice-over".into(), countdown_sound_cues: true, preroll_seconds: 2.0, postroll_seconds: 2.0 }
+        Self {
+            source: String::new(),
+            input_channel: 0,
+            name: "Voice-over".into(),
+            countdown_sound_cues: true,
+            preroll_seconds: 2.0,
+            postroll_seconds: 2.0,
+            input_gain_db: 0.0,
+            show_countdown: true,
+            volume_db: 0.0,
+            sample_format: "f32".into(),
+        }
     }
+}
+
+/// Range of [`VoiceOverPrefs::input_gain_db`].
+pub const INPUT_GAIN_RANGE: (f64, f64) = (-60.0, 24.0);
+
+fn input_gain(vo: &VoiceOverPrefs) -> f32 {
+    10f64.powf(vo.input_gain_db.clamp(INPUT_GAIN_RANGE.0, INPUT_GAIN_RANGE.1) / 20.0) as f32
+}
+
+/// Sample formats of recordings (key, label).
+pub const SAMPLE_FORMATS: [(&str, &str); 3] = [("f32", "32-bit float"), ("s24", "24-bit"), ("s16", "16-bit")];
+
+/// Mono integer PCM WAV (`bits` 16 or 24).
+pub fn write_wav_pcm(samples: &[f32], rate: u32, bits: u16) -> Vec<u8> {
+    let bytes = usize::from(bits / 8);
+    let data_len = samples.len() * bytes;
+    let mut v = Vec::with_capacity(44 + data_len);
+    v.extend_from_slice(b"RIFF");
+    v.extend_from_slice(&((36 + data_len) as u32).to_le_bytes());
+    v.extend_from_slice(b"WAVEfmt ");
+    v.extend_from_slice(&16u32.to_le_bytes());
+    v.extend_from_slice(&1u16.to_le_bytes());
+    v.extend_from_slice(&1u16.to_le_bytes());
+    v.extend_from_slice(&rate.to_le_bytes());
+    v.extend_from_slice(&(rate * bytes as u32).to_le_bytes());
+    v.extend_from_slice(&(bytes as u16).to_le_bytes());
+    v.extend_from_slice(&bits.to_le_bytes());
+    v.extend_from_slice(b"data");
+    v.extend_from_slice(&(data_len as u32).to_le_bytes());
+    let max = ((1i64 << (bits - 1)) - 1) as f64;
+    for s in samples {
+        let q = (f64::from(s.clamp(-1.0, 1.0)) * max).round() as i32;
+        v.extend_from_slice(&q.to_le_bytes()[..bytes]);
+    }
+    v
 }
 
 // ------------------------------------------------------------------------------------- state
@@ -180,11 +235,33 @@ pub struct VoiceOver {
     captured: Vec<f32>,
     /// A stopped take awaiting a successful save; retries keep its original end point.
     pending_stop: Option<Tick>,
+    /// Monitoring mode: a track is record-armed, the input runs and is metered without recording.
+    monitor: bool,
+    /// The input device is running (started for a take or for monitoring).
+    input_running: bool,
+    /// The take is paused at this timeline time (Space while recording); resuming continues it.
+    paused: Option<Tick>,
+    /// Playback is resuming a paused take: the next `sync` continues the capture instead of
+    /// restarting it.
+    resuming: bool,
 }
 
 impl VoiceOver {
     pub fn recording(&self) -> bool {
         self.rec.is_some()
+    }
+    /// Monitoring mode is on (a record-armed track meters the input).
+    pub fn monitoring(&self) -> bool {
+        self.monitor
+    }
+    /// The take is paused (at this timeline time).
+    pub fn paused(&self) -> Option<Tick> {
+        self.paused
+    }
+    /// The samples captured so far for the take in progress (mono, from its capture start, at the
+    /// recording's sample rate, before the input level): the timeline draws them live.
+    pub fn captured(&self) -> &[f32] {
+        &self.captured
     }
     fn input(&mut self) -> &mut Box<dyn AudioInput> {
         self.input.get_or_insert_with(|| Box::new(SyntheticInput::clicks()))
@@ -321,6 +398,22 @@ fn settings(s: &mut Session, p: &Value) -> Result<Value> {
     if let Some(v) = f64_p(p, "postrollSeconds") {
         vo.postroll_seconds = v.clamp(0.0, 60.0);
     }
+    if let Some(v) = f64_p(p, "inputGainDb") {
+        vo.input_gain_db = v.clamp(INPUT_GAIN_RANGE.0, INPUT_GAIN_RANGE.1);
+    }
+    if let Some(v) = bool_p(p, "showCountdown") {
+        vo.show_countdown = v;
+    }
+    if let Some(v) = f64_p(p, "volumeDb") {
+        vo.volume_db = v.clamp(-40.0, 20.0);
+    }
+    if let Some(v) = str_p(p, "sampleFormat") {
+        let k = SAMPLE_FORMATS
+            .iter()
+            .find(|(k, _)| k.eq_ignore_ascii_case(v))
+            .ok_or_else(|| bad("audio.voiceover.settings", format!("unknown sample format `{v}` (f32, s24, s16)")))?;
+        vo.sample_format = k.0.to_string();
+    }
     if vo != s.prefs.voice_over {
         let mut prefs = s.prefs.clone();
         prefs.voice_over = vo;
@@ -352,6 +445,9 @@ fn start(s: &mut Session, p: &Value) -> Result<Value> {
     let channel = vo.input_channel.min(format.channels.saturating_sub(1) as u32);
     s.voiceover.captured.clear();
     s.voiceover.pending_stop = None;
+    s.voiceover.paused = None;
+    s.voiceover.resuming = false;
+    s.voiceover.input_running = true;
     s.voiceover.rec = Some(Recording { seq: seq_id, track, record_start, capture_start, punch_out, format, channel });
     let cues: Vec<i64> = if vo.countdown_sound_cues { cue_times(capture_start, record_start).into_iter().map(|t| t.0).collect() } else { Vec::new() };
     let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
@@ -377,6 +473,11 @@ fn sync(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let t = time_p(s, p, "").unwrap_or(s.playhead());
     s.voiceover.input().discard();
+    if std::mem::take(&mut s.voiceover.resuming) {
+        // a paused take continues: what was captured before the pause is kept
+        let start = s.voiceover.rec.as_ref().map_or(0, |r| r.capture_start.0);
+        return Ok(json!({"captureStart": start, "resumed": true}));
+    }
     s.voiceover.captured.clear();
     s.voiceover.pending_stop = None;
     let Some(rec) = s.voiceover.rec.as_mut() else { return Err(bad("audio.voiceover.sync", "no voice-over is recording")) };
@@ -423,13 +524,18 @@ pub(crate) fn unique_wav_path(s: &Session, dir: &str, base: &str) -> Result<Stri
 fn stop(s: &mut Session, p: &Value) -> Result<Value> {
     let rec = s.voiceover.rec.clone().ok_or_else(|| bad("audio.voiceover.stop", "no voice-over is recording"))?;
     if bool_p(p, "discard").unwrap_or(false) {
+        s.voiceover.input_running = false;
+        s.voiceover.paused = None;
+        s.voiceover.resuming = false;
         s.voiceover.input().stop();
         s.voiceover.rec = None;
         s.voiceover.pending_stop = None;
         s.voiceover.captured.clear();
         return Ok(json!({"recording": false, "placed": false}));
     }
-    let t_stop = s.voiceover.pending_stop.unwrap_or_else(|| time_p(s, p, "").unwrap_or(s.playhead()));
+    let t_stop = s.voiceover.pending_stop.or(s.voiceover.paused).unwrap_or_else(|| time_p(s, p, "").unwrap_or(s.playhead()));
+    s.voiceover.paused = None;
+    s.voiceover.resuming = false;
     let sr = rec.format.sample_rate.max(1) as i64;
     let c0 = rec.capture_start.to_units_floor(sr);
     let r0 = rec.record_start.to_units_floor(sr);
@@ -442,6 +548,7 @@ fn stop(s: &mut Session, p: &Value) -> Result<Value> {
     let have = s.voiceover.captured.len();
     s.voiceover.captured.try_reserve(want.saturating_sub(have)).map_err(|e| bad("audio.voiceover.stop", format!("unable to allocate the recording: {e}")))?;
     s.voiceover.pending_stop = Some(t_stop);
+    s.voiceover.input_running = false;
     let input = s.voiceover.input();
     input.stop();
     let got = input.read(want.saturating_sub(have));
@@ -475,11 +582,20 @@ fn stop(s: &mut Session, p: &Value) -> Result<Value> {
         std::fs::create_dir_all(&dir).map_err(|e| EngineError::Other(format!("{dir}: {e}")))?;
     }
     let samples = s.voiceover.captured.get(skip..).ok_or_else(|| bad("audio.voiceover.stop", "invalid recording trim range"))?;
-    let bytes = write_wav_f32(samples, sr as u32);
+    // the input level set in monitoring mode and the capture volume, then the sample format
+    let gain = input_gain(&s.prefs.voice_over) * 10f64.powf(s.prefs.voice_over.volume_db / 20.0) as f32;
+    let leveled: Vec<f32> = if (gain - 1.0).abs() > 1e-6 { samples.iter().map(|x| (x * gain).clamp(-1.0, 1.0)).collect() } else { samples.to_vec() };
+    let bytes = match s.prefs.voice_over.sample_format.as_str() {
+        "s16" => write_wav_pcm(&leveled, sr as u32, 16),
+        "s24" => write_wav_pcm(&leveled, sr as u32, 24),
+        _ => write_wav_f32(&leveled, sr as u32),
+    };
     s.services.write_file(&path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     // import + place as one undo step
     let n0 = s.history.undo.len();
-    let item = crate::commands::import_bytes(s, &path, bytes.into(), None)?;
+    // into the project's default folder for audio captures, when one is set
+    let folder = s.project.default_bin(s.project.settings.capture_bin);
+    let item = crate::commands::import_bytes(s, &path, bytes.into(), folder)?;
     let dur = Tick::from_units(sample_count as i64, sr);
     let at = rec.record_start;
     let track = rec.track;
@@ -523,6 +639,83 @@ fn stop(s: &mut Session, p: &Value) -> Result<Value> {
     }))
 }
 
+/// Peak (linear, after the input level) of each channel of a block read from the input.
+fn peaks(block: &[Vec<f32>], gain: f32) -> Vec<f32> {
+    block.iter().map(|c| c.iter().fold(0.0f32, |m, x| m.max(x.abs())) * gain).collect()
+}
+
+/// `audio.voiceover.poll`: read what the input has captured. While recording (not paused) the
+/// take's channel is appended up to `time`, so the timeline can draw it live; in monitoring mode
+/// `frames` frames are read and dropped. Returns the input peaks of the block read (Track Mixer
+/// input meters).
+fn poll(s: &mut Session, p: &Value) -> Result<Value> {
+    let gain = input_gain(&s.prefs.voice_over);
+    if let Some(rec) = s.voiceover.rec.clone() {
+        if s.voiceover.paused.is_some() || s.voiceover.pending_stop.is_some() {
+            return Ok(json!({"peaks": [], "captured": s.voiceover.captured.len()}));
+        }
+        let t = time_p(s, p, "").unwrap_or(s.playhead());
+        let sr = rec.format.sample_rate.max(1) as i64;
+        let want = (t.to_units_floor(sr) - rec.capture_start.to_units_floor(sr)).clamp(0, 268_435_456 / i64::from(rec.format.channels.max(1))) as usize;
+        let have = s.voiceover.captured.len();
+        if want <= have {
+            return Ok(json!({"peaks": [], "captured": have}));
+        }
+        let got = s.voiceover.input().read(want - have);
+        if let Some(c) = got.get(rec.channel as usize).or(got.first()) {
+            s.voiceover.captured.extend_from_slice(c);
+        }
+        return Ok(json!({"peaks": peaks(&got, gain), "captured": s.voiceover.captured.len()}));
+    }
+    if !s.voiceover.monitor {
+        return Ok(json!({"peaks": []}));
+    }
+    if !s.voiceover.input_running {
+        let vo = s.prefs.voice_over.clone();
+        let device = if vo.source.is_empty() { s.prefs.audio_hardware.default_input.clone() } else { vo.source };
+        let sr = s.active_sequence().map_or(48_000, |q| q.settings.sample_rate.max(1));
+        s.voiceover.input().start(&device, sr).map_err(|e| EngineError::Other(format!("voice-over input: {e}")))?;
+        s.voiceover.input_running = true;
+    }
+    let frames = u64_p(p, "frames").unwrap_or(4800).min(480_000) as usize;
+    let got = s.voiceover.input().read(frames);
+    Ok(json!({"peaks": peaks(&got, gain)}))
+}
+
+/// `audio.voiceover.monitor {on}`: monitoring mode on or off (the UI turns it on while a track is
+/// record-armed). Turning it off stops the input unless a take is recording.
+fn monitor(s: &mut Session, p: &Value) -> Result<Value> {
+    let on = bool_p(p, "on").unwrap_or(true);
+    s.voiceover.monitor = on;
+    if !on && s.voiceover.rec.is_none() && s.voiceover.input_running {
+        s.voiceover.input().stop();
+        s.voiceover.input_running = false;
+    }
+    Ok(json!({"monitoring": on}))
+}
+
+/// `audio.voiceover.pause {time?}`: pause the take at `time` (what was captured is kept and the
+/// timeline stops), or resume it: the next capture continues the same take from the pause point.
+fn pause(s: &mut Session, p: &Value) -> Result<Value> {
+    if s.voiceover.rec.is_none() {
+        return Err(bad("audio.voiceover.pause", "no voice-over is recording"));
+    }
+    match s.voiceover.paused {
+        None => {
+            let t = time_p(s, p, "").unwrap_or(s.playhead());
+            poll(s, &json!({"time": t.0}))?;
+            s.voiceover.paused = Some(t);
+            Ok(json!({"paused": true, "at": t.0}))
+        }
+        Some(at) => {
+            s.voiceover.paused = None;
+            s.voiceover.resuming = true;
+            s.voiceover.input().discard();
+            Ok(json!({"paused": false, "resumeAt": at.0}))
+        }
+    }
+}
+
 fn spec(
     id: &'static str,
     label: &'static str,
@@ -539,7 +732,7 @@ pub fn commands() -> Vec<CommandSpec> {
         spec(
             "audio.voiceover.settings",
             "Voice-Over Record Settings",
-            r#"{"source":str?,"inputChannel":n?,"name":str?,"countdownSoundCues":bool?,"prerollSeconds":f64?,"postrollSeconds":f64?}"#,
+            r#"{"source":str?,"inputChannel":n?,"name":str?,"countdownSoundCues":bool?,"prerollSeconds":f64?,"postrollSeconds":f64?,"inputGainDb":f64?,"showCountdown":bool?,"volumeDb":f64?,"sampleFormat":"f32|s24|s16"?}"#,
             crate::commands::always,
             settings,
             true,
@@ -547,5 +740,8 @@ pub fn commands() -> Vec<CommandSpec> {
         spec("audio.voiceover.start", "Start Voice-over Recording", r#"{"track":"A1"|id?,"time":ticks?,"preroll":seconds?}"#, can_start, start, true),
         spec("audio.voiceover.sync", "Sync Voice-over Capture", r#"{"time":ticks?}"#, is_recording, sync, true),
         spec("audio.voiceover.stop", "Stop Voice-over Recording", r#"{"time":ticks?,"dir":str?,"discard":bool?}"#, is_recording, stop, true),
+        spec("audio.voiceover.pause", "Pause / Resume Voice-over Recording", r#"{"time":ticks?}"#, is_recording, pause, true),
+        spec("audio.voiceover.poll", "Read Voice-over Input", r#"{"time":ticks?,"frames":n?}"#, crate::commands::always, poll, false),
+        spec("audio.voiceover.monitor", "Voice-over Monitoring", r#"{"on":bool?}"#, crate::commands::always, monitor, false),
     ]
 }

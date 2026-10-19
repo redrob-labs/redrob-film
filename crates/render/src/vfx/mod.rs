@@ -11,11 +11,15 @@
 //! (frames for analysis, sequence geometry) — read it through [`FxEnv`]; without an environment
 //! (isolated tests, adjustment layers) they leave the image unchanged.
 
+mod audioviz;
 mod blur;
 mod color;
 pub(crate) use color::cdl;
 mod distort;
 mod immersive;
+mod kfx;
+pub(crate) use kfx::alpha::mask_selection;
+pub(crate) use kfx::{is_magnifier, magnify};
 mod lights;
 mod stylize;
 mod temporal;
@@ -60,6 +64,17 @@ pub trait FxEnv: Sync {
     fn source_size(&self) -> (u32, u32);
     /// Identity of the clip and its source range (cache key for analyses).
     fn clip_key(&self) -> u64;
+    /// The sequence Mix (stereo, sequence rate) for `seconds` from `dt` seconds after now, for the
+    /// audio visualisations. `None` where there is no sequence to listen to.
+    fn sequence_audio(&self, _dt: f64, _seconds: f64) -> Option<redrob_film_frame::AudioBuffer> {
+        None
+    }
+    /// Wall-clock time of the frame shown now, in milliseconds since 1970 (UTC), for effects that
+    /// match the picture to recorded data (GPS). Taken from the media file: its modification
+    /// time minus its duration is the recording start. `None` when unknown.
+    fn media_datetime_ms(&self) -> Option<f64> {
+        None
+    }
 }
 
 /// The environment of a track item being rendered by [`crate::item_layer`].
@@ -86,7 +101,7 @@ fn resize(img: Image, w: usize, h: usize) -> Image {
 
 /// Effects that read other frames (skipped when rendering another frame for one of them).
 pub fn is_temporal(id: &str) -> bool {
-    matches!(id, "posterize_time" | "echo" | "warp_stabilizer" | "auto_reframe")
+    matches!(id, "posterize_time" | "echo" | "warp_stabilizer" | "auto_reframe") || kfx::is_temporal(id)
 }
 
 impl FxEnv for ItemEnv<'_> {
@@ -105,14 +120,16 @@ impl FxEnv for ItemEnv<'_> {
             env: None,
             working: self.seq.settings.color.working,
         };
+        let mut chain = crate::mask::MaskChain::default();
         for e in &self.item.effects {
             if std::ptr::eq(e, upto) {
                 break;
             }
             if e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e) && !is_temporal(&e.effect) {
-                crate::mask::apply_effect(&mut img, e, &cx);
+                chain.apply(&mut img, e, &cx);
             }
         }
+        chain.finish(&mut img);
         Some(img)
     }
     fn source_frame(&self, dt: f64, scale: f32) -> Option<Image> {
@@ -156,8 +173,23 @@ impl FxEnv for ItemEnv<'_> {
     fn sequence_size(&self) -> (u32, u32) {
         (self.seq.settings.width, self.seq.settings.height)
     }
+    fn sequence_audio(&self, dt: f64, seconds: f64) -> Option<redrob_film_frame::AudioBuffer> {
+        let sr = self.seq.settings.sample_rate.max(1) as i64;
+        let start = (self.t + Tick::from_seconds_f64(dt)).to_units_floor(sr);
+        let n = (seconds.clamp(0.001, 2.0) * sr as f64).ceil() as usize;
+        Some(crate::audio::mix_sequence(self.project, self.seq, start, n, self.sources))
+    }
     fn source_size(&self) -> (u32, u32) {
         crate::source_size(self.project, self.item.item).unwrap_or((self.seq.settings.width, self.seq.settings.height))
+    }
+    fn media_datetime_ms(&self) -> Option<f64> {
+        let pi = self.project.item(self.item.item)?;
+        let redrob_film_project::ItemKind::Media(mc) = &pi.kind else { return None };
+        let redrob_film_project::MediaRef::File { path } = &mc.media else { return None };
+        let modified = std::fs::metadata(path).ok()?.modified().ok()?;
+        let end_ms = modified.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs_f64() * 1000.0;
+        let start_ms = end_ms - mc.info.duration.seconds() * 1000.0;
+        Some(start_ms + self.item.source_time_at(self.t).seconds() * 1000.0)
     }
     fn clip_key(&self) -> u64 {
         let mut h = 0xcbf2_9ce4_8422_2325u64;
@@ -172,6 +204,57 @@ impl FxEnv for ItemEnv<'_> {
             h = (h ^ v).wrapping_mul(0x0100_0000_01b3);
         }
         h
+    }
+}
+
+/// The environment of an adjustment layer: the sequence around it (its sound, rate, timing and
+/// geometry) for effects such as the audio visualisations, so an adjustment layer over the whole
+/// timeline works as a master effect. It has no frames of its own and reads no tracks (its own
+/// track would render it again), so temporal and track-reading effects stay as they were.
+pub(crate) struct AdjustEnv<'a>(pub ItemEnv<'a>);
+
+impl FxEnv for AdjustEnv<'_> {
+    fn frame(&self, _dt: f64, _upto: &EffectInstance) -> Option<Image> {
+        None
+    }
+    fn source_frame(&self, _dt: f64, _scale: f32) -> Option<Image> {
+        None
+    }
+    fn track(&self, _index: usize) -> Option<Image> {
+        None
+    }
+    fn layer_to_output(&self) -> Affine {
+        self.0.layer_to_output()
+    }
+    fn clip_seconds(&self) -> f64 {
+        self.0.clip_seconds()
+    }
+    fn clip_offset(&self) -> f64 {
+        self.0.clip_offset()
+    }
+    fn frame_rate(&self) -> f64 {
+        self.0.frame_rate()
+    }
+    fn media_timecode(&self) -> String {
+        self.0.media_timecode()
+    }
+    fn file_name(&self) -> String {
+        self.0.file_name()
+    }
+    fn sequence_name(&self) -> String {
+        self.0.sequence_name()
+    }
+    fn sequence_size(&self) -> (u32, u32) {
+        self.0.sequence_size()
+    }
+    fn source_size(&self) -> (u32, u32) {
+        self.0.sequence_size()
+    }
+    fn clip_key(&self) -> u64 {
+        self.0.clip_key()
+    }
+    fn sequence_audio(&self, dt: f64, seconds: f64) -> Option<redrob_film_frame::AudioBuffer> {
+        self.0.sequence_audio(dt, seconds)
     }
 }
 
@@ -457,9 +540,18 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         a.effect = base.to_string();
         crate::effects::apply(img, &a, cx);
     };
+    if kfx::apply(img, e, cx) {
+        return true;
+    }
     match e.effect.as_str() {
         // Adjust / Color / Image Control / Keying / Utility colour
         "lighting_effects" => color::lighting(img, e, cx),
+        // Audio Visualization (Kdenlive: On Master)
+        "audio_levels_viz" => audioviz::levels(img, e, cx),
+        "audio_spectrum_viz" => audioviz::spectrum(img, e, cx),
+        "audio_waveform_viz" => audioviz::waveform(img, e, cx),
+        "audio_dance" => audioviz::dance(img, e, cx),
+        "audio_light_show" => audioviz::light_show(img, e, cx),
         "logo_cutout" => color::logo_cutout(img, e, cx),
         "ultra_key" => color::ultra_key(img, e, cx),
         "track_matte" => color::track_matte(img, e, cx),

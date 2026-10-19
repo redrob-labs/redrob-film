@@ -473,6 +473,23 @@ fn param_widget(ui: &mut egui::Ui, elems: &mut Elems, pid: &str, kind: &ParamKin
             });
             out
         }
+        (ParamKind::Text, ParamValue::Text(text)) => {
+            // edited in a buffer, committed when the field loses focus (a file path: Luma Wipe)
+            let id = egui::Id::new(("tr-text", pid.to_string()));
+            let mut buf = ui.data_mut(|d| d.get_temp::<String>(id)).unwrap_or_else(|| text.clone());
+            let r = ui.add(egui::TextEdit::singleline(&mut buf).desired_width(180.0).hint_text(tl!("Path to a greyscale image")));
+            elems.push((eid, r.rect, buf.clone()));
+            if r.lost_focus() {
+                ui.data_mut(|d| d.remove::<String>(id));
+                return (buf != *text).then(|| json!({"params": { pid: buf }}));
+            }
+            if r.has_focus() {
+                ui.data_mut(|d| d.insert_temp(id, buf));
+            } else {
+                ui.data_mut(|d| d.remove::<String>(id));
+            }
+            None
+        }
         (_, v) => {
             let r = ui.label(RichText::new(format!("{v:?}")).weak());
             elems.push((eid, r.rect, String::new()));

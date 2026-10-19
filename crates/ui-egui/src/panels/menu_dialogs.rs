@@ -35,11 +35,199 @@ pub struct Extras {
     pub dynamic_waveforms: bool,
     /// Paths handed to the operating system's opener (Edit Original, Reveal Log Files), newest last.
     pub opened: Vec<String>,
+    /// Clear asked for clips the timeline uses: the `project.delete` parameters, how many of the
+    /// clips are used and how many timeline clips go with them (the warning dialog is open).
+    pub confirm_delete: Option<(Value, usize, usize)>,
+    /// File ▸ Open Backup File…: the backups listed (None = closed).
+    pub backups: Option<Vec<Value>>,
+    /// The Welcome screen is open (Settings ▸ General ▸ At Startup ▸ Show Welcome Screen).
+    pub welcome: bool,
 }
 
 impl Default for Extras {
     fn default() -> Self {
-        Extras { dialog: None, dynamic_waveforms: true, opened: Vec::new() }
+        Extras { dialog: None, dynamic_waveforms: true, opened: Vec::new(), confirm_delete: None, backups: None, welcome: false }
+    }
+}
+
+/// The Welcome screen: recent projects, New / Open / Demo project, and whether it shows at startup.
+fn welcome_window(app: &mut FilmcraftApp, ctx: &egui::Context) {
+    if !app.ui.extras.welcome {
+        return;
+    }
+    let recent: Vec<String> = app.session.prefs.general.recent_projects.iter().filter(|p| std::path::Path::new(p).exists()).take(10).cloned().collect();
+    let mut at_startup = app.session.prefs.general.at_startup == "showWelcome";
+    let mut run: Option<(&'static str, Value)> = None;
+    let mut open = true;
+    egui::Window::new(tl!("Welcome to Redrob Film"))
+        .id(egui::Id::new("welcome-screen"))
+        .open(&mut open)
+        .collapsible(false)
+        .resizable(false)
+        .default_width(480.0)
+        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                for (key, label, cmd) in [
+                    ("new", tl!("New Project"), "file.newProject"),
+                    ("open", tl!("Open Project…"), "file.open"),
+                    ("demo", tl!("Demo Project"), "file.openDemoProject"),
+                    ("archive", tl!("Open Archived Project…"), "file.openArchive"),
+                ] {
+                    let r = ui.button(label);
+                    app.auto.add(&format!("welcome.{key}"), r.rect, label);
+                    if r.clicked() {
+                        run = Some((cmd, json!({})));
+                    }
+                }
+            });
+            ui.separator();
+            ui.label(RichText::new(tl!("Recent Projects")).strong());
+            if recent.is_empty() {
+                ui.label(RichText::new(tl!("No recent projects")).weak());
+            }
+            for (i, p) in recent.iter().enumerate() {
+                let name = std::path::Path::new(p).file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_else(|| p.clone());
+                let r = ui.add(egui::Button::new(name).frame(false)).on_hover_text(p);
+                app.auto.add(&format!("welcome.recent.{i}"), r.rect, p);
+                if r.clicked() {
+                    run = Some(("file.open", json!({"path": p})));
+                }
+            }
+            ui.separator();
+            let r = ui.checkbox(&mut at_startup, tl!("Show this screen at startup"));
+            app.auto.add("welcome.atStartup", r.rect, "Show this screen at startup");
+            if r.changed() {
+                let v = if at_startup { "showWelcome" } else { "showHome" };
+                if let Err(e) = app.session.execute("prefs.set", json!({"key": "general.atStartup", "value": v})) {
+                    app.ui.status = e.to_string();
+                }
+            }
+        });
+    if let Some((cmd, p)) = run {
+        app.ui.extras.welcome = false;
+        if let Err(e) = crate::menus::invoke(app, ctx, cmd, p) {
+            app.ui.status = e;
+        }
+    } else if !open || ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+        app.ui.extras.welcome = false;
+    }
+}
+
+/// File ▸ Open Backup File…: the dated copies of the project with a Restore button each.
+fn backups_window(app: &mut FilmcraftApp, ctx: &egui::Context) {
+    let Some(list) = app.ui.extras.backups.clone() else { return };
+    let mut restore: Option<String> = None;
+    let mut open = true;
+    let tiers = [("lastHour", tl!("Last hour")), ("lastDay", tl!("Last day")), ("lastWeek", tl!("Last week")), ("older", tl!("Older"))];
+    egui::Window::new(tl!("Open Backup File"))
+        .id(egui::Id::new("open-backup-file"))
+        .open(&mut open)
+        .collapsible(false)
+        .default_width(460.0)
+        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .show(ctx, |ui| {
+            if list.is_empty() {
+                ui.label(tl!("No backups yet: every save of the project keeps one."));
+            }
+            egui::ScrollArea::vertical().max_height(360.0).show(ui, |ui| {
+                for (tier, title) in tiers {
+                    let rows: Vec<&Value> = list.iter().filter(|b| b["tier"] == tier).collect();
+                    if rows.is_empty() {
+                        continue;
+                    }
+                    ui.label(RichText::new(title).strong());
+                    for (i, b) in rows.iter().enumerate() {
+                        ui.horizontal(|ui| {
+                            ui.label(b["time"].as_str().unwrap_or(""));
+                            ui.label(RichText::new(redrob_film_engine::export::format_bytes(b["bytes"].as_u64().unwrap_or(0))).weak());
+                            let r = ui.button(tl!("Restore"));
+                            app.auto.add(&format!("backups.{tier}.{i}.restore"), r.rect, "Restore");
+                            if r.clicked() {
+                                restore = b["path"].as_str().map(str::to_string);
+                            }
+                        });
+                    }
+                }
+            });
+        });
+    if let Some(path) = restore {
+        app.ui.extras.backups = None;
+        if let Err(e) = crate::menus::invoke(app, ctx, "file.openBackup", json!({"path": path})) {
+            app.ui.status = e;
+        }
+    } else if !open || ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+        app.ui.extras.backups = None;
+    }
+}
+
+/// Of the project items `project.delete` would remove, how many are used in a sequence, and how
+/// many timeline clips use them.
+pub fn delete_uses(app: &FilmcraftApp, params: &Value) -> (usize, usize) {
+    let pr = &app.session.project;
+    let mut items: Vec<redrob_film_project::ItemId> = match params.get("items").and_then(Value::as_array) {
+        Some(a) => a.iter().filter_map(Value::as_u64).map(redrob_film_project::ItemId).collect(),
+        None => app.session.state.project_selection.clone(),
+    };
+    // a named bin takes everything in it
+    let bins: Vec<u64> = items.iter().map(|i| i.0).filter(|b| pr.root.find_bin(redrob_film_project::BinId(*b)).is_some()).collect();
+    for b in bins {
+        if let Some(bin) = pr.root.find_bin(redrob_film_project::BinId(b)) {
+            bin.all_items(&mut items);
+        }
+    }
+    let mut used = std::collections::BTreeSet::new();
+    let mut uses = 0;
+    for q in pr.sequences().filter_map(|i| pr.sequence(i.id)) {
+        for t in q.video_tracks.iter().chain(q.audio_tracks.iter()) {
+            for x in &t.items {
+                if items.contains(&x.item) {
+                    used.insert(x.item);
+                    uses += 1;
+                }
+            }
+        }
+    }
+    (used.len(), uses)
+}
+
+/// The warning before clearing clips the timeline uses (Kdenlive's "delete clip in use").
+fn confirm_delete_window(app: &mut FilmcraftApp, ctx: &egui::Context) {
+    let Some((params, clips, uses)) = app.ui.extras.confirm_delete.clone() else { return };
+    let mut answer: Option<bool> = None;
+    egui::Window::new(tl!("Delete Clips In Use"))
+        .id(egui::Id::new("confirm-delete-in-use"))
+        .collapsible(false)
+        .resizable(false)
+        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .show(ctx, |ui| {
+            ui.label(tlf!("{clips} of these clips are used in the timeline ({uses} timeline clips). Delete them and their timeline clips?", clips, uses));
+            ui.horizontal(|ui| {
+                let r = ui.button(tl!("Delete"));
+                app.auto.add("confirmDelete.ok", r.rect, "Delete");
+                if r.clicked() {
+                    answer = Some(true);
+                }
+                let r = ui.button(tl!("Cancel"));
+                app.auto.add("confirmDelete.cancel", r.rect, "Cancel");
+                if r.clicked() || ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                    answer = Some(false);
+                }
+            });
+        });
+    match answer {
+        Some(true) => {
+            app.ui.extras.confirm_delete = None;
+            let mut p = params;
+            if let Some(o) = p.as_object_mut() {
+                o.insert("confirmed".into(), json!(true));
+            }
+            if let Err(e) = crate::menus::invoke(app, ctx, "project.delete", p) {
+                app.ui.status = e;
+            }
+        }
+        Some(false) => app.ui.extras.confirm_delete = None,
+        None => {}
     }
 }
 
@@ -108,7 +296,8 @@ pub fn checked(app: &FilmcraftApp, id: &str) -> Option<bool> {
 /// Project Settings ▸ General ▸ Renderer is "Software Only": the Program monitor composites on
 /// the CPU.
 pub fn software_renderer(app: &FilmcraftApp) -> bool {
-    app.session.project.settings.renderer == redrob_film_engine::project_tools::RENDERER_SOFTWARE
+    // Settings ▸ Playback ▸ GPU processing off takes every project to the CPU renderer
+    !app.session.prefs.playback.gpu_processing || app.session.project.settings.renderer == redrob_film_engine::project_tools::RENDERER_SOFTWARE
 }
 
 /// Hand a path to the operating system (open it in its default application, or reveal it in the
@@ -169,6 +358,21 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, params: &Val
     let empty = params.as_object().is_none_or(|m| m.is_empty());
     // UI commands
     match id {
+        // Open Backup File… without a path: the list of backups
+        "file.openBackup" if params.get("path").is_none() => {
+            return Some(app.session.execute("file.listBackups", json!({})).map_err(|e| e.to_string()).map(|v| {
+                app.ui.extras.backups = Some(v["backups"].as_array().cloned().unwrap_or_default());
+                json!({"dialog": "backups"})
+            }));
+        }
+        // Clear of clips the timeline uses asks first (the warning names how many go with them)
+        "project.delete" if params.get("confirmed").is_none() => {
+            let (clips, uses) = delete_uses(app, params);
+            if clips > 0 {
+                app.ui.extras.confirm_delete = Some((params.clone(), clips, uses));
+                return Some(Ok(json!({"confirm": true, "clipsInUse": clips, "timelineClips": uses})));
+            }
+        }
         "view.dynamicAudioWaveforms" => {
             app.ui.extras.dynamic_waveforms = params.get("on").and_then(Value::as_bool).unwrap_or(!app.ui.extras.dynamic_waveforms);
             return Some(Ok(json!({"dynamicAudioWaveforms": app.ui.extras.dynamic_waveforms})));
@@ -298,8 +502,10 @@ fn defaults(app: &mut FilmcraftApp, cmd: &str, id: &str) -> Result<(Value, Value
                     "captureFormat": general["captureFormat"], "titleSafe": general["titleSafe"], "actionSafe": general["actionSafe"],
                     "captured": sc.captured, "videoPreviews": sc.video_previews, "audioPreviews": sc.audio_previews, "autoSave": sc.auto_save,
                     "ingest": ingest.clone(),
+                    "metadata": s.project.metadata.clone(), "newField": "",
                 }),
-                json!({"scratch": scratch, "ingest": ingest, "project": s.project.name}),
+                json!({"scratch": scratch, "ingest": ingest, "project": s.project.name, "metadata": s.project.metadata.clone(),
+                    "files": s.execute("project.filesStats", json!({})).unwrap_or_default()}),
             )
         }
         "file.mediaProperties" => {
@@ -338,7 +544,7 @@ fn defaults(app: &mut FilmcraftApp, cmd: &str, id: &str) -> Result<(Value, Value
         }
         "sequence.transcribe" => {
             let tracks: Vec<String> = s.active_sequence().map(|q| (1..=q.audio_tracks.len()).map(|i| format!("A{i}")).collect()).unwrap_or_default();
-            (json!({"language": "auto", "track": "mix", "diarize": true}), json!({"tracks": tracks}))
+            (json!({"language": "auto", "track": "mix", "diarize": true, "translate": false}), json!({"tracks": tracks}))
         }
         "file.saveAsTemplate" => (json!({"name": s.project.name}), Value::Null),
         "markers.addFlashCue" => (json!({"name": "", "comment": ""}), Value::Null),
@@ -449,6 +655,9 @@ fn pairs(v: &[&str]) -> Vec<(String, String)> {
 
 /// Draw the open dialog, if any.
 pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
+    confirm_delete_window(app, ctx);
+    backups_window(app, ctx);
+    welcome_window(app, ctx);
     let Some(mut d) = app.ui.extras.dialog.clone() else { return };
     let Some((title, pre, ok_text)) = meta(&d.command) else {
         app.ui.extras.dialog = None;
@@ -524,7 +733,13 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
             "project.settings" => {
                 ui.label(tlf!("Project: {name}", name = d.info["project"].as_str().unwrap_or_default()));
                 ui.horizontal(|ui| {
-                    for (k, l) in [("general", tl!("General")), ("scratchDisks", tl!("Scratch Disks")), ("ingest", tl!("Ingest Settings"))] {
+                    for (k, l) in [
+                        ("general", tl!("General")),
+                        ("scratchDisks", tl!("Scratch Disks")),
+                        ("ingest", tl!("Ingest Settings")),
+                        ("metadata", tl!("Metadata")),
+                        ("files", tl!("Project Files")),
+                    ] {
                         let r = ui.selectable_label(p["tab"].as_str() == Some(k), l);
                         push(&mut elems, format!("projectSettings.tab.{k}"), &r, l);
                         if r.clicked() {
@@ -564,6 +779,93 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                             ui.label(RichText::new(tlf!("Path: {path}", path)).weak().small());
                         }
                     }
+                    // the project's metadata: the standard fields, then the user's own (exports take
+                    // the standard ones)
+                    "metadata" => {
+                        let mut md = p["metadata"].as_object().cloned().unwrap_or_default();
+                        let mut names: Vec<String> = redrob_film_engine::panels::PROJECT_METADATA_FIELDS.iter().map(|f| f.to_string()).collect();
+                        names.extend(md.keys().filter(|k| !names.contains(*k)).cloned().collect::<Vec<_>>());
+                        let mut remove: Option<String> = None;
+                        egui::Grid::new("project-settings-metadata").num_columns(3).spacing(egui::vec2(8.0, 4.0)).show(ui, |ui| {
+                            for k in &names {
+                                let standard = redrob_film_engine::panels::PROJECT_METADATA_FIELDS.contains(&k.as_str());
+                                let label = match k.as_str() {
+                                    "title" => tl!("Title"),
+                                    "creator" => tl!("Author"),
+                                    "copyright" => tl!("Copyright"),
+                                    "description" => tl!("Description"),
+                                    "comment" => tl!("Comment"),
+                                    other => other,
+                                };
+                                ui.label(label);
+                                let mut v = md.get(k).and_then(Value::as_str).unwrap_or_default().to_string();
+                                let r = ui.add(egui::TextEdit::singleline(&mut v).desired_width(300.0));
+                                push(&mut elems, format!("projectSettings.metadata.{k}"), &r, label);
+                                if r.changed() {
+                                    md.insert(k.clone(), json!(v));
+                                }
+                                if standard {
+                                    ui.label("");
+                                } else {
+                                    let r = ui.small_button("✕").on_hover_text(tl!("Remove Field"));
+                                    push(&mut elems, format!("projectSettings.metadata.{k}.remove"), &r, "Remove Field");
+                                    if r.clicked() {
+                                        remove = Some(k.clone());
+                                    }
+                                }
+                                ui.end_row();
+                            }
+                        });
+                        if let Some(k) = remove {
+                            md.insert(k, Value::Null);
+                        }
+                        ui.horizontal(|ui| {
+                            let mut name = p["newField"].as_str().unwrap_or_default().to_string();
+                            let r = ui.add(egui::TextEdit::singleline(&mut name).hint_text(tl!("New field name")).desired_width(180.0));
+                            push(&mut elems, "projectSettings.metadata.newField", &r, "New field name");
+                            let n = name.trim().to_string();
+                            let b = ui.add_enabled(!n.is_empty() && !md.contains_key(&n), egui::Button::new(tl!("Add Field")));
+                            push(&mut elems, "projectSettings.metadata.add", &b, "Add Field");
+                            if b.clicked() {
+                                md.insert(n, json!(""));
+                                name.clear();
+                            }
+                            p["newField"] = json!(name);
+                        });
+                        p["metadata"] = Value::Object(md);
+                    }
+                    // used and unused media files with their sizes
+                    "files" => {
+                        let f = &d.info["files"];
+                        let mb = |b: u64| format!("{:.1} MB", b as f64 / f64::from(1u32 << 20));
+                        ui.label(tlf!(
+                            "Used in sequences: {n} file(s), {size}",
+                            n = f["used"]["files"].as_u64().unwrap_or(0),
+                            size = mb(f["used"]["bytes"].as_u64().unwrap_or(0))
+                        ));
+                        ui.label(tlf!(
+                            "Unused: {n} file(s), {size}",
+                            n = f["unused"]["files"].as_u64().unwrap_or(0),
+                            size = mb(f["unused"]["bytes"].as_u64().unwrap_or(0))
+                        ));
+                        let missing = f["missing"].as_u64().unwrap_or(0);
+                        if missing > 0 {
+                            ui.label(RichText::new(tlf!("{n} file(s) not found on disk", n = missing)).weak());
+                        }
+                        let unused = f["unused"]["items"].as_array().cloned().unwrap_or_default();
+                        if !unused.is_empty() {
+                            ui.separator();
+                            egui::ScrollArea::vertical().id_salt("project-files-unused").max_height(180.0).show(ui, |ui| {
+                                for u in &unused {
+                                    ui.label(
+                                        RichText::new(format!("{}  ({})", u["name"].as_str().unwrap_or_default(), mb(u["bytes"].as_u64().unwrap_or(0))))
+                                            .small(),
+                                    );
+                                }
+                            });
+                        }
+                        ui.label(RichText::new(tl!("Remove unused clips with Edit ▸ Remove Unused; files on disk are never deleted.")).weak());
+                    }
                     "ingest" => {
                         let mut ing = p["ingest"].clone();
                         let mut on = ing["enabled"].as_bool().unwrap_or(false);
@@ -585,6 +887,17 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                             if r.changed() {
                                 ing["destination"] = if v.is_empty() { Value::Null } else { json!(v) };
                             }
+                        });
+                        // proxies only of large videos (0 = every video)
+                        ui.horizontal(|ui| {
+                            ui.label(tl!("Create proxies only for videos wider than:"));
+                            let mut w = ing["minProxyWidth"].as_u64().unwrap_or(0) as u32;
+                            let r = ui.add(egui::DragValue::new(&mut w).range(0..=redrob_film_project::MAX_FRAME_SIDE).suffix(" px"));
+                            push(&mut elems, "projectSettings.ingest.minProxyWidth", &r, "Minimum proxy width");
+                            if r.changed() {
+                                ing["minProxyWidth"] = json!(w);
+                            }
+                            ui.label(RichText::new(tl!("(0 = every video)")).weak());
                         });
                         p["ingest"] = ing;
                     }
@@ -761,6 +1074,7 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                 );
                 combo(ui, &mut elems, "transcribe.track", tl!("Audio analysis:"), &mut p["track"], &tracks);
                 check(ui, &mut elems, pre, p, "diarize", tl!("Recognize when different speakers are talking"));
+                check(ui, &mut elems, pre, p, "translate", tl!("Translate to English"));
             }
             "file.saveAsTemplate" => text(ui, &mut elems, pre, p, "name", tl!("Template Name:"), 240.0),
             "file.newColorMatte" => {
@@ -883,6 +1197,18 @@ fn run(app: &mut FilmcraftApp, d: &ClipDialogDraft) -> Result<Option<String>, St
             .map_err(|e| e.to_string())?;
             if p["ingest"] != d.info["ingest"] {
                 s.execute("project.ingestSettings", p["ingest"].clone()).map_err(|e| e.to_string())?;
+            }
+            // metadata: the changed fields (an emptied or removed one goes away)
+            let mut fields = serde_json::Map::new();
+            if let Some(md) = p["metadata"].as_object() {
+                for (k, v) in md {
+                    if d.info["metadata"].get(k) != Some(v) {
+                        fields.insert(k.clone(), v.clone());
+                    }
+                }
+            }
+            if !fields.is_empty() {
+                s.execute("project.setMetadata", json!({"fields": fields})).map_err(|e| e.to_string())?;
             }
             Ok(None)
         }

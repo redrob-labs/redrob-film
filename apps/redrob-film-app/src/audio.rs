@@ -27,6 +27,10 @@ pub struct CpalOut {
     /// The last stream error, written by cpal's error callback and shown by `note` (a desktop
     /// launch has no terminal; on Windows `windows_subsystem = "windows"` discards stderr).
     error: Arc<Mutex<Option<String>>>,
+    /// A silent stream kept open while the editor is idle (Linux, Windows): a sound server
+    /// suspends an output nothing plays to after a few seconds, and waking it delayed the first
+    /// picture of every play by ~0.9 s. Separate from `stream`, so it never touches the clock.
+    keepalive: Option<cpal::Stream>,
 }
 
 /// A hardware note for the status bar, translated when it is shown.
@@ -140,7 +144,7 @@ impl CpalOut {
                 Some(Note::NoDevice)
             }
         };
-        Self {
+        let mut out = Self {
             stream: None,
             played: Arc::new(AtomicU64::new(0)),
             failed: Arc::new(AtomicBool::new(false)),
@@ -151,6 +155,39 @@ impl CpalOut {
             note,
             fallback,
             error: Arc::new(Mutex::new(None)),
+            keepalive: None,
+        };
+        out.open_keepalive();
+        out
+    }
+
+    /// (Re)open the silent idle stream on the device playback will use ([`Self::keepalive`]).
+    /// Best effort: a device that refuses it just wakes on play, as before.
+    fn open_keepalive(&mut self) {
+        self.keepalive = None;
+        if !cfg!(any(target_os = "linux", target_os = "windows")) {
+            return;
+        }
+        let host = host(&self.hw.device_class);
+        let Some(choice) = output_device(&host, &self.hw.default_output, &self.fallback) else { return };
+        // a raw ALSA device is exclusive: a second stream on it would lock playback out
+        if choice.device.name().is_ok_and(|n| fallback_rank(&n) == 3) {
+            return;
+        }
+        let Ok(cfg) = choice.device.default_output_config() else { return };
+        let config: cpal::StreamConfig = cfg.clone().into();
+        let err = |e: cpal::StreamError| log::debug!("audio keep-alive stream: {e}");
+        let stream = match cfg.sample_format() {
+            cpal::SampleFormat::F32 => choice.device.build_output_stream(&config, |b: &mut [f32], _| b.fill(0.0), err, None),
+            cpal::SampleFormat::I16 => choice.device.build_output_stream(&config, |b: &mut [i16], _| b.fill(0), err, None),
+            cpal::SampleFormat::I32 => choice.device.build_output_stream(&config, |b: &mut [i32], _| b.fill(0), err, None),
+            cpal::SampleFormat::U16 => choice.device.build_output_stream(&config, |b: &mut [u16], _| b.fill(u16::MAX / 2 + 1), err, None),
+            _ => return,
+        };
+        match stream {
+            Ok(s) if s.play().is_ok() => self.keepalive = Some(s),
+            Ok(_) => {}
+            Err(e) => log::debug!("audio keep-alive stream not opened: {e}"),
         }
     }
 
@@ -336,6 +373,8 @@ impl AudioOut for CpalOut {
             self.channels = cfg.channels();
             self.note = choice.fallback;
         }
+        // the device may have changed: keep the one playback will use awake
+        self.open_keepalive();
     }
     fn note(&self) -> Option<String> {
         if let Some(e) = self.error.lock().unwrap_or_else(PoisonError::into_inner).clone() {

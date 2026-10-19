@@ -177,12 +177,19 @@ pub(crate) fn render_seq_tracks(project: &Project, seq: &Sequence, t: Tick, opts
         return canvas.into_image();
     }
     let tc = format_time(t, seq.settings.frame_rate, seq.settings.drop_frame, TimeDisplay::Timecode, seq.settings.sample_rate as i64);
+    // Disable Timeline Effects: every clip effect of this sequence is bypassed
+    let opts = if seq.timeline_options.effects_disabled { RenderOptions { effects: false, ..opts } } else { opts };
+    // Track compositing off: only the topmost track that shows something at `t` is drawn
+    let top = if seq.timeline_options.no_track_compositing && only.is_none() { topmost_track_at(seq, t) } else { None };
     for (ti, track) in seq.video_tracks.iter().enumerate() {
         // A cancelled frame job (playback moved on) stops here; its result is discarded.
         if redrob_film_media::cancel::cancelled() {
             return canvas.into_image();
         }
         if only.is_some_and(|o| o != ti) || (!track.enabled && only.is_none()) {
+            continue;
+        }
+        if top.is_some_and(|k| k != ti) {
             continue;
         }
         // transition covering t?
@@ -221,6 +228,19 @@ pub(crate) fn render_seq_tracks(project: &Project, seq: &Sequence, t: Tick, opts
             }
             let mt = item.effect_time_at(t);
             let mut adjusted = canvas.snapshot();
+            // the sequence around the layer (sound, timing) for master-style effects
+            let env = vfx::AdjustEnv(vfx::ItemEnv {
+                project,
+                seq,
+                item,
+                t,
+                opts,
+                sources,
+                want: opts.scale,
+                layer_size: (adjusted.w, adjusted.h),
+                layer_to_output: Affine::IDENTITY,
+                tc: &tc,
+            });
             let cx = effects::FxCtx {
                 t: mt,
                 px_scale: opts.scale,
@@ -228,12 +248,14 @@ pub(crate) fn render_seq_tracks(project: &Project, seq: &Sequence, t: Tick, opts
                 timecode: &tc,
                 clip_name: &item.name,
                 project: Some(project),
-                env: None,
+                env: Some(&env),
                 working: seq.settings.color.working,
             };
+            let mut chain = mask::MaskChain::default();
             for e in item.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic)) {
-                mask::apply_effect(&mut adjusted, e, &cx);
+                chain.apply(&mut adjusted, e, &cx);
             }
+            chain.finish(&mut adjusted);
             let (op, bl) = opacity_blend(item, mt);
             // Adjustment layer opacity (and opacity masks, in sequence pixels) mix adjusted over original.
             let mut out = canvas.snapshot();
@@ -277,6 +299,15 @@ pub(crate) fn render_seq_tracks(project: &Project, seq: &Sequence, t: Tick, opts
         }
     }
     canvas
+}
+
+/// The index of the topmost enabled video track that shows an enabled clip (or a transition) at
+/// `t`: with track compositing off, the only track drawn.
+pub fn topmost_track_at(seq: &Sequence, t: Tick) -> Option<usize> {
+    seq.video_tracks.iter().enumerate().rev().find_map(|(i, tr)| {
+        let shows = tr.enabled && (tr.transitions.iter().any(|x| x.range().contains(t)) || tr.item_at(t).is_some_and(|it| it.enabled));
+        shows.then_some(i)
+    })
 }
 
 /// Coverage of an adjustment layer's (Motion-transformed) frame in output pixels, or `None` when
@@ -470,12 +501,13 @@ pub(crate) fn item_layer_ex(
         Some((src, frame, n)) => media_image(project, seq, item, t, &src, &frame, n, want),
         None => base_layer(project, seq, item, t, opts, sources, want)?,
     };
-    let px_scale = layer.w as f32 / src_size.0.max(1) as f32;
+    let mut px_scale = layer.w as f32 / src_size.0.max(1) as f32;
     // layer px → source px → sequence px → output px
-    let m = Affine::scale(opts.scale as f64, opts.scale as f64).then_apply(&motion).then_apply(&Affine::scale(1.0 / px_scale as f64, 1.0 / px_scale as f64));
+    let mut m =
+        Affine::scale(opts.scale as f64, opts.scale as f64).then_apply(&motion).then_apply(&Affine::scale(1.0 / px_scale as f64, 1.0 / px_scale as f64));
     if opts.effects {
         let env = vfx::ItemEnv { project, seq, item, t, opts, sources, want, layer_size: (layer.w, layer.h), layer_to_output: m, tc };
-        let cx = effects::FxCtx {
+        let mut cx = effects::FxCtx {
             t: mt,
             px_scale,
             seconds: (t - item.start).seconds(),
@@ -485,12 +517,25 @@ pub(crate) fn item_layer_ex(
             env: Some(&env),
             working: seq.settings.color.working,
         };
+        let mut chain = mask::MaskChain::default();
         for e in item.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e)) {
             if redrob_film_media::cancel::cancelled() {
                 return None;
             }
-            mask::apply_effect(&mut layer, e, &cx);
+            // a pixel-art magnifier on a clip shown larger than its pixels enlarges the layer
+            // itself; the effects after it and the placement see the bigger layer
+            if e.enabled && e.masks.is_empty() && vfx::is_magnifier(&e.effect) {
+                let shown = (m.a * m.a + m.b * m.b).sqrt().max((m.c * m.c + m.d * m.d).sqrt());
+                if let Some(n) = vfx::magnify(&mut layer, e, shown) {
+                    px_scale *= n as f32;
+                    cx.px_scale = px_scale;
+                    m = m.then_apply(&Affine::scale(1.0 / n as f64, 1.0 / n as f64));
+                    continue;
+                }
+            }
+            chain.apply(&mut layer, e, &cx);
         }
+        chain.finish(&mut layer);
     }
     mask::apply_opacity_masks(&mut layer, item, mt, px_scale);
     let placed = if layer.w == w && layer.h == h && identity_placement(&m) { layer } else { layer.transformed(w, h, &m) };
@@ -599,7 +644,7 @@ pub(crate) fn base_layer(
             // standard effects work on the graphic at source resolution, then Motion places it
             let (gw, gh) = (((src_size.0 as f32 * want).ceil() as usize).max(1), ((src_size.1 as f32 * want).ceil() as usize).max(1));
             let mut img = Image::new(gw, gh);
-            graphic_clip::render_graphic(item, mt, src_size, &Affine::scale(want as f64, want as f64), &mut img);
+            graphic_clip::render_graphic_rate(item, mt, src_size, &Affine::scale(want as f64, want as f64), &mut img, seq.settings.frame_rate.as_f64());
             img
         }
     })

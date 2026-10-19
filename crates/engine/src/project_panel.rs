@@ -179,6 +179,10 @@ pub struct ProjectPanelPrefs {
     /// The slot last saved or restored (Save Current View Preset overwrites it).
     pub current_preset: Option<usize>,
     pub freeform: FreeformOptions,
+    /// Filter (toolbar): tags, ratings, types and usage the views are limited to.
+    pub filter: BinFilter,
+    /// Tags bar (toolbar toggle): the project's tags shown above the views.
+    pub show_tags: bool,
 }
 
 impl Default for ProjectPanelPrefs {
@@ -193,6 +197,8 @@ impl Default for ProjectPanelPrefs {
             presets: vec![None; PRESET_SLOTS],
             current_preset: None,
             freeform: FreeformOptions::default(),
+            filter: BinFilter::default(),
+            show_tags: false,
         }
     }
 }
@@ -218,9 +224,11 @@ pub const DEFAULT_COLUMNS: [&str; 12] = [
 ];
 
 /// Every built-in column (Metadata Display ▸ Project Metadata), in display order.
-pub const BUILTIN_COLUMNS: [&str; 36] = [
+pub const BUILTIN_COLUMNS: [&str; 39] = [
     "Name",
     "Label",
+    "Rating",
+    "Tags",
     "Media Type",
     "Frame Rate",
     "Media Start",
@@ -246,6 +254,7 @@ pub const BUILTIN_COLUMNS: [&str; 36] = [
     "File Path",
     "File Size",
     "Date Created",
+    "Insert Order",
     "Good",
     "Description",
     "Scene",
@@ -272,7 +281,7 @@ pub fn is_internal_key(k: &str) -> bool {
 pub fn default_width(c: &str) -> f32 {
     match c {
         "Name" => 220.0,
-        "Label" | "Frame Rate" | "Status" | "Good" | "Proxy" => 80.0,
+        "Label" | "Frame Rate" | "Status" | "Good" | "Proxy" | "Rating" | "Insert Order" => 80.0,
         "Video Info" | "Audio Info" | "File Path" | "Description" | "Log Note" | "Comment" => 170.0,
         _ => 110.0,
     }
@@ -359,6 +368,13 @@ pub fn cell(p: &Project, it: &ProjectItem, column: &str) -> (String, SortKey) {
     match column {
         "Name" => text(it.name.clone()),
         "Label" => text(it.label.name().to_string()),
+        "Rating" => (stars(it.rating), SortKey::Num(it.rating as f64)),
+        "Tags" => {
+            let tags = p.bin_tags();
+            let names: Vec<String> = it.tags.iter().filter_map(|t| tags.iter().find(|x| x.id == *t)).map(|t| t.name.clone()).collect();
+            text(names.join(", "))
+        }
+        "Insert Order" => (it.created.to_string(), SortKey::Num(it.created as f64)),
         "Media Type" => text(it.type_label().to_string()),
         "Frame Rate" if has_v => (format!("{} fps", rate.label()), SortKey::Num(rate.num as f64 / rate.den.max(1) as f64)),
         "Frame Rate" => (String::new(), SortKey::Num(0.0)),
@@ -441,6 +457,97 @@ fn format_bytes(b: u64) -> String {
         b if b >= 1 << 10 => format!("{:.1} KB", b as f64 / 1024.0),
         b => format!("{b} bytes"),
     }
+}
+
+/// A rating as stars (`★★★☆☆`); empty for no rating.
+pub fn stars(rating: u8) -> String {
+    let r = rating.min(5) as usize;
+    if r == 0 { String::new() } else { format!("{}{}", "★".repeat(r), "☆".repeat(5 - r)) }
+}
+
+// ------------------------------------------------------------------------------------ filter
+
+/// Item types the Filter menu offers (key, label). An item has exactly one.
+pub const FILTER_TYPES: [(&str, &str); 10] = [
+    ("av", "Audio and Video"),
+    ("video", "Video Only"),
+    ("audio", "Audio Only"),
+    ("image", "Image"),
+    ("imageSequence", "Image Sequence"),
+    ("generator", "Color and Generators"),
+    ("title", "Title"),
+    ("sequence", "Sequence"),
+    ("subclip", "Subclip"),
+    ("adjustment", "Adjustment Layer"),
+];
+
+/// Usage choices of the Filter menu (key, label).
+pub const FILTER_USAGE: [(&str, &str); 2] = [("used", "Used"), ("unused", "Unused")];
+
+/// The Filter menu's type key of an item (see [`FILTER_TYPES`]).
+pub fn type_key(it: &ProjectItem) -> &'static str {
+    match &it.kind {
+        ItemKind::Media(m) => match (&m.media, m.info.kind) {
+            (MediaRef::Generator(_), _) => "generator",
+            (_, redrob_film_media::MediaKind::Still) => "image",
+            (_, redrob_film_media::MediaKind::ImageSequence) => "imageSequence",
+            (_, redrob_film_media::MediaKind::AudioOnly) => "audio",
+            (_, redrob_film_media::MediaKind::Synthetic) => "generator",
+            (_, redrob_film_media::MediaKind::Movie) => match (m.info.has_video(), m.info.has_audio()) {
+                (true, true) => "av",
+                (false, true) => "audio",
+                _ => "video",
+            },
+        },
+        ItemKind::Sequence(_) => "sequence",
+        ItemKind::Subclip { .. } => "subclip",
+        ItemKind::AdjustmentLayer { .. } => "adjustment",
+        ItemKind::Graphic { .. } => "title",
+    }
+}
+
+/// Project panel ▸ Filter: which items the views list. The choices inside one group are
+/// alternatives (an item passes with any of them); the groups combine (it must pass every group
+/// that has a choice). A filter with no choice shows everything.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct BinFilter {
+    /// Tag ids ([`redrob_film_project::BinTag::id`]).
+    pub tags: Vec<u32>,
+    /// Ratings 0–5 (0 = not rated).
+    pub ratings: Vec<u8>,
+    /// [`FILTER_TYPES`] keys.
+    pub types: Vec<String>,
+    /// [`FILTER_USAGE`] keys.
+    pub usage: Vec<String>,
+}
+
+impl BinFilter {
+    /// Does the filter hide anything (the panel shows the filter-on indicator)?
+    pub fn is_active(&self) -> bool {
+        !(self.tags.is_empty() && self.ratings.is_empty() && self.types.is_empty() && self.usage.is_empty())
+    }
+}
+
+/// Does an item pass the filter?
+pub fn passes(p: &Project, it: &ProjectItem, f: &BinFilter) -> bool {
+    if !f.tags.is_empty() && !it.tags.iter().any(|t| f.tags.contains(t)) {
+        return false;
+    }
+    if !f.ratings.is_empty() && !f.ratings.contains(&it.rating.min(5)) {
+        return false;
+    }
+    if !f.types.is_empty() && !f.types.iter().any(|t| t == type_key(it)) {
+        return false;
+    }
+    if !f.usage.is_empty() {
+        let (v, a) = usage(p, it.id);
+        let key = if v + a > 0 { "used" } else { "unused" };
+        if !f.usage.iter().any(|u| u == key) {
+            return false;
+        }
+    }
+    true
 }
 
 /// Is the item listed in the Project panel? (Graphic clip sources are internal, except source
@@ -908,6 +1015,8 @@ fn view_json(s: &Session) -> Value {
         "thumbnailsShowEffects": pp.thumbnails_show_effects,
         "hoverScrub": pp.hover_scrub,
         "thumbnailControlsAllDevices": pp.thumbnail_controls_all_devices,
+        "showTags": pp.show_tags,
+        "filter": pp.filter,
         "currentPreset": pp.current_preset.map(|i| i + 1),
         "freeform": pp.freeform,
         "available": all_columns(&s.project),
@@ -932,6 +1041,7 @@ fn view_set(s: &mut Session, p: &Value) -> Result<Value> {
         ("thumbnailsShowEffects", &mut pp.thumbnails_show_effects),
         ("hoverScrub", &mut pp.hover_scrub),
         ("thumbnailControlsAllDevices", &mut pp.thumbnail_controls_all_devices),
+        ("showTags", &mut pp.show_tags),
     ] {
         if let Some(v) = bool_p(p, k) {
             *f = v;
@@ -1033,25 +1143,29 @@ fn items(s: &mut Session, p: &Value) -> Result<Value> {
         None => &pr.root,
     };
     let view = &s.prefs.project_panel.view;
+    let filter = &s.prefs.project_panel.filter;
     let recursive = bool_p(p, "recursive").unwrap_or(false);
     let mut rows = Vec::new();
-    fn walk(pr: &Project, b: &Bin, view: &ViewSettings, depth: usize, recursive: bool, rows: &mut Vec<Value>) {
+    fn walk(pr: &Project, b: &Bin, view: &ViewSettings, filter: &BinFilter, depth: usize, recursive: bool, rows: &mut Vec<Value>) {
         let (bins, items) = bin_children(pr, b, &view.sort);
         for bid in bins {
             let Some(sub) = pr.root.find_bin(bid) else { continue };
             rows.push(json!({"bin": bid.0, "name": sub.name, "depth": depth}));
             if recursive {
-                walk(pr, sub, view, depth + 1, recursive, rows);
+                walk(pr, sub, view, filter, depth + 1, recursive, rows);
             }
         }
         for id in items {
             let Some(it) = pr.item(id) else { continue };
+            if !passes(pr, it, filter) {
+                continue;
+            }
             let cells: serde_json::Map<String, Value> = view.columns.iter().map(|c| (c.name.clone(), json!(cell(pr, it, &c.name).0))).collect();
-            rows.push(json!({"item": id.0, "name": it.name, "label": it.label.name(), "depth": depth, "cells": cells}));
+            rows.push(json!({"item": id.0, "name": it.name, "label": it.label.name(), "rating": it.rating, "tags": it.tags, "depth": depth, "cells": cells}));
         }
     }
-    walk(pr, bin, view, 0, recursive, &mut rows);
-    Ok(json!({"bin": bin.id.0, "columns": view.columns, "sort": view.sort, "rows": rows}))
+    walk(pr, bin, view, filter, 0, recursive, &mut rows);
+    Ok(json!({"bin": bin.id.0, "columns": view.columns, "sort": view.sort, "filter": filter, "filtered": filter.is_active(), "rows": rows}))
 }
 
 // ------------------------------------------------------------------------------------ presets
@@ -1218,7 +1332,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         c(
             "project.view.set",
             "Set Project Panel View",
-            r#"{"view":"list|icon|freeform"?,"iconSize":f32?,"fontSize":"small|medium|large|extraLarge"?,"previewArea":bool?,"thumbnails":bool?,"thumbnailsShowEffects":bool?,"hoverScrub":bool?,"thumbnailControlsAllDevices":bool?,"iconSort":column|{"column":str,"descending":bool}?}"#,
+            r#"{"view":"list|icon|freeform"?,"iconSize":f32?,"fontSize":"small|medium|large|extraLarge"?,"previewArea":bool?,"thumbnails":bool?,"thumbnailsShowEffects":bool?,"hoverScrub":bool?,"thumbnailControlsAllDevices":bool?,"showTags":bool?,"iconSort":column|{"column":str,"descending":bool}?}"#,
             always,
             view_set,
         ),

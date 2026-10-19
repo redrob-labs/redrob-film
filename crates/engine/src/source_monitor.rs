@@ -87,6 +87,10 @@ pub fn source_command(id: &str) -> bool {
                 | "markers.clearCurrent"
                 | "markers.clearAll"
                 | "markers.edit"
+                | "playhead.nextSnap"
+                | "playhead.prevSnap"
+                | "playhead.forwardSecond"
+                | "playhead.backSecond"
         )
 }
 
@@ -175,6 +179,27 @@ pub(crate) fn route(s: &mut Session, id: &str, p: &Value) -> Result<Option<Value
             }
             s.execute("project.setMarks", marks)?;
         }
+        "playhead.nextSnap" | "playhead.prevSnap" => {
+            // the clip monitor's snap points: its markers, In / Out and the clip's ends
+            let mut points: Vec<Tick> = view.markers.iter().map(|m| m.start).collect();
+            points.extend(view.mark_in);
+            points.extend(view.mark_out);
+            points.push(view.start);
+            points.push(Tick(view.end.0.saturating_sub(view.rate.frame_duration().0)).max(view.start));
+            let time = if id.ends_with("Next") { points.into_iter().filter(|t| *t > cursor).min() } else { points.into_iter().filter(|t| *t < cursor).max() };
+            if let Some(t) = time {
+                s.execute("source.setPlayhead", json!({"time":t.0}))?;
+            }
+        }
+        "playhead.forwardSecond" | "playhead.backSecond" => {
+            let n = crate::keyboard::frames_per_second(view.rate);
+            if view.rate.frame_duration().0 > 0 {
+                let dir = if id.ends_with("forwardSecond") { 1 } else { -1 };
+                let f = view.rate.frame_at(cursor).saturating_add(n * dir);
+                let t = view.rate.tick_of(f).clamp(view.start, Tick(view.end.0.saturating_sub(view.rate.frame_duration().0)).max(view.start));
+                s.execute("source.setPlayhead", json!({"time":t.0}))?;
+            }
+        }
         "markers.goNext" | "markers.goPrev" => {
             let time = if id.ends_with("Next") {
                 view.markers.iter().map(|m| m.start).filter(|t| *t > cursor).min()
@@ -196,7 +221,7 @@ pub(crate) fn route(s: &mut Session, id: &str, p: &Value) -> Result<Option<Value
             let duration = duration(p, &view, id)?.min(Tick(view.end.0.saturating_sub(time.0)));
             let name = text(p, "name", id)?.unwrap_or_default().to_string();
             let comment = text(p, "comment", id)?.unwrap_or_default().to_string();
-            let color = color(p, id)?.unwrap_or(Label::Green);
+            let color = color(p, id)?.unwrap_or_else(|| s.project.settings.default_marker_color());
             let root = view.media;
             let marker = s.edit("Add Source Marker", |pr, _| {
                 if pr.next_id == u64::MAX {
@@ -227,7 +252,24 @@ pub(crate) fn route(s: &mut Session, id: &str, p: &Value) -> Result<Option<Value
             let comment = text(p, "comment", id)?.map(str::to_string);
             let color = color(p, id)?;
             let duration = if p.get("durationFrames").is_some() { Some(duration(p, &view, id)?) } else { None };
+            // a new position (Edit Marker ▸ Position), kept inside the Source clip
+            let moved = match p.get("time") {
+                None => None,
+                Some(v) => {
+                    let t = Tick(v.as_i64().ok_or_else(|| bad(id, "time must be integer ticks"))?);
+                    if t < view.start || t >= view.end {
+                        return Err(bad(id, "marker time is outside the Source clip"));
+                    }
+                    Some(t)
+                }
+            };
             s.edit("Edit Source Marker", |pr, _| {
+                if let Some(t) = moved {
+                    let list = marker_list(pr, view.media)?;
+                    let m = list.iter_mut().find(|m| m.id == marker).ok_or_else(|| bad(id, "no such Source marker"))?;
+                    m.start = t;
+                    list.sort_by_key(|m| m.start);
+                }
                 let m = marker_list(pr, view.media)?.iter_mut().find(|m| m.id == marker).ok_or_else(|| bad(id, "no such Source marker"))?;
                 if let Some(name) = name {
                     m.name = name;

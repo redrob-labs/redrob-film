@@ -33,7 +33,6 @@ pub const ZOOMS: [(&str, f32); 10] =
     [("10", 0.1), ("25", 0.25), ("50", 0.5), ("75", 0.75), ("100", 1.0), ("150", 1.5), ("200", 2.0), ("400", 4.0), ("800", 8.0), ("1600", 16.0)];
 /// Ruler thickness (points).
 pub const RULER: f32 = 16.0;
-const GUIDE_COLOR: Color32 = Color32::from_rgb(0x3d, 0xa5, 0xff);
 const SNAP_COLOR: Color32 = Color32::from_rgb(0xff, 0x4f, 0xd8);
 /// Snap distance (points).
 pub const SNAP_PX: f32 = 6.0;
@@ -134,7 +133,70 @@ pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<
         v.pan = [0.0, 0.0];
         return Some(Ok(json!({"monitor": pfx, "zoom": zoom})));
     }
+    if let Some(n) = rest.strip_prefix("overlay.pattern.") {
+        let n: u8 = n.parse().ok().filter(|n| usize::from(*n) < crate::state::OVERLAY_PATTERNS.len())?;
+        let v = view_mut(app, w);
+        v.overlay_pattern = n;
+        return Some(Ok(json!({"monitor": pfx, "pattern": crate::state::OVERLAY_PATTERNS[usize::from(n)]})));
+    }
     let r = match rest {
+        "overlay.info" => {
+            let v = view_mut(app, w);
+            v.info_overlay = toggled(v.info_overlay, params);
+            Ok(json!({"monitor": pfx, "infoOverlay": v.info_overlay}))
+        }
+        "overlay.timecode" | "overlay.fps" | "overlay.markers" | "overlay.waveform" => {
+            let v = view_mut(app, w);
+            let slot = match rest {
+                "overlay.timecode" => &mut v.overlay_timecode,
+                "overlay.fps" => &mut v.overlay_fps,
+                "overlay.markers" => &mut v.overlay_markers,
+                _ => &mut v.overlay_waveform,
+            };
+            *slot = toggled(*slot, params);
+            let on = *slot;
+            // choosing an info overlay shows the info overlays
+            if on {
+                v.info_overlay = true;
+            }
+            let mut out = serde_json::Map::new();
+            out.insert("monitor".into(), json!(pfx));
+            out.insert(rest.trim_start_matches("overlay.").into(), json!(on));
+            Ok(Value::Object(out))
+        }
+        "overlay.nextPattern" => {
+            let v = view_mut(app, w);
+            v.overlay_pattern = ((usize::from(v.overlay_pattern) + 1) % crate::state::OVERLAY_PATTERNS.len()) as u8;
+            Ok(json!({"monitor": pfx, "pattern": crate::state::OVERLAY_PATTERNS[usize::from(v.overlay_pattern)]}))
+        }
+        "overlay.editMode" => {
+            let v = view_mut(app, w);
+            v.edit_handles = toggled(v.edit_handles, params);
+            Ok(json!({"monitor": pfx, "editMode": v.edit_handles}))
+        }
+        "overlay.moveToolbar" => {
+            let v = view_mut(app, w);
+            v.toolbar_left = !v.toolbar_left;
+            Ok(json!({"monitor": pfx, "toolbar": if v.toolbar_left { "left" } else { "right" }}))
+        }
+        "overlay.audioThumbnails" => {
+            let v = &mut app.ui.source;
+            v.always_audio_thumbnails = toggled(v.always_audio_thumbnails, params);
+            Ok(json!({"monitor": "source", "alwaysAudioThumbnails": v.always_audio_thumbnails}))
+        }
+        "sourceTimecode" => {
+            let v = &mut app.ui.source;
+            v.source_timecode = toggled(v.source_timecode, params);
+            Ok(json!({"monitor": "source", "sourceTimecode": v.source_timecode}))
+        }
+        "multitrack" => {
+            let v = &mut app.ui.program;
+            v.multitrack = toggled(v.multitrack, params);
+            if v.multitrack {
+                v.multicam = false;
+            }
+            Ok(json!({"monitor": "program", "multitrack": v.multitrack}))
+        }
         "highQualityPlayback" => {
             let v = view_mut(app, w);
             v.high_quality = toggled(v.high_quality, params);
@@ -241,6 +303,7 @@ pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<
 fn set_display(app: &mut FilmcraftApp, w: Which, d: &str) -> Result<Value, String> {
     if d == "multicam" {
         app.ui.program.multicam = true;
+        app.ui.program.multitrack = false;
         return Ok(json!({"monitor": "program", "display": "multicam"}));
     }
     let (_, mode) = DISPLAY_NAMES.iter().find(|(n, _)| *n == d).ok_or_else(|| format!("unknown display mode `{d}`"))?;
@@ -308,7 +371,16 @@ pub fn checked(app: &FilmcraftApp, id: &str) -> Option<bool> {
         "showGuides" => Some(v.show_guides),
         "lockGuides" => Some(v.lock_guides),
         "snapInProgramMonitor" => Some(app.ui.program.snap),
-        _ => None,
+        "overlay.info" => Some(v.info_overlay),
+        "overlay.timecode" => Some(v.overlay_timecode),
+        "overlay.fps" => Some(v.overlay_fps),
+        "overlay.markers" => Some(v.overlay_markers),
+        "overlay.waveform" => Some(v.overlay_waveform),
+        "overlay.editMode" => Some(v.edit_handles),
+        "overlay.audioThumbnails" => Some(app.ui.source.always_audio_thumbnails),
+        "sourceTimecode" => Some(app.ui.source.source_timecode),
+        "multitrack" => Some(app.ui.program.multitrack),
+        r => r.strip_prefix("overlay.pattern.").and_then(|n| n.parse::<u8>().ok()).map(|n| v.overlay_pattern == n),
     }
 }
 
@@ -365,7 +437,20 @@ pub fn zoom_pan_input(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, area:
     {
         // as fast as the Timeline's own wheel zoom
         let wheel = crate::panels::timeline::wheel_input(&ctx);
-        let f = if (wheel.pinch - 1.0).abs() > 1e-4 { wheel.pinch } else { (1.0 + wheel.delta.y * 0.01).clamp(0.5, 2.0) };
+        let pinched = (wheel.pinch - 1.0).abs() > 1e-4;
+        // Kdenlive: the wheel over a monitor seeks a frame per notch (down = forward); Ctrl / Cmd
+        // with the wheel, or a pinch, zooms
+        if !pinched && !wheel.command && wheel.delta.y != 0.0 {
+            let acc_id = egui::Id::new((prefix(w), "wheel-seek"));
+            let acc = ui.data(|d| d.get_temp::<f32>(acc_id)).unwrap_or(0.0) - wheel.delta.y;
+            let steps = (acc / 40.0).trunc();
+            ui.data_mut(|d| d.insert_temp(acc_id, acc - steps * 40.0));
+            if steps != 0.0 {
+                step_monitor(app, w, steps as i64);
+            }
+            return;
+        }
+        let f = if pinched { wheel.pinch } else { (1.0 + wheel.delta.y * 0.01).clamp(0.5, 2.0) };
         if (f - 1.0).abs() > 1e-4 && pic.width() > 0.0 && fw > 0.0 {
             let cur = pic.width() * ppp / fw;
             let z = (cur * f).clamp(ZOOMS[0].1, ZOOMS[ZOOMS.len() - 1].1);
@@ -406,6 +491,31 @@ pub fn zoom_pan_input(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, area:
     }
 }
 
+/// Move a monitor's playhead by `frames` (Program: the sequence playhead; Source: the clip's),
+/// stopping its playback, as the wheel over the picture does.
+pub fn step_monitor(app: &mut FilmcraftApp, w: Which, frames: i64) {
+    let r = match w {
+        Which::Program => {
+            app.stop();
+            app.session.execute("playhead.step", json!({"frames": frames})).map(|_| ())
+        }
+        Which::Source => {
+            app.stop_source();
+            let Some(view) = app.session.state.source_item.and_then(|i| redrob_film_engine::clip_ops::source_view(&app.session, i)) else { return };
+            if view.rate.frame_duration().0 == 0 {
+                return;
+            }
+            let f = view.rate.frame_at(app.session.state.source_playhead).saturating_add(frames);
+            let last = Tick(view.end.0.saturating_sub(view.rate.frame_duration().0)).max(view.start);
+            let t = view.rate.tick_of(f).clamp(view.start, last);
+            app.session.execute("source.setPlayhead", json!({"time": t.0})).map(|_| ())
+        }
+    };
+    if let Err(e) = r {
+        app.ui.status = e.to_string();
+    }
+}
+
 /// Snap one axis: the moving item's (start, centre, end) against `targets`; returns
 /// (delta, target) of the closest pair within `thr`.
 pub fn snap_axis(edges: [f32; 3], targets: &[f32], thr: f32) -> Option<(f32, f32)> {
@@ -439,6 +549,12 @@ pub fn snap_move(app: &FilmcraftApp, pic: Rect, frame: (u32, u32), moving: Rect,
                 ty.push(pic.min.y + g.position as f32 * ky);
             }
         }
+    }
+    // the grid's lines (View ▸ Grid…)
+    for i in 1..=v.grid_lines.min(64) {
+        let f = i as f32 / (v.grid_lines.min(64) + 1) as f32;
+        tx.push(pic.min.x + pic.width() * f);
+        ty.push(pic.min.y + pic.height() * f);
     }
     let m = moving.translate(off);
     let mut off = off;
@@ -519,7 +635,7 @@ pub fn rulers(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, top: Rect, le
         let Some(pos) = resp.interact_pointer_pos().or(ui.ctx().pointer_latest_pos()) else { continue };
         if area.contains(pos) {
             let seg = if ng.vertical { [pos2(pos.x, area.min.y), pos2(pos.x, area.max.y)] } else { [pos2(area.min.x, pos.y), pos2(area.max.x, pos.y)] };
-            ui.painter().with_clip_rect(area).line_segment(seg, Stroke::new(1.0, GUIDE_COLOR));
+            ui.painter().with_clip_rect(area).line_segment(seg, Stroke::new(1.0, crate::panels::monitor::overlay_color(app)));
         }
         if resp.drag_stopped() {
             ui.data_mut(|d| d.remove::<NewGuide>(drag_id));
@@ -537,12 +653,27 @@ pub fn rulers(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, top: Rect, le
 /// area) to remove it.
 pub fn guides(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, area: Rect, pic: Rect, frame: (u32, u32)) {
     let v = view(app, w).clone();
+    // the grid (View ▸ Grid…): evenly spaced lines across and down the picture
+    if v.grid_lines > 0 {
+        let n = v.grid_lines.min(64);
+        let [r, g, b, a] = v.grid_color;
+        let stroke = Stroke::new(1.0, egui::Color32::from_rgba_unmultiplied(r, g, b, a));
+        let p = ui.painter().with_clip_rect(pic.intersect(area));
+        for i in 1..=n {
+            let f = i as f32 / (n + 1) as f32;
+            let (x, y) = (pic.min.x + pic.width() * f, pic.min.y + pic.height() * f);
+            p.line_segment([pos2(x, pic.min.y), pos2(x, pic.max.y)], stroke);
+            p.line_segment([pos2(pic.min.x, y), pos2(pic.max.x, y)], stroke);
+        }
+    }
     if !v.show_guides || v.guides.is_empty() {
         return;
     }
     let pfx = prefix(w);
     let (kx, ky) = (pic.width() / frame.0.max(1) as f32, pic.height() / frame.1.max(1) as f32);
     let p = ui.painter().with_clip_rect(area);
+    // Settings ▸ Playback ▸ Monitor overlay color
+    let guide_color = crate::panels::monitor::overlay_color(app);
     let mut remove = None;
     for (i, g) in v.guides.iter().enumerate() {
         let c = if g.vertical { pic.min.x + g.position as f32 * kx } else { pic.min.y + g.position as f32 * ky };
@@ -551,7 +682,7 @@ pub fn guides(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, area: Rect, p
         } else {
             ([pos2(area.min.x, c), pos2(area.max.x, c)], Rect::from_min_max(pos2(area.min.x, c - 3.0), pos2(area.max.x, c + 3.0)))
         };
-        p.line_segment(seg, Stroke::new(1.0, GUIDE_COLOR));
+        p.line_segment(seg, Stroke::new(1.0, guide_color));
         let hit = hit.intersect(area);
         app.auto.add(&format!("{pfx}.guide.{i}"), hit, if g.vertical { "vertical guide" } else { "horizontal guide" });
         if v.lock_guides {
@@ -581,7 +712,9 @@ pub fn guides(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, area: Rect, p
 }
 
 /// The Source Monitor's audio waveform (Audio Waveform display mode, audio-only clips and the
-/// split view): click to move the source playhead.
+/// split view): click to move the source playhead. Kdenlive's audio minimap runs along its bottom:
+/// Ctrl / Cmd + the wheel zooms the waveform about the pointer, the wheel scrolls a zoomed one, and
+/// the minimap's window is dragged to scroll, its ends to zoom; a double-click on it shows all.
 #[allow(clippy::too_many_arguments)]
 pub fn waveform(
     app: &mut FilmcraftApp,
@@ -593,11 +726,121 @@ pub fn waveform(
     mark_in: Option<Tick>,
     mark_out: Option<Tick>,
 ) {
+    let zoom_id = egui::Id::new(("source-waveform-zoom", item.0));
+    let (mut za, mut zb) = ui.data(|d| d.get_temp::<(f64, f64)>(zoom_id)).unwrap_or((0.0, 1.0));
+    let strip_h = if area.height() > 60.0 { 14.0 } else { 0.0 };
+    let main = Rect::from_min_max(area.min, pos2(area.max.x, area.max.y - if strip_h > 0.0 { strip_h + 2.0 } else { 0.0 }));
+    if ui.rect_contains_pointer(main)
+        && let Some(hp) = ui.ctx().pointer_hover_pos()
+    {
+        let wheel = crate::panels::timeline::wheel_input(ui.ctx());
+        let span = zb - za;
+        if wheel.command && wheel.delta.y != 0.0 {
+            let f = f64::from((1.0 - wheel.delta.y * 0.01).clamp(0.5, 2.0));
+            let at = za + span * f64::from(((hp.x - main.min.x) / main.width().max(1.0)).clamp(0.0, 1.0));
+            let ns = (span * f).clamp(0.002, 1.0);
+            za = (at - (at - za) * ns / span).clamp(0.0, 1.0 - ns);
+            zb = za + ns;
+        } else if span < 1.0 && (wheel.delta.y != 0.0 || wheel.delta.x != 0.0) {
+            let d = f64::from(-(wheel.delta.y + wheel.delta.x) / main.width().max(1.0)) * span;
+            za = (za + d).clamp(0.0, 1.0 - span);
+            zb = za + span;
+        }
+    }
+    if strip_h > 0.0 {
+        let strip = Rect::from_min_max(pos2(area.min.x, area.max.y - strip_h), area.max);
+        audio_minimap(app, ui, strip, item, time, duration, &mut za, &mut zb);
+    }
+    ui.data_mut(|d| d.insert_temp(zoom_id, (za, zb)));
+    waveform_view(app, ui, main, item, time, duration, mark_in, mark_out, za, zb);
+}
+
+/// The audio minimap under the Source waveform: the whole clip, the window shown above it (drag it
+/// to scroll, its ends to zoom, double-click for all) and the playhead.
+#[allow(clippy::too_many_arguments)]
+fn audio_minimap(app: &mut FilmcraftApp, ui: &mut egui::Ui, strip: Rect, item: ItemId, time: Tick, duration: Tick, za: &mut f64, zb: &mut f64) {
+    let t = app.tokens;
+    let p = ui.painter().with_clip_rect(strip);
+    p.rect_filled(strip, 2.0, Color32::from_black_alpha(120));
+    let dur = duration.0.max(1) as f64;
+    let spp = 256.0 * TICKS_PER_SAMPLE_48K;
+    if let Some(peaks) = crate::panels::timeline::request_peaks(app, item, 0).filter(|p| !p.is_empty()) {
+        let mut mesh = egui::Mesh::default();
+        let mm = strip.center().y;
+        let half = strip.height() * 0.45;
+        for x in (strip.min.x.floor() as i32)..(strip.max.x.ceil() as i32) {
+            let f0 = f64::from((x as f32 - strip.min.x) / strip.width());
+            let f1 = f64::from((x as f32 + 1.0 - strip.min.x) / strip.width());
+            let s0 = (dur * f0 / spp) as usize;
+            let s1 = ((dur * f1 / spp) as usize).max(s0 + 1);
+            let (lo, hi) = peaks.iter().skip(s0).take(s1 - s0).fold((0f32, 0f32), |(l, h), (a, b)| (l.min(*a), h.max(*b)));
+            if hi - lo > 0.002 {
+                mesh.add_colored_rect(
+                    Rect::from_min_max(pos2(x as f32, mm - hi.min(1.0) * half), pos2(x as f32 + 1.0, mm - lo.max(-1.0) * half + 1.0)),
+                    Color32::from_rgba_unmultiplied(0x4f, 0xc3, 0x7a, 140),
+                );
+            }
+        }
+        p.add(mesh);
+    }
+    let win = Rect::from_min_max(pos2(strip.min.x + strip.width() * *za as f32, strip.min.y), pos2(strip.min.x + strip.width() * *zb as f32, strip.max.y));
+    p.rect_stroke(win, 2.0, Stroke::new(1.0, Color32::WHITE), egui::StrokeKind::Inside);
+    let px = strip.min.x + strip.width() * ((time.0 as f64 / dur) as f32).clamp(0.0, 1.0);
+    p.line_segment([pos2(px, strip.min.y), pos2(px, strip.max.y)], Stroke::new(1.0, t.playhead));
+    let resp = ui.interact(strip, egui::Id::new("source-waveform-minimap"), Sense::click_and_drag());
+    app.auto.add("source.waveform.minimap", strip, "audio minimap");
+    let grab_id = egui::Id::new("source-waveform-minimap-grab");
+    if resp.drag_started()
+        && let Some(o) = ui.input(|i| i.pointer.press_origin())
+    {
+        // 0 = the window's left end, 1 = its right end, 2 = the whole window
+        let g: u8 = if (o.x - win.min.x).abs() <= 4.0 {
+            0
+        } else if (o.x - win.max.x).abs() <= 4.0 {
+            1
+        } else {
+            2
+        };
+        ui.data_mut(|d| d.insert_temp(grab_id, g));
+    }
+    if resp.dragged() {
+        let dx = f64::from(resp.drag_delta().x / strip.width().max(1.0));
+        match ui.data(|d| d.get_temp::<u8>(grab_id)).unwrap_or(2) {
+            0 => *za = (*za + dx).clamp(0.0, *zb - 0.002),
+            1 => *zb = (*zb + dx).clamp(*za + 0.002, 1.0),
+            _ => {
+                let sp = *zb - *za;
+                *za = (*za + dx).clamp(0.0, 1.0 - sp);
+                *zb = *za + sp;
+            }
+        }
+    }
+    if resp.double_clicked() {
+        *za = 0.0;
+        *zb = 1.0;
+    }
+}
+
+/// The waveform itself over `area`, showing the fraction `za`..`zb` of the clip.
+#[allow(clippy::too_many_arguments)]
+fn waveform_view(
+    app: &mut FilmcraftApp,
+    ui: &mut egui::Ui,
+    area: Rect,
+    item: ItemId,
+    time: Tick,
+    duration: Tick,
+    mark_in: Option<Tick>,
+    mark_out: Option<Tick>,
+    za: f64,
+    zb: f64,
+) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(area);
     p.rect_filled(area, 0.0, t.monitor_bg);
     let dur = duration.0.max(1) as f64;
-    let xof = |tk: Tick| area.min.x + ((tk.0 as f64 / dur) as f32).clamp(0.0, 1.0) * area.width();
+    let span = (zb - za).max(1e-6);
+    let xof = |tk: Tick| area.min.x + (((tk.0 as f64 / dur - za) / span) as f32).clamp(0.0, 1.0) * area.width();
     if mark_in.is_some() || mark_out.is_some() {
         let (a, b) = (xof(mark_in.unwrap_or(Tick::ZERO)), xof(mark_out.unwrap_or(duration)));
         p.rect_filled(Rect::from_min_max(pos2(a, area.min.y), pos2(b, area.max.y)), 0.0, Color32::from_white_alpha(14));
@@ -611,10 +854,10 @@ pub fn waveform(
             let mut mesh = egui::Mesh::default();
             let col = Color32::from_rgb(0x4f, 0xc3, 0x7a);
             for x in (area.min.x.floor() as i32)..(area.max.x.ceil() as i32) {
-                let f0 = (x as f32 - area.min.x) / area.width();
-                let f1 = (x as f32 + 1.0 - area.min.x) / area.width();
-                let s0 = (dur * f0 as f64 / spp) as usize;
-                let s1 = ((dur * f1 as f64 / spp) as usize).max(s0 + 1);
+                let f0 = za + span * f64::from((x as f32 - area.min.x) / area.width());
+                let f1 = za + span * f64::from((x as f32 + 1.0 - area.min.x) / area.width());
+                let s0 = (dur * f0 / spp) as usize;
+                let s1 = ((dur * f1 / spp) as usize).max(s0 + 1);
                 let (lo, hi) = peaks.iter().skip(s0).take(s1 - s0).fold((0f32, 0f32), |(l, h), (a, b)| (l.min(*a), h.max(*b)));
                 if hi - lo > 0.002 {
                     mesh.add_colored_rect(
@@ -646,7 +889,7 @@ pub fn waveform(
         && crate::panels::dragged_source(ui).is_none()
         && let Some(pos) = resp.interact_pointer_pos()
     {
-        let f = ((pos.x - area.min.x) / area.width()).clamp(0.0, 1.0) as f64;
+        let f = za + span * ((pos.x - area.min.x) / area.width()).clamp(0.0, 1.0) as f64;
         let _ = app.session.execute("source.setPlayhead", json!({"time": (f * dur) as i64}));
     }
 }

@@ -71,10 +71,11 @@ pub const COMMANDS: &[UiCommand] = &[
     uic!("view.programZoomFit", "Zoom Program Monitor to Fit", [], Some("Cmd+Shift+0")),
     uic!("view.sourceZoom100", "Zoom Source Monitor to 100%", [], Some("Cmd+Alt+Shift+1")),
     uic!("view.sourceZoomFit", "Zoom Source Monitor to Fit", [], Some("Cmd+Alt+Shift+0")),
-    uic!("playback.inToOutPreroll", "Play In to Out with Preroll/Postroll", [], Some("Shift+Space")),
-    uic!("playback.toOut", "Play from Playhead to Out Point", [], Some("Ctrl+Space")),
+    uic!("playback.inToOutPreroll", "Play In to Out with Preroll/Postroll", ["Monitor"], Some("Shift+Space")),
+    uic!("playback.toOut", "Play from Playhead to Out Point", ["Monitor"], Some("Ctrl+Space")),
     uic!("timeline.expandAllTracks", "Expand All Tracks", [], Some("Shift+=")),
     uic!("timeline.minimizeAllTracks", "Minimize All Tracks", [], Some("Shift+-")),
+    uic!("timeline.fitTracks", "Fit Tracks to View", [], None),
     uic!("timeline.increaseVideoHeight", "Increase Video Tracks Height", [], None),
     uic!("timeline.decreaseVideoHeight", "Decrease Video Tracks Height", [], None),
     uic!("timeline.increaseAudioHeight", "Increase Audio Tracks Height", [], None),
@@ -193,6 +194,7 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, params: &Val
             }
         }
         "timeline.expandAllTracks" | "timeline.minimizeAllTracks" => Ok(all_heights(app, id == "timeline.expandAllTracks")),
+        "timeline.fitTracks" => Ok(crate::panels::timeline::fit_tracks(app)),
         "timeline.increaseVideoHeight" | "timeline.decreaseVideoHeight" | "timeline.increaseAudioHeight" | "timeline.decreaseAudioHeight" => {
             let d = if id.contains("increase") { HEIGHT_STEP } else { -HEIGHT_STEP };
             let tv = &mut app.ui.timeline;
@@ -315,6 +317,8 @@ fn play_range(app: &mut FilmcraftApp, preroll: bool) -> Result<Value, String> {
 
 fn all_heights(app: &mut FilmcraftApp, expand: bool) -> Value {
     let tv = &mut app.ui.timeline;
+    // single-track heights give way to the common one
+    tv.track_heights.clear();
     let target = if expand { 120.0 } else { MIN_TRACK_H };
     let at_target = tv.video_track_h == target && tv.audio_track_h == target;
     match (at_target, app.ui.keys.saved_heights) {

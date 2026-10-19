@@ -678,6 +678,8 @@ mod tests {
         sc::Scale::ALL.iter().for_each(|k| push(&mut out, k.label()));
         sc::Brightness::ALL.iter().for_each(|k| push(&mut out, k.label()));
         [sc::Targets::Percent75, sc::Targets::Percent100].iter().for_each(|k| push(&mut out, k.label()));
+        sc::PaintMode::ALL.iter().for_each(|k| push(&mut out, k.label()));
+        crate::panels::panel_state::ScopeSource::ALL.iter().for_each(|s| push(&mut out, s.label()));
         crate::state::PlaybackRes::ALL.iter().for_each(|r| push(&mut out, r.label()));
         crate::state::Tool::ALL.iter().for_each(|t| push(&mut out, t.label()));
         crate::credits::NameMode::ALL.iter().for_each(|m| push(&mut out, m.label()));

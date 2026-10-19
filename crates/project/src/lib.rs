@@ -36,7 +36,7 @@ pub use effect::{EffectDef, EffectInstance, EffectKind, ParamDef, ParamKind, eff
 pub use essential::{AudioType, EssentialSound};
 pub use find::{FindOp, FindQuery, FindRow, SearchBin};
 pub use graphic_design::{CharStyle, GraphicMeta, LayerExtra, Pin, PinTarget, Roll, RollMode, SourceGraphic, StyleRun};
-pub use keyframe::{Interpolation, Keyframe, Param, ParamValue};
+pub use keyframe::{EaseCurve, EaseMode, Interpolation, Keyframe, Param, ParamValue};
 pub use mask::{Mask, MaskMode, MaskPath, MaskVertex, TrackMethod};
 pub use mixer::{AutomationMode, InputMap, MixerStrip, TrackSend};
 pub use multicam::{Camera, MergedClip, MulticamAudio, MulticamSel, MulticamSource};
@@ -178,6 +178,40 @@ pub struct Interpretation {
     /// is edited into a sequence. None = one stereo clip of the first two channels.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audio_channels: Option<AudioChannelMap>,
+    /// Modify ▸ Audio Channels ▸ Audio Streams (Kdenlive: clip properties ▸ audio, per stream):
+    /// gain in dB of each audio stream of the file, by stream index (missing = 0 dB).
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub audio_stream_gain_db: std::collections::BTreeMap<u32, f64>,
+    /// Audio streams switched off (silent wherever they are used), by stream index.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub audio_streams_disabled: Vec<u32>,
+    /// Image sequences: play as a slideshow (time per image, loop, crop to fill, transitions,
+    /// pan and zoom, low-pass). None = one image per frame.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub slideshow: Option<redrob_film_media::slideshow::Slideshow>,
+    /// Clip Properties ▸ Audio ▸ sync offset in milliseconds: the source's audio plays this much
+    /// later (negative: earlier) against its picture.
+    #[serde(default, skip_serializing_if = "is_zero_i32")]
+    pub audio_offset_ms: i32,
+    /// Clip Properties ▸ Color range: read the picture as full or limited range instead of what
+    /// the file says (None = the file's).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color_range: Option<redrob_film_color::Range>,
+}
+
+impl Interpretation {
+    /// Linear gain of audio stream `stream` (0 when it is switched off).
+    pub fn audio_stream_gain(&self, stream: usize) -> f32 {
+        let k = stream as u32;
+        if self.audio_streams_disabled.contains(&k) {
+            return 0.0;
+        }
+        self.audio_stream_gain_db.get(&k).map_or(1.0, |db| 10f64.powf(db.clamp(-96.0, 24.0) / 20.0) as f32)
+    }
+}
+
+fn is_zero_i32(v: &i32) -> bool {
+    *v == 0
 }
 
 /// Modify ▸ Audio Channels: the clip channel format and, per audio clip, the source channels it
@@ -308,6 +342,36 @@ pub struct ProjectItem {
     /// item's In/Out for one channel (J- and L-cuts).
     #[serde(default, skip_serializing_if = "SplitMarks::is_empty")]
     pub split: SplitMarks,
+    /// Star rating, 0 (none) to 5 (Project panel Rating column, sort and filter). Older files
+    /// have none.
+    #[serde(default, skip_serializing_if = "is_zero_u8")]
+    pub rating: u8,
+    /// Bin tags: ids into [`Project::tags`], any number per item, in the order they were added.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<u32>,
+}
+
+fn is_zero_u8(v: &u8) -> bool {
+    *v == 0
+}
+
+/// A bin tag (Project panel ▸ Tags): a coloured, named marker any number of items can carry.
+/// The project's tags are an ordered list; their order is the order of the Tags bar.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BinTag {
+    pub id: u32,
+    pub name: String,
+    /// `[r, g, b]`.
+    pub color: [u8; 3],
+}
+
+/// The tags a new project starts with (five colours, unnamed descriptions the user edits).
+pub fn default_bin_tags() -> Vec<BinTag> {
+    [[0xff, 0x00, 0x00], [0xff, 0x80, 0x00], [0xff, 0xff, 0x00], [0x00, 0xc0, 0x00], [0x00, 0x60, 0xff]]
+        .into_iter()
+        .enumerate()
+        .map(|(i, color)| BinTag { id: i as u32 + 1, name: format!("Tag {}", i + 1), color })
+        .collect()
 }
 
 impl ProjectItem {
@@ -872,7 +936,7 @@ impl Default for SequenceSettings {
             drop_frame: false,
             preset: "HD 1080p 23.976".into(),
             audio_master: AudioChannels::Stereo,
-            preview_codec: "ProRes 422".into(),
+            preview_codec: "ProRes 422 HQ".into(),
             max_bit_depth: false,
             max_render_quality: false,
             working_space: "Rec. 709".into(),
@@ -998,6 +1062,35 @@ pub struct Sequence {
     /// Split In/Out points (Markers ▸ Mark Split): per-channel overrides of `mark_in`/`mark_out`.
     #[serde(default, skip_serializing_if = "SplitMarks::is_empty")]
     pub split: SplitMarks,
+    /// Timeline compositing and effect switches (Sequence ▸ Track Compositing / Disable Timeline
+    /// Effects). Older files have none (serde default: both as before).
+    #[serde(default, skip_serializing_if = "TimelineOptions::is_default")]
+    pub timeline_options: TimelineOptions,
+    /// Timeline preview zones (Sequence ▸ Add Preview Zone): ranges Start Preview Render renders
+    /// in one pass, kept sorted and without overlaps. Older files have none.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub preview_zones: Vec<TimeRange>,
+    /// Automatic Preview: the zones are rendered again by themselves after edits.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub auto_preview: bool,
+}
+
+/// Sequence-wide render switches set from the Timeline.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct TimelineOptions {
+    /// Track compositing off: only the topmost video track showing something at a time is drawn
+    /// (no automatic alpha compositing of the tracks below it).
+    pub no_track_compositing: bool,
+    /// Every clip effect is bypassed (intrinsic Motion / Opacity / Volume still apply), in the
+    /// monitors and in exports.
+    pub effects_disabled: bool,
+}
+
+impl TimelineOptions {
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
 }
 
 /// Split edit points: separate video and audio In/Out points (Markers ▸ Mark Split). `None` means
@@ -1154,6 +1247,53 @@ pub struct ProjectSettings {
     /// Project Settings ▸ Scratch Disks. Schema v11.
     #[serde(default)]
     pub scratch: ScratchDisks,
+    /// Default folder of new sequences (None: the project's root).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sequence_bin: Option<BinId>,
+    /// Default folder of audio captures (voice-over recordings; None: the project's root).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub capture_bin: Option<BinId>,
+    /// Project Settings ▸ Markers: the project's own marker categories (a name for each marker
+    /// colour used as a category, in category order 1, 2, …). Empty = the default set
+    /// ([`default_marker_categories`]), until they are first edited.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub marker_categories: Vec<MarkerCategory>,
+    /// The category new markers get when none is chosen (Markers panel ▸ default category).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_marker_category: Option<Label>,
+}
+
+/// A marker category: a marker colour and the name the project gives it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MarkerCategory {
+    pub color: Label,
+    pub name: String,
+}
+
+/// The categories a new project starts with: the marker colours in the Markers panel's order,
+/// named after their colour.
+pub fn default_marker_categories() -> Vec<MarkerCategory> {
+    use Label::*;
+    [Green, Rose, Purple, Mango, Yellow, Blue, Teal, Violet, Forest, Brown].iter().map(|l| MarkerCategory { color: *l, name: l.name().to_string() }).collect()
+}
+
+impl ProjectSettings {
+    /// The project's marker categories, in order (category 1 first).
+    pub fn marker_categories(&self) -> Vec<MarkerCategory> {
+        if self.marker_categories.is_empty() { default_marker_categories() } else { self.marker_categories.clone() }
+    }
+    /// The colour of category `n` (1-based), if the project has that many.
+    pub fn marker_category(&self, n: usize) -> Option<Label> {
+        n.checked_sub(1).and_then(|i| self.marker_categories().get(i).map(|c| c.color))
+    }
+    /// The name of the category a marker colour stands for (the colour's name when no category uses it).
+    pub fn marker_category_name(&self, color: Label) -> String {
+        self.marker_categories().into_iter().find(|c| c.color == color).map(|c| c.name).unwrap_or_else(|| color.name().to_string())
+    }
+    /// The colour new markers get: the default category, else the first category.
+    pub fn default_marker_color(&self) -> Label {
+        self.default_marker_category.or_else(|| self.marker_categories().first().map(|c| c.color)).unwrap_or(Label::Green)
+    }
 }
 
 fn title_safe_default() -> (f64, f64) {
@@ -1191,6 +1331,8 @@ pub struct IngestSettings {
     pub destination: Option<String>,
     /// Proxy / transcode preset id (the engine's `proxies::PRESETS`); empty = the default.
     pub preset: String,
+    /// Create Proxies only for videos wider than this many pixels (0 = every video).
+    pub min_proxy_width: u32,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -1221,6 +1363,10 @@ impl Default for ProjectSettings {
             action_safe: action_safe_default(),
             capture_format: capture_format_default(),
             scratch: ScratchDisks::default(),
+            sequence_bin: None,
+            capture_bin: None,
+            marker_categories: Vec::new(),
+            default_marker_category: None,
         }
     }
 }
@@ -1257,6 +1403,15 @@ pub struct Project {
     /// instructions for whoever opens it next, frame numbers and the like. Schema v15.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub notes: String,
+    /// Bin tags (Project panel ▸ Tags). None = the default set ([`default_bin_tags`]), until the
+    /// tags are first edited.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<BinTag>>,
+    /// Project metadata (Project Settings ▸ Metadata): `title`, `creator`, `copyright`,
+    /// `description`, `comment` and any field the user adds. Exports take the five standard ones
+    /// unless the export settings name their own.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub metadata: BTreeMap<String, String>,
 }
 
 /// How a sequence is shown in the Timeline panel: its zoom, scroll position and track heights.
@@ -1310,6 +1465,10 @@ pub struct ProjectView {
     /// written before it existed have none, and every playhead starts at zero as it did then.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub playheads: BTreeMap<ItemId, Tick>,
+    /// The window layout when the project was saved (`{"workspace": name, "dock": tree}`, as the
+    /// frontend writes it), restored when the project opens. Opaque here.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub layout: Option<serde_json::Value>,
 }
 
 impl ProjectView {
@@ -1353,7 +1512,20 @@ impl Project {
             source_graphics: BTreeMap::new(),
             narrations: BTreeMap::new(),
             notes: String::new(),
+            tags: None,
+            metadata: BTreeMap::new(),
         }
+    }
+
+    /// The project's bin tags in Tags-bar order.
+    pub fn bin_tags(&self) -> Vec<BinTag> {
+        self.tags.clone().unwrap_or_else(default_bin_tags)
+    }
+
+    /// The bin new items of a kind go to when it is set and still exists: `sequence_bin` for new
+    /// sequences, `capture_bin` for recordings (Project Settings ▸ default folders).
+    pub fn default_bin(&self, bin: Option<BinId>) -> Option<BinId> {
+        bin.filter(|b| self.root.find_bin(*b).is_some())
     }
 
     pub fn alloc_id(&mut self) -> u64 {
@@ -1366,7 +1538,10 @@ impl Project {
     pub fn add_item(&mut self, name: &str, label: Label, kind: ItemKind, bin: Option<BinId>) -> ItemId {
         let id = ItemId(self.alloc_id());
         let created = id.0;
-        self.items.insert(id, ProjectItem { id, name: name.into(), label, kind, metadata: BTreeMap::new(), created, split: SplitMarks::default() });
+        self.items.insert(
+            id,
+            ProjectItem { id, name: name.into(), label, kind, metadata: BTreeMap::new(), created, split: SplitMarks::default(), rating: 0, tags: Vec::new() },
+        );
         if let Some(b) = bin.and_then(|b| self.root.find_bin_mut(b)) {
             b.children.push(BinEntry::Item(id));
         } else {
@@ -1522,6 +1697,9 @@ impl Project {
             multicam: None,
             merged: None,
             split: SplitMarks::default(),
+            timeline_options: TimelineOptions::default(),
+            preview_zones: Vec::new(),
+            auto_preview: false,
         };
         for i in 0..v {
             let id = TrackId(self.alloc_id());

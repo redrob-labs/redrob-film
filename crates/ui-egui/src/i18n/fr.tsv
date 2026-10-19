@@ -3420,6 +3420,7 @@
 	Lines +/−	Lignes +/−
 	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	Échec de la sortie audio : lecture sans son (vérifiez Préférences ▸ Matériel audio)
 	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	La sortie audio ne répond pas : lecture sans son (vérifiez Préférences ▸ Matériel audio)
+	Audio output restored	Sortie audio rétablie
 	Clip Speed / Duration	Vitesse/durée du clip
 	Speed:	Vitesse :
 	Reverse Speed	Vitesse inversée
@@ -3574,3 +3575,1641 @@
 	The reply hit its length limit.	La réponse a atteint sa longueur maximale.
 	The turn ended: {reason}.	Le tour s’est terminé : {reason}.
 	Workspace changed. The next message starts the agent with it.	L’espace de travail a changé. Le prochain message démarre l’agent avec celui-ci.
+
+# Kdenlive parity: audio effects, mixer, meters, recording, waveforms
+	Soft Clipper	Écrêteur doux
+	Dynamic Equalizer	Égaliseur dynamique
+	All Pass	Passe-tout
+	Tilt Shelf	Shelf d'inclinaison
+	Sub Cut	Coupe-subgraves
+	Sub Boost	Renfort de subgraves
+	Pulsator	Pulsateur
+	Vibrato	Vibrato
+	Frequency Shifter	Décaleur de fréquence
+	Phase Shifter	Décaleur de phase
+	Mixdown	Mixage mono
+	Stereo to Mono	Stéréo vers mono
+	Crossfeed	Crossfeed
+	Haas Stereo Enhancer	Élargisseur stéréo Haas
+	Stereo Tools	Outils stéréo
+	Crusher	Broyeur
+	Crystalizer	Cristalliseur
+	DC Shift	Décalage CC
+	Derivative	Dérivée
+	Integral	Intégrale
+	Virtual Bass	Basses virtuelles
+	Tanh	Tanh
+	Atan	Atan
+	Cubic	Cubique
+	Exponential	Exponentielle
+	Algebraic	Algébrique
+	Quintic	Quintique
+	Sine	Sinus
+	Detection Frequency	Fréquence de détection
+	Detection Q	Q de détection
+	Target Frequency	Fréquence cible
+	Target Q	Q cible
+	Removed Band Level	Niveau de la bande supprimée
+	Saw Up	Dent de scie montante
+	Saw Down	Dent de scie descendante
+	Rate	Vitesse
+	Offset Left	Décalage gauche
+	Offset Right	Décalage droit
+	Input Level	Niveau d'entrée
+	Output Level	Niveau de sortie
+	Modulation Frequency	Fréquence de modulation
+	Shift	Décalage
+	Number of Output Channels	Nombre de canaux de sortie
+	4 Channels	4 canaux
+	Middle Source	Source centrale
+	Side	Côté
+	Delayed Side	Côté retardé
+	Left Gain	Gain gauche
+	Right Gain	Gain droit
+	LR > LR	LR > LR
+	LR > MS	LR > MS
+	MS > LR	MS > LR
+	LR > LL	LR > LL
+	LR > RR	LR > RR
+	LR > L+R	LR > L+R
+	LR > RL	LR > RL
+	Mid Level	Niveau central
+	Side Level	Niveau latéral
+	Invert Left Phase	Inverser la phase gauche
+	Invert Right Phase	Inverser la phase droite
+	Mute Left	Couper la gauche
+	Mute Right	Couper la droite
+	Input Gain	Gain d'entrée
+	Bit Reduction	Réduction de bits
+	Logarithmic	Logarithmique
+	DC	CC
+	Anti-aliasing	Anticrénelage
+	Sample Reduction	Réduction d'échantillons
+	Enable LFO	Activer le LFO
+	LFO Depth	Profondeur du LFO
+	LFO Rate	Vitesse du LFO
+	Enable Clipping	Activer l'écrêtage
+	Limiter Gain	Gain du limiteur
+	Show/Hide the Audio Track Mixer	Afficher/masquer le mixeur de pistes audio
+	Show Peak Hold	Afficher le maintien des crêtes
+	Show Clipping Indicator	Afficher l'indicateur d'écrêtage
+	Color Level Zones	Colorer les zones de niveau
+	Show dB Scale	Afficher l'échelle en dB
+	Solo (click: exclusive; Shift+click: add to the soloed strips)	Solo (clic : exclusif ; Maj+clic : ajouter aux tranches en solo)
+	Input level of the recording (drag; double-, middle- or right-click: 0 dB)	Niveau d'entrée de l'enregistrement (glisser ; double-clic, clic du milieu ou droit : 0 dB)
+	Volume (drag; double-, middle- or right-click: 0 dB)	Volume (glisser ; double-clic, clic du milieu ou droit : 0 dB)
+	Pan / balance (drag; double-, middle- or right-click: centre)	Panoramique / balance (glisser ; double-clic, clic du milieu ou droit : centre)
+	Voice-over paused (Space: resume, Esc: stop)	Voix off en pause (Espace : reprendre, Échap : arrêter)
+	Voice-over ready: press Space to record from here	Voix off prête : appuyez sur Espace pour enregistrer à partir d'ici
+	Show the Countdown in the Program Monitor	Afficher le compte à rebours dans le moniteur de programme
+	Separate Audio Channels	Séparer les canaux audio
+	Audio Waveform Colors	Couleurs de la forme d'onde audio
+	Reset Colors	Réinitialiser les couleurs
+	Audio Visualization	Visualisation audio
+	Audio Level Visualization	Visualisation du niveau audio
+	Audio Spectrum	Spectre audio
+	Dance	Danse
+	Light Show	Spectacle lumineux
+	Position X	Position X
+	Position Y	Position Y
+	Peak Color	Couleur de crête
+	Bands	Bandes
+	Lowest Frequency	Fréquence la plus basse
+	Highest Frequency	Fréquence la plus haute
+	Floor	Plancher
+	Line	Ligne
+	Filled	Rempli
+	Mirrored	En miroir
+	Frequency Band	Bande de fréquences
+	Horizontal Move	Déplacement horizontal
+	Vertical Move	Déplacement vertical
+	Audio Streams	Flux audio
+	Stream {n}	Flux {n}
+	Enabled	Activé
+	Switch Audio Stream	Changer de flux audio
+# Timeline (Kdenlive parity, p04)
+	Edit Mode	Mode d’édition
+	Normal Mode	Mode normal
+	Overwrite Mode	Mode écrasement
+	Insert Mode	Mode insertion
+	Use Timeline Zone for Insert	Utiliser la zone de la timeline pour l’insertion
+	Remove Space in All Tracks	Supprimer l’espace dans toutes les pistes
+	Remove All Spaces After Playhead	Supprimer tous les espaces après la tête de lecture
+	Remove All Clips After Playhead	Supprimer tous les clips après la tête de lecture
+	Insert Space…	Insérer un espace…
+	Identify Gaps	Repérer les vides
+	Track Compositing	Composition des pistes
+	Disable Timeline Effects	Désactiver les effets de la timeline
+	Clip Duration…	Durée du clip…
+	Default bin for new sequences	Chutier par défaut des nouvelles séquences
+	Return the playhead to its start position when playback stops	Ramener la tête de lecture à sa position de départ à l’arrêt de la lecture
+	Insert Track	Insérer une piste
+	Delete Track	Supprimer la piste
+	Move Track Up	Monter la piste
+	Move Track Down	Descendre la piste
+	Unlock Track	Déverrouiller la piste
+	Lock Track	Verrouiller la piste
+	Select All in Track	Tout sélectionner dans la piste
+	Rename Track	Renommer la piste
+	Expand or Collapse Track	Déplier ou replier la piste
+	Fit Tracks to View	Ajuster les pistes à la vue
+	Waveform Zoom	Zoom de la forme d’onde
+	Normalize Audio Waveforms	Normaliser les formes d’onde audio
+	Show Clip Names	Afficher les noms des clips
+	Show Clip Label Colors	Afficher les couleurs d’étiquette des clips
+	Show Marker Comments	Afficher les commentaires des marqueurs
+	Zoom Centered on Playhead	Zoom centré sur la tête de lecture
+	Show Time in Frames	Afficher le temps en images
+	Clip Duration	Durée du clip
+	Insert Space	Insérer un espace
+	Maintain Audio Pitch	Conserver la hauteur du son
+	In:	Entrée :
+	Out:	Sortie :
+	Current Track	Piste courante
+	All Tracks	Toutes les pistes
+	Apply to Group	Appliquer au groupe
+	Only Equal Values	Valeurs identiques uniquement
+# More Video Effects bin
+	More Video Effects	Plus d'effets vidéo
+	Grain and Noise	Grain et bruit
+	Misc	Divers
+	Deprecated	Obsolètes
+	Y (Luminance)	Y (luminance)
+	U (Chroma)	U (chroma)
+	YU	YU
+	V (Chroma)	V (chroma)
+	YV	YV
+	UV	UV
+	Magma	Magma
+	Inferno	Inferno
+	Plasma	Plasma
+	Viridis	Viridis
+	Turbo	Turbo
+	Cividis	Cividis
+	Range1	Plage 1
+	Range2	Plage 2
+	Solar	Solaire
+	Nominal	Nominal
+	Preferred	Préféré
+	Total	Total
+	Spectral	Spectral
+	Cool	Froid
+	Heat	Chaleur
+	Fiery	Feu
+	Blues	Bleus
+	Greens	Verts
+	Helix	Hélice
+	HH:MM:SS	HH:MM:SS
+	HH:MM:SS.S	HH:MM:SS.S
+	MM:SS	MM:SS
+	MM:SS.SS	MM:SS.SS
+	MM:SS.SSS	MM:SS.SSS
+	SS	SS
+	SS.S	SS.S
+	SS.SS	SS.SS
+	SS.SSS	SS.SSS
+	Middle	Milieu
+	Regular	Normal
+	Bold	Gras
+	Italic	Italique
+	Bold Italic	Gras italique
+	GPS Location	Position GPS
+	Altitude	Altitude
+	Heart Rate	Fréquence cardiaque
+	Basic Graph	Graphique simple
+	Follow Current Position	Suivre la position actuelle
+	Speedometer	Compteur de vitesse
+	One Color	Une couleur
+	Two Colors	Deux couleurs
+	Solid Past, Thin Future	Passé plein, futur fin
+	Solid Future, Thin Past	Futur plein, passé fin
+	Vertical Gradient	Dégradé vertical
+	Horizontal Gradient	Dégradé horizontal
+	Color by Duration	Couleur selon la durée
+	Color by Altitude	Couleur selon l'altitude
+	Color by Heart Rate	Couleur selon la fréquence cardiaque
+	Color by Speed	Couleur selon la vitesse
+	gps_lat	gps_lat
+	gps_lon	gps_lon
+	gps_elev	gps_elev
+	gps_speed	gps_speed
+	gps_dist	gps_dist
+	gps_datetime_now	gps_datetime_now
+	vid_datetime_now	vid_datetime_now
+	gps_hr	gps_hr
+	gps_bearing	gps_bearing
+	gps_compass	gps_compass
+	gps_vdist_up	gps_vdist_up
+	gps_vdist_down	gps_vdist_down
+	gps_dist_uphill	gps_dist_uphill
+	gps_dist_downhill	gps_dist_downhill
+	gps_dist_flat	gps_dist_flat
+	Planes	Plans
+	Delta	Delta
+	Font Family	Famille de police
+	Outline Width	Épaisseur du contour
+	Padding	Marge intérieure
+	Foreground Color	Couleur de premier plan
+	Outline Color	Couleur du contour
+	X	X
+	Geometry	Géométrie
+	Y	Y
+	W	L
+	H	H
+	GPS File	Fichier GPS
+	Time Offset in Seconds	Décalage temporel en secondes
+	Smoothing Level	Niveau de lissage
+	3-Level Threshold	Seuil à 3 niveaux
+	Analog Video Echo	Écho vidéo analogique
+	Fade Factor	Facteur d'estompage
+	Brighter	Plus clair
+	Darker	Plus sombre
+	Keep Red	Garder le rouge
+	Keep Green	Garder le vert
+	Keep Blue	Garder le bleu
+	Strobe Period	Période stroboscopique
+	Binarize	Binariser
+	Use Transparency	Utiliser la transparence
+	Threshold Value	Valeur de seuil
+	Binarize Dynamically	Binariser dynamiquement
+	Burning TV	TV en feu
+	Foreground Only	Premier plan seulement
+	Movement Threshold	Seuil de mouvement
+	Cartoon	Dessin animé
+	Level of Trip	Niveau de déclenchement
+	Difference Space	Espace de différence
+	Charcoal	Fusain
+	Horizontal Scatter	Dispersion horizontale
+	Vertical Scatter	Dispersion verticale
+	Color Distance	Distance de couleur
+	Source Color	Couleur source
+	Color Effect	Effet de couleur
+	X-Pro	X-Pro
+	Sepia	Sépia
+	Old Photo	Vieille photo
+	X-Ray	Rayons X
+	Esses	Courbes en S
+	Yellow-Blue	Jaune-bleu
+	Heatmap0r	Heatmap0r
+	Map Grey To	Mapper le gris sur
+	Specify Source Segment	Indiquer le segment source
+	Segmentation Direction	Sens de segmentation
+	Counter Clockwise	Sens antihoraire
+	Reflect Edges	Refléter les bords
+	Preferred Corner	Coin préféré
+	Corner Search	Recherche de coin
+	No Alpha Background	Arrière-plan sans alpha
+	Origin X	Origine X
+	Origin Y	Origine Y
+	Segmentation	Segmentation
+	Source Segment	Segment source
+	Kirsch	Kirsch
+	Light Graffiti	Graffiti lumineux
+	Show Brightness Statistics	Afficher les statistiques de luminosité
+	Statistics	Statistiques
+	Show Background Difference Statistics	Afficher les statistiques de différence avec l'arrière-plan
+	Show Background Difference Sum Statistics	Afficher les statistiques de somme des différences
+	Transparent Background	Arrière-plan transparent
+	Nonlinear Dimming	Atténuation non linéaire
+	Brightness Threshold	Seuil de luminosité
+	Difference Threshold	Seuil de différence
+	Difference Sum Threshold	Seuil de somme des différences
+	Lower Overexposure	Réduire la surexposition
+	Dimming	Atténuation
+	Background Weight	Poids de l'arrière-plan
+	α	α
+	NDVI Filter	Filtre NDVI
+	VIS Scale	Échelle VIS
+	VIS Offset	Décalage VIS
+	NIR Scale	Échelle NIR
+	NIR Offset	Décalage NIR
+	NTSC	NTSC
+	Progressive Scan	Balayage progressif
+	Scanlines	Lignes de balayage
+	Signal Noise	Bruit du signal
+	Old Film Simulator	Simulateur de vieux film
+	Maximum Up/Down Move	Déplacement haut/bas maximal
+	Frames With Movement	Images avec mouvement
+	Brightness Up	Éclaircir
+	Brightness Down	Assombrir
+	Brightness Every	Changement de luminosité
+	Uneven Develop Up	Développement inégal plus clair
+	Uneven Develop Down	Développement inégal plus sombre
+	Uneven Develop Duration	Durée du développement inégal
+	Photosensitivity Filter	Filtre de photosensibilité
+	Frames to Use	Images à utiliser
+	Skip	Pixels sautés
+	Pixelize (advanced)	Pixeliser (avancé)
+	Pixelize Mode	Mode de pixelisation
+	Average	Moyenne
+	Pixels0rt	Pixels0rt
+	Vertical Top to Bottom	Vertical de haut en bas
+	Vertical Bottom to Top	Vertical de bas en haut
+	Horizontal Left to Right	Horizontal de gauche à droite
+	Horizontal Right to Left	Horizontal de droite à gauche
+	Reversed	Inversé
+	Transparency Threshold	Seuil de transparence
+	Posterize (ELBG)	Postériser (ELBG)
+	Codebook Length	Taille du dictionnaire
+	Steps	Étapes
+	Prewitt	Prewitt
+	Primaries	Primaires
+	Factor	Facteur
+	Pseudo Color	Fausses couleurs
+	Base Component	Composante de base
+	RGB Splitter	Séparateur RVB
+	Vertical Split Distance	Distance de séparation verticale
+	Horizontal Split Distance	Distance de séparation horizontale
+	Roberts	Roberts
+	Scharr	Scharr
+	Sobel	Sobel
+	Sobel with Planes	Sobel avec plans
+	Squigglevision	Squigglevision
+	FPS	FPS
+	Frames Step	Pas en images
+	Fluctuation	Fluctuation
+	Char by Char	Caractère par caractère
+	Word by Word	Mot par mot
+	Line by Line	Ligne par ligne
+	3D FFT Denoiser	Débruiteur FFT 3D
+	Sigma	Sigma
+	Block	Bloc
+	Overlap	Chevauchement
+	Wiener	Wiener
+	Add Previous Frame to Temporal Denoise	Ajouter l'image précédente au débruitage temporel
+	Add Next Frame to Temporal Denoise	Ajouter l'image suivante au débruitage temporel
+	Chroma Noise Reduction	Réduction du bruit de chrominance
+	Y+U+V Threshold	Seuil Y+U+V
+	Horizontal Size	Taille horizontale
+	Vertical Size	Taille verticale
+	Horizontal Step	Pas horizontal
+	Vertical Step	Pas vertical
+	Y Threshold	Seuil Y
+	U Threshold	Seuil U
+	V Threshold	Seuil V
+	Manhattan	Manhattan
+	Euclidean	Euclidienne
+	HQ 3D Denoiser	Débruiteur 3D HQ
+	Spatial	Spatial
+	Temporal	Temporel
+	Dither	Tramage
+	Matrix ID	ID de matrice
+	Dust	Poussière
+	Maximum Diameter	Diamètre maximal
+	Maximum Number of Particles	Nombre maximal de particules
+	Film Grain	Grain de film
+	Grain Amount	Quantité de grain
+	Red Grain	Grain rouge
+	Green Grain	Grain vert
+	Blue Grain	Grain bleu
+	Dust Amount	Quantité de poussière
+	Gradfun	Gradfun
+	Scratch Lines	Rayures
+	Width of Line	Largeur de ligne
+	Max Number of Lines	Nombre maximal de lignes
+	Max Darker	Assombrissement maximal
+	Max Lighter	Éclaircissement maximal
+	Wavelet Denoiser	Débruiteur par ondelettes
+	Garrote	Garrote
+	Threshold Type	Type de seuil
+	Universal	Universel
+	Bayes	Bayes
+	Percentage	Pourcentage
+	Draw Box	Dessiner un cadre
+	Replace Color and Alpha	Remplacer couleur et alpha
+	Top-left X	X en haut à gauche
+	Top-left Y	Y en haut à gauche
+	Width (px)	Largeur (px)
+	Height (px)	Hauteur (px)
+	Thickness (px)	Épaisseur (px)
+	Scanline0r	Scanline0r
+	Alphaextract	Alphaextract
+	Xine Deinterlacer	Désentrelaceur Xine
+	Linear Blend	Fusion linéaire
+	One Field	Une trame
+	Linear Interpolation	Interpolation linéaire
+	Bottom Field First	Trame inférieure en premier
+	Box Blur	Flou de boîte
+	Denoiser	Débruiteur
+	Grain	Grain
+	Hqdn3d	Hqdn3d
+	K-Means Clustering	Regroupement k-moyennes
+	Number of Clusters	Nombre de groupes
+	Distance Weight	Poids de la distance
+	Start	Début
+	Up	Croissant
+	Down	Décroissant
+	Timer	Minuteur
+	Keyword	Mot-clé
+	Updates per Second	Mises à jour par seconde
+	Strikethrough	Barré
+	GPS Text	Texte GPS
+	Speed Multiplier	Multiplicateur de vitesse
+	Graph Data Source	Source des données du graphique
+	Graph Type	Type de graphique
+	Trim Start	Rogner le début
+	Trim End	Rogner la fin
+	Crop Mode Horizontal (Absolute)	Mode de recadrage horizontal (absolu)
+	Crop Left	Recadrage à gauche
+	Crop Right	Recadrage à droite
+	Crop Mode Vertical (Absolute)	Mode de recadrage vertical (absolu)
+	Crop Bottom	Recadrage en bas
+	Crop Top	Recadrage en haut
+	Graph Color Style	Style de couleur du graphique
+	Show Now Dot	Afficher le point actuel
+	Now Dot Color	Couleur du point actuel
+	Show Now Text	Afficher la valeur actuelle
+	Line Thickness (px)	Épaisseur de ligne (px)
+	Draw Legend	Dessiner la légende
+	Legend Unit	Unité de la légende
+	Show Dots Only	Afficher uniquement les points
+	Background Image	Image d'arrière-plan
+	Background Scale	Échelle de l'arrière-plan
+	GPS Graphic	Graphique GPS
+	Tags	Étiquettes
+	{count} (filtered)	{count} (filtré)
+	Rating	Note
+	Not Rated	Non noté
+	Usage	Utilisation
+	Clear Filters	Effacer les filtres
+	Click to tag the selected items; right-click to edit; drag to reorder	Cliquez pour étiqueter les éléments sélectionnés ; clic droit pour modifier ; faites glisser pour réordonner
+	Select items to tag	Sélectionnez des éléments à étiqueter
+	Edit Tag…	Modifier l'étiquette…
+	Filter by This Tag	Filtrer par cette étiquette
+	Delete Tag	Supprimer l'étiquette
+	Add Tag	Ajouter une étiquette
+	No Rating	Aucune note
+	1 Star	1 étoile
+	{n} Stars	{n} étoiles
+	Default Folder for Sequences	Dossier par défaut des séquences
+	Default Folder for Audio Captures	Dossier par défaut des captures audio
+	Used {n} times	Utilisé {n} fois
+	Edit Tag	Modifier l'étiquette
+	Audio and Video	Audio et vidéo
+	Color and Generators	Couleur et générateurs
+	Subclip	Sous-élément
+	Adjustment Layer	Calque d'effets
+	Used	Utilisés
+	Unused	Inutilisés
+	Insert Order	Ordre d'insertion
+	Ignore subfolder structure on import	Ignorer la structure des sous-dossiers à l'importation
+	Color Bars…	Mires de couleur…
+	Counter…	Compteur…
+	White Noise…	Bruit blanc…
+	Counter	Compteur
+	Color Bars	Mires de couleur
+	Counter Style:	Style du compteur :
+	Sound:	Son :
+	Bar Type:	Type de mire :
+	Count up	Compter vers le haut
+	No Background	Sans arrière-plan
+	PAL color bars	Mire de couleur PAL
+	PAL color bars with red	Mire de couleur PAL avec rouge
+	BBC color bars	Mire de couleur BBC
+	EBU color bars	Mire de couleur UER
+	SMPTE color bars	Mire de couleur SMPTE
+	Philips PM5544	Philips PM5544
+	FuBK	FuBK
+	Simplified FuBK	FuBK simplifiée
+	Seconds to 1	Secondes jusqu'à 1
+	Seconds to 0	Secondes jusqu'à 0
+	Clock	Horloge
+	Silent	Muet
+	1 kHz before end	1 kHz avant la fin
+	1 kHz each second	1 kHz chaque seconde
+	Delete Proxies	Supprimer les proxys
+	Slideshow…	Diaporama…
+	Slideshow	Diaporama
+	Play as a slideshow	Lire comme un diaporama
+	Frame duration:	Durée par image :
+	Dissolve:	Fondu :
+	Wipe:	Volet :
+	Softness:	Douceur :
+	Center crop	Recadrage centré
+	Animation (pan and zoom)	Animation (panoramique et zoom)
+	Low pass filter	Filtre passe-bas
+	Wipe from left	Volet depuis la gauche
+	Wipe from right	Volet depuis la droite
+	Wipe from top	Volet depuis le haut
+	Wipe from bottom	Volet depuis le bas
+	Radial wipe	Volet radial
+	Audio Sync Offset…	Décalage de synchronisation audio…
+	Audio Sync Offset	Décalage de synchronisation audio
+	Audio sync offset:	Décalage de synchronisation audio :
+	Positive values play the audio later than the picture.	Les valeurs positives lisent l'audio après l'image.
+	Duration…	Durée…
+	Color Range	Plage de couleurs
+	As the File Says	Selon le fichier
+	Full Range	Plage complète
+	Limited Range	Plage limitée
+	Add Timeline Selection to Library	Ajouter la sélection de la timeline à la bibliothèque
+	Add Folder	Ajouter un dossier
+	Add Clip to Project	Ajouter le clip au projet
+	Rename Library Clip	Renommer le clip de bibliothèque
+	Library Clip	Clip de bibliothèque
+	New Folder	Nouveau dossier
+	Select clips in the timeline and add them to the library	Sélectionnez des clips dans la timeline et ajoutez-les à la bibliothèque
+	Added to the project bin	Ajouté au chutier du projet
+	Expand Clip	Développer le clip
+	Library folder	Dossier de la bibliothèque
+	Open in Separate Window	Ouvrir dans une fenêtre séparée
+	Capture volume:	Volume de capture :
+	Sample format:	Format d'échantillon :
+	32-bit float	Virgule flottante 32 bits
+	24-bit	24 bits
+	16-bit	16 bits
+	Apply Current Value to Selected Keyframes	Appliquer la valeur actuelle aux images clés sélectionnées
+	Automatic Keyframes (while playing)	Images clés automatiques (pendant la lecture)
+	Compare Effect (Program Monitor)	Comparer l'effet (moniteur de programme)
+	Copy Keyframe	Copier l'image clé
+	Copy Keyframes to Clipboard	Copier les images clés dans le presse-papiers
+	Effects enabled (switch the whole effect stack on or off)	Effets activés (active ou désactive toute la pile d'effets)
+	Import Keyframes from Clipboard…	Importer des images clés du presse-papiers…
+	Limit Automatic Keyframes	Limiter les images clés automatiques
+	Move Effect Down	Descendre l'effet
+	Move Effect Up	Monter l'effet
+	Move Keyframe to Playhead	Déplacer l'image clé vers la tête de lecture
+	Paste Keyframe at Playhead	Coller l'image clé à la tête de lecture
+	Set Effect Zone In at Playhead	Définir l'entrée de la zone d'effet à la tête de lecture
+	Set Effect Zone Out at Playhead	Définir la sortie de la zone d'effet à la tête de lecture
+	Show Keyframes in Timeline	Afficher les images clés dans la timeline
+	Show only 32-bit (high bit depth) effects	Afficher uniquement les effets 32 bits (haute profondeur)
+	Show only YUV effects	Afficher uniquement les effets YUV
+	Show only accelerated effects	Afficher uniquement les effets accélérés
+	Show/hide the description of effects	Afficher/masquer la description des effets
+	Use Effect Zone	Utiliser la zone d'effet
+	With effects	Avec effets
+	Without effects	Sans effets
+	✓ Use Effect Zone	✓ Utiliser la zone d'effet
+	(no favorite effects)	(aucun effet favori)
+	32-bit color	Couleur 32 bits
+	Add Effect	Ajouter un effet
+	Add Effect…	Ajouter un effet…
+	Click an effect to see its description	Cliquez sur un effet pour voir sa description
+	Controls: {list}	Paramètres : {list}
+	Copied {n} keyframes	{n} images clés copiées
+	Effects Enabled	Effets activés
+	GPU accelerated	Accéléré par le GPU
+	Import Keyframes	Importer des images clés
+	Imported {n} keyframes	{n} images clés importées
+	Insert an Effect	Insérer un effet
+	Into: {param}	Vers : {param}
+	Keep the clip's keyframe times (else start at the playhead)	Conserver les temps des images clés du clip (sinon commencer à la tête de lecture)
+	Keyframe data (paste with Ctrl+V):	Données d'images clés (coller avec Ctrl+V) :
+	Keyframes copied to the clipboard	Images clés copiées dans le presse-papiers
+	Point component:	Composante du point :
+	Show Description	Afficher la description
+	Time offset (frames):	Décalage temporel (images) :
+	Value offset:	Décalage de valeur :
+	{n} keyframable parameters	{n} paramètres animables
+	✓ Effects Enabled	✓ Effets activés
+	Circular	Circulaire
+	Elastic	Élastique
+	Move Effect	Déplacer l'effet
+	Toggle Effect Stack	Activer/désactiver la pile d'effets
+	Set Effect Zone	Définir la zone d'effet
+	Paste Keyframes	Coller les images clés
+	Move Keyframes	Déplacer les images clés
+	Apply Value to Keyframes	Appliquer la valeur aux images clés
+	Grain Extract	Extraction de grain
+	Grain Merge	Fusion de grain
+	Or	Ou
+	And	Et
+	Xor	Ou exclusif
+	Nor	Non-ou
+	Nand	Non-et
+	Not Xor	Non-ou exclusif
+	Alpha Atop	Alpha au-dessus
+	Alpha Xor	Alpha ou exclusif
+	Destination Out	Destination hors
+	Path to a greyscale image	Chemin d'une image en niveaux de gris
+	Luma Wipe	Balayage de luminance
+	Wipe Method	Méthode de balayage
+	Luma Image File	Fichier image de luminance
+	Spiral	Spirale
+	Matrix Snake	Serpent en matrice
+	Waterfall	Cascade
+	Burst	Éclatement
+	Cloud	Nuage
+	Curtain	Rideau
+	Double Iris	Double iris
+	Image File	Fichier image
+	Insert a Transition	Insérer une transition
+	Default Transition	Transition par défaut
+	At Clip Start	Au début du clip
+	At Clip End	À la fin du clip
+	Insert Special Character	Insérer un caractère spécial
+	Insert Special Character…	Insérer un caractère spécial…
+	Unicode (hex):	Unicode (hex) :
+	Select All Layers	Sélectionner tous les calques
+	Keep Only Text Layers Selected	Ne garder sélectionnés que les calques de texte
+	Keep Only Shape Layers Selected	Ne garder sélectionnés que les calques de forme
+	Keep Only Rectangle Layers Selected	Ne garder sélectionnés que les calques rectangle
+	Deselect All Layers	Désélectionner tous les calques
+	Copy Graphic Layers	Copier les calques graphiques
+	Paste Graphic Layers	Coller les calques graphiques
+	Rotation X	Rotation X
+	Rotation Y	Rotation Y
+	Reveal By	Révéler par
+	Step	Pas
+	Variation	Variation
+	Seed	Graine
+	Character	Caractère
+	Word	Mot
+	Grid…	Grille…
+	Lines:	Lignes :
+	Snap to the grid and guides	Magnétisme sur la grille et les repères
+	Patterns…	Motifs…
+	Patterns	Motifs
+	No patterns yet: select layers of a graphic and save them.	Aucun motif : sélectionnez des calques d'un graphique et enregistrez-les.
+	Pattern name	Nom du motif
+	Save Selected Layers	Enregistrer les calques sélectionnés
+	Add as New Source Graphic	Ajouter comme nouveau graphique source
+	Copy Track to Position	Copier le suivi vers la position
+	Stabilize Position with Track	Stabiliser la position avec le suivi
+	Copy Mask Track to Position	Copier le suivi du masque vers la position
+# Kdenlive parity p11: render options, clip jobs, archives, backups, cache
+	Open folder after export	Ouvrir le dossier après l'export
+	Play after render	Lire après le rendu
+	Add rendered file to project	Ajouter le fichier rendu au projet
+	Keep log file next to the output	Conserver un journal à côté du fichier
+	Separate file for each audio track	Un fichier par piste audio
+	Shut down computer after renderings	Éteindre l'ordinateur après les rendus
+	Render Options	Options de rendu
+	After Export	Après l'export
+	Video Stream	Flux vidéo
+	Export video	Exporter la vidéo
+	Aspect Ratio	Format d'image
+	Scaling Interpolation	Interpolation de mise à l'échelle
+	Deinterlacer	Désentrelacement
+	Encoder Speed	Vitesse de l'encodeur
+	Render full color range	Rendu en plage de couleurs complète
+	Render at preview resolution ({res})	Rendu à la résolution d'aperçu ({res})
+	Use proxy clips	Utiliser les clips proxy
+	Parallel processing	Traitement parallèle
+	Encoding Threads	Threads d'encodage
+	0 = one per core	0 = un par cœur
+	Show frame count instead of timecode	Afficher le numéro d'image au lieu du timecode
+	All markers	Tous les marqueurs
+	Queue Marker Sections	Mettre en file les sections entre marqueurs
+	Generate Script	Générer un script
+	Render script saved: {name}	Script de rendu enregistré : {name}
+	Queued {n} marker sections	{n} sections entre marqueurs en file
+	Play	Lire
+	Open Folder	Ouvrir le dossier
+	Add to Project	Ajouter au projet
+	Render Scripts	Scripts de rendu
+	From marker	Du marqueur
+	to	à
+	Sequence End	Fin de la séquence
+	Editing preset {name}	Modification du préréglage {name}
+	Preset Name	Nom du préréglage
+	Save Changes	Enregistrer les modifications
+	Saved preset {name}	Préréglage {name} enregistré
+	Area (default)	Surface (par défaut)
+	Nearest Neighbor	Plus proche voisin
+	Bilinear	Bilinéaire
+	Bicubic	Bicubique
+	Lanczos	Lanczos
+	One Field (fast)	Une trame (rapide)
+	Edge Directed	Orienté contours
+	Slow (best compression)	Lente (meilleure compression)
+	16:9	16:9
+	4:3	4:3
+	1:1 (square)	1:1 (carré)
+	4:5 (portrait)	4:5 (portrait)
+	9:16 (vertical)	9:16 (vertical)
+	2.39:1 (scope)	2.39:1 (scope)
+	1.85:1 (flat)	1.85:1 (flat)
+	PPM	PPM
+	WebP	WebP
+	FLAC Audio	Audio FLAC
+	PPM Sequence	Séquence PPM
+	WebP Sequence	Séquence WebP
+	WebP Sequence with Alpha	Séquence WebP avec alpha
+	Numbered PPM stills (binary, 8-bit RGB)	Images PPM numérotées (binaire, RVB 8 bits)
+	Numbered WebP stills (lossless)	Images WebP numérotées (sans perte)
+	Numbered WebP stills (lossless, RGBA)	Images WebP numérotées (sans perte, RVBA)
+	FLAC 48 kHz 16-bit	FLAC 48 kHz 16 bits
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24 bits
+	FLAC, stereo 48 kHz 16-bit, lossless	FLAC, stéréo 48 kHz 16 bits, sans perte
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, stéréo 48 kHz 24 bits, sans perte
+	Open Export Output	Ouvrir le fichier exporté
+	Add Export Output to Project	Ajouter le fichier exporté au projet
+	Generate Render Script	Générer un script de rendu
+	List Render Scripts	Lister les scripts de rendu
+	Start Render Script	Lancer le script de rendu
+	Delete Render Script	Supprimer le script de rendu
+	Remove Missing Clips	Retirer les clips manquants
+	Open Archived Project…	Ouvrir un projet archivé…
+	List Project Backups	Lister les sauvegardes du projet
+	Open Backup File…	Ouvrir une sauvegarde…
+	Cached Data Usage	Utilisation des données en cache
+	Delete Cached Data	Supprimer les données en cache
+	Stabilize Clip	Stabiliser le clip
+	Duplicate Clip with Speed Change	Dupliquer le clip avec changement de vitesse
+	Transcode Clips	Transcoder les clips
+	List Transcode Profiles	Lister les profils de transcodage
+	Save Transcode Profile	Enregistrer le profil de transcodage
+	Delete Transcode Profile	Supprimer le profil de transcodage
+	List Clip Jobs	Lister les tâches de clip
+	Save Clip Job	Enregistrer la tâche de clip
+	Delete Clip Job	Supprimer la tâche de clip
+	Run Clip Job	Exécuter la tâche de clip
+	Clip in Timeline	Clip dans la timeline
+	Go to Clip in Timeline	Aller au clip dans la timeline
+	Reveal in File Manager	Afficher dans le gestionnaire de fichiers
+	Replace Audio or Video Part	Remplacer la partie audio ou vidéo
+	Adjust Profile to Current Clip	Adapter le profil au clip actuel
+	Insert at Timecode	Insérer au timecode
+	Delete Clips In Use	Supprimer des clips utilisés
+	{clips} of these clips are used in the timeline ({uses} timeline clips). Delete them and their timeline clips?	{clips} de ces clips sont utilisés dans la timeline ({uses} clips dans la timeline). Les supprimer avec leurs clips de la timeline ?
+	Remove from Project	Retirer du projet
+	Remove All Missing	Retirer tous les manquants
+	Open Recent	Ouvrir un fichier récent
+	Clear List	Effacer la liste
+	Archive:	Archive :
+	Folder only	Dossier seul
+	Open Backup File	Ouvrir une sauvegarde
+	Last hour	Dernière heure
+	Last day	Dernier jour
+	Last week	Dernière semaine
+	Older	Plus anciennes
+	No backups yet: every save of the project keeps one.	Pas encore de sauvegarde : chaque enregistrement du projet en conserve une.
+	Welcome to Redrob Film	Bienvenue dans Redrob Film
+	New Project	Nouveau projet
+	Recent Projects	Projets récents
+	No recent projects	Aucun projet récent
+	Show this screen at startup	Afficher cet écran au démarrage
+	Show Welcome Screen	Afficher l'écran d'accueil
+	Warn when the cache exceeds	Avertir quand le cache dépasse
+	Delete oldest files (or warn) when the cache exceeds	Supprimer les fichiers les plus anciens (ou avertir) quand le cache dépasse
+	Manage Cached Data	Gérer les données en cache
+	Delete only files older than	Supprimer seulement les fichiers de plus de
+	 days	 jours
+	(0 = all)	(0 = tous)
+	Current project	Projet actuel
+	All projects	Tous les projets
+	Render previews	Aperçus de rendu
+	Proxy clips	Clips proxy
+	Backups	Sauvegardes
+	Backups of all projects	Sauvegardes de tous les projets
+	Media cache (all projects)	Cache de médias (tous les projets)
+	{files} file(s), {size}	{files} fichier(s), {size}
+	Replace Audio Part…	Remplacer la partie audio…
+	Replace Video Part…	Remplacer la partie vidéo…
+	Clip Jobs	Tâches de clip
+	Stabilize	Stabiliser
+	Duplicate with Speed Change…	Dupliquer avec changement de vitesse…
+	Transcode…	Transcoder…
+	Configure Clip Jobs…	Configurer les tâches de clip…
+	Duplicate with Speed Change	Dupliquer avec changement de vitesse
+	Custom Clip Jobs	Tâches de clip personnalisées
+	Pitch compensation	Compensation de hauteur
+	Create	Créer
+	Add the result to the project	Ajouter le résultat au projet
+	Replace the original clip	Remplacer le clip d'origine
+	New or changed profile	Profil nouveau ou modifié
+	Export preset	Préréglage d'export
+	Save Profile	Enregistrer le profil
+	Saved jobs	Tâches enregistrées
+	No custom clip jobs yet.	Pas encore de tâche de clip personnalisée.
+	Run	Exécuter
+	Arguments ({input}, {output})	Arguments ({input}, {output})
+	Output extension	Extension de sortie
+	Save Job	Enregistrer la tâche
+	Started job {job}	Tâche {job} lancée
+	Saved	Enregistré
+	ProRes 422 LT (edit friendly)	ProRes 422 LT (adapté au montage)
+	ProRes 422 HQ	ProRes 422 HQ
+	DNxHR SQ (edit friendly)	DNxHR SQ (adapté au montage)
+	DNxHR HQ	DNxHR HQ
+	WAV 24-bit (audio)	WAV 24 bits (audio)
+# Kdenlive parity p11: shortcut categories
+	Cache	Cache
+	ClipJobs	Tâches de clip
+	Color and Image Correction	Correction des couleurs et de l'image
+	Image Adjustments	Réglages de l'image
+	Blur and Sharpen	Flou et netteté
+	BT.709	BT.709
+	FCC	FCC
+	BT.601	BT.601
+	BT.470	BT.470
+	BT.470BG	BT.470BG
+	SMPTE 170M	SMPTE 170M
+	SMPTE 240M	SMPTE 240M
+	BT.2020	BT.2020
+	BT.470M	BT.470M
+	BT.601-6 525	BT.601-6 525
+	BT.601-6 625	BT.601-6 625
+	YCgCo	YCgCo
+	BT.2020 NCL	BT.2020 NCL
+	Gamma 2.2	Gamma 2.2
+	Gamma 2.8	Gamma 2.8
+	sRGB	sRGB
+	xvYCC	xvYCC
+	BT.2020 10-bit	BT.2020 10 bits
+	BT.2020 12-bit	BT.2020 12 bits
+	Film	Film
+	SMPTE 431	SMPTE 431
+	SMPTE 432	SMPTE 432
+	JEDEC P22	JEDEC P22
+	TV (Limited)	TV (limitée)
+	PC (Full)	PC (complète)
+	YUV 4:2:0 8-bit	YUV 4:2:0 8 bits
+	YUV 4:2:0 10-bit	YUV 4:2:0 10 bits
+	YUV 4:2:0 12-bit	YUV 4:2:0 12 bits
+	YUV 4:2:2 8-bit	YUV 4:2:2 8 bits
+	YUV 4:2:2 10-bit	YUV 4:2:2 10 bits
+	YUV 4:2:2 12-bit	YUV 4:2:2 12 bits
+	YUV 4:4:4 8-bit	YUV 4:4:4 8 bits
+	YUV 4:4:4 10-bit	YUV 4:4:4 10 bits
+	YUV 4:4:4 12-bit	YUV 4:4:4 12 bits
+	Deinterleave	Désentrelacer les trames
+	Interleave	Entrelacer les trames
+	Delay the Top Field	Retarder la trame supérieure
+	Delay the Bottom Field	Retarder la trame inférieure
+	Keep the Field Order	Conserver l'ordre des trames
+	Auto (Field Flags), Transfer Opposite	Auto (indicateurs de trame), transfert inverse
+	Unknown Capture, Transfer Opposite	Capture inconnue, transfert inverse
+	Top-first Capture, Unknown Transfer	Capture trame supérieure en premier, transfert inconnu
+	Bottom-first Capture, Unknown Transfer	Capture trame inférieure en premier, transfert inconnu
+	Auto (Field Flags), Unknown Transfer	Auto (indicateurs de trame), transfert inconnu
+	Both Unknown	Les deux inconnus
+	Correction Method	Méthode de correction
+	Absolute	Absolu
+	Relative	Relatif
+	Reds	Rouges
+	Yellows	Jaunes
+	Cyans	Cyans
+	Magentas	Magentas
+	Neutrals	Neutres
+	Number of Stops	Nombre d'arrêts
+	Stop 1	Arrêt 1
+	Stop 2	Arrêt 2
+	Stop 3	Arrêt 3
+	Stop 4	Arrêt 4
+	Stop 5	Arrêt 5
+	Stop 6	Arrêt 6
+	Stop 7	Arrêt 7
+	Stop 8	Arrêt 8
+	Average Blur	Flou moyen
+	X Size	Taille X
+	Y Size	Taille Y
+	Bilateral	Bilatéral
+	Spatial Sigma	Sigma spatial
+	Range Sigma	Sigma de plage
+	BoxBlur	BoxBlur
+	Preserve Alpha	Conserver l'alpha
+	Horizontal Multiplicator	Multiplicateur horizontal
+	Vertical Multiplicator	Multiplicateur vertical
+	Contrast Adaptive Sharpen (CAS)	Netteté adaptative au contraste (CAS)
+	Planes Blur	Flou des plans
+	Luma Radius	Rayon de luma
+	Chroma Radius	Rayon de chroma
+	Alpha Radius	Rayon d'alpha
+	Luma Power	Puissance de luma
+	Chroma Power	Puissance de chroma
+	Alpha Power	Puissance d'alpha
+	Shape Adaptive Blur	Flou adaptatif à la forme
+	Luma Pre-filter Radius	Rayon de préfiltre de luma
+	Luma Strength	Intensité de luma
+	Chroma Pre-filter Radius	Rayon de préfiltre de chroma
+	Chroma Strength	Intensité de chroma
+	Smartblur	Smartblur
+	Luma Threshold	Seuil de luma
+	Chroma Threshold	Seuil de chroma
+	Square Blur	Flou carré
+	Kernel Size	Taille du noyau
+	3-Point Balance	Balance à 3 points
+	Black Color	Couleur du noir
+	Gray Color	Couleur du gris
+	White Color	Couleur du blanc
+	Split Preview	Aperçu partagé
+	Source Image on Left Side	Image source à gauche
+	CMYK Adjust	Réglage CMJN
+	Color Contrast	Contraste des couleurs
+	Red-Cyan Contrast	Contraste rouge-cyan
+	Green-Magenta Contrast	Contraste vert-magenta
+	Blue-Yellow Contrast	Contraste bleu-jaune
+	Red-Cyan Weight	Poids rouge-cyan
+	Green-Magenta Weight	Poids vert-magenta
+	Blue-Yellow Weight	Poids bleu-jaune
+	Preserve Lightness	Conserver la luminosité
+	Color Overlay	Superposition de couleur
+	Lightness	Luminosité
+	Equaliz0r	Equaliz0r
+	FFT-based FIR	FIR basé sur FFT
+	Gain in Y Plane	Gain dans le plan Y
+	Gain in U Plane	Gain dans le plan U
+	Gain in V Plane	Gain dans le plan V
+	Luminance Y Plane	Poids du plan Y
+	Luminance U Plane	Poids du plan U
+	Luminance V Plane	Poids du plan V
+	Evaluate	Évaluer
+	Init	À l'initialisation
+	Gradient Map	Carte de dégradé
+	Grayworld	Grayworld
+	Histogram Equalizer	Égaliseur d'histogramme
+	Antibanding Level	Niveau anti-bandes
+	Weak	Faible
+	Strong	Fort
+	Normaliz0r	Normaliz0r
+	BlackPt	Point noir
+	WhitePt	Point blanc
+	Smoothing	Lissage
+	Independence	Indépendance
+	Normalize RGB Video	Normaliser la vidéo RVB
+	Output Darkest Input Color	Couleur de sortie de l'entrée la plus sombre
+	Output Brightest Input Color	Couleur de sortie de l'entrée la plus claire
+	Swapuv	Swapuv
+	Technicolor	Technicolor
+	Blue/Yellow Axis	Axe bleu/jaune
+	Red/Green Axis	Axe rouge/vert
+	White Balance (LMS)	Balance des blancs (LMS)
+	Neutral Color	Couleur neutre
+	Color Temperature	Température de couleur
+	Color Matrix	Matrice de couleur
+	Source Color Matrix	Matrice de couleur source
+	Destination Color Matrix	Matrice de couleur de destination
+	Color Properties	Propriétés de couleur
+	Output Color Space	Espace colorimétrique de sortie
+	Output Transfer Characteristics	Caractéristiques de transfert de sortie
+	Output Color Primaries	Primaires de sortie
+	Output Color Range	Plage de couleurs de sortie
+	Output Color Format	Format de couleur de sortie
+	Fast Conversion	Conversion rapide
+	Dithering Mode	Mode de tramage
+	Floyd-Steinberg	Floyd-Steinberg
+	Whitepoint Adaptation	Adaptation du point blanc
+	Identity	Identité
+	Bradford	Bradford
+	von Kries	von Kries
+	Override All Input Properties	Remplacer toutes les propriétés d'entrée
+	Input	Entrée
+	Override Input Color Space	Remplacer l'espace colorimétrique d'entrée
+	Override Input Color Primaries	Remplacer les primaires d'entrée
+	Override Input Transfer Characteristics	Remplacer les caractéristiques de transfert d'entrée
+	Override Input Color Range	Remplacer la plage de couleurs d'entrée
+	Deband	Suppression des bandes
+	1st Plane Threshold	Seuil du 1er plan
+	2nd Plane Threshold	Seuil du 2e plan
+	3rd Plane Threshold	Seuil du 3e plan
+	4th Plane Threshold	Seuil du 4e plan
+	Coupling	Couplage
+	Dilation	Dilatation
+	Coordinates	Coordonnées
+	Erosion	Érosion
+	EPX Scaler	Mise à l'échelle EPX
+	Scale Factor	Facteur d'échelle
+	HQ*X Interpolator	Interpolateur HQ*X
+	Super2xSaI	Super2xSaI
+	XBR Interpolator	Interpolateur XBR
+	Scaling Dimension	Dimension d'échelle
+	2xBR	2xBR
+	3xBR	3xBR
+	4xBR	4xBR
+	Interleave - Deinterleave	Entrelacer - Désentrelacer les trames
+	Luma Mode	Mode de luma
+	Chroma Mode	Mode de chroma
+	Alpha Mode	Mode d'alpha
+	Swap Luma Fields	Permuter les trames de luma
+	Swap Chroma Fields	Permuter les trames de chroma
+	Swap Alpha Fields	Permuter les trames d'alpha
+	Kernel Deinterlacer	Désentrelaceur à noyau
+	Paint in White Pixels Exceeding the Threshold	Peindre en blanc les pixels au-delà du seuil
+	Swap Fields	Permuter les trames
+	Enable Additional Sharpening	Activer la netteté supplémentaire
+	Enable Two-way Sharpening	Activer la netteté bidirectionnelle
+	Motion Compensation Deinterlacer	Désentrelaceur à compensation de mouvement
+	Extra Slow	Très lent
+	Picture Field Parity	Parité des trames de l'image
+	Top Field First	Trame supérieure en premier
+	QP	QP
+	Phase	Phase
+	Set Range	Définir la plage
+	Unspecified	Non spécifié
+	Limited	Limitée
+	Custom Range	Plage personnalisée
+	Merge	Fusionner
+	Low Frequency	Fréquence basse
+	High Frequency	Fréquence haute
+	Level Threshold	Seuil de niveau
+	Oscillation	Oscillation
+	Window Size	Taille de fenêtre
+	Gradient Color 3 (Bottom)	Couleur de dégradé 3 (bas)
+	Gradient Color 1 (Top)	Couleur de dégradé 1 (haut)
+	Gradient Color 2 (Middle)	Couleur de dégradé 2 (milieu)
+	Bar	Barre
+	Segment	Segment
+	Gradient Orientation	Orientation du dégradé
+	Segment Gap	Écart entre segments
+	Line Tension	Tension de la ligne
+	Channel to Draw	Canal à dessiner
+	Initial Zoom	Zoom initial
+	1st Color	1re couleur
+	2nd Color	2e couleur
+# Kdenlive parity p12: preferences, project notes, menus, workspaces, shortcuts
+	Interface Colors	Couleurs de l'interface
+	Audio waveform color	Couleur de la forme d'onde audio
+	Monitor overlay color	Couleur des superpositions du moniteur
+	Custom monitor background	Arrière-plan du moniteur personnalisé
+	Monitor background color	Couleur d'arrière-plan du moniteur
+	Pause playback when seeking	Mettre la lecture en pause lors d'un déplacement
+	Move the playhead to the clip when adding an effect	Placer la tête de lecture sur le clip lors de l'ajout d'un effet
+	Show clip marker comments on timeline clips	Afficher les commentaires des marqueurs de clip dans la timeline
+	Display Defaults	Affichage par défaut
+	Show video thumbnails	Afficher les vignettes vidéo
+	Show audio waveforms	Afficher les formes d'onde audio
+	Separate audio channels	Séparer les canaux audio
+	Video track height	Hauteur des pistes vidéo
+	Audio track height	Hauteur des pistes audio
+	pixels	pixels
+	Fixed Centered Playhead	Tête de lecture fixe au centre
+	Disable the parameters of an effect that is switched off	Désactiver les paramètres d'un effet désactivé
+	Play or pause when clicking a monitor	Lire ou mettre en pause en cliquant sur un moniteur
+	Insert Timecode	Insérer un timecode
+	Write the playhead's timecode at the caret	Écrit le timecode de la tête de lecture à l'emplacement du curseur
+	Create Markers	Créer des marqueurs
+	Add a sequence marker at each timecode of the selected text (or of all the notes)	Ajoute un marqueur de séquence à chaque timecode du texte sélectionné (ou de toutes les notes)
+	Find in notes	Rechercher dans les notes
+	Find Previous (Shift+F3)	Rechercher le précédent (Maj+F3)
+	Find Next (F3)	Rechercher le suivant (F3)
+	Not found in the project notes	Introuvable dans les notes du projet
+	Timecodes:	Timecodes :
+	{n} marker(s) created from the notes	{n} marqueur(s) créé(s) à partir des notes
+	Monitor	Moniteur
+	Tool	Outil
+	Undock Panel	Détacher le panneau
+	Move Up	Monter
+	Move Down	Descendre
+	Workspace	Espace de travail
+	Configuration Information	Informations de configuration
+	Supported Media Types	Types de médias pris en charge
+	Show in File Manager	Afficher dans le gestionnaire de fichiers
+	Data folder	Dossier des données
+	Preferences file	Fichier des préférences
+	Workspaces file	Fichier des espaces de travail
+	Media cache	Cache des médias
+	Auto-saves	Enregistrements automatiques
+	This session keeps no files on disk.	Cette session ne conserve aucun fichier sur le disque.
+	Still images	Images fixes
+	Timelines and captions also import from EDL, FCP XML, FCPXML, OTIO, AAF, OMF, SRT, WebVTT and SCC files.	Les timelines et les sous-titres s'importent aussi depuis des fichiers EDL, FCP XML, FCPXML, OTIO, AAF, OMF, SRT, WebVTT et SCC.
+	Panel tab position	Position des onglets des panneaux
+	Print…	Imprimer…
+	Opened {path} to print	{path} ouvert pour l'impression
+	Print: no file chosen (agents: shortcuts.print {path})	Imprimer : aucun fichier choisi (agents : shortcuts.print {path})
+	Splitting a caption	Scinder un sous-titre
+	Both parts keep the text	Les deux parties gardent le texte
+	First line stays, the other lines move to the second part	La première ligne reste, les autres passent dans la seconde partie
+	Proxy and transcode jobs: clips at the same time	Tâches de proxy et de transcodage : clips en même temps
+	Show Menu Bar	Afficher la barre de menus
+	Show Status Bar	Afficher la barre d'état
+	Project Files	Fichiers du projet
+	Author	Auteur
+	Remove Field	Supprimer le champ
+	New field name	Nom du nouveau champ
+	Add Field	Ajouter un champ
+	Used in sequences: {n} file(s), {size}	Utilisés dans des séquences : {n} fichier(s), {size}
+	Unused: {n} file(s), {size}	Inutilisés : {n} fichier(s), {size}
+	{n} file(s) not found on disk	{n} fichier(s) introuvable(s) sur le disque
+	Remove unused clips with Edit ▸ Remove Unused; files on disk are never deleted.	Retirez les clips inutilisés avec Édition ▸ Supprimer les éléments inutilisés ; les fichiers sur le disque ne sont jamais supprimés.
+	Create proxies only for videos wider than:	Créer des proxys uniquement pour les vidéos plus larges que :
+	(0 = every video)	(0 = toutes les vidéos)
+	Frame rate:	Fréquence d'images :
+	All frame rates	Toutes les fréquences
+	custom	personnalisé
+	default	par défaut
+	Preset name:	Nom du préréglage :
+	Save the settings of the General and Tracks tabs as a preset	Enregistre les réglages des onglets Général et Pistes comme préréglage
+	Clear Default	Retirer le défaut
+	Set as Default	Définir par défaut
+	Sequence Presets	Préréglages de séquence
+# Kdenlive parity p03: scopes options and Audio Spectrum
+	Auto Refresh	Actualisation automatique
+	Refresh Now	Actualiser maintenant
+	Realtime	Temps réel
+	Scope Source	Source des scopes
+	Program Monitor	Moniteur de programme
+	Source Monitor	Moniteur source
+	Histogram Components	Composantes de l’histogramme
+	Sum	Somme
+	Unscaled	Non mis à l’échelle
+	Paint Mode	Mode de rendu
+	Grey	Gris
+	Gradient Reference Line	Ligne de référence de dégradé
+	Vectorscope	Vectorscope
+	I and Q Lines	Lignes I et Q
+	Gain {n}×	Gain {n}×
+	Export Background ({plane})…	Exporter l’arrière-plan ({plane})…
+	PNG image	Image PNG
+	Exported the vectorscope background to {path}	Arrière-plan du vectorscope exporté vers {path}
+	Could not export the vectorscope background: {error}	Impossible d’exporter l’arrière-plan du vectorscope : {error}
+	Auto Refresh off: click to refresh	Actualisation automatique désactivée : cliquez pour actualiser
+# Kdenlive parity p03: proxy clips settings
+	Proxy Clips	Clips proxy
+	Generate proxies on import for videos wider than	Générer des proxys à l’importation des vidéos plus larges que
+	Video width	Largeur de la vidéo
+	Proxy video resize (width, 0 = the profile's size)	Taille de la vidéo proxy (largeur, 0 = celle du profil)
+	Generate proxies on import for images wider than	Générer des proxys à l’importation des images plus larges que
+	Image width	Largeur de l’image
+	Proxy image resize (width)	Taille de l’image proxy (largeur)
+	Use the proxy files cameras record (GoPro, Sony, DJI)	Utiliser les fichiers proxy enregistrés par les caméras (GoPro, Sony, DJI)
+	Encoding profile	Profil d’encodage
+	Profile for clips with alpha channel	Profil pour les clips avec couche alpha
+	Manage Proxy Profiles	Gérer les profils de proxy
+	New from Selected Profile	Nouveau à partir du profil sélectionné
+	New Profile	Nouveau profil
+	Parameters	Paramètres
+	Warning: parameters not allowed: {list}	Attention : paramètres non autorisés : {list}
+	Add Profile	Ajouter un profil
+	Saved the proxy profile {name}.	Profil de proxy {name} enregistré.
+	Deleted the proxy profile {name}.	Profil de proxy {name} supprimé.
+	Allowed parameters:	Paramètres autorisés :
+# Kdenlive parity p03: timeline preview
+	Timeline Preview	Aperçu de la timeline
+	Start Preview Render	Démarrer le rendu d’aperçu
+	Stop Preview Render	Arrêter le rendu d’aperçu
+	Add Preview Zone	Ajouter une zone d’aperçu
+	Remove Preview Zone	Supprimer la zone d’aperçu
+	Remove All Preview Zones	Supprimer toutes les zones d’aperçu
+	Automatic Preview	Aperçu automatique
+	Preview zone	Zone d’aperçu
+	Loop Zone	Boucler la zone
+	Loop Selected Clip	Boucler le clip sélectionné
+	Set Playback Speed	Définir la vitesse de lecture
+	Focus Timecode	Activer le timecode
+	Align Playhead to Mouse Position	Aligner la tête de lecture sur la souris
+	Switch Monitor Fullscreen	Basculer le moniteur en plein écran
+	Show Monitor in Its Own Window	Afficher le moniteur dans sa propre fenêtre
+	Monitor Info Overlay	Incrustation d'infos du moniteur
+	Playback FPS	IPS de lecture
+	Change Overlay	Changer d'incrustation
+	No Guide Pattern	Aucun motif de repères
+	Rule of Thirds	Règle des tiers
+	Center Cross	Croix centrale
+	Diagonals	Diagonales
+	Golden Ratio	Nombre d'or
+	Move Overlay Toolbar	Déplacer la barre d'incrustation
+	Always Show Audio Thumbnails	Toujours afficher les vignettes audio
+	Show Source Timecode	Afficher le timecode source
+	Multitrack View	Vue multipiste
+	Monitor Overlay	Incrustation du moniteur
+	Monitor Config	Configuration du moniteur
+	Guide Pattern	Motif de repères
+	Go to Next Snap Point	Aller au point d'aimantation suivant
+	Go to Previous Snap Point	Aller au point d'aimantation précédent
+	Forward 1 Second	Avancer d'une seconde
+	Rewind 1 Second	Reculer d'une seconde
+	Detect Jog Shuttle	Détecter le jog shuttle
+	Extract Zone	Extraire la zone
+	Extract Zone…	Extraire la zone…
+	Play Backwards (J)	Lecture arrière (J)
+	Fast Forward (L)	Avance rapide (L)
+	Play Zone	Lire la zone
+	(full screen)	(plein écran)
+	(in its own window)	(dans sa propre fenêtre)
+	{fps} fps	{fps} i/s
+	Go to Previous Keyframe	Aller à l'image clé précédente
+	Add Keyframe	Ajouter une image clé
+	Go to Next Keyframe	Aller à l'image clé suivante
+	Automatic Keyframes	Images clés automatiques
+	Go to Marker	Aller au marqueur
+	(no markers)	(aucun marqueur)
+	Write the Source Monitor's zone (In to Out) to a new file.	Écrit la zone du moniteur source (de l'entrée à la sortie) dans un nouveau fichier.
+	File:	Fichier :
+	Add clip to project	Ajouter le clip au projet
+	Extracting the zone…	Extraction de la zone…
+	(no video tracks)	(aucune piste vidéo)
+	Add Project Note	Ajouter une note de projet
+	Go to this frame	Aller à cette image
+	Jog Shuttle	Jog shuttle
+	Enable jog shuttle	Activer le jog shuttle
+	Device path	Chemin du périphérique
+	Detect	Détecter
+	Button 1	Bouton 1
+	Button 2	Bouton 2
+	Button 3	Bouton 3
+	Button 4	Bouton 4
+	Button 5	Bouton 5
+	Button 6	Bouton 6
+	Button 7	Bouton 7
+	Button 8	Bouton 8
+	Button 9	Bouton 9
+	Button 10	Bouton 10
+	Button 11	Bouton 11
+	Button 12	Bouton 12
+	Button 13	Bouton 13
+	Button 14	Bouton 14
+	Button 15	Bouton 15
+	GPU processing of effects in the Program Monitor	Traitement GPU des effets dans le moniteur de programme
+	Play/pause on monitor click	Lecture/pause au clic sur le moniteur
+	Screen used for full screen monitor	Écran du moniteur en plein écran
+	Mirror the monitor while it is full screen	Dupliquer le moniteur en plein écran
+	This screen	Cet écran
+	Screen to the left	Écran de gauche
+	Screen to the right	Écran de droite
+	Screen above	Écran du dessus
+	Screen below	Écran du dessous
+	Each button runs the command id typed beside it (for example playback.toggle, markers.markIn, playhead.nextSnap; see Keyboard Shortcuts). The jog wheel steps frames and the shuttle ring plays at up to 10x either way.	Chaque bouton exécute l'identifiant de commande saisi à côté (par exemple playback.toggle, markers.markIn, playhead.nextSnap ; voir Raccourcis clavier). La molette jog avance image par image et l'anneau shuttle lit jusqu'à 10x dans les deux sens.
+
+# More Video Effects: Kdenlive alpha / keying, utility scopes, VR360, motion and border effects
+	Alpha, Mask and Keying	Alpha, masque et incrustation
+	VR360 and 3D	VR360 et 3D
+	Transform, Distort and Perspective	Transformation, déformation et perspective
+	Write on Clear	Écrire sur transparent
+	Min	Min
+	Max	Max
+	Alpha as Gray	Alpha en gris
+	Gray + Red	Gris + rouge
+	Selection on Black	Sélection sur noir
+	Selection on Gray	Sélection sur gris
+	Selection on White	Sélection sur blanc
+	Selection on Checkers	Sélection sur damier
+	No Op	Aucune opération
+	Shave	Raser
+	Shrink Hard	Réduire (net)
+	Shrink Soft	Réduire (doux)
+	Grow Hard	Agrandir (net)
+	Grow Soft	Agrandir (doux)
+	Edge Inwards	Bord vers l'intérieur
+	Edge Outwards	Bord vers l'extérieur
+	De-Key	Retirer la clé
+	Target	Cible
+	Luma Adjust	Ajustement de luma
+	Arrow	Flèche
+	Median Blur	Flou médian
+	Pixelate	Pixeliser
+	Opaque Fill	Remplissage opaque
+	Nearest-Neighbor	Plus proche voisin
+	Side by Side Parallel	Côte à côte parallèle
+	Side by Side Crosseye	Côte à côte croisé
+	Above-Below (Left Above)	Dessus-dessous (gauche en haut)
+	Above-Below (Right Above)	Dessus-dessous (droit en haut)
+	Interleaved Rows (Left Top)	Lignes entrelacées (gauche en haut)
+	Interleaved Rows (Right Top)	Lignes entrelacées (droit en haut)
+	Interleaved Columns (Left First)	Colonnes entrelacées (gauche d'abord)
+	Interleaved Columns (Right First)	Colonnes entrelacées (droit d'abord)
+	Anaglyph Red/Blue Gray	Anaglyphe rouge/bleu gris
+	Anaglyph Red/Green Gray	Anaglyphe rouge/vert gris
+	Anaglyph Red/Cyan Gray	Anaglyphe rouge/cyan gris
+	Anaglyph Red/Cyan Half Colored	Anaglyphe rouge/cyan demi-couleur
+	Anaglyph Red/Cyan Color	Anaglyphe rouge/cyan couleur
+	Anaglyph Red/Cyan Dubois	Anaglyphe rouge/cyan Dubois
+	Anaglyph Green/Magenta Gray	Anaglyphe vert/magenta gris
+	Anaglyph Green/Magenta Half Colored	Anaglyphe vert/magenta demi-couleur
+	Anaglyph Green/Magenta Colored	Anaglyphe vert/magenta couleur
+	Anaglyph Green/Magenta Dubois	Anaglyphe vert/magenta Dubois
+	Anaglyph Yellow/Blue Gray	Anaglyphe jaune/bleu gris
+	Anaglyph Yellow/Blue Half Colored	Anaglyphe jaune/bleu demi-couleur
+	Anaglyph Yellow/Blue Colored	Anaglyphe jaune/bleu couleur
+	Anaglyph Yellow/Blue Dubois	Anaglyphe jaune/bleu Dubois
+	Mono Output Left	Sortie mono gauche
+	Mono Output Right	Sortie mono droite
+	Checkerboard (Left First)	Damier (gauche d'abord)
+	Checkerboard (Right First)	Damier (droit d'abord)
+	HDMI Frame Pack	Frame packing HDMI
+	Smear	Étirer
+	Reflect	Refléter
+	Wrap	Boucler
+	Margins	Marges
+	EBU	EBU
+	SMPTE	SMPTE
+	Apple	Apple
+	Wide RGB	RVB étendu
+	CIE 1931	CIE 1931
+	Rec. 2020	Rec. 2020
+	DCI-P3	DCI-P3
+	xyY	xyY
+	UCS	UCS
+	LUV	LUV
+	PAL SD	PAL SD
+	NTSC SD	NTSC SD
+	720 HD	720 HD
+	1080 Full HD	1080 Full HD
+	2K	2K
+	4K	4K
+	Color2	Couleur2
+	Hex	Hex
+	Dec	Déc
+	White on Black	Blanc sur noir
+	Black on White	Noir sur blanc
+	White on Gray	Blanc sur gris
+	Black on Gray	Noir sur gris
+	Color on Black	Couleur sur noir
+	Color on White	Couleur sur blanc
+	Color on Gray	Couleur sur gris
+	R	R
+	G	V
+	B	B
+	Y'	Y'
+	Pr	Pr
+	Pb	Pb
+	CCIR Rec. 601	CCIR Rec. 601
+	CCIR Rec. 709	CCIR Rec. 709
+	Gray	Gris
+	Color 5	Couleur 5
+	U	U
+	V	V
+	Instant	Instantané
+	Peak	Crête
+	Peak+Instant	Crête+instantané
+	Y'PbPr - Rec.601	Y'PbPr - Rec.601
+	Y'PbPr - Rec.709	Y'PbPr - Rec.709
+	HSV	TSV
+	HSL	TSL
+	Row	Ligne
+	Column	Colonne
+	Flat	Plat
+	Aflat	Aflat
+	Xflat	Xflat
+	Yflat	Yflat
+	Acolor	Acolor
+	Orange	Orange
+	Show Numbers	Afficher les nombres
+	Draw Dots	Dessiner des points
+	Digital	Numérique
+	Millivolts	Millivolts
+	IRE	IRE
+	Image or Video Resource	Image ou vidéo source
+	Use Luma	Utiliser la luma
+	Use Threshold	Utiliser le seuil
+	End	Fin
+	Blend In	Mélange vers l'intérieur
+	Blend Out	Mélange vers l'extérieur
+	Blur Width at Start	Largeur du flou au début
+	Blur Width at End	Largeur du flou à la fin
+	Blur Height at Start	Hauteur du flou au début
+	Blur Height at End	Hauteur du flou à la fin
+	Alpha Gradient	Dégradé alpha
+	Operation	Opération
+	Transition Width	Largeur de transition
+	Transparency Top	Transparence en haut
+	Transparency Bottom	Transparence en bas
+	Alpha Operations	Opérations alpha
+	Display	Affichage
+	Display Input Alpha	Afficher l'alpha d'entrée
+	Shrink/Grow/Blur	Réduire/agrandir/flouter
+	Alpha Strobing	Stroboscope alpha
+	Interval	Intervalle
+	Backgroundkey	Backgroundkey
+	HSV Keying	Incrustation TSV
+	Key Spill Mop Up	Nettoyage du débordement de clé
+	Mask Type	Type de masque
+	Operation 1	Opération 1
+	Operation 2	Opération 2
+	Mask to Alpha	Masque vers alpha
+	Hue Gate	Filtre de teinte
+	Saturation Threshold	Seuil de saturation
+	Amount 1	Quantité 1
+	Amount 2	Quantité 2
+	Frame Shape	Forme du cadre
+	Shape Width	Épaisseur de la forme
+	Shape Color	Couleur de la forme
+	Blur Type	Type de flou
+	Motion Tracker	Suivi de mouvement
+	Premultiply or Unpremultiply	Prémultiplier ou dé-prémultiplier
+	Unpremultiply	Dé-prémultiplier
+	Secondary Color Correction Area Selection (Mask)	Sélection de zone de correction colorimétrique secondaire (masque)
+	Invert Selection	Inverser la sélection
+	Shape Alpha	Alpha de forme
+	Shape Alpha (Mask)	Alpha de forme (masque)
+	Mask Apply	Appliquer le masque
+	Spot Remover	Suppression de taches
+	Gate Weave	Flottement de couloir
+	Maximum Horizontal Movement	Mouvement horizontal maximal
+	Maximum Vertical Movement	Mouvement vertical maximal
+	Glitching (Rows and Color)	Glitch (lignes et couleur)
+	Glitch Frequency	Fréquence du glitch
+	Shift Intensity	Intensité du décalage
+	Color Glitching Intensity	Intensité du glitch de couleur
+	Glitching (Rows Only)	Glitch (lignes seulement)
+	Minimum Block Height	Hauteur de bloc minimale
+	Maximum Block Height	Hauteur de bloc maximale
+	Lag Fun	Lag Fun
+	Nervous	Nerveux
+	Vertigo	Vertige
+	Phase Increment	Incrément de phase
+	Zoom Rate	Taux de zoom
+	Elastic Scale	Échelle élastique
+	Linear Width	Largeur linéaire
+	Linear Scale Factor	Facteur d'échelle linéaire
+	Non-Linear Scale Factor	Facteur d'échelle non linéaire
+	Fill Borders	Remplir les bords
+	Letter-boxing	Bandes cinéma
+	Nosync0r (Broken TV)	Nosync0r (TV cassée)
+	HSync	HSync
+	Pillar Echo	Écho latéral
+	CIE Scope	Diagramme CIE
+	Color System	Système de couleur
+	CIE System	Système CIE
+	Gamuts to Draw	Gamuts à dessiner
+	Display Correct Gamma	Afficher le gamma correct
+	Show White Point	Afficher le point blanc
+	Input Gamma	Gamma d'entrée
+	Fill with CIE Colors	Remplir avec les couleurs CIE
+	Data Scope	Moniteur de données
+	X Offset	Décalage X
+	Y Offset	Décalage Y
+	Components	Composantes
+	Show Axis	Afficher les axes
+	Level Height	Hauteur des niveaux
+	Components to Display	Composantes à afficher
+	Foreground Opacity	Opacité du premier plan
+	Colors Mode	Mode de couleurs
+	Nikon D90 Stairstepping Fix	Correction de l'effet d'escalier du Nikon D90
+	Oscilloscope (Simple)	Oscilloscope (simple)
+	Draw Scope Grid	Dessiner la grille
+	Print Statistics	Afficher les statistiques
+	Draw Trace Profile Line	Dessiner la ligne de profil
+	Trace X Position	Position X du tracé
+	Trace Y Position	Position Y du tracé
+	Scope X Position	Position X du moniteur
+	Scope Y Position	Position Y du moniteur
+	Scope Width	Largeur du moniteur
+	Scope Height	Hauteur du moniteur
+	Oscilloscope (Advanced)	Oscilloscope (avancé)
+	R / G / B Trace	Tracé R / V / B
+	Y / Pr / Pb Trace	Tracé Y / Pr / Pb
+	Alpha Trace	Tracé alpha
+	Display Average	Afficher la moyenne
+	Display RMS	Afficher le RMS
+	Display Minimum / Maximum	Afficher le minimum / maximum
+	256 Scale	Échelle 256
+	Marker 1	Repère 1
+	Marker 2	Repère 2
+	Crosshair Color	Couleur du réticule
+	RGB Parade	Parade RVB
+	Timeout Indicator	Indicateur de temps restant
+	Indicator Color	Couleur de l'indicateur
+	Vectorscope (Advanced)	Vectorscope (avancé)
+	Tint 1	Teinte 1
+	Tint 2	Teinte 2
+	Envelope	Enveloppe
+	Graticule	Graticule
+	Graticule Opacity	Opacité du graticule
+	Graticule Flags	Options du graticule
+	Low Threshold	Seuil bas
+	High Threshold	Seuil haut
+	Video Values	Valeurs vidéo
+	Measurement	Mesure
+	256-Scale	Échelle 256
+	Show Alpha	Afficher l'alpha
+	Big Window	Grande fenêtre
+	X Position	Position X
+	Y Position	Position Y
+	Video Waveform Monitor	Moniteur de forme d'onde
+	Flags	Options
+	Stereoscopic 3D	3D stéréoscopique
+	Input Format	Format d'entrée
+	Output Format	Format de sortie
+	VR360 Cap Top and Bottom	VR360 Boucher les pôles
+	VR360 Equirectangular to Rectilinear	VR360 Équirectangulaire vers rectiligne
+	Yaw	Lacet
+	Pitch	Tangage
+	FOV	Champ de vision
+	Fisheye	Fisheye
+	VR360 Equirectangular to Stereo	VR360 Équirectangulaire vers stéréographique
+	VR360 Equirectangular Mask	VR360 Masque équirectangulaire
+	Horizontal Start	Début horizontal
+	Horizontal End	Fin horizontale
+	Vertical Start	Début vertical
+	Vertical End	Fin verticale
+	VR360 Hemispherical to Equirectangular	VR360 Hémisphérique vers équirectangulaire
+	Projection	Projection
+	Equidistant Fisheye	Fisheye équidistant
+	Alignment Yaw	Lacet d'alignement
+	Alignment Pitch	Tangage d'alignement
+	Alignment Roll	Roulis d'alignement
+	Lens FOV	Champ de l'objectif
+	Lens Radius	Rayon de l'objectif
+	Front X	Avant X
+	Front	Avant
+	Front Y	Avant Y
+	Front Up	Haut avant
+	Back X	Arrière X
+	Back	Arrière
+	Back Y	Arrière Y
+	Back Up	Haut arrière
+	Nadir Radius	Rayon du nadir
+	Nadir Start	Début du nadir
+	Lens Distortion A	Distorsion d'objectif A
+	Lens Distortion B	Distorsion d'objectif B
+	Lens Distortion C	Distorsion d'objectif C
+	Lens Distortion Radius	Rayon de distorsion d'objectif
+	Lens Vignetting A	Vignettage d'objectif A
+	Lens Vignetting	Vignettage d'objectif
+	Lens Vignetting B	Vignettage d'objectif B
+	Lens Vignetting C	Vignettage d'objectif C
+	Lens Vignetting D	Vignettage d'objectif D
+	Lens Vignetting Radius	Rayon de vignettage d'objectif
+	VR360 Stabilize	VR360 Stabiliser
+	Analysis Sample Radius	Rayon d'échantillon de l'analyse
+	Analysis Search Radius	Rayon de recherche de l'analyse
+	Analysis Offset	Écart de l'analyse
+	Use Backwards-Facing Track Point	Utiliser un point de suivi arrière
+	Yaw Amount	Quantité de lacet
+	Pitch Amount	Quantité de tangage
+	Roll Amount	Quantité de roulis
+	Yaw Smoothing	Lissage du lacet
+	Pitch Smoothing	Lissage du tangage
+	Roll Smoothing	Lissage du roulis
+	Yaw Time Bias	Biais temporel du lacet
+	Pitch Time Bias	Biais temporel du tangage
+	Roll Time Bias	Biais temporel du roulis
+	VR360 Wrap	VR360 Envelopper
+	Blur Start	Début du flou
+	Blur End	Fin du flou
+# Kdenlive parity p05: markers, subtitles, speech, keyframes, clip menu, shortcuts
+	Add/Remove Timeline Marker	Ajouter/supprimer un marqueur de timeline
+	Timeline Markers Locked	Marqueurs de timeline verrouillés
+	Export Markers…	Exporter les marqueurs…
+	Import Markers…	Importer des marqueurs…
+	Duplicate Clip	Dupliquer le clip
+	Edit Timeline Marker…	Modifier le marqueur de timeline…
+	Marker Categories…	Catégories de marqueurs…
+	Find Action…	Rechercher une action…
+	Add Category	Ajouter une catégorie
+	Add Clip	Ajouter un clip
+	Add Markers	Ajouter des marqueurs
+	Add Markers at Interval…	Ajouter des marqueurs à intervalle…
+	Add Subtitle	Ajouter un sous-titre
+	Add marker at selected text	Ajouter un marqueur au texte sélectionné
+	Adjust Timeline Zone to Selection	Ajuster la zone de timeline à la sélection
+	Advanced SubStation Alpha (ASS)	Advanced SubStation Alpha (ASS)
+	All Clips	Tous les clips
+	Ascending / descending	Croissant / décroissant
+	At least 3 chapters are needed.	Il faut au moins 3 chapitres.
+	Categories of this project (Project Settings ▸ Markers)	Catégories de ce projet (Réglages du projet ▸ Marqueurs)
+	Color Clip	Clip de couleur
+	Comment:	Commentaire :
+	Configure Categories…	Configurer les catégories…
+	Copy to Clipboard	Copier dans le presse-papiers
+	Create Marker from Zone	Créer un marqueur depuis la zone
+	Create Marker from Zone Quickly	Créer rapidement un marqueur depuis la zone
+	Default:	Par défaut :
+	Delete Category	Supprimer la catégorie
+	Delete Markers Too	Supprimer aussi les marqueurs
+	Delete Selected Markers	Supprimer les marqueurs sélectionnés
+	Delete category	Supprimer la catégorie
+	Each chapter must be at least 10 seconds long.	Chaque chapitre doit durer au moins 10 secondes.
+	Edit Marker	Modifier le marqueur
+	Encoding:	Encodage :
+	Export markers as chapters description	Exporter les marqueurs comme description de chapitres
+	Exported:	Exporté :
+	Find Action	Rechercher une action
+	Format:	Format :
+	Go To Marker…	Aller au marqueur…
+	Import Subtitle File	Importer un fichier de sous-titres
+	Insert selected text at the playhead	Insérer le texte sélectionné à la tête de lecture
+	Interval:	Intervalle :
+	JSON	JSON
+	Kdenlive Compatible	Compatible Kdenlive
+	Larger caption text	Texte de sous-titre plus grand
+	Larger transcript text	Texte de transcription plus grand
+	Lock timeline markers	Verrouiller les marqueurs de timeline
+	Marker Categories	Catégories de marqueurs
+	Marker Type:	Type de marqueur :
+	Markers copied to the clipboard	Marqueurs copiés dans le presse-papiers
+	Markers start at the playhead.	Les marqueurs commencent à la tête de lecture.
+	New sequence from selected text	Nouvelle séquence à partir du texte sélectionné
+	No marker matches the search or the category filter.	Aucun marqueur ne correspond à la recherche ou au filtre de catégories.
+	No matching action	Aucune action correspondante
+	Number of markers:	Nombre de marqueurs :
+	Open a sequence first	Ouvrez d'abord une séquence
+	Point at the Timeline first	Pointez d'abord sur la timeline
+	Range Marker	Marqueur de plage
+	Reassign and Delete	Réaffecter et supprimer
+	Reassign them to:	Les réaffecter à :
+	Restore Audio	Restaurer l'audio
+	Restore Video	Restaurer la vidéo
+	Save As:	Enregistrer sous :
+	Save…	Enregistrer…
+	Search for an action	Rechercher une action
+	Search markers	Rechercher des marqueurs
+	Select a clip first	Sélectionnez d'abord un clip
+	Set Zone In	Définir l'entrée de zone
+	Set Zone Out	Définir la sortie de zone
+	Show the markers of every clip in the project	Afficher les marqueurs de tous les clips du projet
+	Smaller caption text	Texte de sous-titre plus petit
+	Smaller transcript text	Texte de transcription plus petit
+	Sort by Category	Trier par catégorie
+	Sort by Comment	Trier par commentaire
+	Sort by Time	Trier par temps
+	Split mode: after the first line	Mode de division : après la première ligne
+	Split mode: duplicate the text	Mode de division : dupliquer le texte
+	SubViewer (SBV)	SubViewer (SBV)
+	Text (YouTube)	Texte (YouTube)
+	The clip has no animated parameter: turn on animation in Effect Controls first	Le clip n'a aucun paramètre animé : activez d'abord l'animation dans Paramètres d'effet
+	The first chapter must start at 0:00.	Le premier chapitre doit commencer à 0:00.
+	The interval is not a valid timecode	L'intervalle n'est pas un timecode valide
+	The offset is not a valid timecode	Le décalage n'est pas un timecode valide
+	The position is not a valid timecode	La position n'est pas un timecode valide
+	There is no marker at the playhead	Il n'y a aucun marqueur à la tête de lecture
+	Timeline markers are locked	Les marqueurs de timeline sont verrouillés
+	Title Clip	Clip de titre
+	Translate to English	Traduire en anglais
+	Turn on animation for a parameter in Effect Controls first	Activez d'abord l'animation d'un paramètre dans Paramètres d'effet
+	{n} characters · longest line {m}	{n} caractères · ligne la plus longue {m}
+	{n} markers use this category.	{n} marqueurs utilisent cette catégorie.
+	✓ Timeline Markers Locked	✓ Marqueurs de timeline verrouillés

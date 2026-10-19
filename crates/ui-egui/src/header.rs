@@ -64,6 +64,19 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         mu.style_mut().visuals.override_text_color = Some(t.text_dim);
         crate::menus::menu_bar(app, &mut mu);
         left_end = mu.min_rect().max.x;
+    } else if !cfg!(target_os = "macos") {
+        // the menu bar was hidden (Window ▸ Show Menu Bar): one button brings it back
+        let r = Rect::from_center_size(pos2(x + 18.0, rect.center().y), vec2(26.0, 26.0));
+        let resp = ui.interact(r, egui::Id::new("hdr-show-menus"), Sense::click()).on_hover_text(tl!("Show Menu Bar"));
+        app.auto.add("header.showMenuBar", r, "Show Menu Bar");
+        if resp.hovered() {
+            p.rect_filled(r, 4.0, t.hover);
+        }
+        icons::paint(&p, r.shrink(5.0), Icon::Hamburger, if resp.hovered() { t.text } else { t.text_dim });
+        if resp.clicked() {
+            app.ui.show_menu_bar = true;
+        }
+        left_end = r.max.x;
     }
     // Document title, centred
     let title = if app.session.is_dirty() { tlf!("{name} - Edited", name = app.session.project.name) } else { app.session.project.name.clone() };

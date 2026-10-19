@@ -44,6 +44,7 @@ pub mod i18n;
 pub mod icons;
 pub mod links;
 pub mod menus;
+pub mod monitor_audio;
 pub mod panels;
 pub mod perf;
 #[cfg(not(target_arch = "wasm32"))]
@@ -215,6 +216,18 @@ pub struct Playback {
     /// The audio clock's last reading and when (egui time, s) it last moved: a device that stops
     /// consuming samples hands the clock back to the wall clock (see [`AUDIO_STALL_S`]).
     audio_seen: (u64, f64),
+    /// The audio output was lost during this play (stream error, stalled device, a device that
+    /// went away): when to try opening it again (egui time, s) and how many tries were made.
+    /// Unplugging headphones or a sound server restart then costs a moment of sound, not the
+    /// rest of the play.
+    audio_retry: Option<(f64, u8)>,
+    /// Tries made this play to open a lost output again; a reopened output that stalls again
+    /// spends a try too, so a device that opens but never plays is given up on after
+    /// [`AUDIO_RETRIES`].
+    audio_tries: u8,
+    /// A reopened output has not consumed any samples yet: the wall clock keeps driving until
+    /// it does, so waiting on a device that may never wake does not freeze the playhead.
+    audio_waking: bool,
     /// Audio underruns for the current (or last) play (desktop: sound is mixed ahead).
     #[cfg(not(target_arch = "wasm32"))]
     pub audio_stats: std::sync::Arc<play_ahead::AudioStats>,
@@ -228,6 +241,12 @@ pub struct Playback {
     pub hidden: bool,
     /// Forward playback stops here (Play In to Out, Play from Playhead to Out Point).
     pub stop_at: Option<Tick>,
+    /// Where the playhead was when this play started (Settings ▸ Timeline ▸ Return the playhead
+    /// to its start position when playback stops).
+    pub started_at: Option<Tick>,
+    /// A loop for this play only (Kdenlive's Loop Zone and Loop Selected Clip): start and end
+    /// (exclusive) of the range played over and over until playback stops. Overrides `looping`.
+    pub loop_range: Option<(Tick, Tick)>,
 }
 
 /// How long (s) the audio clock may stand still during playback before the wall clock takes over.
@@ -242,6 +261,12 @@ pub const AUDIO_STALL_S: f64 = 1.0;
 /// Bluetooth): measured here as a 1.5–2 s pause after the first callback, which the 1 s wait
 /// took for a stall, so every sequence played without sound.
 pub const AUDIO_START_STALL_S: f64 = 4.0;
+
+/// After the audio output is lost mid-play, the first try to open it again waits this long; each
+/// later try waits one step longer.
+pub const AUDIO_RETRY_S: f64 = 0.5;
+/// Tries to open a lost audio output again within one play before it stays silent.
+pub const AUDIO_RETRIES: u8 = 4;
 
 /// How long the audio clock may sit at `frames` (filled so far, at `sample_rate`) before the
 /// device counts as stalled: [`AUDIO_STALL_S`] for a device that never called back or has been
@@ -691,6 +716,30 @@ impl FilmcraftApp {
         }
         self.frames.set_cache_budget(p.memory.frame_cache_mb as usize * (1 << 20));
         self.ui.play_after_render = p.timeline.play_after_rendering;
+        // Settings ▸ Timeline ▸ Display Defaults and Settings ▸ Color: the wrench menu's toggles
+        // and the first waveform colour follow the preference when it changes (and at startup);
+        // the wrench menu still changes them for the session.
+        {
+            let (a, v) = (prev.as_ref().map(|q| &q.timeline), &p.timeline);
+            let tv = &mut self.ui.timeline;
+            if a.is_none_or(|a| a.show_video_thumbnails != v.show_video_thumbnails) {
+                tv.show_thumbnails = v.show_video_thumbnails;
+            }
+            if a.is_none_or(|a| a.show_audio_waveforms != v.show_audio_waveforms) {
+                tv.show_waveforms = v.show_audio_waveforms;
+            }
+            if a.is_none_or(|a| a.separate_audio_channels != v.separate_audio_channels) {
+                tv.separate_channels = v.separate_audio_channels;
+            }
+            if prev.as_ref().is_none_or(|q| q.color.audio_waveform_color != p.color.audio_waveform_color)
+                && let Some(c) = redrob_film_engine::settings::parse_hex(&p.color.audio_waveform_color)
+            {
+                if tv.waveform_colors.is_empty() {
+                    tv.waveform_colors = state::default_waveform_colors();
+                }
+                tv.waveform_colors[0] = c;
+            }
+        }
         if prev.as_ref().is_none_or(|q| q.audio_hardware != p.audio_hardware) {
             if let Some(input) = self.session.voiceover.input.as_mut() {
                 input.configure_host(&p.audio_hardware.device_class);
@@ -756,8 +805,10 @@ impl FilmcraftApp {
                     self.timeline_view_last = Some(s);
                 }
                 None => {
-                    let d = state::TimelineView::default();
-                    (v.v_scroll, v.a_scroll, v.video_track_h, v.audio_track_h) = (0.0, 0.0, d.video_track_h, d.audio_track_h);
+                    // Settings ▸ Timeline ▸ Display Defaults ▸ Video / Audio track height
+                    let tp = &self.session.prefs.timeline;
+                    let (vh, ah) = (tp.video_track_height.clamp(8, 600) as f32, tp.audio_track_height.clamp(8, 600) as f32);
+                    (v.v_scroll, v.a_scroll, v.video_track_h, v.audio_track_h) = (0.0, 0.0, vh, ah);
                     (v.fit_pending, v.fit_empty) = (true, None);
                     self.timeline_view_last = None;
                 }
@@ -805,6 +856,11 @@ impl FilmcraftApp {
     }
 
     pub fn show_panel(&mut self, p: PanelKind) {
+        // a floating panel is already on screen: it only takes the keyboard
+        if self.ui.floating.contains(&p) {
+            self.ui.focused = p;
+            return;
+        }
         if p == PanelKind::Timeline {
             self.ui.dock.restore_timeline();
         }
@@ -823,6 +879,7 @@ impl FilmcraftApp {
                 | PanelKind::AudioClipMixer
                 | PanelKind::Metadata
                 | PanelKind::LumetriScopes
+                | PanelKind::AudioSpectrum
                 | PanelKind::AudioTrackMixer
                 | PanelKind::Text
                 | PanelKind::ReferenceMonitor
@@ -906,16 +963,35 @@ impl FilmcraftApp {
         if !self.playback.playing || self.playback.speed != speed {
             self.playback.meter.start(speed);
         }
+        if !self.playback.playing {
+            self.playback.started_at = Some(self.session.playhead());
+        }
         self.playback.playing = true;
         self.playback.speed = speed;
         self.playback.anchor_tick = self.session.playhead();
         self.playback.anchor_time = -1.0; // set when the preroll ends
         self.playback.preroll = Some(-1.0);
         self.playback.preroll_ready = false;
+        self.playback.audio_retry = None;
+        self.playback.audio_tries = 0;
+        self.playback.audio_waking = false;
         if let Some(a) = self.audio.as_mut() {
             a.stop();
         }
         self.playback.audio_clock = false;
+    }
+
+    /// A seek of the Program playhead (a press on the Timeline ruler or the monitor's time bar).
+    /// Settings ▸ Timeline ▸ "Pause playback when seeking" (on by default) stops playback; with it
+    /// off, playback carries on from the new position at the same speed.
+    pub fn seek_program(&mut self, t: Tick) {
+        let resume = self.playback.playing && !self.session.prefs.timeline.pause_on_seek;
+        let speed = self.playback.speed;
+        self.stop();
+        self.session.set_playhead(t);
+        if resume {
+            self.play(speed);
+        }
     }
 
     /// Start the clock (and audio) once the first frames are ready or the preroll timed out.
@@ -965,8 +1041,10 @@ impl FilmcraftApp {
     }
 
     pub fn stop(&mut self) {
+        let was_playing = self.playback.playing;
         self.playback.playing = false;
         self.playback.stop_at = None;
+        self.playback.loop_range = None;
         self.playback.preroll = None;
         self.playback.meter.finish();
         self.frames.stop_prefetch();
@@ -982,6 +1060,12 @@ impl FilmcraftApp {
         }
         panels::multicam::on_stop(self);
         panels::voiceover::on_stop(self);
+        if let Some(t) = self.playback.started_at.take()
+            && was_playing
+            && self.session.prefs.timeline.return_to_start_on_stop
+        {
+            self.session.set_playhead(t);
+        }
     }
 
     fn start_audio(&mut self) {
@@ -997,6 +1081,7 @@ impl FilmcraftApp {
             return;
         };
         let cursor = start_tick.to_units_floor(i64::from(mix_rate));
+        monitor_audio::program().set_volume(self.ui.program.volume);
         let mix = playback_mix(&self.session, seq_id, mix_rate);
         // the old stream stops before the new mixer resets the underrun counters
         a.stop();
@@ -1028,6 +1113,13 @@ impl FilmcraftApp {
         }
     }
 
+    /// After the output was lost (or stalled) at `now`: when to try opening it again, until
+    /// [`AUDIO_RETRIES`] tries were made this play (0.5 s, then 1, 1.5, 2 s).
+    fn schedule_audio_retry(&mut self, now: f64) {
+        let tries = self.playback.audio_tries;
+        self.playback.audio_retry = (tries < AUDIO_RETRIES).then(|| (now + AUDIO_RETRY_S * f64::from(tries + 1), tries));
+    }
+
     fn advance_playback(&mut self, ctx: &egui::Context) {
         if !self.playback.playing {
             return;
@@ -1057,6 +1149,8 @@ impl FilmcraftApp {
             if let Some(audio) = self.audio.as_mut() {
                 audio.stop();
             }
+            self.playback.audio_waking = false;
+            self.schedule_audio_retry(now);
             log::warn!("audio output lost its playback clock; playing without sound");
             // the device's own note names the error (cpal's error callback) when it has one
             self.ui.status = self
@@ -1069,37 +1163,79 @@ impl FilmcraftApp {
             let stall = now - self.playback.audio_seen.1;
             if f != self.playback.audio_seen.0 {
                 self.playback.audio_seen = (f, now);
+                if self.playback.audio_waking && sr > 0 {
+                    // the reopened output plays: its clock takes over from the displayed frame
+                    self.playback.audio_waking = false;
+                    let shown = self.session.playhead();
+                    let played = Tick::from_seconds_f64(f as f64 / f64::from(sr) * self.playback.speed);
+                    self.playback.anchor_tick = if shown > played { shown - played } else { Tick::ZERO };
+                }
             } else if stall >= audio_stall_limit(f, sr) {
                 // the device stopped consuming samples: continue from where the audio got to on
                 // the wall clock, without sound
-                let played = if sr > 0 { f as f64 / sr as f64 } else { 0.0 };
-                self.playback.anchor_tick += Tick::from_seconds_f64(played * self.playback.speed);
+                if self.playback.audio_waking {
+                    // the wall clock drove while it was waking: carry on from the displayed frame
+                    self.playback.anchor_tick = self.session.playhead();
+                } else {
+                    let played = if sr > 0 { f as f64 / sr as f64 } else { 0.0 };
+                    self.playback.anchor_tick += Tick::from_seconds_f64(played * self.playback.speed);
+                }
                 self.playback.anchor_time = now;
+                self.playback.audio_waking = false;
                 self.playback.audio_clock = false;
                 if let Some(a) = self.audio.as_mut() {
                     a.stop();
                 }
+                self.schedule_audio_retry(now);
                 log::warn!("audio output stalled (no samples consumed for {stall:.1} s after {f} frames); playing without sound");
                 self.ui.status = tl!("Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)").into();
             }
         }
+        // The output was lost earlier in this play: open it again (the device may be back, or the
+        // host's default may now be another device), from where the wall clock has got to.
+        if !self.playback.audio_clock
+            && let Some((at, _)) = self.playback.audio_retry
+            && now >= at
+        {
+            let t = self.playback.anchor_tick + Tick::from_seconds_f64((now - self.playback.anchor_time) * self.playback.speed);
+            self.session.set_playhead(t);
+            self.playback.anchor_tick = t;
+            self.playback.anchor_time = now;
+            self.playback.audio_seen = (0, now);
+            self.playback.audio_tries += 1;
+            self.playback.audio_retry = None;
+            self.start_audio();
+            if self.playback.audio_clock {
+                // opened: the wall clock drives until the device consumes its first samples
+                self.playback.audio_waking = true;
+                log::info!("audio output reopened after {} tries", self.playback.audio_tries);
+                self.ui.status = tl!("Audio output restored").into();
+            } else {
+                self.schedule_audio_retry(now);
+            }
+            ctx.request_repaint();
+            return;
+        }
         let elapsed = match reading {
-            Some((f, sr)) if self.playback.audio_clock && sr > 0 => f as f64 / sr as f64,
+            Some((f, sr)) if self.playback.audio_clock && !self.playback.audio_waking && sr > 0 => f as f64 / sr as f64,
             _ => now - self.playback.anchor_time,
         };
         let t = self.playback.anchor_tick + Tick::from_seconds_f64(elapsed * self.playback.speed);
         let seq = self.session.active_sequence();
         let dur = seq.map(|q| q.duration()).unwrap_or_default();
-        let (lo, hi) = if self.playback.looping {
+        let looping = self.playback.looping || self.playback.loop_range.is_some();
+        let (lo, hi) = if let Some((a, b)) = self.playback.loop_range {
+            (a, b.min(dur))
+        } else if self.playback.looping {
             (seq.and_then(|q| q.mark_in).unwrap_or(Tick::ZERO), seq.and_then(|q| q.mark_out).map(|o| o + rate.frame_duration()).unwrap_or(dur))
         } else {
             (Tick::ZERO, dur)
         };
-        if let Some(end) = self.playback.stop_at.filter(|e| t >= *e && self.playback.speed > 0.0 && !self.playback.looping) {
+        if let Some(end) = self.playback.stop_at.filter(|e| t >= *e && self.playback.speed > 0.0 && !looping) {
             self.session.set_playhead(end);
             self.stop();
         } else if t >= hi && self.playback.speed > 0.0 {
-            if self.playback.looping {
+            if looping {
                 self.session.set_playhead(lo);
                 self.play(self.playback.speed);
             } else {
@@ -1267,6 +1403,21 @@ impl FilmcraftApp {
                 let Some(path) = self.hooks.pick_open_project.as_mut().and_then(|f| f()) else { return Ok(Value::Null) };
                 self.session.execute("file.open", json!({"path": path})).map_err(|e| e.to_string())
             }
+            // File ▸ Open Archived Project…: a .tar.gz / .zip made by Project Manager ▸ Archive
+            "file.openArchive" => {
+                let paths = self.hooks.pick_files.as_mut().map(|f| f(&["gz", "tgz", "zip"])).unwrap_or_default();
+                let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
+                self.session.execute("file.openArchive", json!({"path": path})).map_err(|e| e.to_string())
+            }
+            // Project panel ▸ Replace Audio / Video Part…: the file whose part replaces the clip's
+            "clip.replacePart" => {
+                let exts: Vec<&str> = redrob_film_media::VIDEO_EXTENSIONS.iter().chain(redrob_film_media::AUDIO_EXTENSIONS).copied().collect();
+                let paths = self.hooks.pick_files.as_mut().map(|f| f(&exts)).unwrap_or_default();
+                let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
+                let mut p = params.clone();
+                p["path"] = json!(path);
+                self.session.execute("clip.replacePart", p).map_err(|e| e.to_string())
+            }
             "graphics.newFromFile" => {
                 let exts: Vec<&str> = redrob_film_media::STILL_EXTENSIONS.iter().chain(redrob_film_media::VIDEO_EXTENSIONS).copied().collect();
                 let paths = self.hooks.pick_files.as_mut().map(|f| f(&exts)).unwrap_or_default();
@@ -1274,18 +1425,26 @@ impl FilmcraftApp {
                 self.session.execute("graphics.newFromFile", json!({"path": path})).map_err(|e| e.to_string())
             }
             "captions.import" => {
-                let paths = self.hooks.pick_files.as_mut().map(|f| f(&["srt", "vtt", "scc", "mcc", "stl", "ttml", "dfxp", "xml"])).unwrap_or_default();
+                let exts = ["srt", "vtt", "scc", "mcc", "stl", "ttml", "dfxp", "xml", "ass", "ssa", "sbv"];
+                let paths = self.hooks.pick_files.as_mut().map(|f| f(&exts)).unwrap_or_default();
                 let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
-                self.session.execute("captions.import", json!({"path": path})).map_err(|e| e.to_string())
+                // a binary EBU STL file has no text encoding; text files ask for one (Kdenlive)
+                if path.to_ascii_lowercase().ends_with(".stl") {
+                    return self.session.execute("captions.import", json!({"path": path})).map_err(|e| e.to_string());
+                }
+                self.ui.kp.caption_import = Some((path, "auto".into()));
+                Ok(Value::Null)
             }
             "captions.export" => {
                 let name = self.session.state.active_sequence.and_then(|s| self.session.project.item(s)).map(|i| i.name.clone()).unwrap_or_default();
                 let suggested = format!("{}.srt", name.replace(' ', "_"));
-                let Some(path) =
-                    self.hooks.pick_save_as.as_mut().and_then(|f| {
-                        f("Captions (SRT, WebVTT, SCC, MCC, EBU STL, TTML, DFXP)", &["srt", "vtt", "scc", "mcc", "stl", "ttml", "dfxp"], &suggested)
-                    })
-                else {
+                let Some(path) = self.hooks.pick_save_as.as_mut().and_then(|f| {
+                    f(
+                        "Captions (SRT, WebVTT, SCC, MCC, EBU STL, TTML, DFXP, ASS, SBV)",
+                        &["srt", "vtt", "scc", "mcc", "stl", "ttml", "dfxp", "ass", "sbv"],
+                        &suggested,
+                    )
+                }) else {
                     return Ok(Value::Null);
                 };
                 let mut p = params.clone();
@@ -1392,6 +1551,30 @@ impl FilmcraftApp {
         // Esc cancels a dynamic trim in progress
         if self.session.trim_play.dynamic.is_some() && ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
             let _ = self.session.execute("trim.cancelDynamic", json!({}));
+        }
+        // Voice-over (Kdenlive): Esc stops a take; `r` records while a track is record-armed (it
+        // takes the key from the Rate Stretch tool only then)
+        if self.session.voiceover.recording() && ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
+            if self.session.voiceover.paused().is_some() {
+                // a paused take is not playing: finish it directly
+                let t = self.session.playhead();
+                if let Err(e) = self.session.execute("audio.voiceover.stop", json!({"time": t.0})) {
+                    self.ui.status = e.to_string();
+                }
+            } else if let Err(e) = panels::voiceover::toggle(self, None) {
+                self.ui.status = e;
+            }
+        }
+        let armed = self.session.active_sequence().is_some_and(|q| q.audio_tracks.iter().any(|t| t.mixer.record_arm));
+        if armed
+            && ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::R))
+            && let Err(e) = panels::voiceover::record_key(self, ctx)
+        {
+            self.ui.status = e;
+        }
+        // the focused Markers panel's own keys (F2 edit, Delete, Cmd+A, Up / Down)
+        if panels::marker_ui::panel_keys(self, ctx) || panels::kparity::effect_controls_keys(self, ctx) {
+            return;
         }
         // Panel shortcuts of the focused panel override application shortcuts on the same chord.
         // egui ignores extra Shift and Alt when matching, so the most specific chords go first
@@ -1649,8 +1832,27 @@ impl FilmcraftApp {
                     self.ui.dock.activate(PanelKind::Source);
                 }
                 redrob_film_engine::Event::RevealInProject(item) => self.reveal_in_project(item),
+                redrob_film_engine::Event::OpenPath { path, reveal } => {
+                    if let Err(e) = crate::panels::menu_dialogs::open_path(self, &ctx, &path, reveal) {
+                        self.ui.status = e;
+                    }
+                }
+                redrob_film_engine::Event::Shutdown => {
+                    if let Err(e) = shut_down_computer() {
+                        self.ui.status = e;
+                    }
+                }
                 redrob_film_engine::Event::Toast { message, .. } => self.toast = Some((message, ctx.input(|i| i.time))),
                 redrob_film_engine::Event::ProjectChanged { .. } => {}
+            }
+        }
+        // a project just opened brings the window layout it was saved with
+        if let Some(l) = self.session.restored_layout.take() {
+            if let Ok(d) = serde_json::from_value::<crate::dock::DockNode>(l["dock"].clone()) {
+                self.ui.dock = d;
+            }
+            if let Some(w) = l["workspace"].as_str() {
+                self.ui.workspace = w.to_string();
             }
         }
         self.sync_timeline_view();
@@ -1803,6 +2005,8 @@ impl FilmcraftApp {
 
     fn dock_area(&mut self, ui: &mut egui::Ui, body: egui::Rect) {
         let t = self.tokens;
+        let bottom = self.session.prefs.general.panel_tab_position == "bottom";
+        ui.ctx().data_mut(|d| d.insert_temp(egui::Id::new("dock-tabs-bottom"), bottom));
         // Maximize or Restore Frame (` / Shift+`): the maximized panel fills the dock area.
         let maximized = self.ui.keys.maximized.filter(|p| self.ui.dock.contains(*p));
         let mut dock = match maximized {
@@ -1861,6 +2065,19 @@ impl FilmcraftApp {
                         self.ui.status = e.to_string();
                     }
                 }
+                // a panel tab dropped on a group docks the panel there (in its tabs or beside it);
+                // dropped outside every group it becomes a floating panel
+                dock::DockAction::DropPanel(p, at) if maximized.is_none() => match groups.iter().find(|g| g.rect.contains(at)) {
+                    Some(g) => {
+                        let zone = dock::DropZone::at(g.rect, g.content.min.y - g.rect.min.y, at);
+                        if let Some(anchor) = g.panels.iter().copied().find(|q| *q != p) {
+                            self.ui.dock.dock_panel(p, anchor, zone);
+                            self.ui.dock.activate(p);
+                        }
+                    }
+                    None => self.float_panel(p),
+                },
+                dock::DockAction::DropPanel(..) => {}
                 dock::DockAction::PanelMenu(p, pos) => {
                     // (with the frame it opened in: the click that opens it is not a click elsewhere)
                     let frame = ui.ctx().cumulative_frame_nr();
@@ -1871,7 +2088,71 @@ impl FilmcraftApp {
                 }
             }
         }
+        // the drop preview while a panel tab is dragged
+        if let Some(p) = ui.ctx().data(|d| d.get_temp::<dock::PanelKind>(egui::Id::new("dock-drag-panel")))
+            && let Some(at) = ui.input(|i| i.pointer.latest_pos())
+            && maximized.is_none()
+        {
+            let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("dock-drop-preview")));
+            if let Some(g) = groups.iter().find(|g| g.rect.contains(at)) {
+                let zone = dock::DropZone::at(g.rect, g.content.min.y - g.rect.min.y, at);
+                let r = zone.preview(g.rect).shrink(2.0);
+                painter.rect_filled(r, t.radius, t.focus.gamma_multiply(0.25));
+                painter.rect_stroke(r, t.radius, egui::Stroke::new(1.5, t.focus), egui::StrokeKind::Inside);
+            }
+            painter.text(at + egui::vec2(14.0, 14.0), egui::Align2::LEFT_TOP, i18n::t(p.title()), theme::Tokens::ui(12.0), t.text);
+        }
+        self.floating_panels(ui.ctx());
         panels::panel_menu_popup(self, ui);
+    }
+
+    /// Take panel `p` out of the dock into a floating window of its own (Window ▸ Undock Panel in
+    /// its panel menu, or a tab dropped outside every group).
+    pub fn float_panel(&mut self, p: dock::PanelKind) {
+        self.ui.keys.maximized = None;
+        self.ui.dock.close(p);
+        if !self.ui.floating.contains(&p) {
+            self.ui.floating.push(p);
+        }
+        self.ui.focused = p;
+    }
+
+    /// Put a floating panel back into the dock (beside the Project panel, as Window ▸ <panel> does).
+    pub fn dock_floating(&mut self, p: dock::PanelKind) {
+        self.ui.floating.retain(|q| *q != p);
+        self.ui.dock.open_near(p, dock::PanelKind::Project);
+    }
+
+    /// Floating panels: each in a movable, resizable window over the main window. Closing one
+    /// docks it back. A panel the dock shows again (a workspace switch) is no longer floating.
+    fn floating_panels(&mut self, ctx: &egui::Context) {
+        let dock = &self.ui.dock;
+        self.ui.floating.retain(|p| !dock.contains(*p));
+        for p in self.ui.floating.clone() {
+            let mut open = true;
+            let title = i18n::t(p.title()).to_string();
+            egui::Window::new(title)
+                .id(egui::Id::new(("floating-panel", p.id())))
+                .default_size(egui::vec2(520.0, 360.0))
+                .min_size(egui::vec2(220.0, 140.0))
+                .resizable(true)
+                .collapsible(false)
+                .open(&mut open)
+                .show(ctx, |ui| {
+                    let size = ui.available_size().max(egui::vec2(200.0, 120.0));
+                    let (rect, _) = ui.allocate_exact_size(size, egui::Sense::hover());
+                    self.auto.add(&format!("panel.{}", p.id()), rect, p.title());
+                    if ui.rect_contains_pointer(rect) && ui.input(|i| i.pointer.any_pressed()) {
+                        self.ui.focused = p;
+                    }
+                    let mut child = ui.new_child(egui::UiBuilder::new().max_rect(rect).id_salt(("floating", p.id())));
+                    child.set_clip_rect(rect.intersect(ui.clip_rect()));
+                    panels::show(self, &mut child, p, rect);
+                });
+            if !open {
+                self.dock_floating(p);
+            }
+        }
     }
 }
 
@@ -2033,6 +2314,31 @@ impl eframe::App for FilmcraftApp {
         }
     }
 }
+/// Export ▸ Shut down computer after renderings: ask the operating system to power off (one
+/// minute's grace on Windows; the desktop session's own power-off elsewhere).
+fn shut_down_computer() -> Result<(), String> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        Err("shutting down is not available in the browser".into())
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let mut cmd = if cfg!(target_os = "windows") {
+            let mut c = std::process::Command::new("shutdown");
+            c.args(["/s", "/t", "60"]);
+            c
+        } else if cfg!(target_os = "macos") {
+            let mut c = std::process::Command::new("osascript");
+            c.args(["-e", "tell application \"System Events\" to shut down"]);
+            c
+        } else {
+            let mut c = std::process::Command::new("systemctl");
+            c.arg("poweroff");
+            c
+        };
+        cmd.spawn().map(|_| ()).map_err(|e| format!("can't shut down: {e}"))
+    }
+}
 
 /// Effective sample rate for shuttle playback. The audio device still runs at `device_rate`,
 /// so at 2x its output samples represent twice the timeline duration. Reverse and
@@ -2061,6 +2367,8 @@ pub fn playback_mix(session: &Session, seq_id: redrob_film_project::ItemId, sr: 
     let mixdown = redrob_film_audio_dsp::channels::Mixdown::from_id(&session.prefs.audio.mixdown_type).unwrap_or_default();
     let cues = panels::voiceover::cues(session, sr);
     previews.live.publish_project(project.clone());
+    // the Program monitor's own volume and level meter
+    let tap = monitor_audio::program();
     let mut resampler = None;
     move |cursor: i64, buf: &mut [f32], ch: usize| {
         // the newest project snapshot: mixer moves and other edits are heard while playing
@@ -2100,6 +2408,11 @@ pub fn playback_mix(session: &Session, seq_id: redrob_film_project::ItemId, sr: 
         } else {
             redrob_film_engine::settings::map_output(&mix.channels[0], &mix.channels[1.min(mix.channels.len() - 1)], buf, ch, map);
         }
+        let gain = tap.gain();
+        if gain != 1.0 {
+            buf.iter_mut().for_each(|x| *x *= gain);
+        }
+        tap.post(&mix.channels, n, gain);
         panels::voiceover::mix_cues(buf, ch, cursor, &cues);
     }
 }

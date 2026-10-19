@@ -359,3 +359,78 @@
 	Redrob Account…	Аккаунт Redrob…
 	Agent	Агент
 	Add Redrob Film to Redrob Code	Добавить Redrob Film в Redrob Code
+
+# Kdenlive parity: audio effects, mixer, meters, recording, waveforms
+	Switch Audio Stream	Переключить аудиопоток
+# Timeline (Kdenlive parity, p04)
+	Edit Mode	Режим редактирования
+	Normal Mode	Обычный режим
+	Overwrite Mode	Режим перезаписи
+	Insert Mode	Режим вставки
+	Use Timeline Zone for Insert	Использовать зону монтажного стола для вставки
+	Remove Space in All Tracks	Убрать промежуток на всех дорожках
+	Remove All Spaces After Playhead	Убрать все промежутки после указателя воспроизведения
+	Remove All Clips After Playhead	Убрать все клипы после указателя воспроизведения
+	Insert Space…	Вставить промежуток…
+	Identify Gaps	Отметить промежутки
+	Track Compositing	Композиция дорожек
+	Disable Timeline Effects	Отключить эффекты монтажного стола
+	Clip Duration…	Длительность клипа…
+# More Video Effects bin
+	Color	Цвет
+	Color Bars…	Цветные полосы…
+	Counter…	Счётчик…
+	White Noise…	Белый шум…
+	Loop	Повтор
+	Expand Clip	Развернуть клип
+	Add Effect…	Добавить эффект…
+# Kdenlive parity p11: render options, clip jobs, archives, backups, cache
+	Open Archived Project…	Открыть архивированный проект…
+	Open Backup File…	Открыть резервную копию…
+	Open Recent	Открыть недавние
+	Clear List	Очистить список
+# Kdenlive parity p12: preferences, project notes, menus, workspaces, shortcuts
+	Monitor	Монитор
+	Tool	Инструмент
+	Show Menu Bar	Показать строку меню
+	Show Status Bar	Показать строку состояния
+# Kdenlive parity p03: scopes options and Audio Spectrum
+	Audio Spectrum	Спектр звука
+# Kdenlive parity p03: timeline preview
+	Timeline Preview	Предпросмотр таймлайна
+	Start Preview Render	Начать рендер предпросмотра
+	Stop Preview Render	Остановить рендер предпросмотра
+	Add Preview Zone	Добавить зону предпросмотра
+	Remove Preview Zone	Удалить зону предпросмотра
+	Remove All Preview Zones	Удалить все зоны предпросмотра
+	Automatic Preview	Автоматический предпросмотр
+	Loop Zone	Зациклить зону
+	Loop Selected Clip	Зациклить выбранный клип
+	Focus Timecode	Фокус на тайм-код
+	Switch Monitor Fullscreen	Переключить монитор на весь экран
+	Show Monitor in Its Own Window	Показать монитор в отдельном окне
+	Monitor Info Overlay	Информационное наложение монитора
+	Playback FPS	FPS воспроизведения
+	Change Overlay	Сменить наложение
+	No Guide Pattern	Без шаблона направляющих
+	Rule of Thirds	Правило третей
+	Center Cross	Центральный крест
+	Diagonals	Диагонали
+	Grid	Сетка
+	Golden Ratio	Золотое сечение
+	Move Overlay Toolbar	Переместить панель наложения
+	Always Show Audio Thumbnails	Всегда показывать аудиоминиатюры
+	Show Source Timecode	Показывать тайм-код источника
+	Multitrack View	Многодорожечный вид
+	Monitor Overlay	Наложение монитора
+	Monitor Config	Настройка монитора
+	Guide Pattern	Шаблон направляющих
+# Kdenlive parity p05: markers, subtitles, speech, keyframes, clip menu, shortcuts
+	Add/Remove Timeline Marker	Добавить/удалить маркер таймлайна
+	Timeline Markers Locked	Маркеры таймлайна заблокированы
+	Export Markers…	Экспорт маркеров…
+	Import Markers…	Импорт маркеров…
+	Duplicate Clip	Дублировать клип
+	Edit Timeline Marker…	Изменить маркер таймлайна…
+	Marker Categories…	Категории маркеров…
+	Find Action…	Найти действие…

@@ -43,6 +43,8 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 log = { workspace = true }
 web-time = "1"
+# Project archives (.tar.gz / .zip): the pure-Rust deflate backend
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 
 [dev-dependencies]
 redrob-film-testkit = { workspace = true }
