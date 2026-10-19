@@ -838,6 +838,7 @@ impl FilmcraftApp {
                 | PanelKind::AudioClipMixer
                 | PanelKind::Metadata
                 | PanelKind::LumetriScopes
+                | PanelKind::AudioSpectrum
                 | PanelKind::AudioTrackMixer
                 | PanelKind::Text
                 | PanelKind::ReferenceMonitor

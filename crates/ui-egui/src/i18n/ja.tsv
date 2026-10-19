@@ -4387,3 +4387,24 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	キャッシュ
 	ClipJobs	クリップジョブ
+# Kdenlive parity p03: scopes options and Audio Spectrum
+	Auto Refresh	自動更新
+	Refresh Now	今すぐ更新
+	Realtime	リアルタイム
+	Scope Source	スコープのソース
+	Program Monitor	プログラムモニター
+	Source Monitor	ソースモニター
+	Histogram Components	ヒストグラムの成分
+	Sum	合計
+	Unscaled	拡大縮小なし
+	Paint Mode	描画モード
+	Grey	グレー
+	Gradient Reference Line	グラデーション基準線
+	Vectorscope	ベクトルスコープ
+	I and Q Lines	I/Q ライン
+	Gain {n}×	ゲイン {n}×
+	Export Background ({plane})…	背景を書き出し ({plane})…
+	PNG image	PNG 画像
+	Exported the vectorscope background to {path}	ベクトルスコープの背景を {path} に書き出しました
+	Could not export the vectorscope background: {error}	ベクトルスコープの背景を書き出せませんでした: {error}
+	Auto Refresh off: click to refresh	自動更新オフ: クリックで更新

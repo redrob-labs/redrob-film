@@ -1045,3 +1045,27 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	Cache
 	ClipJobs	Clip-Aufgaben
+# Kdenlive parity p03: scopes options and Audio Spectrum
+	Auto Refresh	Automatisch aktualisieren
+	Refresh Now	Jetzt aktualisieren
+	Realtime	Echtzeit
+	Scope Source	Quelle der Scopes
+	Active Monitor	Aktiver Monitor
+	Program Monitor	Programmmonitor
+	Source Monitor	Quellmonitor
+	Histogram Components	Histogrammkomponenten
+	Sum	Summe
+	Unscaled	Unskaliert
+	Paint Mode	Zeichenmodus
+	Colour	Farbe
+	Grey	Grau
+	Gradient Reference Line	Verlaufs-Referenzlinie
+	Vectorscope	Vektorskop
+	I and Q Lines	I- und Q-Linien
+	Gain {n}×	Verstärkung {n}×
+	Export Background ({plane})…	Hintergrund exportieren ({plane})…
+	PNG image	PNG-Bild
+	Exported the vectorscope background to {path}	Vektorskop-Hintergrund nach {path} exportiert
+	Could not export the vectorscope background: {error}	Vektorskop-Hintergrund konnte nicht exportiert werden: {error}
+	Auto Refresh off: click to refresh	Automatische Aktualisierung aus: zum Aktualisieren klicken
+	Audio Spectrum	Audiospektrum

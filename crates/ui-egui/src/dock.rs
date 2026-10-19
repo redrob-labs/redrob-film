@@ -28,6 +28,8 @@ pub enum PanelKind {
     AudioTrackMixer,
     LumetriColor,
     LumetriScopes,
+    /// Audio Spectrum of the Mix at the playhead (`panels::audio_spectrum`).
+    AudioSpectrum,
     EssentialGraphics,
     EssentialSound,
     TextToSpeech,
@@ -43,7 +45,7 @@ pub enum PanelKind {
 }
 
 impl PanelKind {
-    pub const ALL: [PanelKind; 29] = [
+    pub const ALL: [PanelKind; 30] = [
         PanelKind::Project,
         PanelKind::MediaBrowser,
         PanelKind::Libraries,
@@ -62,6 +64,7 @@ impl PanelKind {
         PanelKind::AudioTrackMixer,
         PanelKind::LumetriColor,
         PanelKind::LumetriScopes,
+        PanelKind::AudioSpectrum,
         PanelKind::EssentialGraphics,
         PanelKind::EssentialSound,
         PanelKind::TextToSpeech,
@@ -94,6 +97,7 @@ impl PanelKind {
             PanelKind::AudioTrackMixer => "Audio Track Mixer",
             PanelKind::LumetriColor => "Lumetri Color",
             PanelKind::LumetriScopes => "Lumetri Scopes",
+            PanelKind::AudioSpectrum => "Audio Spectrum",
             PanelKind::EssentialGraphics => "Essential Graphics",
             PanelKind::EssentialSound => "Essential Sound",
             PanelKind::TextToSpeech => "Text to Speech",

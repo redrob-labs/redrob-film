@@ -4399,3 +4399,24 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	Caché
 	ClipJobs	Tareas de clip
+# Kdenlive parity p03: scopes options and Audio Spectrum
+	Auto Refresh	Actualización automática
+	Refresh Now	Actualizar ahora
+	Realtime	Tiempo real
+	Scope Source	Origen de los scopes
+	Program Monitor	Monitor de programa
+	Source Monitor	Monitor de origen
+	Histogram Components	Componentes del histograma
+	Sum	Suma
+	Unscaled	Sin escalar
+	Paint Mode	Modo de pintura
+	Grey	Gris
+	Gradient Reference Line	Línea de referencia de degradado
+	Vectorscope	Vectorscopio
+	I and Q Lines	Líneas I y Q
+	Gain {n}×	Ganancia {n}×
+	Export Background ({plane})…	Exportar fondo ({plane})…
+	PNG image	Imagen PNG
+	Exported the vectorscope background to {path}	Fondo del vectorscopio exportado a {path}
+	Could not export the vectorscope background: {error}	No se pudo exportar el fondo del vectorscopio: {error}
+	Auto Refresh off: click to refresh	Actualización automática desactivada: haga clic para actualizar

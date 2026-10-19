@@ -4380,3 +4380,24 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	缓存
 	ClipJobs	剪辑任务
+# Kdenlive parity p03: scopes options and Audio Spectrum
+	Auto Refresh	自动刷新
+	Refresh Now	立即刷新
+	Realtime	实时
+	Scope Source	示波器来源
+	Program Monitor	节目监视器
+	Source Monitor	源监视器
+	Histogram Components	直方图分量
+	Sum	总和
+	Unscaled	不缩放
+	Paint Mode	绘制模式
+	Grey	灰色
+	Gradient Reference Line	渐变参考线
+	Vectorscope	矢量示波器
+	I and Q Lines	I 和 Q 线
+	Gain {n}×	增益 {n}×
+	Export Background ({plane})…	导出背景 ({plane})…
+	PNG image	PNG 图像
+	Exported the vectorscope background to {path}	已将矢量示波器背景导出到 {path}
+	Could not export the vectorscope background: {error}	无法导出矢量示波器背景：{error}
+	Auto Refresh off: click to refresh	自动刷新已关闭：点击刷新
