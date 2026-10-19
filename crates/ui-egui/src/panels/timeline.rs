@@ -2259,11 +2259,14 @@ pub(crate) const CLIP_MENU: &[&[(&str, &str)]] = &[
         ("Remove Attributes…", "edit.removeAttributes"),
         ("Clear", "edit.clear"),
         ("Ripple Delete", "edit.rippleDelete"),
+        ("Duplicate Clip", "timeline.duplicateClip"),
     ],
     &[("Edit Original", "edit.editOriginal"), ("Replace With Clip From Source Monitor", "clip.replaceFromSource")],
     &[
         ("Enable", "clip.enable"),
         ("Link", "clip.link"),
+        ("Restore Audio", "clip.restoreAudio"),
+        ("Restore Video", "clip.restoreVideo"),
         ("Group", "clip.group"),
         ("Ungroup", "clip.ungroup"),
         ("Synchronize…", "clip.synchronize"),
@@ -2379,6 +2382,23 @@ fn gap_menu(app: &mut FilmcraftApp, ctx: &egui::Context, ui: &mut egui::Ui) {
         }
         ui.close();
     }
+    // Add Clip in the empty space (Kdenlive): a colour clip or a title filling it (video tracks)
+    let on_video = app.session.state.gap_selection.is_some_and(|g| app.session.active_sequence().is_some_and(|q| q.video_tracks.iter().any(|t| t.id == g.track)));
+    ui.menu_button(tl!("Add Clip"), |ui| {
+        for (key, label, params) in [
+            ("color", tl!("Color Clip"), json!({"kind": "color", "color": "#000000"})),
+            ("title", tl!("Title Clip"), json!({"kind": "title", "text": tl!("Title")})),
+        ] {
+            let r = ui.add_enabled(on_video, egui::Button::new(label));
+            app.auto.add(&format!("timeline.gapMenu.addClip.{key}"), r.rect, label);
+            if r.clicked() {
+                if let Err(e) = crate::menus::invoke(app, ctx, "timeline.addClipInGap", params) {
+                    app.ui.status = e;
+                }
+                ui.close();
+            }
+        }
+    });
 }
 
 /// The clip menu's Multi-Camera submenu: Enable, Flatten, and the cameras of the selected nested

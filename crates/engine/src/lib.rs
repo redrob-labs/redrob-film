@@ -30,6 +30,7 @@ pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;
 pub mod keyboard;
+pub mod kparity_ops;
 pub mod library;
 mod marker_export;
 pub mod marker_tools;
@@ -324,6 +325,10 @@ pub struct EditorState {
     /// Markers ▸ Ripple Sequence Markers: ripple edits move (and delete) sequence markers too.
     #[serde(default)]
     pub ripple_sequence_markers: bool,
+    /// Subtitle split mode Split After First Line (Kdenlive): splitting a caption of several lines
+    /// gives the first part the first line and the second part the rest.
+    #[serde(default)]
+    pub caption_split_after_first_line: bool,
     /// Markers ▸ Copy Paste Includes Sequence Markers.
     #[serde(default)]
     pub copy_paste_sequence_markers: bool,

@@ -3,7 +3,8 @@
 //! - **Files:** [SubRip](srt) (`.srt`), [WebVTT](vtt) (`.vtt`), [Scenarist SCC](scc) (`.scc`,
 //!   CEA-608 pop-on, roll-up and paint-on on read; pop-on on write), [MacCaption MCC](mcc)
 //!   (`.mcc`, SMPTE ST 334-2 packets with CEA-608 and CEA-708), [EBU STL](stl) (`.stl`, EBU
-//!   Tech 3264) and [TTML](ttml) (`.ttml` IMSC1 Text profile, `.dfxp` DFXP) parse into a
+//!   Tech 3264), [TTML](ttml) (`.ttml` IMSC1 Text profile, `.dfxp` DFXP), [ASS](ass) (`.ass` /
+//!   `.ssa`) and [SubViewer](sbv) (`.sbv`) parse into a
 //!   [`Document`] of [`Cue`]s and write back. Readers are forgiving (BOM, UTF-16, Windows-1252 fallback, CRLF/CR,
 //!   missing SRT indexes, `,` or `.` milliseconds, missing hours, no blank line between cues);
 //!   writers are strict. WebVTT cue identifiers, cue settings, `<v Speaker>` voices and
@@ -17,9 +18,11 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+pub mod ass;
 pub mod burn;
 pub mod cea608;
 pub mod mcc;
+pub mod sbv;
 pub mod scc;
 pub mod srt;
 pub mod stl;
@@ -43,10 +46,14 @@ pub enum Format {
     Ttml,
     /// DFXP (TTML1).
     Dfxp,
+    /// Advanced SubStation Alpha (`.ass`; SSA `.ssa` on read).
+    Ass,
+    /// YouTube SubViewer (`.sbv`).
+    Sbv,
 }
 
 impl Format {
-    pub const ALL: [Format; 7] = [Format::Srt, Format::WebVtt, Format::Scc, Format::Mcc, Format::Stl, Format::Ttml, Format::Dfxp];
+    pub const ALL: [Format; 9] = [Format::Srt, Format::WebVtt, Format::Scc, Format::Mcc, Format::Stl, Format::Ttml, Format::Dfxp, Format::Ass, Format::Sbv];
     pub fn name(self) -> &'static str {
         match self {
             Format::Srt => "SubRip (SRT)",
@@ -56,6 +63,8 @@ impl Format {
             Format::Stl => "EBU STL",
             Format::Ttml => "TTML (IMSC1)",
             Format::Dfxp => "DFXP (TTML1)",
+            Format::Ass => "Advanced SubStation Alpha (ASS)",
+            Format::Sbv => "SubViewer (SBV)",
         }
     }
     pub fn extension(self) -> &'static str {
@@ -67,6 +76,8 @@ impl Format {
             Format::Stl => "stl",
             Format::Ttml => "ttml",
             Format::Dfxp => "dfxp",
+            Format::Ass => "ass",
+            Format::Sbv => "sbv",
         }
     }
     pub fn from_name(s: &str) -> Option<Format> {
@@ -78,6 +89,8 @@ impl Format {
             "stl" | "ebu-stl" | "ebustl" | "ebu" => Some(Format::Stl),
             "ttml" | "imsc" | "imsc1" | "xml" => Some(Format::Ttml),
             "dfxp" => Some(Format::Dfxp),
+            "ass" | "ssa" | "substation" => Some(Format::Ass),
+            "sbv" | "subviewer" => Some(Format::Sbv),
             _ => None,
         }
     }
@@ -185,7 +198,13 @@ pub fn detect(bytes: &[u8], ext: Option<&str>) -> Option<Format> {
     if head.starts_with("File Format=MacCaption_MCC") {
         return Some(Format::Mcc);
     }
+    if head.to_ascii_lowercase().starts_with("[script info]") {
+        return Some(Format::Ass);
+    }
     let ext = ext.map(|e| e.trim_start_matches('.').to_ascii_lowercase());
+    if ext.as_deref() == Some("sbv") && sbv::sniff(head) {
+        return Some(Format::Sbv);
+    }
     if (head.starts_with('<') && (head.contains("<tt ") || head.contains("<tt>") || head.contains(":tt ")))
         && (head.contains("ns/ttml") || head.contains("ttaf1"))
     {
@@ -196,7 +215,7 @@ pub fn detect(bytes: &[u8], ext: Option<&str>) -> Option<Format> {
     match ext.as_deref() {
         Some("srt") if has_arrow_timing || head.is_empty() => Some(Format::Srt),
         Some("vtt") if has_arrow_timing => Some(Format::WebVtt),
-        Some("srt" | "vtt" | "scc" | "mcc" | "stl" | "ttml" | "dfxp" | "xml") => None,
+        Some("srt" | "vtt" | "scc" | "mcc" | "stl" | "ttml" | "dfxp" | "xml" | "ass" | "ssa" | "sbv") => None,
         _ if has_arrow_timing => Some(Format::Srt),
         _ => None,
     }
@@ -214,6 +233,8 @@ pub fn parse(bytes: &[u8], format: Format) -> Result<Document> {
         Format::Scc => scc::parse(&text),
         Format::Mcc => mcc::parse(&text),
         Format::Ttml | Format::Dfxp => ttml::parse(&text),
+        Format::Ass => ass::parse(&text),
+        Format::Sbv => sbv::parse(&text),
         Format::Stl => stl::parse(bytes),
     }
 }
@@ -244,6 +265,8 @@ pub fn write(doc: &Document, format: Format, opts: WriteOptions) -> Vec<u8> {
         Format::Stl => stl::write(doc, opts.rate),
         Format::Ttml => ttml::write(doc, ttml::Flavor::Imsc1, opts.rate, "en").into_bytes(),
         Format::Dfxp => ttml::write(doc, ttml::Flavor::Dfxp, opts.rate, "en").into_bytes(),
+        Format::Ass => ass::write(doc).into_bytes(),
+        Format::Sbv => sbv::write(doc).into_bytes(),
     }
 }
 
@@ -265,6 +288,27 @@ pub fn decode_text(bytes: &[u8]) -> String {
     };
     let s = s.strip_prefix('\u{feff}').map(str::to_string).unwrap_or(s);
     if s.contains('\r') { s.replace("\r\n", "\n").replace('\r', "\n") } else { s }
+}
+
+/// Text encodings a caption file can be read as when the automatic choice is wrong (Import ▸
+/// Encoding): `utf-8`, `utf-16le`, `utf-16be`, `windows-1252`, `latin-1`.
+pub const ENCODINGS: [&str; 5] = ["utf-8", "utf-16le", "utf-16be", "windows-1252", "latin-1"];
+
+/// Re-encode `bytes`, read as `encoding`, to UTF-8 (None for an unknown encoding). The result
+/// parses with [`parse`] like any UTF-8 file.
+pub fn reencode(bytes: &[u8], encoding: &str) -> Option<Vec<u8>> {
+    let s: String = match encoding.to_ascii_lowercase().replace('_', "-").as_str() {
+        "utf-8" | "utf8" => String::from_utf8_lossy(bytes).into_owned(),
+        e @ ("utf-16le" | "utf-16be" | "utf-16") => {
+            let be = e == "utf-16be";
+            let units: Vec<u16> = bytes.as_chunks::<2>().0.iter().map(|c| if be { u16::from_be_bytes([c[0], c[1]]) } else { u16::from_le_bytes([c[0], c[1]]) }).collect();
+            String::from_utf16_lossy(&units)
+        }
+        "windows-1252" | "cp1252" => bytes.iter().map(|&b| cp1252(b)).collect(),
+        "latin-1" | "latin1" | "iso-8859-1" => bytes.iter().map(|&b| b as char).collect(),
+        _ => return None,
+    };
+    Some(s.into_bytes())
 }
 
 fn cp1252(b: u8) -> char {

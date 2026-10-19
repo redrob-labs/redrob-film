@@ -3115,6 +3115,8 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::paste_media::commands());
     // Kdenlive-parity marker tools: categories, interval, chapters export/import, lock
     v.extend(crate::marker_tools::commands());
+    // Kdenlive-parity timeline operations: duplicate, restore A/V, one-second seek, gap clips
+    v.extend(crate::kparity_ops::commands());
     // Kdenlive-parity timeline commands: edit modes, current track, spaces, snap points…
     v.extend(crate::timeline_ops::commands());
     // Edit ▸ Label ▸ <colour>, Paste Attributes, subclips, Video / Audio Options, Replace With Clip…

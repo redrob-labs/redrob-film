@@ -28,6 +28,16 @@ pub struct KpUi {
     /// The command bar (open when Some): its search text and highlighted row.
     #[serde(skip)]
     pub command_bar: Option<(String, usize)>,
+    /// Text panel ▸ Captions: the edit window's text size (0 = the default).
+    pub caption_font: f32,
+    /// Import Captions options (open when Some): the file and the text encoding (`auto` = detected).
+    #[serde(skip)]
+    pub caption_import: Option<(String, String)>,
+}
+
+/// The caption edit window's text size (Text panel ▸ Captions zoom).
+pub fn caption_font_size(app: &FilmcraftApp) -> f32 {
+    if app.ui.kp.caption_font > 0.0 { app.ui.kp.caption_font } else { 12.5 }
 }
 
 pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, _params: &Value) -> Option<Result<Value, String>> {
@@ -156,6 +166,43 @@ pub fn effect_controls_keys(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool
 
 pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
     command_bar(app, ctx);
+    caption_import(app, ctx);
+}
+
+/// Import Captions: the text encoding of the file (Automatic detects UTF-8, UTF-16 with a byte
+/// order mark, else Windows-1252).
+fn caption_import(app: &mut FilmcraftApp, ctx: &egui::Context) {
+    let Some((path, mut enc)) = app.ui.kp.caption_import.clone() else { return };
+    let mut open = true;
+    let mut done = false;
+    egui::Window::new(tl!("Import Subtitle File")).id(egui::Id::new("Import Subtitle dialog")).open(&mut open).collapsible(false).resizable(false).show(ctx, |ui| {
+        ui.label(egui::RichText::new(&path).color(app.tokens.text_dim));
+        ui.horizontal(|ui| {
+            ui.label(tl!("Encoding:"));
+            let shown = if enc == "auto" { tl!("Automatic").to_string() } else { enc.clone() };
+            let r = egui::ComboBox::from_id_salt("importSubtitle.encoding").selected_text(shown).show_ui(ui, |ui| {
+                ui.selectable_value(&mut enc, "auto".to_string(), tl!("Automatic"));
+                for e in ["utf-8", "utf-16le", "utf-16be", "windows-1252", "latin-1"] {
+                    ui.selectable_value(&mut enc, e.to_string(), e);
+                }
+            });
+            app.auto.add("importSubtitle.encoding", r.response.rect, "Encoding");
+        });
+        ui.horizontal(|ui| {
+            if ui.button(tl!("Cancel")).clicked() {
+                done = true;
+            }
+            let r = ui.button(tl!("Import"));
+            app.auto.add("importSubtitle.ok", r.rect, "Import");
+            if r.clicked() {
+                if let Err(e) = app.session.execute("captions.import", json!({"path": path, "encoding": enc})) {
+                    app.ui.status = e.to_string();
+                }
+                done = true;
+            }
+        });
+    });
+    app.ui.kp.caption_import = if !open || done { None } else { Some((path, enc)) };
 }
 
 /// Find Action…: every menu command (and every frontend command) by its label, menu path or id;
