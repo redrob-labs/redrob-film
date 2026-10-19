@@ -5224,3 +5224,53 @@
 	{n} characters · longest line {m}	{n} caracteres · línea más larga {m}
 	{n} markers use this category.	{n} marcadores usan esta categoría.
 	✓ Timeline Markers Locked	✓ Marcadores de la línea de tiempo bloqueados
+# Kdenlive parity: keyboard commands, preview resolutions, project notes
+	128p	128p
+	360p	360p
+	480p	480p
+	Add Clip at Playhead to Selection	Añadir el clip en el cabezal a la selección
+	Add Transition at Playhead to Selection	Añadir la transición en el cabezal a la selección
+	Create Markers from Project Notes	Crear marcadores a partir de las notas del proyecto
+	Cyan	Cian
+	Deselect Clip at Playhead	Deseleccionar el clip en el cabezal
+	Deselect Transition at Playhead	Deseleccionar la transición en el cabezal
+	Filter Project Items	Filtrar elementos del proyecto
+	Insert Timecode in Project Notes	Insertar código de tiempo en las notas del proyecto
+	Keyframes	Fotogramas clave
+	Next Sequence Tab	Siguiente pestaña de secuencia
+	Pause / Resume Voice-over Recording	Pausar / reanudar la grabación de voz en off
+	Previous Sequence Tab	Pestaña de secuencia anterior
+	Select All in Current Track	Seleccionar todo en la pista actual
+	Select Audio Track 1	Seleccionar la pista de audio 1
+	Select Audio Track 2	Seleccionar la pista de audio 2
+	Select Audio Track 3	Seleccionar la pista de audio 3
+	Select Audio Track 4	Seleccionar la pista de audio 4
+	Select Audio Track 5	Seleccionar la pista de audio 5
+	Select Audio Track 6	Seleccionar la pista de audio 6
+	Select Audio Track 7	Seleccionar la pista de audio 7
+	Select Audio Track 8	Seleccionar la pista de audio 8
+	Select Audio Track 9	Seleccionar la pista de audio 9
+	Select Track Above	Seleccionar la pista superior
+	Select Track Below	Seleccionar la pista inferior
+	Select Transition at Playhead	Seleccionar la transición en el cabezal
+	Select Video Track 1	Seleccionar la pista de video 1
+	Select Video Track 2	Seleccionar la pista de video 2
+	Select Video Track 3	Seleccionar la pista de video 3
+	Select Video Track 4	Seleccionar la pista de video 4
+	Select Video Track 5	Seleccionar la pista de video 5
+	Select Video Track 6	Seleccionar la pista de video 6
+	Select Video Track 7	Seleccionar la pista de video 7
+	Select Video Track 8	Seleccionar la pista de video 8
+	Select Video Track 9	Seleccionar la pista de video 9
+	Set Duration	Establecer duración
+	Split After First Line	Dividir después de la primera línea
+	Switch All Tracks Active	Cambiar todas las pistas activas
+	Switch Target Audio Track	Cambiar la pista de audio de destino
+	Timeline Edit Mode	Modo de edición de la línea de tiempo
+	Toggle All Track Lock	Alternar el bloqueo de todas las pistas
+	Toggle All Tracks Active	Alternar todas las pistas activas
+	Toggle Clip Effects	Alternar los efectos del clip
+	Toggle Track Active	Alternar pista activa
+	Toggle Track Hidden / Mute	Alternar ocultar / silenciar pista
+	Toggle Track Lock	Alternar el bloqueo de la pista
+	Toggle Track Target	Alternar el destino de la pista

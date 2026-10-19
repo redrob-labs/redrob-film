@@ -221,6 +221,13 @@ pub struct Playback {
     /// Unplugging headphones or a sound server restart then costs a moment of sound, not the
     /// rest of the play.
     audio_retry: Option<(f64, u8)>,
+    /// Tries made this play to open a lost output again; a reopened output that stalls again
+    /// spends a try too, so a device that opens but never plays is given up on after
+    /// [`AUDIO_RETRIES`].
+    audio_tries: u8,
+    /// A reopened output has not consumed any samples yet: the wall clock keeps driving until
+    /// it does, so waiting on a device that may never wake does not freeze the playhead.
+    audio_waking: bool,
     /// Audio underruns for the current (or last) play (desktop: sound is mixed ahead).
     #[cfg(not(target_arch = "wasm32"))]
     pub audio_stats: std::sync::Arc<play_ahead::AudioStats>,
@@ -966,6 +973,8 @@ impl FilmcraftApp {
         self.playback.preroll = Some(-1.0);
         self.playback.preroll_ready = false;
         self.playback.audio_retry = None;
+        self.playback.audio_tries = 0;
+        self.playback.audio_waking = false;
         if let Some(a) = self.audio.as_mut() {
             a.stop();
         }
@@ -1104,6 +1113,13 @@ impl FilmcraftApp {
         }
     }
 
+    /// After the output was lost (or stalled) at `now`: when to try opening it again, until
+    /// [`AUDIO_RETRIES`] tries were made this play (0.5 s, then 1, 1.5, 2 s).
+    fn schedule_audio_retry(&mut self, now: f64) {
+        let tries = self.playback.audio_tries;
+        self.playback.audio_retry = (tries < AUDIO_RETRIES).then(|| (now + AUDIO_RETRY_S * f64::from(tries + 1), tries));
+    }
+
     fn advance_playback(&mut self, ctx: &egui::Context) {
         if !self.playback.playing {
             return;
@@ -1133,7 +1149,8 @@ impl FilmcraftApp {
             if let Some(audio) = self.audio.as_mut() {
                 audio.stop();
             }
-            self.playback.audio_retry = Some((now + AUDIO_RETRY_S, 0));
+            self.playback.audio_waking = false;
+            self.schedule_audio_retry(now);
             log::warn!("audio output lost its playback clock; playing without sound");
             // the device's own note names the error (cpal's error callback) when it has one
             self.ui.status = self
@@ -1146,17 +1163,30 @@ impl FilmcraftApp {
             let stall = now - self.playback.audio_seen.1;
             if f != self.playback.audio_seen.0 {
                 self.playback.audio_seen = (f, now);
+                if self.playback.audio_waking && sr > 0 {
+                    // the reopened output plays: its clock takes over from the displayed frame
+                    self.playback.audio_waking = false;
+                    let shown = self.session.playhead();
+                    let played = Tick::from_seconds_f64(f as f64 / f64::from(sr) * self.playback.speed);
+                    self.playback.anchor_tick = if shown > played { shown - played } else { Tick::ZERO };
+                }
             } else if stall >= audio_stall_limit(f, sr) {
                 // the device stopped consuming samples: continue from where the audio got to on
                 // the wall clock, without sound
-                let played = if sr > 0 { f as f64 / sr as f64 } else { 0.0 };
-                self.playback.anchor_tick += Tick::from_seconds_f64(played * self.playback.speed);
+                if self.playback.audio_waking {
+                    // the wall clock drove while it was waking: carry on from the displayed frame
+                    self.playback.anchor_tick = self.session.playhead();
+                } else {
+                    let played = if sr > 0 { f as f64 / sr as f64 } else { 0.0 };
+                    self.playback.anchor_tick += Tick::from_seconds_f64(played * self.playback.speed);
+                }
                 self.playback.anchor_time = now;
+                self.playback.audio_waking = false;
                 self.playback.audio_clock = false;
                 if let Some(a) = self.audio.as_mut() {
                     a.stop();
                 }
-                self.playback.audio_retry = Some((now + AUDIO_RETRY_S, 0));
+                self.schedule_audio_retry(now);
                 log::warn!("audio output stalled (no samples consumed for {stall:.1} s after {f} frames); playing without sound");
                 self.ui.status = tl!("Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)").into();
             }
@@ -1164,7 +1194,7 @@ impl FilmcraftApp {
         // The output was lost earlier in this play: open it again (the device may be back, or the
         // host's default may now be another device), from where the wall clock has got to.
         if !self.playback.audio_clock
-            && let Some((at, tries)) = self.playback.audio_retry
+            && let Some((at, _)) = self.playback.audio_retry
             && now >= at
         {
             let t = self.playback.anchor_tick + Tick::from_seconds_f64((now - self.playback.anchor_time) * self.playback.speed);
@@ -1172,18 +1202,22 @@ impl FilmcraftApp {
             self.playback.anchor_tick = t;
             self.playback.anchor_time = now;
             self.playback.audio_seen = (0, now);
+            self.playback.audio_tries += 1;
+            self.playback.audio_retry = None;
             self.start_audio();
-            self.playback.audio_retry =
-                if self.playback.audio_clock || tries + 1 >= AUDIO_RETRIES { None } else { Some((now + AUDIO_RETRY_S * f64::from(tries + 2), tries + 1)) };
             if self.playback.audio_clock {
-                log::info!("audio output reopened after {} tries", tries + 1);
+                // opened: the wall clock drives until the device consumes its first samples
+                self.playback.audio_waking = true;
+                log::info!("audio output reopened after {} tries", self.playback.audio_tries);
                 self.ui.status = tl!("Audio output restored").into();
+            } else {
+                self.schedule_audio_retry(now);
             }
             ctx.request_repaint();
             return;
         }
         let elapsed = match reading {
-            Some((f, sr)) if self.playback.audio_clock && sr > 0 => f as f64 / sr as f64,
+            Some((f, sr)) if self.playback.audio_clock && !self.playback.audio_waking && sr > 0 => f as f64 / sr as f64,
             _ => now - self.playback.anchor_time,
         };
         let t = self.playback.anchor_tick + Tick::from_seconds_f64(elapsed * self.playback.speed);

@@ -1027,7 +1027,7 @@ impl Default for SequenceSettingsDraft {
             auto_tone_map: true,
             preset_filter: String::new(),
             preset_name: String::new(),
-            preview_codec: "ProRes 422".into(),
+            preview_codec: "ProRes 422 HQ".into(),
         }
     }
 }

@@ -78,8 +78,9 @@ pub enum RenderMode {
     Zones,
 }
 
-/// Sequence ▸ Preview Codec choices (label, ProRes flavour; "" = HQ).
-pub const PREVIEW_CODECS: &[(&str, &str)] = &[("ProRes 422 HQ", "hq"), ("ProRes 422", "standard"), ("ProRes 422 LT", "lt"), ("ProRes 422 Proxy", "proxy")];
+/// Sequence ▸ Preview Codec choices (label, ProRes flavour). Unknown labels -- including the
+/// "ProRes 422" every sequence carried before the choice existed -- render HQ, as previews always did.
+pub const PREVIEW_CODECS: &[(&str, &str)] = &[("ProRes 422 HQ", "hq"), ("ProRes 422 Standard", "standard"), ("ProRes 422 LT", "lt"), ("ProRes 422 Proxy", "proxy")];
 
 /// The ProRes flavour of a sequence's preview codec label (unknown labels: HQ).
 pub fn preview_prores(label: &str) -> &'static str {

@@ -936,7 +936,7 @@ impl Default for SequenceSettings {
             drop_frame: false,
             preset: "HD 1080p 23.976".into(),
             audio_master: AudioChannels::Stereo,
-            preview_codec: "ProRes 422".into(),
+            preview_codec: "ProRes 422 HQ".into(),
             max_bit_depth: false,
             max_render_quality: false,
             working_space: "Rec. 709".into(),
