@@ -3649,3 +3649,18 @@
 	LFO Rate	LFO のレート
 	Enable Clipping	クリッピングを有効化
 	Limiter Gain	リミッターゲイン
+	Show/Hide the Audio Track Mixer	オーディオトラックミキサーの表示/非表示
+	Show Peak Hold	ピークホールドを表示
+	Show Clipping Indicator	クリップインジケーターを表示
+	Color Level Zones	レベルゾーンを色分け
+	Show dB Scale	dB スケールを表示
+	Solo (click: exclusive; Shift+click: add to the soloed strips)	ソロ（クリック: 排他、Shift+クリック: ソロ中のストリップに追加）
+	Input level of the recording (drag; double-, middle- or right-click: 0 dB)	録音の入力レベル（ドラッグ、ダブル/中/右クリック: 0 dB）
+	Volume (drag; double-, middle- or right-click: 0 dB)	ボリューム（ドラッグ、ダブル/中/右クリック: 0 dB）
+	Pan / balance (drag; double-, middle- or right-click: centre)	パン/バランス（ドラッグ、ダブル/中/右クリック: 中央）
+	Voice-over paused (Space: resume, Esc: stop)	ボイスオーバー一時停止中（Space: 再開、Esc: 停止）
+	Voice-over ready: press Space to record from here	ボイスオーバー準備完了: Space でここから録音
+	Show the Countdown in the Program Monitor	プログラムモニターにカウントダウンを表示
+	Separate Audio Channels	オーディオチャンネルを分けて表示
+	Audio Waveform Colors	オーディオ波形の色
+	Reset Colors	色をリセット

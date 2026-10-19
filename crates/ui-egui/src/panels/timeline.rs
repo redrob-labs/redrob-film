@@ -58,6 +58,9 @@ pub struct TlState {
     /// display gain: scanning the whole source per clip per frame cost more than drawing.
     peak_max: HashMap<PeakKey, (usize, f32)>,
     zoom_anchor: Option<(f64, f32)>,
+    /// Peaks of every channel of a stream, for Separate Audio Channels (made on demand).
+    channel_peaks: Arc<Mutex<HashMap<PeakKey, Arc<Vec<Vec<(f32, f32)>>>>>>,
+    channel_pending: Arc<Mutex<Vec<PeakKey>>>,
 }
 
 impl TlState {
@@ -70,6 +73,8 @@ impl TlState {
         self.seq_peak_keys = Default::default();
         self.seq_keys_seen.clear();
         self.peak_max.clear();
+        self.channel_peaks = Default::default();
+        self.channel_pending = Default::default();
     }
 }
 
@@ -435,6 +440,12 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                 app.auto.add("timeline.gap", gap.intersect(content), "Selected gap");
             }
         }
+        // the voice-over take being recorded on this track, drawn live
+        if r.kind == TrackKind::Audio && !r.lane && app.session.voiceover.rec.as_ref().is_some_and(|x| x.track == r.track && Some(x.seq) == app.session.state.active_sequence) {
+            draw_recording(app, &p, r.rect, &|tk| layout.x_of(tk), app.session.playhead());
+            app.auto.add("timeline.recording", r.rect.intersect(content), "Recording voice-over");
+            ctx.request_repaint();
+        }
         for it in &tr.items {
             let it = edited.get(&it.id).unwrap_or(it);
             let (start, dur, moved_track) = previews.get(&it.id).copied().unwrap_or((it.start, it.duration, None));
@@ -759,7 +770,7 @@ fn draw_clip(
     }
     // waveform (audio): rectified, lower 40 %
     if kind == TrackKind::Audio && app.ui.timeline.show_waveforms && w > 3.0 {
-        draw_waveform(app, p, body, it, if inr { Color32::from_rgb(0xc7, 0xe9, 0xfa) } else { Color32::from_rgb(0x79, 0xc0, 0xf9) });
+        draw_waveform(app, p, body, it, inr);
     }
     let clip_p = p.with_clip_rect(body.shrink2(vec2(1.0, 0.0)).intersect(p.clip_rect()));
     // name band
@@ -815,17 +826,9 @@ fn draw_clip(
     }
 }
 
-fn draw_waveform(app: &mut FilmcraftApp, p: &egui::Painter, body: Rect, it: &TrackItem, col: Color32) {
+fn draw_waveform(app: &mut FilmcraftApp, p: &egui::Painter, body: Rect, it: &TrackItem, inr: bool) {
     let Some(peaks) = request_peaks(app, it.item, it.audio_stream) else { return };
     let pkey = (it.item, it.audio_stream);
-    let spp = 256.0;
-    let sr = 48_000.0;
-    let zone_h = (body.height() * 0.42).max(8.0);
-    let area = Rect::from_min_max(pos2(body.min.x + 1.0, body.max.y - zone_h - 1.0), pos2(body.max.x - 1.0, body.max.y - 1.0));
-    let clip = p.clip_rect().intersect(area);
-    if clip.width() <= 0.0 {
-        return;
-    }
     let key = Arc::as_ptr(&peaks) as usize;
     let peak = match app.tl.peak_max.get(&pkey) {
         Some(&(k, v)) if k == key => v,
@@ -837,6 +840,63 @@ fn draw_waveform(app: &mut FilmcraftApp, p: &egui::Painter, body: Rect, it: &Tra
     };
     let gain = waveform_display_gain(peak, it.gain_db);
     let dynamic = app.ui.extras.dynamic_waveforms;
+    // the waveform colour of each channel (timeline wrench menu), lighter on a selected clip
+    let colors = app.ui.timeline.waveform_colors.clone();
+    let color = |c: usize| {
+        let [r, g, b] = colors.get(c % colors.len().max(1)).copied().unwrap_or([0x79, 0xc0, 0xf9]);
+        if inr {
+            let up = |v: u8| v + ((255 - v) as f32 * 0.55) as u8;
+            Color32::from_rgb(up(r), up(g), up(b))
+        } else {
+            Color32::from_rgb(r, g, b)
+        }
+    };
+    // Separate Audio Channels: one lane per channel (media streams with more than one channel)
+    let lanes = if app.ui.timeline.separate_channels && app.session.project.sequence(it.item).is_none() {
+        request_channel_peaks(app, it.item, it.audio_stream).filter(|c| c.len() > 1)
+    } else {
+        None
+    };
+    match lanes {
+        Some(chs) => {
+            let n = chs.len().min(8);
+            let zone_h = (body.height() * 0.62).max(8.0);
+            let lane_h = zone_h / n as f32;
+            for (c, ch) in chs.iter().take(n).enumerate() {
+                let bottom = body.max.y - 1.0 - lane_h * (n - 1 - c) as f32;
+                let area = Rect::from_min_max(pos2(body.min.x + 1.0, bottom - lane_h), pos2(body.max.x - 1.0, bottom));
+                waveform_lane(p, body, area, it, ch, gain, dynamic, color(c));
+            }
+            if body.width() > 30.0 {
+                let cb = Rect::from_min_size(pos2(body.min.x + 3.0, body.max.y - 11.0), vec2(8.0, 9.0));
+                p.rect_filled(cb, 1.0, Color32::from_black_alpha(160));
+                p.text(cb.center(), Align2::CENTER_CENTER, format!("{n}"), Tokens::ui(7.5), Color32::from_rgb(0xd9, 0xd9, 0xd9));
+            }
+        }
+        None => {
+            let zone_h = (body.height() * 0.42).max(8.0);
+            let area = Rect::from_min_max(pos2(body.min.x + 1.0, body.max.y - zone_h - 1.0), pos2(body.max.x - 1.0, body.max.y - 1.0));
+            waveform_lane(p, body, area, it, &peaks, gain, dynamic, color(0));
+            // channel label box
+            let cb = Rect::from_min_size(pos2(body.min.x + 3.0, body.max.y - 11.0), vec2(8.0, 9.0));
+            if body.width() > 30.0 {
+                p.rect_filled(cb, 1.0, Color32::from_black_alpha(160));
+                p.text(cb.center(), Align2::CENTER_CENTER, "1", Tokens::ui(7.5), Color32::from_rgb(0xd9, 0xd9, 0xd9));
+            }
+        }
+    }
+}
+
+/// One rectified waveform of `peaks` (min, max per 256 samples at 48 kHz of source time) for the
+/// clip `it` drawn in `body`, filling `area` from its bottom.
+#[allow(clippy::too_many_arguments)]
+fn waveform_lane(p: &egui::Painter, body: Rect, area: Rect, it: &TrackItem, peaks: &[(f32, f32)], gain: f32, dynamic: bool, col: Color32) {
+    let spp = 256.0;
+    let sr = 48_000.0;
+    let clip = p.clip_rect().intersect(area);
+    if clip.width() <= 0.0 {
+        return;
+    }
     let mut mesh = egui::Mesh::default();
     let dur_px = body.width().max(1.0);
     for x in (clip.min.x.floor() as i32)..(clip.max.x.ceil() as i32) {
@@ -865,12 +925,95 @@ fn draw_waveform(app: &mut FilmcraftApp, p: &egui::Painter, body: Rect, it: &Tra
         }
     }
     p.add(mesh);
-    // channel label box
-    let cb = Rect::from_min_size(pos2(body.min.x + 3.0, body.max.y - 11.0), vec2(8.0, 9.0));
-    if body.width() > 30.0 {
-        p.rect_filled(cb, 1.0, Color32::from_black_alpha(160));
-        p.text(cb.center(), Align2::CENTER_CENTER, "1", Tokens::ui(7.5), Color32::from_rgb(0xd9, 0xd9, 0xd9));
+}
+
+/// The live waveform of the voice-over take being recorded (Kdenlive draws it on the timeline
+/// as the take grows): a red clip from the record point to the playhead on the record track,
+/// with the captured samples rectified like a clip waveform.
+pub(crate) fn draw_recording(app: &FilmcraftApp, p: &egui::Painter, lane: Rect, x_of: &dyn Fn(Tick) -> f32, now: Tick) {
+    let Some(rec) = app.session.voiceover.rec.as_ref() else { return };
+    if now <= rec.record_start {
+        return;
     }
+    let (x0, x1) = (x_of(rec.record_start), x_of(now));
+    if x1 - x0 < 1.0 {
+        return;
+    }
+    let body = Rect::from_min_max(pos2(x0, lane.min.y + 1.0), pos2(x1, lane.max.y - 1.0));
+    let cp = p.with_clip_rect(body.intersect(p.clip_rect()));
+    cp.rect_filled(body, 2.0, Color32::from_rgba_unmultiplied(0xd8, 0x50, 0x3f, 150));
+    let samples = app.session.voiceover.captured();
+    let sr = rec.format.sample_rate.max(1) as f64;
+    let skip = ((rec.record_start - rec.capture_start).seconds() * sr).max(0.0) as usize;
+    let gain = 10f64.powf(app.session.prefs.voice_over.input_gain_db / 20.0) as f32;
+    let area = Rect::from_min_max(pos2(body.min.x, body.min.y + body.height() * 0.3), body.max);
+    let mut mesh = egui::Mesh::default();
+    let span = (now - rec.record_start).seconds().max(1e-6);
+    let clip = cp.clip_rect();
+    for x in (clip.min.x.floor().max(body.min.x) as i32)..(clip.max.x.ceil().min(body.max.x) as i32) {
+        let f0 = ((x as f32 - body.min.x) / body.width()) as f64;
+        let f1 = ((x as f32 + 1.0 - body.min.x) / body.width()) as f64;
+        let a = skip + (f0 * span * sr) as usize;
+        let b = (skip + (f1 * span * sr) as usize).max(a + 1);
+        let m = samples.get(a.min(samples.len())..b.min(samples.len())).map_or(0.0, |w| w.iter().fold(0f32, |m, v| m.max(v.abs()))) * gain;
+        let db = 20.0 * m.max(1e-5).log10();
+        let h = ((db + 48.0) / 48.0).clamp(0.0, 1.0) * area.height();
+        if h > 0.3 {
+            mesh.add_colored_rect(Rect::from_min_max(pos2(x as f32, area.max.y - h), pos2(x as f32 + 1.0, area.max.y)), Color32::from_rgb(0xff, 0xd8, 0xd0));
+        }
+    }
+    cp.add(mesh);
+}
+
+/// Waveform peaks of every channel of audio stream `stream` of media `item` (computed in the
+/// background on first use, like [`request_peaks`]).
+fn request_channel_peaks(app: &mut FilmcraftApp, item: ItemId, stream: usize) -> Option<Arc<Vec<Vec<(f32, f32)>>>> {
+    let pkey = (item, stream);
+    if let Some(p) = app.tl.channel_peaks.lock().unwrap_or_else(|e| e.into_inner()).get(&pkey) {
+        return Some(p.clone());
+    }
+    let src = app.session.source(item)?;
+    {
+        let mut pend = app.tl.channel_pending.lock().unwrap_or_else(|e| e.into_inner());
+        if pend.contains(&pkey) {
+            return None;
+        }
+        pend.push(pkey);
+    }
+    let peaks = app.tl.channel_peaks.clone();
+    let pending = app.tl.channel_pending.clone();
+    let dur = src.info().duration;
+    let run = move || {
+        let sr = 48_000u32;
+        let total = dur.to_units_floor(sr as i64).max(0) as usize;
+        let mut out: Vec<Vec<(f32, f32)>> = Vec::new();
+        let chunk = 48_000 * 4;
+        let mut s = 0usize;
+        while s < total {
+            let n = chunk.min(total - s);
+            match src.audio_stream(stream, s as i64, n, sr) {
+                Ok(buf) => {
+                    if out.len() < buf.channels.len().min(8) {
+                        out.resize(buf.channels.len().min(8), Vec::with_capacity(total / 256 + 1));
+                    }
+                    for (o, ch) in out.iter_mut().zip(&buf.channels) {
+                        for c in ch.chunks(256) {
+                            o.push(c.iter().fold((0f32, 0f32), |(l, h), v| (l.min(*v), h.max(*v))));
+                        }
+                    }
+                }
+                Err(_) => break,
+            }
+            s += n;
+        }
+        peaks.lock().unwrap_or_else(|e| e.into_inner()).insert(pkey, Arc::new(out));
+        pending.lock().unwrap_or_else(|e| e.into_inner()).retain(|i| *i != pkey);
+    };
+    #[cfg(not(target_arch = "wasm32"))]
+    std::thread::spawn(run);
+    #[cfg(target_arch = "wasm32")]
+    run();
+    None
 }
 
 /// Display gain for a clip's waveform: clip gain, plus normalisation of the source to full scale
@@ -1259,16 +1402,21 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
     // toolbar: 30 × 30 buttons, "on" = #4b4b4b fill
     let mut x = rect.min.x + 12.0;
     let y = rect.min.y + 26.0;
-    let toggles: [(Icon, &str, bool, bool, &str); 6] = [
+    let mixer_shown = app.ui.dock.is_visible(crate::dock::PanelKind::AudioTrackMixer);
+    let toggles: [(Icon, &str, bool, bool, &str); 7] = [
         (Icon::Nest, "nest", !app.session.state.sequences_as_clips, true, tl!("Insert and overwrite sequences as nests or individual clips")),
         (Icon::Magnet, "snap", app.session.state.snapping, true, tl!("Snap in Timeline (S)")),
         (Icon::Link, "linked", app.session.state.linked_selection, true, tl!("Linked Selection")),
         (Icon::Captions, "captions", false, false, tl!("Caption track options")),
         (Icon::Marker, "marker", false, false, tl!("Add Marker (M)")),
         (Icon::Wrench, "settings", false, false, tl!("Timeline Display Settings")),
+        // Kdenlive: the timeline toolbar's audio mixer button shows / hides the Audio Track Mixer
+        (Icon::Speaker, "mixer", mixer_shown, true, tl!("Show/Hide the Audio Track Mixer")),
     ];
+    // seven buttons share the track-header width (30 pt each when it is wide enough)
+    let step = ((hw - 16.0) / toggles.len() as f32).clamp(22.0, 30.0);
     for (icon, key, on, toggle, tip) in toggles {
-        let r = Rect::from_min_size(pos2(x, y), vec2(28.0, 28.0));
+        let r = Rect::from_min_size(pos2(x, y), vec2(step - 2.0, 28.0));
         let resp = ui.interact(r, egui::Id::new(("tl-toggle", key)), Sense::click()).on_hover_text(tip);
         app.auto.add(&format!("timeline.toggle.{key}"), r, tip);
         if toggle && on {
@@ -1283,6 +1431,14 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
                 "snap" => app.session.execute("sequence.snap", json!({})),
                 "linked" => app.session.execute("sequence.linkedSelection", json!({})),
                 "marker" => app.session.execute("markers.add", json!({})),
+                "mixer" => {
+                    if mixer_shown {
+                        app.ui.dock.close(crate::dock::PanelKind::AudioTrackMixer);
+                    } else {
+                        app.show_panel(crate::dock::PanelKind::AudioTrackMixer);
+                    }
+                    Ok(Value::Null)
+                }
                 _ => Ok(Value::Null),
             };
         }
@@ -1303,6 +1459,28 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
                     }
                 });
                 ui.checkbox(&mut app.ui.timeline.show_waveforms, tl!("Show Audio Waveform"));
+                // Kdenlive: separate audio channels in thumbnails, one colour per channel
+                let c = ui.checkbox(&mut app.ui.timeline.separate_channels, tl!("Separate Audio Channels"));
+                app.auto.add("timeline.settings.separateChannels", c.rect, "Separate Audio Channels");
+                ui.menu_button(tl!("Audio Waveform Colors"), |ui| {
+                    let colors = &mut app.ui.timeline.waveform_colors;
+                    let mut rects = Vec::new();
+                    for (k, rgb) in colors.iter_mut().enumerate() {
+                        let r = ui.horizontal(|ui| {
+                            ui.color_edit_button_srgb(rgb);
+                            ui.label(tlf!("Channel {n}", n = k + 1));
+                        });
+                        rects.push((k, r.response.rect));
+                    }
+                    let reset = ui.button(tl!("Reset Colors"));
+                    if reset.clicked() {
+                        *colors = crate::state::default_waveform_colors();
+                    }
+                    for (k, r) in rects {
+                        app.auto.add(&format!("timeline.settings.waveformColor.{}", k + 1), r, &format!("Channel {}", k + 1));
+                    }
+                    app.auto.add("timeline.settings.waveformColor.reset", reset.rect, "Reset Colors");
+                });
                 ui.separator();
                 let mut te = app.session.state.show_through_edits;
                 let c = ui.checkbox(&mut te, tl!("Show Through Edits"));
@@ -1321,7 +1499,7 @@ fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequenc
                 }
             });
         }
-        x += 30.0;
+        x += step;
     }
     // ----- ruler: markers row · labels · ticks · 2 pt render bar
     let clip = p.with_clip_rect(ruler);

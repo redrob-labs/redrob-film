@@ -124,13 +124,91 @@ pub fn on_play(app: &mut FilmcraftApp) {
     }
 }
 
-/// Playback stopped: finish the take.
+/// Playback stopped: finish the take (unless it was paused: Space pauses a take, see [`space`]).
 pub fn on_stop(app: &mut FilmcraftApp) {
     if app.session.voiceover.recording()
+        && app.session.voiceover.paused().is_none()
         && let Err(e) = stop(app)
     {
         app.ui.status = e;
     }
+}
+
+/// Where the Program monitor stores its picture rectangle each frame (the countdown is drawn on it).
+pub fn program_picture_id() -> egui::Id {
+    egui::Id::new("voiceover-program-picture")
+}
+
+fn pending_id() -> egui::Id {
+    egui::Id::new("voiceover-record-pending")
+}
+
+/// Whether Space belongs to the voice-over (a take in progress, or `r` pressed during playback and
+/// waiting for Space to start recording).
+pub fn space_owned(app: &FilmcraftApp, ctx: &egui::Context) -> bool {
+    app.session.voiceover.recording() || ctx.data(|d| d.get_temp::<bool>(pending_id())).unwrap_or(false)
+}
+
+/// Space (Kdenlive): while recording, pause the take (timeline playback stops, what was captured
+/// is kept); again to resume it from the pause point. After `r` during playback, Space starts the
+/// recording at the playhead.
+pub fn space(app: &mut FilmcraftApp, ctx: &egui::Context) -> Result<Value, String> {
+    if ctx.data(|d| d.get_temp::<bool>(pending_id())).unwrap_or(false) {
+        ctx.data_mut(|d| d.remove::<bool>(pending_id()));
+        return toggle(app, None);
+    }
+    let r = app.session.execute("audio.voiceover.pause", json!({"time": app.session.playhead().0})).map_err(|e| e.to_string())?;
+    if r["paused"].as_bool() == Some(true) {
+        if app.playback.playing {
+            app.stop();
+        }
+        app.ui.status = tl!("Voice-over paused (Space: resume, Esc: stop)").into();
+    } else {
+        let at = Tick(r["resumeAt"].as_i64().unwrap_or(app.session.playhead().0));
+        app.session.set_playhead(at);
+        app.play(1.0);
+        app.ui.status = tl!("Recording voice-over…").into();
+    }
+    Ok(r)
+}
+
+/// The `r` key while a track is record-armed (Kdenlive): during playback it pauses playback and
+/// waits for Space to start recording there; otherwise it starts (or stops) recording.
+pub fn record_key(app: &mut FilmcraftApp, ctx: &egui::Context) -> Result<Value, String> {
+    if app.playback.playing && !app.session.voiceover.recording() {
+        app.stop();
+        ctx.data_mut(|d| d.insert_temp(pending_id(), true));
+        app.ui.status = tl!("Voice-over ready: press Space to record from here").into();
+        return Ok(json!({"pending": true}));
+    }
+    ctx.data_mut(|d| d.remove::<bool>(pending_id()));
+    toggle(app, None)
+}
+
+/// Monitoring mode follows the record-armed tracks; the input is read every frame while armed or
+/// recording, for the input meters and the live waveform.
+fn poll_input(app: &mut FilmcraftApp, ctx: &egui::Context) {
+    let armed = app.session.active_sequence().is_some_and(|q| q.audio_tracks.iter().any(|t| t.mixer.record_arm));
+    if armed != app.session.voiceover.monitoring() {
+        let _ = app.session.execute("audio.voiceover.monitor", json!({"on": armed}));
+    }
+    let recording = app.session.voiceover.recording() && app.playback.playing;
+    if !recording && !app.session.voiceover.monitoring() {
+        return;
+    }
+    let sr = app.session.active_sequence().map_or(48_000, |q| q.settings.sample_rate.max(1)) as f32;
+    let frames = (ctx.input(|i| i.stable_dt).clamp(0.0, 0.1) * sr) as u64;
+    let p = if recording { json!({"time": app.session.playhead().0}) } else { json!({"frames": frames}) };
+    match app.session.execute("audio.voiceover.poll", p) {
+        Ok(r) => {
+            let peaks: Vec<f32> = r["peaks"].as_array().map(|a| a.iter().filter_map(|v| v.as_f64()).map(|v| v as f32).collect()).unwrap_or_default();
+            if !peaks.is_empty() {
+                app.session.previews.live.post_input_meter(&peaks);
+            }
+        }
+        Err(e) => app.ui.status = e.to_string(),
+    }
+    ctx.request_repaint();
 }
 
 /// Countdown cue beeps of the recording in progress, for an output at `sr`: (start sample, tone).
@@ -197,6 +275,7 @@ fn open_settings(app: &mut FilmcraftApp, ctx: &egui::Context) {
 /// Every frame: the settings dialog, the countdown overlay, and the punch-out + post-roll stop.
 pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
     settings_dialog(app, ctx);
+    poll_input(app, ctx);
     let Some(rec) = app.session.voiceover.rec.clone() else { return };
     if !app.playback.playing {
         return;
@@ -210,6 +289,9 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
         }
     }
     let screen = ctx.content_rect();
+    if now < rec.record_start && !app.session.prefs.voice_over.show_countdown {
+        return;
+    }
     let text = if now < rec.record_start {
         let left = (rec.record_start - now).seconds().ceil().max(1.0) as i64;
         format!("{left}")
@@ -218,7 +300,12 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
     } else {
         tl!("● Recording").into()
     };
-    let r = Rect::from_center_size(pos2(screen.center().x, screen.min.y + 90.0), vec2(220.0, 64.0));
+    // Kdenlive: the countdown runs in the project (Program) monitor; without one on screen, at
+    // the top of the window
+    let r = match ctx.data(|d| d.get_temp::<Rect>(program_picture_id())).filter(|p| p.width() > 120.0 && p.height() > 80.0) {
+        Some(pic) => Rect::from_center_size(pic.center(), vec2(220.0f32.min(pic.width() - 20.0), 64.0)),
+        None => Rect::from_center_size(pos2(screen.center().x, screen.min.y + 90.0), vec2(220.0, 64.0)),
+    };
     egui::Area::new(egui::Id::new("voiceover-countdown")).order(egui::Order::Foreground).fixed_pos(r.min).interactable(false).show(ctx, |ui| {
         let p = ui.painter();
         p.rect_filled(r, 8.0, Color32::from_black_alpha(180));
@@ -287,6 +374,10 @@ fn settings_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
             let r = ui.checkbox(&mut d.prefs.countdown_sound_cues, tl!("Countdown Sound Cues"));
             elems.push(("voiceover.countdown".into(), r.rect, "Countdown Sound Cues".into()));
             ui.end_row();
+            ui.label("");
+            let r = ui.checkbox(&mut d.prefs.show_countdown, tl!("Show the Countdown in the Program Monitor"));
+            elems.push(("voiceover.showCountdown".into(), r.rect, "Show the Countdown in the Program Monitor".into()));
+            ui.end_row();
             ui.label(tl!("Pre-roll:"));
             let r = ui.add(egui::DragValue::new(&mut d.prefs.preroll_seconds).speed(0.1).range(0.0..=60.0).suffix(tl!(" seconds")));
             elems.push(("voiceover.preroll".into(), r.rect, format!("{}", d.prefs.preroll_seconds)));
@@ -349,6 +440,7 @@ fn settings_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
             "countdownSoundCues": v.countdown_sound_cues,
             "prerollSeconds": v.preroll_seconds,
             "postrollSeconds": v.postroll_seconds,
+            "showCountdown": v.show_countdown,
         });
         match app.session.execute("audio.voiceover.settings", p) {
             Ok(_) => close = true,

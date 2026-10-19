@@ -246,6 +246,13 @@ pub fn dropdown_text(ui: &mut Ui, rect: Rect, text: &str, t: &Tokens, id: egui::
 
 /// Level meter bar (dBFS), vertical.
 pub fn meter_bar(painter: &egui::Painter, rect: Rect, db: f32, peak_db: f32, t: &Tokens) {
+    meter_bar_styled(painter, rect, db, peak_db, true, true, t);
+}
+
+/// [`meter_bar`] with the shared meter appearance options: `zones` colours the bar by level
+/// (green, yellow above −12 dB, red above −3 dB; off = green throughout), `peak` draws the
+/// peak-hold line.
+pub fn meter_bar_styled(painter: &egui::Painter, rect: Rect, db: f32, peak_db: f32, zones: bool, peak: bool, t: &Tokens) {
     // Premiere: green gradient (#579f51 → #70dc5d), yellow above −12 dB, red above −3 dB.
     let norm = |d: f32| ((d + 60.0) / 60.0).clamp(0.0, 1.0);
     let h = rect.height() * norm(db);
@@ -259,7 +266,7 @@ pub fn meter_bar(painter: &egui::Painter, rect: Rect, db: f32, peak_db: f32, t: 
             }
             let y1 = rect.max.y - f0 * rect.height();
             let y0 = rect.max.y - (f1 * rect.height()).min(h);
-            let db_here = -60.0 + f1 * 60.0;
+            let db_here = if zones { -60.0 + f1 * 60.0 } else { -60.0 };
             let c = if db_here > -3.0 {
                 Color32::from_rgb(0xe3, 0x48, 0x50)
             } else if db_here > -12.0 {
@@ -271,6 +278,9 @@ pub fn meter_bar(painter: &egui::Painter, rect: Rect, db: f32, peak_db: f32, t: 
             };
             painter.rect_filled(Rect::from_min_max(pos2(rect.min.x, y0), pos2(rect.max.x, y1)), 0.0, c);
         }
+    }
+    if !peak {
+        return;
     }
     let py = (rect.max.y - rect.height() * norm(peak_db)).min(rect.max.y - 1.0);
     painter.line_segment(

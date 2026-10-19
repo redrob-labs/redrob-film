@@ -151,6 +151,9 @@ impl FilmcraftApp {
             .stop_at
             .unwrap_or_else(|| if self.source_playback.clock.looping { view.selected_range().end() } else { view.end })
             .to_units_floor(i64::from(sr));
+        // the Source monitor's own volume and level meter
+        let tap = crate::monitor_audio::source();
+        tap.set_volume(self.ui.source.volume);
         let mix = move |cursor: i64, buf: &mut [f32], ch: usize| {
             buf.fill(0.0);
             if ch == 0 || cursor >= end {
@@ -166,6 +169,11 @@ impl FilmcraftApp {
                     let Some(left) = sound.channels.first() else { return };
                     let right = sound.channels.get(1).unwrap_or(left);
                     redrob_film_engine::settings::map_output(left, right, buf, ch, map);
+                    let gain = tap.gain();
+                    if gain != 1.0 {
+                        buf.iter_mut().for_each(|x| *x *= gain);
+                    }
+                    tap.post(&sound.channels, frames, gain);
                 }
                 Err(e) => {
                     *failure.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = Some(format!("Source audio decoding failed: {e}"));

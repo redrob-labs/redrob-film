@@ -3661,3 +3661,18 @@
 	LFO Rate	Velocidad del LFO
 	Enable Clipping	Activar recorte
 	Limiter Gain	Ganancia del limitador
+	Show/Hide the Audio Track Mixer	Mostrar/ocultar el mezclador de pistas de audio
+	Show Peak Hold	Mostrar retención de picos
+	Show Clipping Indicator	Mostrar indicador de saturación
+	Color Level Zones	Colorear zonas de nivel
+	Show dB Scale	Mostrar escala en dB
+	Solo (click: exclusive; Shift+click: add to the soloed strips)	Solo (clic: exclusivo; Mayús+clic: añadir a los canales en solo)
+	Input level of the recording (drag; double-, middle- or right-click: 0 dB)	Nivel de entrada de la grabación (arrastrar; doble clic, clic central o derecho: 0 dB)
+	Volume (drag; double-, middle- or right-click: 0 dB)	Volumen (arrastrar; doble clic, clic central o derecho: 0 dB)
+	Pan / balance (drag; double-, middle- or right-click: centre)	Panorama / balance (arrastrar; doble clic, clic central o derecho: centro)
+	Voice-over paused (Space: resume, Esc: stop)	Voz en off en pausa (Espacio: reanudar, Esc: detener)
+	Voice-over ready: press Space to record from here	Voz en off lista: pulse Espacio para grabar desde aquí
+	Show the Countdown in the Program Monitor	Mostrar la cuenta atrás en el monitor de programa
+	Separate Audio Channels	Separar canales de audio
+	Audio Waveform Colors	Colores de la forma de onda de audio
+	Reset Colors	Restablecer colores

@@ -205,6 +205,17 @@ pub struct TimelineView {
     /// (`volume`, `pan`, `mute`, `send.<i>.level`, `fx.<slot>.<param>`).
     #[serde(default)]
     pub track_lanes: std::collections::BTreeMap<u64, String>,
+    /// Timeline wrench ▸ Separate Audio Channels: one waveform lane per channel of a clip.
+    #[serde(default)]
+    pub separate_channels: bool,
+    /// Timeline wrench ▸ Audio Waveform Colors: the waveform colour of each channel (sRGB).
+    #[serde(default = "default_waveform_colors")]
+    pub waveform_colors: Vec<[u8; 3]>,
+}
+
+/// Default waveform colours of channels 1–6 (channel 1 keeps the timeline's usual blue).
+pub fn default_waveform_colors() -> Vec<[u8; 3]> {
+    vec![[0x79, 0xc0, 0xf9], [0x7f, 0xd8, 0x9a], [0xf0, 0xc0, 0x5a], [0xd8, 0x8c, 0xf0], [0xf0, 0x8c, 0x8c], [0x8c, 0xe0, 0xe0]]
 }
 
 impl TimelineView {
@@ -234,6 +245,8 @@ impl Default for TimelineView {
             fit_pending: true,
             fit_empty: None,
             track_lanes: Default::default(),
+            separate_channels: false,
+            waveform_colors: default_waveform_colors(),
         }
     }
 }
@@ -323,6 +336,9 @@ pub struct MonitorView {
     /// Snap in Program Monitor: graphic drags snap to guides, the frame edges and centre.
     pub snap: bool,
     pub guides: Vec<Guide>,
+    /// Playback volume of this monitor, percent (Settings ▸ Volume): scales what the monitor plays
+    /// without changing the Mix level or the other monitor (Kdenlive's per-monitor volume).
+    pub volume: f32,
 }
 
 impl Default for MonitorView {
@@ -345,6 +361,7 @@ impl Default for MonitorView {
             lock_guides: false,
             snap: true,
             guides: Vec::new(),
+            volume: 100.0,
         }
     }
 }
@@ -505,6 +522,10 @@ pub struct UiState {
     /// Audio Track Mixer ▸ Meter Input(s) Only: record-armed track meters show the recording input.
     #[serde(default)]
     pub mixer_meter_input_only: bool,
+    /// Level meter appearance (right-click a meter), shared by the mixers, Audio Meters and both
+    /// monitors' level meters.
+    #[serde(default)]
+    pub meter_style: crate::panels::mixer::MeterStyle,
     /// Audio Gain dialog draft (mode, dB values).
     #[serde(default)]
     pub audio_gain: AudioGainDraft,
@@ -979,6 +1000,7 @@ impl Default for UiState {
             mixer_fx_open: false,
             mixer_hidden: Vec::new(),
             mixer_meter_input_only: false,
+            meter_style: Default::default(),
             settings: None,
             account_feature: None,
             audio_gain: AudioGainDraft::default(),

@@ -3642,3 +3642,18 @@
 	LFO Rate	LFO 速率
 	Enable Clipping	启用削波
 	Limiter Gain	限幅器增益
+	Show/Hide the Audio Track Mixer	显示/隐藏音频轨道混合器
+	Show Peak Hold	显示峰值保持
+	Show Clipping Indicator	显示削波指示
+	Color Level Zones	按电平区域着色
+	Show dB Scale	显示 dB 刻度
+	Solo (click: exclusive; Shift+click: add to the soloed strips)	独奏（单击：独占；Shift+单击：加入已独奏的通道）
+	Input level of the recording (drag; double-, middle- or right-click: 0 dB)	录音输入电平（拖动；双击、中键或右键单击：0 dB）
+	Volume (drag; double-, middle- or right-click: 0 dB)	音量（拖动；双击、中键或右键单击：0 dB）
+	Pan / balance (drag; double-, middle- or right-click: centre)	声像/平衡（拖动；双击、中键或右键单击：居中）
+	Voice-over paused (Space: resume, Esc: stop)	画外音已暂停（空格：继续，Esc：停止）
+	Voice-over ready: press Space to record from here	画外音就绪：按空格从此处开始录音
+	Show the Countdown in the Program Monitor	在节目监视器中显示倒计时
+	Separate Audio Channels	分开显示音频声道
+	Audio Waveform Colors	音频波形颜色
+	Reset Colors	重置颜色
