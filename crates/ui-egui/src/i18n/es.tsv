@@ -3586,3 +3586,78 @@
 	The reply hit its length limit.	La respuesta alcanzó su límite de longitud.
 	The turn ended: {reason}.	El turno terminó: {reason}.
 	Workspace changed. The next message starts the agent with it.	El espacio de trabajo cambió. El próximo mensaje inicia el agente con él.
+
+# Kdenlive parity: audio effects, mixer, meters, recording, waveforms
+	Soft Clipper	Recortador suave
+	Dynamic Equalizer	Ecualizador dinámico
+	All Pass	Paso todo
+	Tilt Shelf	Shelving de inclinación
+	Sub Cut	Corte de subgraves
+	Sub Boost	Realce de subgraves
+	Pulsator	Pulsador
+	Vibrato	Vibrato
+	Frequency Shifter	Desplazador de frecuencia
+	Phase Shifter	Desplazador de fase
+	Mixdown	Mezcla a mono
+	Stereo to Mono	Estéreo a mono
+	Crossfeed	Alimentación cruzada
+	Haas Stereo Enhancer	Realce estéreo Haas
+	Stereo Tools	Herramientas estéreo
+	Crusher	Triturador
+	Crystalizer	Cristalizador
+	DC Shift	Desplazamiento de CC
+	Derivative	Derivada
+	Integral	Integral
+	Virtual Bass	Graves virtuales
+	Tanh	Tanh
+	Atan	Atan
+	Cubic	Cúbica
+	Exponential	Exponencial
+	Algebraic	Algebraica
+	Quintic	Quíntica
+	Sine	Seno
+	Detection Frequency	Frecuencia de detección
+	Detection Q	Q de detección
+	Target Frequency	Frecuencia de destino
+	Target Q	Q de destino
+	Removed Band Level	Nivel de la banda eliminada
+	Saw Up	Diente de sierra ascendente
+	Saw Down	Diente de sierra descendente
+	Rate	Velocidad
+	Offset Left	Desfase izquierdo
+	Offset Right	Desfase derecho
+	Input Level	Nivel de entrada
+	Output Level	Nivel de salida
+	Modulation Frequency	Frecuencia de modulación
+	Shift	Desplazamiento
+	Number of Output Channels	Número de canales de salida
+	4 Channels	4 canales
+	Middle Source	Fuente central
+	Side	Lateral
+	Delayed Side	Lado retardado
+	Left Gain	Ganancia izquierda
+	Right Gain	Ganancia derecha
+	LR > LR	LR > LR
+	LR > MS	LR > MS
+	MS > LR	MS > LR
+	LR > LL	LR > LL
+	LR > RR	LR > RR
+	LR > L+R	LR > L+R
+	LR > RL	LR > RL
+	Mid Level	Nivel central
+	Side Level	Nivel lateral
+	Invert Left Phase	Invertir fase izquierda
+	Invert Right Phase	Invertir fase derecha
+	Mute Left	Silenciar izquierda
+	Mute Right	Silenciar derecha
+	Input Gain	Ganancia de entrada
+	Bit Reduction	Reducción de bits
+	Logarithmic	Logarítmica
+	DC	CC
+	Anti-aliasing	Antialiasing
+	Sample Reduction	Reducción de muestras
+	Enable LFO	Activar LFO
+	LFO Depth	Profundidad del LFO
+	LFO Rate	Velocidad del LFO
+	Enable Clipping	Activar recorte
+	Limiter Gain	Ganancia del limitador

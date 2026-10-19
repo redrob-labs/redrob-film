@@ -3567,3 +3567,78 @@
 	The reply hit its length limit.	回复已达到长度上限。
 	The turn ended: {reason}.	本轮已结束：{reason}。
 	Workspace changed. The next message starts the agent with it.	工作区已更改。下一条消息将用它启动智能体。
+
+# Kdenlive parity: audio effects, mixer, meters, recording, waveforms
+	Soft Clipper	软削波器
+	Dynamic Equalizer	动态均衡器
+	All Pass	全通
+	Tilt Shelf	倾斜搁架
+	Sub Cut	次低频切除
+	Sub Boost	次低频增强
+	Pulsator	脉动器
+	Vibrato	颤音
+	Frequency Shifter	移频器
+	Phase Shifter	移相器
+	Mixdown	混缩
+	Stereo to Mono	立体声转单声道
+	Crossfeed	交叉馈送
+	Haas Stereo Enhancer	哈斯立体声增强
+	Stereo Tools	立体声工具
+	Crusher	破碎器
+	Crystalizer	晶化器
+	DC Shift	直流偏移
+	Derivative	微分
+	Integral	积分
+	Virtual Bass	虚拟低音
+	Tanh	Tanh
+	Atan	Atan
+	Cubic	三次
+	Exponential	指数
+	Algebraic	代数
+	Quintic	五次
+	Sine	正弦
+	Detection Frequency	检测频率
+	Detection Q	检测 Q
+	Target Frequency	目标频率
+	Target Q	目标 Q
+	Removed Band Level	已移除频段电平
+	Saw Up	上升锯齿波
+	Saw Down	下降锯齿波
+	Rate	速率
+	Offset Left	左偏移
+	Offset Right	右偏移
+	Input Level	输入电平
+	Output Level	输出电平
+	Modulation Frequency	调制频率
+	Shift	偏移
+	Number of Output Channels	输出声道数
+	4 Channels	4 声道
+	Middle Source	中间声源
+	Side	侧
+	Delayed Side	延迟侧
+	Left Gain	左增益
+	Right Gain	右增益
+	LR > LR	LR > LR
+	LR > MS	LR > MS
+	MS > LR	MS > LR
+	LR > LL	LR > LL
+	LR > RR	LR > RR
+	LR > L+R	LR > L+R
+	LR > RL	LR > RL
+	Mid Level	中置电平
+	Side Level	侧边电平
+	Invert Left Phase	反转左相位
+	Invert Right Phase	反转右相位
+	Mute Left	左静音
+	Mute Right	右静音
+	Input Gain	输入增益
+	Bit Reduction	位深降低
+	Logarithmic	对数
+	DC	直流
+	Anti-aliasing	抗混叠
+	Sample Reduction	采样降低
+	Enable LFO	启用 LFO
+	LFO Depth	LFO 深度
+	LFO Rate	LFO 速率
+	Enable Clipping	启用削波
+	Limiter Gain	限幅器增益
