@@ -54,6 +54,19 @@ fixture_tests!(
     vt_main,
     vt_baseline,
     vt_high_1080p,
+    high10_intra,
+    high10,
+    high10_cavlc,
+    high10_weightp,
+    high10_qp_negative,
+    high422_10_intra,
+    high422_10_intra_cavlc,
+    high422_10,
+    high422_10_cavlc,
+    high422_10_weightp,
+    high422_10_qp_negative,
+    high422_8,
+    high422_8_crop,
 );
 
 /// Draft mode (reduced-resolution playback) skips deblocking of non-reference pictures only:

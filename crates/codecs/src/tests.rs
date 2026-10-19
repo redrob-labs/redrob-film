@@ -706,3 +706,46 @@ fn mp4_colour_comes_from_the_sps_without_colr() {
         assert_eq!(color(&s).primaries, Primaries::Bt601_525);
     }
 }
+
+/// HEVC Main 4:2:2 10 (camera 10-bit 4:2:2) through the media stack: our software decoder
+/// delivers 4:2:2 16-bit planes, sample-exact against ffmpeg's decode of the first frame.
+#[test]
+fn hevc_main422_10_mp4_decodes_as_422_10bit() {
+    let args = [
+        "-f",
+        "lavfi",
+        "-i",
+        "testsrc2=s=176x144:r=25,format=yuv422p10le",
+        "-frames:v",
+        "5",
+        "-c:v",
+        "libx265",
+        "-tag:v",
+        "hvc1",
+        "-pix_fmt",
+        "yuv422p10le",
+        "-x265-params",
+        "log-level=error",
+    ];
+    let Some(path) = fixture_path("hevc_main422_10.mp4", &args) else { return };
+    let Some(reference) = reference_yuv(&path, "yuv422p10le") else { return };
+    let bytes: Arc<[u8]> = std::fs::read(&path).unwrap().into();
+    let src = crate::open_bytes("hevc_main422_10.mp4", bytes).unwrap();
+    let v = src.info().video.as_ref().unwrap();
+    assert_eq!((v.width, v.height), (176, 144));
+    assert_eq!(v.pixel_format, "YUV 4:2:2 10-bit");
+    let f = src.video_frame(FrameRequest::full(Tick::ZERO)).expect("decode 4:2:2 frame");
+    match &f.data {
+        redrob_film_frame::PixelData::Yuv16 { chroma, bits, planes, .. } => {
+            assert_eq!(*chroma, redrob_film_frame::Chroma::C422);
+            assert_eq!(*bits, 10);
+            assert_eq!(planes[1].len(), 88 * 144);
+        }
+        _ => panic!("not 16-bit YUV: {}", f.format_label()),
+    }
+    // VideoToolbox may take the clip on macOS; the software decoder must be bit-exact.
+    if !cfg!(target_os = "macos") {
+        let frame_len = 176 * 144 * 2 * 2;
+        assert!(yuv_bytes(&f) == reference[..frame_len], "first frame differs from ffmpeg");
+    }
+}

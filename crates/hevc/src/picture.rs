@@ -36,24 +36,36 @@ pub struct Frame {
     pub log2_ctb: u32,
     pub bit_depth: u32,
     pub bit_depth_c: u32,
+    /// log2 of SubWidthC / SubHeightC: (1, 1) for 4:2:0, (1, 0) for 4:2:2.
+    pub sub_x: u32,
+    pub sub_y: u32,
     rows: Box<[OnceLock<FrameRow>]>,
 }
 
 impl Frame {
-    pub fn new(id: u32, poc: i32, width: usize, height: usize, log2_ctb: u32, bit_depth: u32, bit_depth_c: u32) -> Self {
+    /// `chroma_format_idc` 1 (4:2:0) or 2 (4:2:2).
+    pub fn new(id: u32, poc: i32, width: usize, height: usize, log2_ctb: u32, bit_depth: u32, bit_depth_c: u32, chroma_format_idc: u32) -> Self {
         let n = height.div_ceil(1 << log2_ctb);
+        let (sub_x, sub_y) = chroma_shifts(chroma_format_idc);
         Frame {
             id,
             poc,
             width,
             height,
-            cwidth: width / 2,
-            cheight: height / 2,
+            cwidth: width >> sub_x,
+            cheight: height >> sub_y,
             log2_ctb,
             bit_depth,
             bit_depth_c,
+            sub_x,
+            sub_y,
             rows: (0..n).map(|_| OnceLock::new()).collect(),
         }
+    }
+
+    /// `chroma_format_idc` of the frame (1 = 4:2:0, 2 = 4:2:2).
+    pub fn chroma_format_idc(&self) -> u32 {
+        if self.sub_y == 0 { 2 } else { 1 }
     }
 
     pub fn num_rows(&self) -> usize {
@@ -127,7 +139,7 @@ impl Frame {
     /// Copy a w x h window of chroma component `c` (0 = Cb, 1 = Cr) with edge replication.
     pub fn chroma_window(&self, c: usize, x0: i32, y0: i32, w: usize, h: usize, out: &mut [i16], os: usize) {
         let (cw, ch) = (self.cwidth as i32, self.cheight as i32);
-        let sh = self.log2_ctb - 1;
+        let sh = self.log2_ctb - self.sub_y;
         let mask = (1i32 << sh) - 1;
         for r in 0..h {
             let yy = (y0 + r as i32).clamp(0, ch - 1);
@@ -148,8 +160,9 @@ impl Frame {
             let o = (r % ctb) * self.width + cx;
             y.extend_from_slice(&row.y[o..o + cw]);
         }
-        let (ccx, ccy, ccw, cch) = (cx / 2, cy / 2, cw.div_ceil(2), ch.div_ceil(2));
-        let cctb = ctb / 2;
+        let (sx, sy) = (self.sub_x, self.sub_y);
+        let (ccx, ccy, ccw, cch) = (cx >> sx, cy >> sy, cw.div_ceil(1 << sx), ch.div_ceil(1 << sy));
+        let cctb = ctb >> sy;
         let mut u = Vec::with_capacity(ccw * cch);
         let mut v = Vec::with_capacity(ccw * cch);
         for r in ccy..ccy + cch {
@@ -164,14 +177,15 @@ impl Frame {
     /// A frame with every row published from full-picture planes and no motion (used to replace missing
     /// reference pictures).
     pub fn from_planes(id: u32, poc: i32, like: &Frame, y: &[u16], cb: &[u16], cr: &[u16]) -> Frame {
-        let f = Frame::new(id, poc, like.width, like.height, like.log2_ctb, like.bit_depth, like.bit_depth_c);
+        let f = Frame::new(id, poc, like.width, like.height, like.log2_ctb, like.bit_depth, like.bit_depth_c, like.chroma_format_idc());
         let ctb = 1usize << f.log2_ctb;
         let w16 = f.width16();
+        let sy = f.sub_y;
         for r in 0..f.num_rows() {
             let lines = f.row_lines(r);
             let (y0, y1) = (r * ctb * f.width, (r * ctb + lines) * f.width);
-            let clines = lines.div_ceil(2);
-            let (c0, c1) = (r * ctb / 2 * f.cwidth, (r * ctb / 2 + clines) * f.cwidth);
+            let clines = lines.div_ceil(1 << sy);
+            let (c0, c1) = (((r * ctb) >> sy) * f.cwidth, (((r * ctb) >> sy) + clines) * f.cwidth);
             f.publish(
                 r,
                 FrameRow { y: y[y0..y1].into(), cb: cb[c0..c1].into(), cr: cr[c0..c1].into(), col: vec![ColMv::default(); w16 * lines.div_ceil(16)].into() },
@@ -186,6 +200,11 @@ impl Frame {
         let c = vec![1u16 << (like.bit_depth_c - 1); like.cwidth * like.cheight];
         Frame::from_planes(id, poc, like, &y, &c, &c)
     }
+}
+
+/// (log2 SubWidthC, log2 SubHeightC) of a `chroma_format_idc` (6.2, Table 6-1; 4:2:0 and 4:2:2).
+pub fn chroma_shifts(chroma_format_idc: u32) -> (u32, u32) {
+    if chroma_format_idc == 2 { (1, 0) } else { (1, 1) }
 }
 
 /// Copy `out.len()` samples of `line` starting at x0, replicating edge samples outside the line.
@@ -208,3 +227,37 @@ pub type FrameRef = Arc<Frame>;
 
 /// An entry of RefPicList0/1 of the current slice.
 pub type RefPic = crate::dpb::Ref<FrameRef>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn frame_422_geometry() {
+        // 32x40 luma, CTB 16 (rows of 16, 16 and 8 lines): 4:2:2 chroma is 16x40, CTB rows of 16
+        // chroma lines
+        let like = Frame::new(0, 0, 32, 40, 4, 10, 10, 2);
+        assert_eq!((like.cwidth, like.cheight, like.sub_x, like.sub_y), (16, 40, 1, 0));
+        assert_eq!(like.chroma_format_idc(), 2);
+        let y: Vec<u16> = (0..32 * 40).map(|i| i as u16).collect();
+        let cb: Vec<u16> = (0..16 * 40).map(|i| 1000 + i as u16).collect();
+        let cr: Vec<u16> = (0..16 * 40).map(|i| 2000 + i as u16).collect();
+        let f = Frame::from_planes(1, 0, &like, &y, &cb, &cr);
+        let (oy, ou, ov) = f.copy_cropped((0, 0, 32, 40));
+        assert!(oy == y && ou == cb && ov == cr);
+        // cropped by 2 luma columns (1 chroma) and 3 lines (3 chroma lines: full vertical resolution)
+        let (_, ou, _) = f.copy_cropped((2, 3, 28, 35));
+        assert_eq!(ou.len(), 14 * 35);
+        assert_eq!(ou[0], cb[3 * 16 + 1]);
+        // a chroma window across CTB rows 0 / 1 reads chroma line 17 from row 1
+        let mut win = vec![0i16; 4 * 4];
+        f.chroma_window(0, 2, 15, 4, 4, &mut win, 4);
+        assert_eq!(win[0] as u16, cb[15 * 16 + 2]);
+        assert_eq!(win[2 * 4 + 1] as u16, cb[17 * 16 + 3]);
+        let g = Frame::gray(2, 0, &like);
+        assert_eq!(g.row(2).cb.len(), 8 * 16);
+        // 4:2:0 is unchanged: half height chroma
+        let f420 = Frame::new(0, 0, 32, 40, 4, 8, 8, 1);
+        assert_eq!((f420.cwidth, f420.cheight, f420.chroma_format_idc()), (16, 20, 1));
+    }
+}

@@ -118,13 +118,13 @@ impl TimelineFormat {
         if ext.contains('/') || ext.contains('\\') {
             return None;
         }
-        redrob_film_interchange::Format::from_extension(ext).map(TimelineFormat::from_fc)
+        redrob_film_interchange::Format::from_extension(ext).and_then(TimelineFormat::from_fc)
     }
 
     /// Sniff a document (bytes first, the extension as a hint for ambiguous `.xml`).
     pub fn detect(bytes: &[u8], path: Option<&str>) -> Option<TimelineFormat> {
         let ext = path.and_then(|p| p.rsplit_once('.')).map(|(_, e)| e);
-        redrob_film_interchange::detect(bytes, ext).map(TimelineFormat::from_fc)
+        redrob_film_interchange::detect(bytes, ext).and_then(TimelineFormat::from_fc)
     }
 
     pub(crate) fn fc(self) -> redrob_film_interchange::Format {
@@ -138,15 +138,17 @@ impl TimelineFormat {
         }
     }
 
-    pub(crate) fn from_fc(f: redrob_film_interchange::Format) -> TimelineFormat {
-        match f {
+    /// `None` for formats only the film editor opens (Premiere projects).
+    pub(crate) fn from_fc(f: redrob_film_interchange::Format) -> Option<TimelineFormat> {
+        Some(match f {
             redrob_film_interchange::Format::Fcp7Xml => TimelineFormat::Fcp7Xml,
             redrob_film_interchange::Format::Fcpxml => TimelineFormat::Fcpxml,
             redrob_film_interchange::Format::Otio => TimelineFormat::Otio,
             redrob_film_interchange::Format::Edl => TimelineFormat::Edl,
             redrob_film_interchange::Format::Aaf => TimelineFormat::Aaf,
             redrob_film_interchange::Format::Omf => TimelineFormat::Omf,
-        }
+            redrob_film_interchange::Format::Prproj => return None,
+        })
     }
 }
 

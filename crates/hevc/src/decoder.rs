@@ -11,7 +11,7 @@ use crate::params::{Layout, Pps, Sps, Vps};
 use crate::picture::{Frame, FrameRef};
 use crate::slice::{NalHeader, SliceHeader, nal_type};
 use crate::slicedec::{F_INTRA, F_SKIP, PicState, SliceDecoder, SliceJob};
-use crate::{ColorInfo, Picture, Plane};
+use crate::{ChromaFormat, ColorInfo, Picture, Plane};
 use redrob_film_bitstream::{annexb_nals, length_prefixed_nals, unescape_rbsp};
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
@@ -382,6 +382,7 @@ impl Decoder {
                     || a.height != sps.height
                     || a.bit_depth_luma != sps.bit_depth_luma
                     || a.bit_depth_chroma != sps.bit_depth_chroma
+                    || a.chroma_format_idc != sps.chroma_format_idc
                     || a.log2_ctb != sps.log2_ctb
             }
         };
@@ -407,7 +408,7 @@ impl Decoder {
         let max_lsb = sps.max_poc_lsb();
         let poc = self.poc_state.compute(sh, max_lsb, irap_no_rasl);
         let (w, h) = (sps.width as usize, sps.height as usize);
-        let template = Frame::new(0, 0, w, h, sps.log2_ctb, sps.bit_depth_luma, sps.bit_depth_chroma);
+        let template = Frame::new(0, 0, w, h, sps.log2_ctb, sps.bit_depth_luma, sps.bit_depth_chroma, sps.chroma_format_idc);
         let next_id = &mut self.next_id;
         let mut missing = 0u64;
         let mut make_missing = |p: i32| -> FrameRef {
@@ -434,7 +435,7 @@ impl Decoder {
         let _ = scaling;
         let id = self.next_id;
         self.next_id += 1;
-        let frame = Arc::new(Frame::new(id, poc, w, h, sps.log2_ctb, sps.bit_depth_luma, sps.bit_depth_chroma));
+        let frame = Arc::new(Frame::new(id, poc, w, h, sps.log2_ctb, sps.bit_depth_luma, sps.bit_depth_chroma, sps.chroma_format_idc));
         let output = sh.pic_output && !(hdr.is_rasl() && self.skip_rasl);
         // Draft mode: a sub-layer non-reference picture of the highest sub-layer is never used
         // for prediction, so its in-loop filters can be left out without changing anything else.
@@ -582,7 +583,9 @@ fn make_picture(o: &Output<FrameRef>) -> Picture {
     let (cx, cy, cw, ch) = o.meta.crop;
     let (cx, cy, cw, ch) = (cx as usize, cy as usize, cw as usize, ch as usize);
     let (y, u, v) = o.frame.copy_cropped((cx, cy, cw, ch));
-    let (ccw, cch) = (cw.div_ceil(2), ch.div_ceil(2));
+    let (sx, sy) = (o.frame.sub_x, o.frame.sub_y);
+    let (ccw, cch) = (cw.div_ceil(1 << sx), ch.div_ceil(1 << sy));
+    let chroma_format = if o.frame.chroma_format_idc() == 2 { ChromaFormat::Yuv422 } else { ChromaFormat::Yuv420 };
     let bd = o.meta.bit_depth;
     let conv = |p: Vec<u16>| if bd <= 8 { Plane::U8(p.into_iter().map(|v| v as u8).collect()) } else { Plane::U16(p) };
     Picture {
@@ -590,6 +593,7 @@ fn make_picture(o: &Output<FrameRef>) -> Picture {
         height: ch as u32,
         chroma_width: ccw as u32,
         chroma_height: cch as u32,
+        chroma_format,
         bit_depth: bd,
         y: conv(y),
         u: conv(u),

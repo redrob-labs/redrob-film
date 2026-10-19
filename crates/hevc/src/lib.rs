@@ -1,7 +1,7 @@
 //! Clean-room pure-Rust H.265 / HEVC decoder, implemented from ITU-T Rec. H.265 (ISO/IEC 23008-2).
 //!
-//! Supported: Main and Main 10 profiles (4:2:0, 8/10-bit; up to 12-bit 4:2:0 without range-extension
-//! tools), all coding tools of those profiles: CABAC, coding / transform quadtrees, AMP, PCM,
+//! Supported: Main, Main 10 and Main 4:2:2 10 profiles (4:2:0 and 4:2:2, 8/10-bit; up to 12-bit
+//! without range-extension tools), all coding tools of those profiles: CABAC, coding / transform quadtrees, AMP, PCM,
 //! transform skip, scaling lists, sign data hiding, 35 intra modes with strong intra smoothing,
 //! merge / AMVP / TMVP, weighted prediction, deblocking, SAO, tiles, wavefront parallel processing
 //! (parsing), dependent slice segments, short- and long-term reference picture sets.
@@ -100,7 +100,16 @@ impl Plane {
     }
 }
 
-/// A decoded, cropped picture in planar 4:2:0.
+/// Chroma sampling of a decoded picture.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ChromaFormat {
+    /// 4:2:0: chroma planes are half width and half height.
+    Yuv420,
+    /// 4:2:2: chroma planes are half width and full height.
+    Yuv422,
+}
+
+/// A decoded, cropped picture in planar 4:2:0 or 4:2:2.
 #[derive(Clone, Debug)]
 pub struct Picture {
     /// Cropped luma width.
@@ -109,6 +118,7 @@ pub struct Picture {
     pub height: u32,
     pub chroma_width: u32,
     pub chroma_height: u32,
+    pub chroma_format: ChromaFormat,
     /// Luma bit depth (chroma uses the same storage type).
     pub bit_depth: u32,
     pub y: Plane,

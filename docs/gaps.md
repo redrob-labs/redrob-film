@@ -1,6 +1,6 @@
 # Where Redrob Film falls short of Premiere Pro
 
-> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** minor (0.4.0: G16 / G17 idle repaint and audio fixes measured, G20 closed in the table, product name) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** minor (G2: `.prproj` import landed) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 Every known shortfall, one entry each, ranked by what most stops an editor using Redrob Film for real
 work. This is the work list: agents should prefer it over adding checklist items. Numbers are in
@@ -15,11 +15,11 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | # | Gap | Kind | Blocks beta | Estimate |
 |---|---|---|---|---|
 | G1 | Nothing compares our output with Premiere's | measurement | no, but every ready number depends on it | 40–70 h |
-| G2 | Premiere's `.prproj` cannot be opened | file format | **yes** | 60–120 h |
+| G2 | Premiere's `.prproj` cannot be opened (import landed 2026-10-19, unmeasured) | file format | **yes** | 30–60 h |
 | G3 | 10-bit and 4:2:2 camera media needs hardware | codec | yes | 30–50 h |
 | G4 | Crashes at start-up, and no test CI on pull requests | stability | yes | 40–80 h |
 | G5 | Hardware acceleration is partial | hardware | partly | 120–200 h |
-| G6 | No real-world media corpus or workflow acceptance tests | measurement | yes | 40–70 h |
+| G6 | Real-world media corpus: harness in, not yet green or pinned | measurement | yes | 20–40 h |
 | G7 | No measured parity tool in CI | measurement | no | 10–20 h |
 | G8 | UI fidelity: monitor handles, Effect Controls, docking | UI / UX | partly | 120–200 h |
 | G9 | Windows and Linux at run time | platforms | partly | 50–90 h |
@@ -52,15 +52,26 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G2. Premiere's `.prproj` cannot be opened
 
-- **Missing:** import of Premiere project files. `grep -ri prproj crates apps` finds nothing.
-  Today an editor must export FCP7 XML, AAF or OTIO from Premiere first, losing bins, effects and
-  most metadata; there is no "Selection as Premiere Project" export either.
-- **Impact:** the beta bar requires opening the target's main format; every switching editor's
-  existing work is behind this.
-- **Approach:** `.prproj` is gzip-compressed XML. Clean-room from projects we author ourselves in
-  Premiere (the owner has `plan/premiere/fixtures/filmcraft_ref.prproj`): sequences, tracks, clips,
-  in/out, speed, transitions, markers, bins, labels, then the common effect parameters (Motion,
-  Opacity, Lumetri basic, Volume). Report what was not imported. Export later. **60–120 h.**
+- **Status (2026-10-19, beta/g2):** import landed, not yet gate-built or measured. File ▸ Open of a
+  `.prproj` makes a new unsaved project from it; File ▸ Import, drag and drop and the command line
+  take it too (`redrob_film_interchange::prproj`). Read: bins, item labels, media (path, offline
+  state, start timecode, stream characteristics), adjustment layers, Premiere's generators by name,
+  sequences (name, rate, frame size, sample rate, start time, markers, links), video and audio
+  tracks (locked, output / mute), clips (timeline in / out, source in, speed, reverse, disabled,
+  clip gain, labels), clip and sequence markers, transitions (nearest of ours by name), Motion,
+  Opacity, Volume and Channel Volume with keyframes, other effects where our library has one by
+  that name. Everything else (graphics and titles, captions, blend modes, variable speed, Lumetri,
+  track mixer inserts, …) is named in the import report: each kind in the Events panel, the
+  count in the status bar.
+- **Evidence:** ten projects, project versions 22–45 (Premiere CS6 to 2026, gzipped and plain),
+  read by hand; their structure, counts, rates and transitions checked with a throw-away script.
+  `cargo test -p redrob-film-interchange --test prproj` runs hand-written fixtures and a mutation
+  fuzz; `REDROB_FILM_PRPROJ_DIR=<dir>` adds every real project in `<dir>` (sequence and clip
+  counts must match the document). No sample is in the repository.
+- **Left:** a green gate run; keyframe easing (read as linear / Bézier), point keyframes (no
+  sample has one), reverse speed (assumed a negative `PlaybackSpeed`; no sample), blend-mode
+  mapping, colour matte colour, multicam, graphics; Lumetri basic correction; track mixer state;
+  export (Selection as Premiere Project). **Remaining estimate: 30–60 h.**
   Doc: [file-format-parity.md](file-format-parity.md).
 
 ## G3. 10-bit and 4:2:2 camera media needs hardware
@@ -91,6 +102,29 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Done when:** weak-linked or runtime-loaded OS symbols on old macOS, a software / safe-mode
   start when the GPU adapter fails, a PR workflow running `cargo xtask ci` on macOS, Windows and
   Linux, and a crash-report triage pass. **40–80 h.**
+- **Done (beta/g4, 2026-10-19; not yet run on real hardware):**
+  - *Old macOS:* every VideoToolbox / CoreMedia / CoreVideo name in `crates/platform` was checked
+    against Apple's availability. Only `kVTCompressionPropertyKey_ConstantBitRate` (macOS 13) is
+    newer than the 11.0 deployment target, and it is already looked up with `dlsym`.
+    `apps/redrob-film-app/tests/macos_symbols.rs` fails when a linked name is newer than 11.0, or
+    when a new name has no recorded availability.
+  - *GPU start-up:* `apps/redrob-film-app/src/graphics.rs` picks the adapter itself, on every OS.
+    It takes the best one that can present to the window, logs each adapter and the reason, and
+    clamps the device limits to what the adapter reports, so `request_device` no longer fails on
+    older GPUs. `--safe-mode` / `REDROB_FILM_SAFE_MODE=1` starts on a software adapter, with
+    DirectX 12 alone on Windows, CPU compositing and export, and no hardware decoders. Safe mode
+    also turns on by itself after a start that died before its window opened. A GPU compositor
+    that panics while building its pipelines (FXC, #1458) sends exports to the CPU.
+  - *Audio (#1705):* when WASAPI refuses the configured stream, the app tries the mix format,
+    float, stereo float / 16-bit, then 48 / 44.1 kHz. A stream that fails to start counts as one
+    more failed attempt, and playback continues without sound.
+  - *Crash reports:* a crash report includes the OS version and the GPU adapter. The next start
+    shows where it is.
+  - *CI:* `rust-desktop` runs clippy and the tests on macOS 14 and Windows 2022, with the same
+    "did any Rust input change" skip. Formatting is checked on Linux only.
+  - *Still open:* checks on macOS 12, Intel UHD and Windows 11 machines; the triage pass over
+    upstream crash reports (#380, #413, #439, #477, #582, #687). An adapter that crashes the driver
+    during instance creation is caught only on the next start (by safe mode), not in the same one.
 
 ## G5. Hardware acceleration is partial
 
@@ -111,15 +145,29 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G6. No real-world media corpus or workflow acceptance tests
 
-- **Missing:** a pinned corpus of phone, camera and screen recordings (variable frame rate,
-  damaged files, long GOP, odd containers, multi-track audio), each with an import → edit → export
-  round trip checked against an ffprobe / ffmpeg oracle; scripted MCP sessions that do real jobs
-  end to end.
+- **Have:** a 106-entry manifest, `tests/corpus/manifest.toml` ([corpus.md](corpus.md)): phones
+  (iPhone HLG / VFR + rotation / 240 fps, Android HDR10 / AV1 / VFR, 3GP), cameras (8-bit and
+  10-bit 4:2:2 H.264, HEVC Main 10 and 4:2:2, XF-AVC MXF, AVCHD, 1080i, HDV, XDCAM, DV), ProRes
+  Proxy to 4444 XQ, DNxHR LB / SQ / HQX, CineForm, FFV1, screen recordings (OBS / macOS VFR, Game
+  Bar, odd sizes, MediaRecorder WebM), 17 audio-only kinds, multi-track sound, odd containers
+  (fragmented MP4, edit lists, timecode, VOB, FLV, AVI, WMV, OGV, OP-Atom), stills and damaged
+  files. 83 are generated by `scripts/corpus.py` with ffmpeg as a black box (each < 2 MB), 15
+  large ones match the film-gap corpus, 8 are camera / phone originals a person supplies. Each
+  says whether the round trip must pass, must fail with an error, or is only reported (known G3 /
+  G10 gaps, open issues). `crates/engine/src/corpus_tests.rs` runs every present file through
+  import → razor → move → effect → export and checks duration, frame count, audio and a clean
+  decode with ffprobe / ffmpeg; `scripts/corpus.py generate` makes the small tier, and the
+  harness is run by hand before a release (no scheduled CI job).
+- **Missing:** a first green run (the harness has not run yet, so the `pass` / `report`
+  labels are a starting guess to correct from its log); the 8 real originals and their sha256
+  pins; pinned hashes for the generated tier (ffmpeg output differs between builds, so only the
+  size limit is enforced); scripted MCP sessions that do real jobs end to end.
 - **Evidence:** export stopped producing frames with iPhone HEVC clips on Linux (#480); WebM shows
   black (#432); only the first audio track imported (#397, #416, #601; multi-stream support landed
-  in #361, reporters not yet confirmed); bitrate target produced 6.1 Mb/s for 40 (#371).
+  in #361, reporters not yet confirmed); bitrate target produced 6.1 Mb/s for 40 (#371). Each has
+  a corpus entry carrying its issue number.
 - **Done when:** corpus fetched pinned and sha256-verified (as PhotoCraft's `cargo xtask corpus`,
-  craftrules `standards/test-corpora.md`), runs nightly, ≥ 50 files. **40–70 h.**
+  craftrules `standards/test-corpora.md`), runs green before each release, ≥ 50 files. **20–40 h left.**
 
 ## G7. No measured parity tool in CI
 
@@ -270,3 +318,5 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 |---|---|---|
 | 2026-10-10 | major | Created from ROADMAP.md's "Where we are lacking" (2026-10-05); re-ranked against Premiere 26.5.2 and the 188 open issues; added `.prproj`, 10-bit / 4:2:2 camera decode, launch crashes and missing PR CI, localization, delivery formats |
 | 2026-10-19 | minor | 0.4.0: G16 idle repaint fix and G17 audio reopen / keep-alive recorded with measured numbers (Linux); G20 marked closed in the table; FilmCraft → Redrob Film in the prose |
+| 2026-10-19 | minor | G6: real-world media corpus manifest (106 entries), generator, engine acceptance harness (run by hand); left: a green run, real originals, pins |
+| 2026-10-19 | minor | G2: `.prproj` import (open, import, drag and drop, CLI) with an import report; tests with hand-written fixtures and an opt-in real-project directory; left: gate run, easing, blend modes, graphics, export |

@@ -4148,6 +4148,10 @@ fn install_project(s: &mut Session, proj: redrob_film_project::Project, path: Op
 
 fn open_project(s: &mut Session, path: &str) -> Result<Value> {
     let bytes = s.services.read_file(path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+    // File ▸ Open of a Premiere Pro project (G2): converted into a new, unsaved project.
+    if crate::interchange::detect(path, &bytes) == Some(redrob_film_interchange::Format::Prproj) {
+        return crate::interchange::open_premiere(s, path, &bytes);
+    }
     let loaded = redrob_film_format::decode(&bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     let (from, migrated) = (loaded.schema_version, loaded.migrated());
     install_project(s, loaded.project, Some(path.to_string()), true);

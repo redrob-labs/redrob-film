@@ -10,6 +10,7 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+redrob-film-interchange = { workspace = true }
 redrob-film-time = { workspace = true }
 redrob-film-geom = { workspace = true }
 redrob-film-color = { workspace = true }
@@ -48,7 +49,6 @@ redrob-film-codecs = { workspace = true }
 # the bench registers OS hardware decoders as the desktop app does (dev-dependency only: ui-egui
 # itself stays OS-independent and web-portable)
 redrob-film-platform = { workspace = true }
-redrob-film-interchange = { workspace = true }
 egui_kittest = { workspace = true, features = ["eframe", "wgpu"] }
 
 # build.rs bakes contributors/contributors.json into the binary (About ▸ Contributors).

@@ -118,14 +118,15 @@ pub fn mc_luma(f: &Frame, x: i32, y: i32, mv: [i16; 2], w: usize, h: usize, out:
     interpolate::<8>(&sc.win, &mut sc.tmp, fx, fy, &LUMA_FILTER[fx], &LUMA_FILTER[fy], w, h, shift1, shift3, out);
 }
 
-/// Chroma prediction samples of a w x h chroma block at chroma position (x, y) with a 1/8-sample
-/// vector (4:2:0).
+/// Chroma prediction samples of a w x h chroma block at chroma position (x, y) with the chroma
+/// motion vector `mv` in 1/8 chroma samples (mvCLX, 8-210 / 8-211: the luma vector for 4:2:0
+/// and horizontally for 4:2:2, twice the luma vector vertically for 4:2:2).
 #[allow(clippy::too_many_arguments)]
-pub fn mc_chroma(f: &Frame, c: usize, x: i32, y: i32, mv: [i16; 2], w: usize, h: usize, out: &mut [i16], sc: &mut McScratch) {
+pub fn mc_chroma(f: &Frame, c: usize, x: i32, y: i32, mv: [i32; 2], w: usize, h: usize, out: &mut [i16], sc: &mut McScratch) {
     let bd = f.bit_depth_c;
     let (fx, fy) = ((mv[0] & 7) as usize, (mv[1] & 7) as usize);
-    let xi = x + (mv[0] as i32 >> 3);
-    let yi = y + (mv[1] as i32 >> 3);
+    let xi = x + (mv[0] >> 3);
+    let yi = y + (mv[1] >> 3);
     let shift1 = bd.min(12) - 8;
     let shift3 = 14 - bd;
     f.chroma_window(c, xi - 1, yi - 1, w + 3, h + 3, &mut sc.win, WIN);

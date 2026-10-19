@@ -53,7 +53,8 @@ fn play_with(per_poll: u64, steps: usize) -> (f64, bool) {
         h.step();
     }
     let app = h.state_mut();
-    (app.session.playhead().seconds(), app.playback.audio_clock)
+    // a reopened output that is still waking does not drive the clock (the wall clock does)
+    (app.session.playhead().seconds(), app.playback.audio_clock && !app.playback.audio_waking)
 }
 
 /// #136: the stream opened, the device never asked for samples, the audio clock stayed at 0 and

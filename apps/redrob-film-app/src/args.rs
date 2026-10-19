@@ -13,6 +13,8 @@ Options:
   --no-recover       start without asking about unsaved changes
   --data-dir <dir>   folder for auto-save, crash recovery and logs
                      (also: REDROB_FILM_DATA_DIR)
+  --safe-mode        start without graphics acceleration or hardware
+                     decoding (also: REDROB_FILM_SAFE_MODE=1)
   --version          print the version and exit
   -h, --help         print this help and exit
 ";
@@ -36,6 +38,8 @@ pub struct Launch {
     pub startup_flag: bool,
     pub recover: Option<bool>,
     pub data_dir: Option<std::path::PathBuf>,
+    /// `--safe-mode`: software graphics, CPU compositing and decoding (see `graphics`).
+    pub safe_mode: bool,
 }
 
 /// Parse the arguments after the program name. `env_control_port` is the value of
@@ -46,7 +50,7 @@ pub struct Launch {
 /// a script waiting for it. That holds for the whole line, so `--version --bogus` is an error
 /// too, and for a port from the environment exactly as for one from `--control`.
 pub fn parse(env_control_port: Option<String>, args: impl IntoIterator<Item = String>) -> Result<Cli, String> {
-    let mut l = Launch { control_port: None, files: Vec::new(), demo: true, startup_flag: false, recover: None, data_dir: None };
+    let mut l = Launch { control_port: None, files: Vec::new(), demo: true, startup_flag: false, recover: None, data_dir: None, safe_mode: false };
     let (mut help, mut version) = (false, false);
     let mut args = args.into_iter();
     while let Some(a) = args.next() {
@@ -61,6 +65,7 @@ pub fn parse(env_control_port: Option<String>, args: impl IntoIterator<Item = St
             "--empty" => (l.demo, l.startup_flag) = (false, true),
             "--recover" => l.recover = Some(true),
             "--no-recover" => l.recover = Some(false),
+            "--safe-mode" => l.safe_mode = true,
             "--data-dir" => l.data_dir = Some(args.next().map(std::path::PathBuf::from).ok_or("--data-dir needs a folder")?),
             // everything after `--` is a file, whatever it looks like
             "--" => l.files.extend(args.by_ref()),
@@ -112,7 +117,7 @@ mod tests {
         assert_eq!(parse_args(&["--version"]), Ok(Cli::Version));
         assert_eq!(parse_args(&["--version", "--help"]), Ok(Cli::Help));
         assert_eq!(parse_args(&["a.mp4", "--version"]), Ok(Cli::Version));
-        for flag in ["--control", "--demo", "--empty", "--recover", "--no-recover", "--data-dir", "--version", "--help"] {
+        for flag in ["--control", "--demo", "--empty", "--recover", "--no-recover", "--data-dir", "--safe-mode", "--version", "--help"] {
             assert!(USAGE.contains(flag), "usage lists {flag}");
         }
     }
@@ -157,12 +162,13 @@ mod tests {
     #[test]
     fn known_options_and_files_parse_as_before() {
         let none = launch(&[]);
-        assert_eq!(none, Launch { control_port: None, files: vec![], demo: true, startup_flag: false, recover: None, data_dir: None });
+        assert_eq!(none, Launch { control_port: None, files: vec![], demo: true, startup_flag: false, recover: None, data_dir: None, safe_mode: false });
         let l = launch(&["--control", "9876", "--empty", "--no-recover", "--data-dir", "/tmp/fc", "cut.rfilm", "a.mp4"]);
         assert_eq!(l.control_port, Some(9876));
         assert_eq!((l.demo, l.startup_flag, l.recover), (false, true, Some(false)));
         assert_eq!(l.data_dir, Some(std::path::PathBuf::from("/tmp/fc")));
         assert_eq!(l.files, ["cut.rfilm", "a.mp4"]);
+        assert!(launch(&["--safe-mode", "a.mp4"]).safe_mode && !l.safe_mode);
         assert_eq!((launch(&["--demo"]).demo, launch(&["--demo"]).startup_flag, launch(&["--recover"]).recover), (true, true, Some(true)));
         // `--` ends the options; a lone `-` and macOS' process serial number are not options
         assert_eq!(launch(&["--", "--odd name.mov", "-h"]).files, ["--odd name.mov", "-h"]);
