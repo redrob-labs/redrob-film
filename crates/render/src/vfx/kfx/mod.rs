@@ -9,11 +9,16 @@
 //! denoising) read them through [`crate::vfx::FxEnv`] and leave the picture as a single-frame
 //! effect would (or unchanged) without one.
 
+pub(crate) mod alpha;
+mod borders;
 mod gps;
+mod motion;
 mod noise;
+mod scopes;
 mod stylize;
 mod temporal;
 mod text;
+mod vr360;
 
 use rayon::prelude::*;
 use redrob_film_project::EffectInstance;
@@ -24,7 +29,24 @@ use crate::image::Image;
 
 /// Effects here that read other frames (skipped when another frame is rendered for one of them).
 pub fn is_temporal(id: &str) -> bool {
-    matches!(id, "k_analog_echo" | "k_burning_tv" | "k_light_graffiti" | "k_photosensitivity" | "k_hqdn3d" | "k_hqdn3d_legacy" | "k_denoiser" | "k_fft_denoise")
+    matches!(
+        id,
+        "k_analog_echo"
+            | "k_burning_tv"
+            | "k_light_graffiti"
+            | "k_photosensitivity"
+            | "k_hqdn3d"
+            | "k_hqdn3d_legacy"
+            | "k_denoiser"
+            | "k_fft_denoise"
+            | "k_backgroundkey"
+            | "k_lagfun"
+            | "k_nervous"
+            | "k_vertigo"
+            | "k_vr_stabilize"
+            | "k_waveform"
+            | "k_vectorscope_adv"
+    )
 }
 
 /// Apply `e` if it belongs to this bin; `false` for any other id.
@@ -92,6 +114,54 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         // Misc
         "k_alphaextract" => stylize::alphaextract(img),
         "k_deinterlace" => stylize::deinterlace(img, e),
+        // Alpha, Mask and Keying
+        "k_alpha_gradient" => alpha::alpha_gradient(img, e, cx),
+        "k_alpha_ops" => alpha::alpha_ops(img, e, cx),
+        "k_alpha_strobe" => alpha::alpha_strobe(img, e, cx),
+        "k_backgroundkey" => alpha::backgroundkey(img, e, cx),
+        "k_hsv_key" => alpha::hsv_key(img, e, cx),
+        "k_spill_mopup" => alpha::spill_mopup(img, e, cx),
+        "k_motion_tracker" => alpha::motion_tracker(img, e, cx),
+        "k_premultiply" => alpha::premultiply(img, e),
+        "k_shape_alpha" => alpha::shape_alpha(img, e, cx),
+        "k_spot_remover" => alpha::spot_remover(img, e, cx),
+        // mask chains are run by `crate::mask::MaskChain`: on their own these change nothing
+        "k_shape_alpha_mask" | "k_color_select_mask" | "k_mask_apply" => {}
+        // Motion
+        "k_gate_weave" => motion::gate_weave(img, e, cx),
+        "k_glitch0r" => motion::glitch0r(img, e, cx),
+        "k_pixs0r" => motion::pixs0r(img, e, cx),
+        "k_lagfun" => motion::lagfun(img, e, cx),
+        "k_nervous" => motion::nervous(img, e, cx),
+        "k_vertigo" => motion::vertigo(img, e, cx),
+        // Transform, Distort and Perspective
+        "k_elastic_scale" => borders::elastic_scale(img, e, cx),
+        "k_fill_borders" => borders::fill_borders(img, e, cx),
+        "k_letterbox" => borders::letterbox(img, e, cx),
+        "k_nosync0r" => borders::nosync0r(img, e, cx),
+        "k_pillar_echo" => borders::pillar_echo(img, e, cx),
+        // Utility
+        "k_cie_scope" => scopes::cie_scope(img, e, cx),
+        "k_datascope" => scopes::datascope(img, e, cx),
+        "k_histogram" => scopes::histogram(img, e, cx),
+        "k_d90_fix" => scopes::d90_fix(img),
+        "k_oscilloscope" => scopes::oscilloscope(img, e, cx),
+        "k_oscilloscope_adv" => scopes::oscilloscope_adv(img, e, cx),
+        "k_rgb_parade" => scopes::rgb_parade(img, e, cx),
+        "k_timeout" => scopes::timeout(img, e, cx),
+        "k_vectorscope" => scopes::vectorscope(img, e, cx),
+        "k_vectorscope_adv" => scopes::vectorscope_adv(img, e, cx),
+        "k_video_values" => scopes::video_values(img, e, cx),
+        "k_waveform" => scopes::waveform(img, e, cx),
+        // VR360 and 3D
+        "k_stereo3d" => vr360::stereo3d(img, e),
+        "k_vr_cap" => vr360::vr_cap(img, e, cx),
+        "k_vr_equi2rect" => vr360::equi2rect(img, e, cx),
+        "k_vr_equi2stereo" => vr360::equi2stereo(img, e, cx),
+        "k_vr_equi_mask" => vr360::equi_mask(img, e, cx),
+        "k_vr_hemi2equi" => vr360::hemi2equi(img, e, cx),
+        "k_vr_stabilize" => vr360::vr_stabilize(img, e, cx),
+        "k_vr_wrap" => vr360::vr_wrap(img, e, cx),
         // Deprecated
         "k_box_blur" => {
             let h = (fv(e, "hori", cx) * cx.px_scale).round().max(0.0) as usize;
