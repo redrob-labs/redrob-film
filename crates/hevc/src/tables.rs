@@ -68,6 +68,17 @@ pub fn qpc_420(qpi: i32) -> i32 {
     }
 }
 
+/// QpC from qPi: Table 8-10 for ChromaArrayType 1 (`c420`), Min(qPi, 51) for the other chroma
+/// formats (8.6.1, 8.7.2.5.5).
+#[inline]
+pub fn qpc(qpi: i32, c420: bool) -> i32 {
+    if c420 { qpc_420(qpi) } else { qpi.min(51) }
+}
+
+/// Table 8-3: IntraPredModeC from modeIdx when ChromaArrayType is 2 (4:2:2).
+pub static INTRA_PRED_MODE_C_422: [u8; 35] =
+    [0, 1, 2, 2, 2, 2, 3, 5, 7, 8, 10, 12, 13, 15, 17, 18, 19, 20, 21, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 28, 29, 29, 30, 31];
+
 /// Table 9-50 ctxIdxMap for 4x4 sig_coeff_flag contexts.
 pub static CTX_IDX_MAP: [u8; 16] = [0, 1, 4, 5, 2, 3, 4, 5, 6, 6, 8, 8, 7, 7, 8, 8];
 
@@ -119,5 +130,31 @@ mod tests {
         assert_eq!(qpc_420(30), 29);
         assert_eq!(qpc_420(43), 37);
         assert_eq!(qpc_420(51), 45);
+    }
+
+    #[test]
+    fn qpc_422_is_clipped_identity() {
+        assert_eq!(qpc(43, true), 37);
+        assert_eq!(qpc(43, false), 43);
+        assert_eq!(qpc(57, false), 51);
+        assert_eq!(qpc(-12, false), -12);
+    }
+
+    #[test]
+    fn intra_mode_422_mapping() {
+        // Table 8-3 spot checks: X <= 2 unchanged, the angular modes compressed vertically
+        for m in 0..=2 {
+            assert_eq!(INTRA_PRED_MODE_C_422[m], m as u8);
+        }
+        assert_eq!(INTRA_PRED_MODE_C_422[10], 10); // horizontal stays horizontal
+        assert_eq!(INTRA_PRED_MODE_C_422[26], 26); // vertical stays vertical
+        assert_eq!(INTRA_PRED_MODE_C_422[11], 12);
+        assert_eq!(INTRA_PRED_MODE_C_422[14], 17);
+        assert_eq!(INTRA_PRED_MODE_C_422[18], 21);
+        assert_eq!(INTRA_PRED_MODE_C_422[34], 31);
+        // monotonic, within the angular range
+        for w in INTRA_PRED_MODE_C_422.windows(2) {
+            assert!(w[0] <= w[1]);
+        }
     }
 }

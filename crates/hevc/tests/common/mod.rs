@@ -2,7 +2,7 @@
 //! comparison helpers.
 #![allow(dead_code)]
 
-use redrob_film_hevc::{Decoder, Picture};
+use redrob_film_hevc::{ChromaFormat, Decoder, Picture};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -16,8 +16,10 @@ pub struct Fixture {
     pub frames: u32,
     /// Extra video filter appended after the source (e.g. noise, fade).
     pub filter: &'static str,
-    /// 10 (yuv420p10le) or 8.
+    /// 10 (yuv420p10le / yuv422p10le) or 8.
     pub bit_depth: u32,
+    /// 4:2:2 (Main 4:2:2 10, `yuv422p10le` / `yuv422p`) instead of 4:2:0.
+    pub chroma422: bool,
     /// Encoder arguments (libx265 unless `-c:v` is given).
     pub args: &'static [&'static str],
 }
@@ -26,7 +28,14 @@ const NOISE: &str = "noise=alls=12:allf=t+u";
 
 macro_rules! fx {
     ($name:expr, $src:expr, $w:expr, $h:expr, $n:expr, $filter:expr, $bd:expr, [$($a:expr),* $(,)?]) => {
-        Fixture { name: $name, source: $src, width: $w, height: $h, frames: $n, filter: $filter, bit_depth: $bd, args: &[$($a),*] }
+        Fixture { name: $name, source: $src, width: $w, height: $h, frames: $n, filter: $filter, bit_depth: $bd, chroma422: false, args: &[$($a),*] }
+    };
+}
+
+/// A 4:2:2 fixture (libx265 signals the Main 4:2:2 10 / RExt profile, no range-extension tools).
+macro_rules! fx422 {
+    ($name:expr, $src:expr, $w:expr, $h:expr, $n:expr, $filter:expr, $bd:expr, [$($a:expr),* $(,)?]) => {
+        Fixture { name: $name, source: $src, width: $w, height: $h, frames: $n, filter: $filter, bit_depth: $bd, chroma422: true, args: &[$($a),*] }
     };
 }
 
@@ -73,6 +82,20 @@ pub const FIXTURES: &[Fixture] = &[
     fx!("odd_1918x1078", "testsrc2", 1918, 1078, 3, NOISE, 8, ["-preset", "veryfast", "-x265-params", "log-level=error"]),
     fx!("hd_1080p", "testsrc2", 1920, 1080, 3, "", 8, ["-preset", "fast", "-x265-params", "log-level=error"]),
     fx!("uhd_4k_main10", "testsrc2", 3840, 2160, 2, "", 10, ["-preset", "ultrafast", "-x265-params", "log-level=error"]),
+    // 4:2:2 (Main 4:2:2 10; 176x144 unless noted)
+    fx422!("intra_422_10", "testsrc2", 176, 144, 3, NOISE, 10, ["-x265-params", "keyint=1:log-level=error"]),
+    fx422!("main422_10", "testsrc2", 176, 144, 12, NOISE, 10, ["-x265-params", "log-level=error"]),
+    fx422!("main422_8", "testsrc2", 176, 144, 8, NOISE, 8, ["-x265-params", "log-level=error"]),
+    fx422!("slow_422_10", "mandelbrot", 176, 144, 8, NOISE, 10, ["-preset", "slow", "-x265-params", "log-level=error"]),
+    fx422!("bframes_422_10", "testsrc2", 176, 144, 16, NOISE, 10, ["-x265-params", "bframes=4:b-pyramid=1:ref=3:log-level=error"]),
+    fx422!("tskip_422_10", "testsrc2", 176, 144, 6, NOISE, 10, ["-x265-params", "tskip=1:log-level=error"]),
+    fx422!("cu_lossless_422_10", "testsrc2", 176, 144, 4, NOISE, 10, ["-x265-params", "cu-lossless=1:log-level=error"]),
+    fx422!("scaling_list_422_10", "testsrc2", 176, 144, 6, NOISE, 10, ["-x265-params", "scaling-list=default:log-level=error"]),
+    fx422!("ctu32_tu4_422_10", "testsrc2", 176, 144, 6, NOISE, 10, ["-x265-params", "ctu=32:tu-intra-depth=4:tu-inter-depth=4:max-tu-size=16:log-level=error"]),
+    fx422!("weightp_422_10", "testsrc2", 176, 144, 12, "fade=in:0:10", 10, ["-x265-params", "weightp=1:weightb=1:log-level=error"]),
+    fx422!("constrained_intra_422_10", "testsrc2", 176, 144, 8, NOISE, 10, ["-x265-params", "constrained-intra=1:log-level=error"]),
+    fx422!("no_sao_422_10", "testsrc2", 176, 144, 6, NOISE, 10, ["-x265-params", "no-sao=1:log-level=error"]),
+    fx422!("odd_174x139_422_10", "testsrc2", 174, 139, 4, NOISE, 10, ["-x265-params", "log-level=error"]),
     // performance reference streams (tests/perf.rs)
     fx!("bench_1080p", "testsrc2", 1920, 1080, 60, "noise=alls=3:allf=t", 8, ["-preset", "medium", "-crf", "24", "-x265-params", "log-level=error"]),
     fx!("bench_4k", "testsrc2", 3840, 2160, 20, "noise=alls=3:allf=t", 10, ["-preset", "fast", "-crf", "26", "-x265-params", "log-level=error"]),
@@ -112,6 +135,17 @@ pub fn pix_fmt(bd: u32) -> &'static str {
     if bd > 8 { "yuv420p10le" } else { "yuv420p" }
 }
 
+impl Fixture {
+    /// ffmpeg pixel format of the source, the encode and the reference decode.
+    pub fn pix_fmt(&self) -> &'static str {
+        match (self.chroma422, self.bit_depth > 8) {
+            (false, _) => pix_fmt(self.bit_depth),
+            (true, true) => "yuv422p10le",
+            (true, false) => "yuv422p",
+        }
+    }
+}
+
 /// Generate (if needed) the fixture stream and its ffmpeg reference decode.
 /// Returns None (with a message) when ffmpeg or the encoder is unavailable.
 pub fn ensure(f: &Fixture) -> Option<(PathBuf, PathBuf)> {
@@ -121,7 +155,7 @@ pub fn ensure(f: &Fixture) -> Option<(PathBuf, PathBuf)> {
     let yuv = dir.join(format!("{}.yuv", f.name));
     if !hevc.exists() {
         let tmp = redrob_film_testkit::temp_path(&hevc);
-        let mut vf = format!("{}=size={}x{}:rate=25,format={}", f.source, f.width, f.height, pix_fmt(f.bit_depth));
+        let mut vf = format!("{}=size={}x{}:rate=25,format={}", f.source, f.width, f.height, f.pix_fmt());
         if !f.filter.is_empty() {
             vf.push(',');
             vf.push_str(f.filter);
@@ -132,7 +166,7 @@ pub fn ensure(f: &Fixture) -> Option<(PathBuf, PathBuf)> {
         if !f.args.contains(&"-c:v") {
             c.args(["-c:v", "libx265"]);
         }
-        c.args(["-pix_fmt", pix_fmt(f.bit_depth)]);
+        c.args(["-pix_fmt", f.pix_fmt()]);
         c.args(f.args);
         c.args(["-f", "hevc"]).arg(&tmp);
         if !run(&mut c) {
@@ -148,7 +182,7 @@ pub fn ensure(f: &Fixture) -> Option<(PathBuf, PathBuf)> {
         let tmp = redrob_film_testkit::temp_path(&yuv);
         let mut c = Command::new(&ff);
         c.args(["-hide_banner", "-loglevel", "error", "-y", "-i"]).arg(&hevc);
-        c.args(["-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", pix_fmt(f.bit_depth)]).arg(&tmp);
+        c.args(["-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", f.pix_fmt()]).arg(&tmp);
         assert!(run(&mut c), "reference decode failed for {}", f.name);
         std::fs::rename(&tmp, &yuv).unwrap();
     }
@@ -228,8 +262,15 @@ pub fn decode_file_opts(path: &Path, threads: usize, draft: bool) -> Result<Vec<
 /// Compare decoded pictures with a raw yuv420p / yuv420p10le reference; returns a diagnostic on the
 /// first mismatch (frame, plane, sample position, CTB (64x64) and 8x8 block).
 pub fn compare(pics: &[Picture], reference: &[u8], w: usize, h: usize, bd: u32) -> Result<(), String> {
+    compare_fmt(pics, reference, w, h, bd, false)
+}
+
+/// [`compare`] for a 4:2:0 (`chroma422 == false`) or 4:2:2 (yuv422p / yuv422p10le) reference.
+pub fn compare_fmt(pics: &[Picture], reference: &[u8], w: usize, h: usize, bd: u32, chroma422: bool) -> Result<(), String> {
     let bps = if bd > 8 { 2 } else { 1 };
-    let (cw, ch) = (w.div_ceil(2), h.div_ceil(2));
+    let sub_y = if chroma422 { 1 } else { 2 };
+    let (cw, ch) = (w.div_ceil(2), h.div_ceil(sub_y));
+    let want_format = if chroma422 { ChromaFormat::Yuv422 } else { ChromaFormat::Yuv420 };
     let fsize = (w * h + 2 * cw * ch) * bps;
     let nref = reference.len() / fsize;
     for (i, p) in pics.iter().enumerate() {
@@ -239,11 +280,14 @@ pub fn compare(pics: &[Picture], reference: &[u8], w: usize, h: usize, bd: u32) 
         if p.width as usize != w || p.height as usize != h {
             return Err(format!("frame {i}: size {}x{} != {}x{}", p.width, p.height, w, h));
         }
+        if p.chroma_format != want_format || p.chroma_width as usize != cw || p.chroma_height as usize != ch {
+            return Err(format!("frame {i}: chroma {:?} {}x{} != {want_format:?} {cw}x{ch}", p.chroma_format, p.chroma_width, p.chroma_height));
+        }
         let f = &reference[i * fsize..(i + 1) * fsize];
         let sample = |buf: &[u8], k: usize| if bps == 2 { u16::from_le_bytes([buf[2 * k], buf[2 * k + 1]]) } else { buf[k] as u16 };
         let (ys, cs) = (w * h * bps, cw * ch * bps);
-        let planes = [("Y", &p.y, &f[..ys], w, h, 1), ("U", &p.u, &f[ys..ys + cs], cw, ch, 2), ("V", &p.v, &f[ys + cs..], cw, ch, 2)];
-        for (name, got, exp, pw, ph, sub) in planes {
+        let planes = [("Y", &p.y, &f[..ys], w, h, (1, 1)), ("U", &p.u, &f[ys..ys + cs], cw, ch, (2, sub_y)), ("V", &p.v, &f[ys + cs..], cw, ch, (2, sub_y))];
+        for (name, got, exp, pw, ph, (subx, suby)) in planes {
             let mut first = None;
             let mut count = 0usize;
             let mut maxd = 0i32;
@@ -260,7 +304,7 @@ pub fn compare(pics: &[Picture], reference: &[u8], w: usize, h: usize, bd: u32) 
                 }
             }
             if let Some((x, y, a, b)) = first {
-                let (lx, ly) = (x * sub, y * sub);
+                let (lx, ly) = (x * subx, y * suby);
                 return Err(format!(
                     "frame {i} (poc {}, pts {}) plane {name}: first mismatch at ({x},{y}) [luma ({lx},{ly}), CTB64 ({},{}), 8x8 ({},{})]: got {a} want {b}; {count} samples differ, max diff {maxd}",
                     p.poc,
@@ -289,11 +333,11 @@ pub fn check_fixture(name: &str) -> Result<bool, String> {
         let pics = match decode_file_threads(&hevc, threads) {
             Ok(p) => p,
             Err((au, e, partial)) => {
-                let cmp = compare(&partial, &reference, f.width as usize, f.height as usize, f.bit_depth).err().unwrap_or_default();
+                let cmp = compare_fmt(&partial, &reference, f.width as usize, f.height as usize, f.bit_depth, f.chroma422).err().unwrap_or_default();
                 return Err(format!("{name} (threads {threads}): decode error at access unit {au}: {e} (after {} pictures) {cmp}", partial.len()));
             }
         };
-        compare(&pics, &reference, f.width as usize, f.height as usize, f.bit_depth).map_err(|e| format!("{name} (threads {threads}): {e}"))?;
+        compare_fmt(&pics, &reference, f.width as usize, f.height as usize, f.bit_depth, f.chroma422).map_err(|e| format!("{name} (threads {threads}): {e}"))?;
         check_pts(&pics).map_err(|e| format!("{name} (threads {threads}): {e}"))?;
         if pics.iter().any(|p| p.draft) {
             return Err(format!("{name} (threads {threads}): picture flagged draft without draft mode"));
@@ -316,4 +360,54 @@ pub fn check_pts(pics: &[Picture]) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+/// MD5 per frame as printed by `ffmpeg -f framemd5` (the last field of each non-comment line).
+fn framemd5_hashes(out: &[u8]) -> Vec<String> {
+    String::from_utf8_lossy(out)
+        .lines()
+        .filter(|l| !l.starts_with('#') && !l.trim().is_empty())
+        .filter_map(|l| l.rsplit(',').next().map(|h| h.trim().to_string()))
+        .collect()
+}
+
+fn framemd5_of(ff: &Path, input: &[&str], path: &Path, pix_fmt: &str) -> Result<Vec<String>, String> {
+    let mut c = Command::new(ff);
+    c.args(["-hide_banner", "-loglevel", "error"]).args(input).arg("-i").arg(path);
+    c.args(["-fps_mode", "passthrough", "-pix_fmt", pix_fmt, "-f", "framemd5", "-"]);
+    let o = c.output().map_err(|e| format!("failed to run {c:?}: {e}"))?;
+    if !o.status.success() {
+        return Err(format!("{c:?} failed: {}", String::from_utf8_lossy(&o.stderr)));
+    }
+    Ok(framemd5_hashes(&o.stdout))
+}
+
+/// Compare our decode of a fixture with `ffmpeg -f framemd5` of the stream: our pictures are
+/// written as raw video and hashed by the same ffmpeg command, so every frame's MD5 must match.
+/// Ok(false) when skipped.
+pub fn check_framemd5(name: &str) -> Result<bool, String> {
+    let f = fixture(name);
+    let Some((hevc, _)) = ensure(f) else { return Ok(false) };
+    let Some(ff) = ffmpeg() else { return Ok(false) };
+    let pics = decode_file_threads(&hevc, 1).map_err(|(au, e, _)| format!("{name}: decode error at access unit {au}: {e}"))?;
+    let raw = fixtures_dir().join(format!("{name}.ours.yuv"));
+    let mut bytes = Vec::new();
+    for p in &pics {
+        for plane in [&p.y, &p.u, &p.v] {
+            bytes.extend(plane.to_le_bytes());
+        }
+    }
+    std::fs::write(&raw, &bytes).map_err(|e| e.to_string())?;
+    let size = format!("{}x{}", f.width, f.height);
+    let ours = framemd5_of(&ff, &["-f", "rawvideo", "-pix_fmt", f.pix_fmt(), "-s", size.as_str()], &raw, f.pix_fmt());
+    let _ = std::fs::remove_file(&raw);
+    let ours = ours?;
+    let theirs = framemd5_of(&ff, &[], &hevc, f.pix_fmt())?;
+    if ours.len() != theirs.len() {
+        return Err(format!("{name}: {} frames decoded, ffmpeg {}", ours.len(), theirs.len()));
+    }
+    if let Some(i) = ours.iter().zip(&theirs).position(|(a, b)| a != b) {
+        return Err(format!("{name}: frame {i} MD5 {} != ffmpeg {}", ours[i], theirs[i]));
+    }
+    Ok(true)
 }
