@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.4.0 -- 2026-10-19
+
+### Fixed
+
+- Idle repaint (Linux): winit reports an empty window title on X11 and Wayland; the shell took it
+  for a title set by someone else and re-sent its own every frame, and every viewport command
+  asks for another frame. The window never went idle: ~125 fps and 6 CPU cores with nothing
+  happening on a software rasteriser, which starved decoding (45 % of 1080p30 frames dropped in
+  playback) and made the playhead trail the mouse. An empty title now counts as unknown; idle CPU
+  drops to near zero.
+- Audio: an output that is lost during playback (stream error, stalled or unplugged device) is
+  opened again (up to 4 tries per play) while playback continues on the wall clock; a reopened
+  device takes the clock back only once it actually consumes samples.
+- Previews: render previews stay ProRes 422 HQ by default; the lighter flavours are explicit
+  choices in Sequence Settings.
+
+### Added
+
+- Kdenlive parity, written clean-room from the Kdenlive manual and observed behaviour (no GPL
+  source was read): 1,202 user-facing features of Kdenlive 26.08.2 inventoried in
+  `docs/parity/kdenlive-*.toml`; 1,046 are now fully available (538 before), 126 partly, 30 not
+  (each with the reason). Highlights: audio effects (23 new) and the mixer, voice-over pause and
+  monitoring; timeline track heights, waveform zoom, group selection, insert mode, sequence tabs;
+  stylize, noise, colour, keying, mask, VR and transform video effects; effect stack, effect zones,
+  auto-keyframes, title templates and the title typewriter; monitor loop zone, jog shuttle,
+  full-screen and undocked monitors, grids and overlays; scopes, still-image proxies and
+  multi-job proxies, preview codecs; markers, subtitles and speech to text; bin slideshows,
+  generators and clip properties; render presets (PPM, WebP, FLAC), archived projects and backups;
+  preferences, project settings and workspaces.
+
 ## 0.3.0 -- 2026-10-17
 
 ### Added
