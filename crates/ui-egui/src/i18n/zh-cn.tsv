@@ -4582,3 +4582,22 @@
 	Set Range	设置范围
 	Unspecified	未指定
 	Limited	有限
+	Custom Range	自定义范围
+	Merge	合并
+	Low Frequency	低频
+	High Frequency	高频
+	Level Threshold	电平阈值
+	Oscillation	振荡
+	Window Size	窗口大小
+	Gradient Color 3 (Bottom)	渐变颜色 3（底部）
+	Gradient Color 1 (Top)	渐变颜色 1（顶部）
+	Gradient Color 2 (Middle)	渐变颜色 2（中间）
+	Bar	条形
+	Segment	分段
+	Gradient Orientation	渐变方向
+	Segment Gap	分段间距
+	Line Tension	线条张力
+	Channel to Draw	要绘制的声道
+	Initial Zoom	初始缩放
+	1st Color	第 1 种颜色
+	2nd Color	第 2 种颜色

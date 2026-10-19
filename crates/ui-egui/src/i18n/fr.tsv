@@ -4590,3 +4590,22 @@
 	Set Range	Définir la plage
 	Unspecified	Non spécifié
 	Limited	Limitée
+	Custom Range	Plage personnalisée
+	Merge	Fusionner
+	Low Frequency	Fréquence basse
+	High Frequency	Fréquence haute
+	Level Threshold	Seuil de niveau
+	Oscillation	Oscillation
+	Window Size	Taille de fenêtre
+	Gradient Color 3 (Bottom)	Couleur de dégradé 3 (bas)
+	Gradient Color 1 (Top)	Couleur de dégradé 1 (haut)
+	Gradient Color 2 (Middle)	Couleur de dégradé 2 (milieu)
+	Bar	Barre
+	Segment	Segment
+	Gradient Orientation	Orientation du dégradé
+	Segment Gap	Écart entre segments
+	Line Tension	Tension de la ligne
+	Channel to Draw	Canal à dessiner
+	Initial Zoom	Zoom initial
+	1st Color	1re couleur
+	2nd Color	2e couleur

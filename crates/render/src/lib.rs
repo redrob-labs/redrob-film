@@ -228,6 +228,19 @@ pub(crate) fn render_seq_tracks(project: &Project, seq: &Sequence, t: Tick, opts
             }
             let mt = item.effect_time_at(t);
             let mut adjusted = canvas.snapshot();
+            // the sequence around the layer (sound, timing) for master-style effects
+            let env = vfx::AdjustEnv(vfx::ItemEnv {
+                project,
+                seq,
+                item,
+                t,
+                opts,
+                sources,
+                want: opts.scale,
+                layer_size: (adjusted.w, adjusted.h),
+                layer_to_output: Affine::IDENTITY,
+                tc: &tc,
+            });
             let cx = effects::FxCtx {
                 t: mt,
                 px_scale: opts.scale,
@@ -235,7 +248,7 @@ pub(crate) fn render_seq_tracks(project: &Project, seq: &Sequence, t: Tick, opts
                 timecode: &tc,
                 clip_name: &item.name,
                 project: Some(project),
-                env: None,
+                env: Some(&env),
                 working: seq.settings.color.working,
             };
             for e in item.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic)) {

@@ -571,7 +571,8 @@ pub(super) fn defs() -> Vec<EffectDef> {
 pub(super) fn visualization_defs() -> Vec<EffectDef> {
     use super::{col, video};
     const VIZ: &[&str] = &["Audio Visualization"];
-    const BANDS: &[&str] = &["Full", "Low", "Mid", "High"];
+    const BANDS: &[&str] = &["Full", "Low", "Mid", "High", "Custom Range"];
+    const WAVE_CHANNELS: &[&str] = &["All", "Merge", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
     let frame = |x: f64, y: f64, w: f64, h: f64| {
         vec![
             f("x", "Position X", x, 0.0, 100.0, "%"),
@@ -580,58 +581,89 @@ pub(super) fn visualization_defs() -> Vec<EffectDef> {
             f("height", "Height", h, 1.0, 100.0, "%"),
         ]
     };
+    // shared by the three meters: frame background and rotation of the drawing
+    let look = |v: &mut Vec<ParamDef>| {
+        v.push(col("bg_color", "Background Color", [0.0, 0.0, 0.0, 0.0]));
+        v.push(f("angle", "Angle", 0.0, -360.0, 360.0, "°"));
+    };
+    // shared by Dance and Light Show: the part of the sound that drives them
+    let drive = |v: &mut Vec<ParamDef>| {
+        v.push(hz("low_freq", "Low Frequency", 20.0, 20.0, 20000.0));
+        v.push(hz("high_freq", "High Frequency", 20000.0, 20.0, 20000.0));
+        v.push(db("threshold", "Level Threshold", -60.0, -100.0, 0.0));
+        v.push(fs("oscillation", "Oscillation", 0.0, (0.0, 50.0), (0.0, 10.0), "Hz", 1));
+        v.push(fixed(num("window", "Window Size", 2048.0, 256.0, 16384.0, "", 0)));
+    };
     let mut levels = vec![ch("orientation", "Orientation", &["Vertical", "Horizontal"], 0)];
     levels.extend(frame(92.0, 50.0, 4.0, 60.0));
     levels.extend([
-        col("color", "Color", [0.35, 0.85, 0.35, 1.0]),
-        col("peak_color", "Peak Color", [0.9, 0.25, 0.25, 1.0]),
+        col("color", "Gradient Color 3 (Bottom)", [0.35, 0.85, 0.35, 1.0]),
+        col("peak_color", "Gradient Color 1 (Top)", [0.9, 0.25, 0.25, 1.0]),
         f("opacity", "Opacity", 100.0, 0.0, 100.0, "%"),
+        col("mid_color", "Gradient Color 2 (Middle)", [0.95, 0.85, 0.25, 1.0]),
+        ch("graph_type", "Graph Type", &["Bar", "Segment"], 0),
+        b("mirror", "Mirror", false),
+        b("reverse", "Reverse", false),
+        ch("gradient", "Gradient Orientation", &["Vertical", "Horizontal"], 0),
+        num("thickness", "Line Thickness", 0.0, 0.0, 400.0, "px", 0),
+        fixed(num("channels", "Channels", 2.0, 1.0, 8.0, "", 0)),
+        num("segment_gap", "Segment Gap", 2.0, 0.0, 50.0, "px", 0),
     ]);
-    let mut spectrum = vec![fixed(num("bands", "Bands", 32.0, 4.0, 128.0, "", 0))];
+    look(&mut levels);
+    let mut spectrum = vec![fixed(num("bands", "Points", 32.0, 4.0, 128.0, "", 0))];
     spectrum.extend(frame(50.0, 80.0, 80.0, 30.0));
     spectrum.extend([
-        hz("low_freq", "Lowest Frequency", 40.0, 20.0, 1000.0),
-        hz("high_freq", "Highest Frequency", 16000.0, 1000.0, 20000.0),
-        db("floor", "Floor", -60.0, -96.0, -20.0),
-        col("color", "Color", [0.3, 0.7, 1.0, 1.0]),
+        hz("low_freq", "Low Frequency", 40.0, 20.0, 1000.0),
+        hz("high_freq", "High Frequency", 16000.0, 1000.0, 20000.0),
+        db("floor", "Level Threshold", -60.0, -96.0, -20.0),
+        col("color", "Foreground Color", [0.3, 0.7, 1.0, 1.0]),
         f("opacity", "Opacity", 100.0, 0.0, 100.0, "%"),
+        ch("graph_type", "Graph Type", &["Line", "Bar"], 1),
+        b("fill", "Fill", false),
+        b("mirror", "Mirror", false),
+        b("reverse", "Reverse", false),
+        num("thickness", "Line Thickness", 0.0, 0.0, 100.0, "px", 0),
+        num("tension", "Line Tension", 40.0, -50.0, 150.0, "", 0),
     ]);
+    look(&mut spectrum);
     let mut wave = vec![ch("style", "Style", &["Line", "Filled", "Mirrored"], 0)];
     wave.extend(frame(50.0, 50.0, 90.0, 30.0));
     wave.extend([
         ms("window", "Window", 40.0, 5.0, 500.0),
         f("thickness", "Thickness", 2.0, 1.0, 20.0, "px"),
-        col("color", "Color", [1.0, 1.0, 1.0, 1.0]),
+        col("color", "Foreground Color", [1.0, 1.0, 1.0, 1.0]),
         f("opacity", "Opacity", 100.0, 0.0, 100.0, "%"),
+        ch("channel", "Channel to Draw", WAVE_CHANNELS, 0),
     ]);
+    look(&mut wave);
+    let mut dance = vec![
+        ch("band", "Frequency Band", BANDS, 1),
+        f("scale", "Zoom", 20.0, -100.0, 100.0, "%"),
+        f("move_x", "Right", 0.0, 0.0, 50.0, "%"),
+        f("move_y", "Up", 5.0, 0.0, 50.0, "%"),
+        f("sensitivity", "Sensitivity", 100.0, 10.0, 400.0, "%"),
+        f("move_left", "Left", 0.0, 0.0, 50.0, "%"),
+        f("move_down", "Down", 0.0, 0.0, 50.0, "%"),
+        f("rotate_cw", "Clockwise", 0.0, 0.0, 360.0, "°"),
+        f("rotate_ccw", "Counter Clockwise", 0.0, 0.0, 360.0, "°"),
+        fs("initial_zoom", "Initial Zoom", 100.0, (1.0, 500.0), (50.0, 200.0), "%", 0),
+    ];
+    drive(&mut dance);
+    let mut light = vec![
+        ch("band", "Frequency Band", BANDS, 0),
+        col("color", "1st Color", [1.0, 0.85, 0.3, 1.0]),
+        f("intensity", "Intensity", 60.0, 0.0, 100.0, "%"),
+        f("sensitivity", "Sensitivity", 100.0, 10.0, 400.0, "%"),
+        ch("mode", "Mode", &["Add", "Tint"], 0),
+        col("color2", "2nd Color", [1.0, 0.85, 0.3, 1.0]),
+    ];
+    drive(&mut light);
     let mut v = vec![
         video("audio_levels_viz", "Audio Level Visualization", VIZ, levels),
         video("audio_spectrum_viz", "Audio Spectrum", VIZ, spectrum),
         video("audio_waveform_viz", "Audio Waveform", VIZ, wave),
-        video(
-            "audio_dance",
-            "Dance",
-            VIZ,
-            vec![
-                ch("band", "Frequency Band", BANDS, 1),
-                f("scale", "Scale Amount", 20.0, 0.0, 100.0, "%"),
-                f("move_x", "Horizontal Move", 0.0, 0.0, 50.0, "%"),
-                f("move_y", "Vertical Move", 5.0, 0.0, 50.0, "%"),
-                f("sensitivity", "Sensitivity", 100.0, 10.0, 400.0, "%"),
-            ],
-        ),
-        video(
-            "audio_light_show",
-            "Light Show",
-            VIZ,
-            vec![
-                ch("band", "Frequency Band", BANDS, 0),
-                col("color", "Color", [1.0, 0.85, 0.3, 1.0]),
-                f("intensity", "Intensity", 60.0, 0.0, 100.0, "%"),
-                f("sensitivity", "Sensitivity", 100.0, 10.0, 400.0, "%"),
-                ch("mode", "Mode", &["Add", "Tint"], 0),
-            ],
-        ),
+        video("audio_dance", "Dance", VIZ, dance),
+        video("audio_light_show", "Light Show", VIZ, light),
     ];
     for d in &mut v {
         d.accelerated = false;

@@ -203,6 +203,57 @@ impl FxEnv for ItemEnv<'_> {
     }
 }
 
+/// The environment of an adjustment layer: the sequence around it (its sound, rate, timing and
+/// geometry) for effects such as the audio visualisations, so an adjustment layer over the whole
+/// timeline works as a master effect. It has no frames of its own and reads no tracks (its own
+/// track would render it again), so temporal and track-reading effects stay as they were.
+pub(crate) struct AdjustEnv<'a>(pub ItemEnv<'a>);
+
+impl FxEnv for AdjustEnv<'_> {
+    fn frame(&self, _dt: f64, _upto: &EffectInstance) -> Option<Image> {
+        None
+    }
+    fn source_frame(&self, _dt: f64, _scale: f32) -> Option<Image> {
+        None
+    }
+    fn track(&self, _index: usize) -> Option<Image> {
+        None
+    }
+    fn layer_to_output(&self) -> Affine {
+        self.0.layer_to_output()
+    }
+    fn clip_seconds(&self) -> f64 {
+        self.0.clip_seconds()
+    }
+    fn clip_offset(&self) -> f64 {
+        self.0.clip_offset()
+    }
+    fn frame_rate(&self) -> f64 {
+        self.0.frame_rate()
+    }
+    fn media_timecode(&self) -> String {
+        self.0.media_timecode()
+    }
+    fn file_name(&self) -> String {
+        self.0.file_name()
+    }
+    fn sequence_name(&self) -> String {
+        self.0.sequence_name()
+    }
+    fn sequence_size(&self) -> (u32, u32) {
+        self.0.sequence_size()
+    }
+    fn source_size(&self) -> (u32, u32) {
+        self.0.sequence_size()
+    }
+    fn clip_key(&self) -> u64 {
+        self.0.clip_key()
+    }
+    fn sequence_audio(&self, dt: f64, seconds: f64) -> Option<redrob_film_frame::AudioBuffer> {
+        self.0.sequence_audio(dt, seconds)
+    }
+}
+
 // ------------------------------------------------------------------ parameters
 
 pub(crate) fn def_value(e: &EffectInstance, id: &str) -> Option<ParamValue> {

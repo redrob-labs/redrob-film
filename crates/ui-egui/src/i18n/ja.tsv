@@ -4589,3 +4589,22 @@
 	Set Range	範囲を設定
 	Unspecified	未指定
 	Limited	リミテッド
+	Custom Range	カスタム範囲
+	Merge	結合
+	Low Frequency	低周波数
+	High Frequency	高周波数
+	Level Threshold	レベルのしきい値
+	Oscillation	振動
+	Window Size	ウィンドウサイズ
+	Gradient Color 3 (Bottom)	グラデーションカラー 3（下）
+	Gradient Color 1 (Top)	グラデーションカラー 1（上）
+	Gradient Color 2 (Middle)	グラデーションカラー 2（中央）
+	Bar	バー
+	Segment	セグメント
+	Gradient Orientation	グラデーションの方向
+	Segment Gap	セグメントの間隔
+	Line Tension	線の張り
+	Channel to Draw	描画するチャンネル
+	Initial Zoom	初期ズーム
+	1st Color	1 番目の色
+	2nd Color	2 番目の色
