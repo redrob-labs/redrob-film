@@ -33,7 +33,6 @@ pub const ZOOMS: [(&str, f32); 10] =
     [("10", 0.1), ("25", 0.25), ("50", 0.5), ("75", 0.75), ("100", 1.0), ("150", 1.5), ("200", 2.0), ("400", 4.0), ("800", 8.0), ("1600", 16.0)];
 /// Ruler thickness (points).
 pub const RULER: f32 = 16.0;
-const GUIDE_COLOR: Color32 = Color32::from_rgb(0x3d, 0xa5, 0xff);
 const SNAP_COLOR: Color32 = Color32::from_rgb(0xff, 0x4f, 0xd8);
 /// Snap distance (points).
 pub const SNAP_PX: f32 = 6.0;
@@ -636,7 +635,7 @@ pub fn rulers(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, top: Rect, le
         let Some(pos) = resp.interact_pointer_pos().or(ui.ctx().pointer_latest_pos()) else { continue };
         if area.contains(pos) {
             let seg = if ng.vertical { [pos2(pos.x, area.min.y), pos2(pos.x, area.max.y)] } else { [pos2(area.min.x, pos.y), pos2(area.max.x, pos.y)] };
-            ui.painter().with_clip_rect(area).line_segment(seg, Stroke::new(1.0, GUIDE_COLOR));
+            ui.painter().with_clip_rect(area).line_segment(seg, Stroke::new(1.0, crate::panels::monitor::overlay_color(app)));
         }
         if resp.drag_stopped() {
             ui.data_mut(|d| d.remove::<NewGuide>(drag_id));
@@ -673,6 +672,8 @@ pub fn guides(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, area: Rect, p
     let pfx = prefix(w);
     let (kx, ky) = (pic.width() / frame.0.max(1) as f32, pic.height() / frame.1.max(1) as f32);
     let p = ui.painter().with_clip_rect(area);
+    // Settings ▸ Playback ▸ Monitor overlay color
+    let guide_color = crate::panels::monitor::overlay_color(app);
     let mut remove = None;
     for (i, g) in v.guides.iter().enumerate() {
         let c = if g.vertical { pic.min.x + g.position as f32 * kx } else { pic.min.y + g.position as f32 * ky };
@@ -681,7 +682,7 @@ pub fn guides(app: &mut FilmcraftApp, ui: &mut egui::Ui, w: Which, area: Rect, p
         } else {
             ([pos2(area.min.x, c), pos2(area.max.x, c)], Rect::from_min_max(pos2(area.min.x, c - 3.0), pos2(area.max.x, c + 3.0)))
         };
-        p.line_segment(seg, Stroke::new(1.0, GUIDE_COLOR));
+        p.line_segment(seg, Stroke::new(1.0, guide_color));
         let hit = hit.intersect(area);
         app.auto.add(&format!("{pfx}.guide.{i}"), hit, if g.vertical { "vertical guide" } else { "horizontal guide" });
         if v.lock_guides {

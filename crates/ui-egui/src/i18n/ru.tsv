@@ -1018,3 +1018,87 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	Кэш
 	ClipJobs	Задания для клипов
+	Loop Zone	Зациклить зону
+	Loop Selected Clip	Зациклить выбранный клип
+	Set Playback Speed	Задать скорость воспроизведения
+	Focus Timecode	Фокус на тайм-код
+	Align Playhead to Mouse Position	Выровнять курсор воспроизведения по мыши
+	Switch Monitor Fullscreen	Переключить монитор на весь экран
+	Show Monitor in Its Own Window	Показать монитор в отдельном окне
+	Monitor Info Overlay	Информационное наложение монитора
+	Playback FPS	FPS воспроизведения
+	Change Overlay	Сменить наложение
+	No Guide Pattern	Без шаблона направляющих
+	Rule of Thirds	Правило третей
+	Center Cross	Центральный крест
+	Diagonals	Диагонали
+	Grid	Сетка
+	Golden Ratio	Золотое сечение
+	Move Overlay Toolbar	Переместить панель наложения
+	Always Show Audio Thumbnails	Всегда показывать аудиоминиатюры
+	Show Source Timecode	Показывать тайм-код источника
+	Multitrack View	Многодорожечный вид
+	Monitor Overlay	Наложение монитора
+	Monitor Config	Настройка монитора
+	Guide Pattern	Шаблон направляющих
+	Go to Next Snap Point	Перейти к следующей точке привязки
+	Go to Previous Snap Point	Перейти к предыдущей точке привязки
+	Forward 1 Second	Вперёд на 1 секунду
+	Rewind 1 Second	Назад на 1 секунду
+	Detect Jog Shuttle	Обнаружить джог-шаттл
+	Extract Zone	Извлечь зону
+	Extract Zone…	Извлечь зону…
+	Play Backwards (J)	Воспроизвести назад (J)
+	Fast Forward (L)	Перемотка вперёд (L)
+	Play Zone	Воспроизвести зону
+	(full screen)	(во весь экран)
+	(in its own window)	(в отдельном окне)
+	Program Monitor	Монитор программы
+	Source Monitor	Монитор источника
+	{fps} fps	{fps} кадр/с
+	Marker	Маркер
+	Go to Previous Keyframe	Перейти к предыдущему ключевому кадру
+	Add Keyframe	Добавить ключевой кадр
+	Go to Next Keyframe	Перейти к следующему ключевому кадру
+	Automatic Keyframes	Автоматические ключевые кадры
+	Go to Marker	Перейти к маркеру
+	(no markers)	(нет маркеров)
+	Write the Source Monitor's zone (In to Out) to a new file.	Записать зону монитора источника (от входа до выхода) в новый файл.
+	File:	Файл:
+	Add clip to project	Добавить клип в проект
+	Extracting the zone…	Извлечение зоны…
+	(no video tracks)	(нет видеодорожек)
+	Add Project Note	Добавить заметку проекта
+	Go to this frame	Перейти к этому кадру
+	Jog Shuttle	Джог-шаттл
+	Enable jog shuttle	Включить джог-шаттл
+	Device path	Путь к устройству
+	Detect	Обнаружить
+	Button 1	Кнопка 1
+	Button 2	Кнопка 2
+	Button 3	Кнопка 3
+	Button 4	Кнопка 4
+	Button 5	Кнопка 5
+	Button 6	Кнопка 6
+	Button 7	Кнопка 7
+	Button 8	Кнопка 8
+	Button 9	Кнопка 9
+	Button 10	Кнопка 10
+	Button 11	Кнопка 11
+	Button 12	Кнопка 12
+	Button 13	Кнопка 13
+	Button 14	Кнопка 14
+	Button 15	Кнопка 15
+	GPU processing of effects in the Program Monitor	Обработка эффектов на GPU в мониторе программы
+	Play/pause on monitor click	Воспроизведение/пауза щелчком по монитору
+	Custom monitor background	Свой фон монитора
+	Monitor background color	Цвет фона монитора
+	Monitor overlay color	Цвет наложения монитора
+	Screen used for full screen monitor	Экран для монитора во весь экран
+	Mirror the monitor while it is full screen	Дублировать монитор во весь экран
+	This screen	Этот экран
+	Screen to the left	Экран слева
+	Screen to the right	Экран справа
+	Screen above	Экран сверху
+	Screen below	Экран снизу
+	Each button runs the command id typed beside it (for example playback.toggle, markers.markIn, playhead.nextSnap; see Keyboard Shortcuts). The jog wheel steps frames and the shuttle ring plays at up to 10x either way.	Каждая кнопка выполняет введённый рядом идентификатор команды (например playback.toggle, markers.markIn, playhead.nextSnap; см. Сочетания клавиш). Колесо джог шагает по кадрам, а кольцо шаттл воспроизводит до 10x в обе стороны.

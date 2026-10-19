@@ -1018,3 +1018,87 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	Cache
 	ClipJobs	Tarefas de clipe
+	Loop Zone	Repetir zona
+	Loop Selected Clip	Repetir clipe selecionado
+	Set Playback Speed	Definir velocidade de reprodução
+	Focus Timecode	Focar timecode
+	Align Playhead to Mouse Position	Alinhar indicador à posição do mouse
+	Switch Monitor Fullscreen	Alternar monitor em tela cheia
+	Show Monitor in Its Own Window	Mostrar monitor em janela própria
+	Monitor Info Overlay	Sobreposição de informações do monitor
+	Playback FPS	FPS de reprodução
+	Change Overlay	Alterar sobreposição
+	No Guide Pattern	Sem padrão de guias
+	Rule of Thirds	Regra dos terços
+	Center Cross	Cruz central
+	Diagonals	Diagonais
+	Grid	Grade
+	Golden Ratio	Proporção áurea
+	Move Overlay Toolbar	Mover barra de sobreposição
+	Always Show Audio Thumbnails	Sempre mostrar miniaturas de áudio
+	Show Source Timecode	Mostrar timecode de origem
+	Multitrack View	Visualização multipista
+	Monitor Overlay	Sobreposição do monitor
+	Monitor Config	Configuração do monitor
+	Guide Pattern	Padrão de guias
+	Go to Next Snap Point	Ir para o próximo ponto de encaixe
+	Go to Previous Snap Point	Ir para o ponto de encaixe anterior
+	Forward 1 Second	Avançar 1 segundo
+	Rewind 1 Second	Voltar 1 segundo
+	Detect Jog Shuttle	Detectar jog shuttle
+	Extract Zone	Extrair zona
+	Extract Zone…	Extrair zona…
+	Play Backwards (J)	Reproduzir para trás (J)
+	Fast Forward (L)	Avanço rápido (L)
+	Play Zone	Reproduzir zona
+	(full screen)	(tela cheia)
+	(in its own window)	(em janela própria)
+	Program Monitor	Monitor de programa
+	Source Monitor	Monitor de origem
+	{fps} fps	{fps} fps
+	Marker	Marcador
+	Go to Previous Keyframe	Ir para o quadro-chave anterior
+	Add Keyframe	Adicionar quadro-chave
+	Go to Next Keyframe	Ir para o próximo quadro-chave
+	Automatic Keyframes	Quadros-chave automáticos
+	Go to Marker	Ir para o marcador
+	(no markers)	(sem marcadores)
+	Write the Source Monitor's zone (In to Out) to a new file.	Grava a zona do monitor de origem (entrada a saída) em um novo arquivo.
+	File:	Arquivo:
+	Add clip to project	Adicionar clipe ao projeto
+	Extracting the zone…	Extraindo a zona…
+	(no video tracks)	(sem trilhas de vídeo)
+	Add Project Note	Adicionar nota do projeto
+	Go to this frame	Ir para este quadro
+	Jog Shuttle	Jog shuttle
+	Enable jog shuttle	Ativar jog shuttle
+	Device path	Caminho do dispositivo
+	Detect	Detectar
+	Button 1	Botão 1
+	Button 2	Botão 2
+	Button 3	Botão 3
+	Button 4	Botão 4
+	Button 5	Botão 5
+	Button 6	Botão 6
+	Button 7	Botão 7
+	Button 8	Botão 8
+	Button 9	Botão 9
+	Button 10	Botão 10
+	Button 11	Botão 11
+	Button 12	Botão 12
+	Button 13	Botão 13
+	Button 14	Botão 14
+	Button 15	Botão 15
+	GPU processing of effects in the Program Monitor	Processamento de efeitos na GPU no monitor de programa
+	Play/pause on monitor click	Reproduzir/pausar ao clicar no monitor
+	Custom monitor background	Fundo do monitor personalizado
+	Monitor background color	Cor de fundo do monitor
+	Monitor overlay color	Cor da sobreposição do monitor
+	Screen used for full screen monitor	Tela do monitor em tela cheia
+	Mirror the monitor while it is full screen	Espelhar o monitor em tela cheia
+	This screen	Esta tela
+	Screen to the left	Tela à esquerda
+	Screen to the right	Tela à direita
+	Screen above	Tela acima
+	Screen below	Tela abaixo
+	Each button runs the command id typed beside it (for example playback.toggle, markers.markIn, playhead.nextSnap; see Keyboard Shortcuts). The jog wheel steps frames and the shuttle ring plays at up to 10x either way.	Cada botão executa o id de comando digitado ao lado (por exemplo playback.toggle, markers.markIn, playhead.nextSnap; veja Atalhos de teclado). A roda jog avança quadros e o anel shuttle reproduz até 10x em ambos os sentidos.

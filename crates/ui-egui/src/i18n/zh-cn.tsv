@@ -4380,3 +4380,85 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	缓存
 	ClipJobs	剪辑任务
+	Loop Zone	循环区域
+	Loop Selected Clip	循环所选剪辑
+	Set Playback Speed	设置播放速度
+	Focus Timecode	聚焦时间码
+	Align Playhead to Mouse Position	将播放头对齐到鼠标位置
+	Switch Monitor Fullscreen	切换监视器全屏
+	Show Monitor in Its Own Window	在独立窗口中显示监视器
+	Monitor Info Overlay	监视器信息叠加
+	Playback FPS	播放帧率
+	Change Overlay	更改叠加
+	No Guide Pattern	无参考线图案
+	Rule of Thirds	三分法
+	Center Cross	中心十字
+	Diagonals	对角线
+	Golden Ratio	黄金分割
+	Move Overlay Toolbar	移动叠加工具栏
+	Always Show Audio Thumbnails	始终显示音频缩略图
+	Show Source Timecode	显示源时间码
+	Multitrack View	多轨视图
+	Monitor Overlay	监视器叠加
+	Monitor Config	监视器配置
+	Guide Pattern	参考线图案
+	Go to Next Snap Point	转到下一个吸附点
+	Go to Previous Snap Point	转到上一个吸附点
+	Forward 1 Second	前进 1 秒
+	Rewind 1 Second	后退 1 秒
+	Detect Jog Shuttle	检测飞梭
+	Extract Zone	提取区域
+	Extract Zone…	提取区域…
+	Play Backwards (J)	倒放 (J)
+	Fast Forward (L)	快进 (L)
+	Play Zone	播放区域
+	(full screen)	(全屏)
+	(in its own window)	(独立窗口)
+	Program Monitor	节目监视器
+	Source Monitor	源监视器
+	{fps} fps	{fps} fps
+	Go to Previous Keyframe	转到上一个关键帧
+	Add Keyframe	添加关键帧
+	Go to Next Keyframe	转到下一个关键帧
+	Automatic Keyframes	自动关键帧
+	Go to Marker	转到标记
+	(no markers)	(无标记)
+	Write the Source Monitor's zone (In to Out) to a new file.	将源监视器的区域(入点到出点)写入新文件。
+	File:	文件:
+	Add clip to project	将剪辑添加到项目
+	Extracting the zone…	正在提取区域…
+	(no video tracks)	(无视频轨道)
+	Add Project Note	添加项目备注
+	Go to this frame	转到此帧
+	Jog Shuttle	飞梭
+	Enable jog shuttle	启用飞梭
+	Device path	设备路径
+	Detect	检测
+	Button 1	按钮 1
+	Button 2	按钮 2
+	Button 3	按钮 3
+	Button 4	按钮 4
+	Button 5	按钮 5
+	Button 6	按钮 6
+	Button 7	按钮 7
+	Button 8	按钮 8
+	Button 9	按钮 9
+	Button 10	按钮 10
+	Button 11	按钮 11
+	Button 12	按钮 12
+	Button 13	按钮 13
+	Button 14	按钮 14
+	Button 15	按钮 15
+	GPU processing of effects in the Program Monitor	在节目监视器中用 GPU 处理效果
+	Play/pause on monitor click	单击监视器时播放/暂停
+	Custom monitor background	自定义监视器背景
+	Monitor background color	监视器背景颜色
+	Monitor overlay color	监视器叠加颜色
+	Screen used for full screen monitor	全屏监视器使用的屏幕
+	Mirror the monitor while it is full screen	全屏时镜像监视器
+	This screen	此屏幕
+	Screen to the left	左侧屏幕
+	Screen to the right	右侧屏幕
+	Screen above	上方屏幕
+	Screen below	下方屏幕
+	Each button runs the command id typed beside it (for example playback.toggle, markers.markIn, playhead.nextSnap; see Keyboard Shortcuts). The jog wheel steps frames and the shuttle ring plays at up to 10x either way.	每个按钮运行旁边输入的命令 ID(例如 playback.toggle、markers.markIn、playhead.nextSnap;参见键盘快捷键)。飞梭内圈逐帧步进,外圈可双向以最高 10 倍速播放。
