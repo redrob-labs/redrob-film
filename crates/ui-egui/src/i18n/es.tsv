@@ -3430,6 +3430,7 @@
 	Lines +/−	Líneas +/−
 	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	La salida de audio ha fallado: se reproduce sin sonido (revisa Ajustes ▸ Hardware de audio)
 	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	La salida de audio no responde: se reproduce sin sonido (revisa Ajustes ▸ Hardware de audio)
+	Audio output restored	Salida de audio restablecida
 	Clip Speed / Duration	Velocidad/duración del clip
 	Speed:	Velocidad:
 	Reverse Speed	Invertir velocidad

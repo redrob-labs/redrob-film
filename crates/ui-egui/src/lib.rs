@@ -215,6 +215,11 @@ pub struct Playback {
     /// The audio clock's last reading and when (egui time, s) it last moved: a device that stops
     /// consuming samples hands the clock back to the wall clock (see [`AUDIO_STALL_S`]).
     audio_seen: (u64, f64),
+    /// The audio output was lost during this play (stream error, stalled device, a device that
+    /// went away): when to try opening it again (egui time, s) and how many tries were made.
+    /// Unplugging headphones or a sound server restart then costs a moment of sound, not the
+    /// rest of the play.
+    audio_retry: Option<(f64, u8)>,
     /// Audio underruns for the current (or last) play (desktop: sound is mixed ahead).
     #[cfg(not(target_arch = "wasm32"))]
     pub audio_stats: std::sync::Arc<play_ahead::AudioStats>,
@@ -242,6 +247,12 @@ pub const AUDIO_STALL_S: f64 = 1.0;
 /// Bluetooth): measured here as a 1.5–2 s pause after the first callback, which the 1 s wait
 /// took for a stall, so every sequence played without sound.
 pub const AUDIO_START_STALL_S: f64 = 4.0;
+
+/// After the audio output is lost mid-play, the first try to open it again waits this long; each
+/// later try waits one step longer.
+pub const AUDIO_RETRY_S: f64 = 0.5;
+/// Tries to open a lost audio output again within one play before it stays silent.
+pub const AUDIO_RETRIES: u8 = 4;
 
 /// How long the audio clock may sit at `frames` (filled so far, at `sample_rate`) before the
 /// device counts as stalled: [`AUDIO_STALL_S`] for a device that never called back or has been
@@ -912,6 +923,7 @@ impl FilmcraftApp {
         self.playback.anchor_time = -1.0; // set when the preroll ends
         self.playback.preroll = Some(-1.0);
         self.playback.preroll_ready = false;
+        self.playback.audio_retry = None;
         if let Some(a) = self.audio.as_mut() {
             a.stop();
         }
@@ -1057,6 +1069,7 @@ impl FilmcraftApp {
             if let Some(audio) = self.audio.as_mut() {
                 audio.stop();
             }
+            self.playback.audio_retry = Some((now + AUDIO_RETRY_S, 0));
             log::warn!("audio output lost its playback clock; playing without sound");
             // the device's own note names the error (cpal's error callback) when it has one
             self.ui.status = self
@@ -1079,9 +1092,34 @@ impl FilmcraftApp {
                 if let Some(a) = self.audio.as_mut() {
                     a.stop();
                 }
+                self.playback.audio_retry = Some((now + AUDIO_RETRY_S, 0));
                 log::warn!("audio output stalled (no samples consumed for {stall:.1} s after {f} frames); playing without sound");
                 self.ui.status = tl!("Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)").into();
             }
+        }
+        // The output was lost earlier in this play: open it again (the device may be back, or the
+        // host's default may now be another device), from where the wall clock has got to.
+        if !self.playback.audio_clock
+            && let Some((at, tries)) = self.playback.audio_retry
+            && now >= at
+        {
+            let t = self.playback.anchor_tick + Tick::from_seconds_f64((now - self.playback.anchor_time) * self.playback.speed);
+            self.session.set_playhead(t);
+            self.playback.anchor_tick = t;
+            self.playback.anchor_time = now;
+            self.playback.audio_seen = (0, now);
+            self.start_audio();
+            self.playback.audio_retry = if self.playback.audio_clock || tries + 1 >= AUDIO_RETRIES {
+                None
+            } else {
+                Some((now + AUDIO_RETRY_S * f64::from(tries + 2), tries + 1))
+            };
+            if self.playback.audio_clock {
+                log::info!("audio output reopened after {} tries", tries + 1);
+                self.ui.status = tl!("Audio output restored").into();
+            }
+            ctx.request_repaint();
+            return;
         }
         let elapsed = match reading {
             Some((f, sr)) if self.playback.audio_clock && sr > 0 => f as f64 / sr as f64,

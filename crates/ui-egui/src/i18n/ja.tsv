@@ -3419,6 +3419,7 @@
 	Lines +/−	行数 +/−
 	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	オーディオ出力に失敗したため、無音で再生しています (「環境設定 ▸ オーディオハードウェア」を確認してください)
 	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	オーディオ出力が応答しないため、無音で再生しています (「環境設定 ▸ オーディオハードウェア」を確認してください)
+	Audio output restored	オーディオ出力が復帰しました
 	Clip Speed / Duration	クリップの速度 / 長さ
 	Speed:	速度:
 	Reverse Speed	逆再生する
