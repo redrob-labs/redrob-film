@@ -1042,3 +1042,23 @@
 	Could not export the vectorscope background: {error}	Não foi possível exportar o fundo do vectorscópio: {error}
 	Auto Refresh off: click to refresh	Atualização automática desligada: clique para atualizar
 	Audio Spectrum	Espectro de áudio
+# Kdenlive parity p03: proxy clips settings
+	Proxy Clips	Clipes proxy
+	Generate proxies on import for videos wider than	Gerar proxies ao importar vídeos mais largos que
+	Video width	Largura do vídeo
+	Proxy video resize (width, 0 = the profile's size)	Tamanho do vídeo proxy (largura, 0 = a do perfil)
+	Generate proxies on import for images wider than	Gerar proxies ao importar imagens mais largas que
+	Image width	Largura da imagem
+	Proxy image resize (width)	Tamanho da imagem proxy (largura)
+	Use the proxy files cameras record (GoPro, Sony, DJI)	Usar os arquivos proxy gravados pelas câmeras (GoPro, Sony, DJI)
+	Encoding profile	Perfil de codificação
+	Profile for clips with alpha channel	Perfil para clipes com canal alfa
+	Manage Proxy Profiles	Gerenciar perfis de proxy
+	New from Selected Profile	Novo a partir do perfil selecionado
+	New Profile	Novo perfil
+	Parameters	Parâmetros
+	Warning: parameters not allowed: {list}	Aviso: parâmetros não permitidos: {list}
+	Add Profile	Adicionar perfil
+	Saved the proxy profile {name}.	Perfil de proxy {name} salvo.
+	Deleted the proxy profile {name}.	Perfil de proxy {name} excluído.
+	Allowed parameters:	Parâmetros permitidos:

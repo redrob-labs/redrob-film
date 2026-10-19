@@ -4408,3 +4408,23 @@
 	Exported the vectorscope background to {path}	ベクトルスコープの背景を {path} に書き出しました
 	Could not export the vectorscope background: {error}	ベクトルスコープの背景を書き出せませんでした: {error}
 	Auto Refresh off: click to refresh	自動更新オフ: クリックで更新
+# Kdenlive parity p03: proxy clips settings
+	Proxy Clips	プロキシクリップ
+	Generate proxies on import for videos wider than	次の幅より大きいビデオの読み込み時にプロキシを生成
+	Video width	ビデオの幅
+	Proxy video resize (width, 0 = the profile's size)	プロキシビデオのサイズ (幅、0 = プロファイルのサイズ)
+	Generate proxies on import for images wider than	次の幅より大きい画像の読み込み時にプロキシを生成
+	Image width	画像の幅
+	Proxy image resize (width)	プロキシ画像のサイズ (幅)
+	Use the proxy files cameras record (GoPro, Sony, DJI)	カメラが記録するプロキシファイルを使用 (GoPro、Sony、DJI)
+	Encoding profile	エンコードプロファイル
+	Profile for clips with alpha channel	アルファチャンネル付きクリップのプロファイル
+	Manage Proxy Profiles	プロキシプロファイルを管理
+	New from Selected Profile	選択したプロファイルから新規作成
+	New Profile	新規プロファイル
+	Parameters	パラメーター
+	Warning: parameters not allowed: {list}	警告: 許可されていないパラメーター: {list}
+	Add Profile	プロファイルを追加
+	Saved the proxy profile {name}.	プロキシプロファイル {name} を保存しました。
+	Deleted the proxy profile {name}.	プロキシプロファイル {name} を削除しました。
+	Allowed parameters:	許可されているパラメーター:

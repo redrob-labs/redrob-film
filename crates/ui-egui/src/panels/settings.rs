@@ -666,6 +666,7 @@ fn custom(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft, name: &str
             );
         }
         "appearanceModes" => appearance_modes(app, ui, d),
+        "proxyProfiles" => proxy_profiles(app, ui, d),
         "redrobAccount" => {
             crate::account::settings_block(app, ui);
         }
@@ -689,6 +690,146 @@ fn custom(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft, name: &str
         }
         _ => {}
     }
+}
+
+/// The proxy profile editor of Manage Proxy Profiles (egui temp state).
+#[derive(Clone, Default)]
+struct ProfileEditor {
+    /// The profile being edited (None = a new one).
+    previous: Option<String>,
+    name: String,
+    params: String,
+    message: String,
+}
+
+/// A built-in preset as custom-profile parameters (the starting point of a new profile).
+fn preset_params(id: &str) -> String {
+    match redrob_film_engine::proxies::preset(id) {
+        Some(p) => {
+            let codec = if p.extension == "mp4" { "h264" } else { "prores" };
+            let mut s = format!("codec={codec} scale={}", p.scale);
+            if codec == "prores" {
+                s.push_str(&format!(" profile={}", p.prores));
+            }
+            if p.alpha {
+                s.push_str(" alpha=1");
+            }
+            s
+        }
+        None => String::new(),
+    }
+}
+
+/// Preferences ▸ Media ▸ Proxy Clips: the encoding profile, the profile for clips with alpha, and
+/// Manage Proxy Profiles (add from the selected, edit, delete; the allowed parameters).
+fn proxy_profiles(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft) {
+    let t = app.tokens;
+    let info = app.session.execute("media.proxyProfiles", json!({})).unwrap_or_default();
+    let mut opts: Vec<(String, String)> = Vec::new();
+    for v in info["builtin"].as_array().into_iter().flatten().chain(info["custom"].as_array().into_iter().flatten()) {
+        if let (Some(id), Some(l)) = (v["id"].as_str(), v["label"].as_str()) {
+            opts.push((id.to_string(), l.to_string()));
+        }
+    }
+    for (key, label, fallback) in [
+        ("media.proxyProfile", "Encoding profile", info["profile"].as_str().unwrap_or("")),
+        ("media.proxyAlphaProfile", "Profile for clips with alpha channel", info["alphaProfile"].as_str().unwrap_or("")),
+    ] {
+        let cur = choice_text(get(&d.values, key));
+        let cur = if cur.is_empty() { fallback.to_string() } else { cur };
+        ui.horizontal(|ui| {
+            field_label(ui, label);
+            if let Some(v) = combo(app, ui, key, &cur, &opts, 300.0) {
+                put(&mut d.values, key, json!(v));
+            }
+        });
+    }
+    let id = egui::Id::new("settings-proxy-profile-editor");
+    let mut ed: ProfileEditor = ui.ctx().data(|m| m.get_temp(id)).unwrap_or_default();
+    let tt = t;
+    group(ui, &tt, tl!("Manage Proxy Profiles"), |ui| {
+        for v in info["custom"].as_array().into_iter().flatten() {
+            let name = v["label"].as_str().unwrap_or("").to_string();
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(&name).size(12.5));
+                ui.label(RichText::new(v["params"].as_str().unwrap_or("")).size(11.5).color(tt.text_dim));
+                let e = ui.small_button(tl!("Edit"));
+                app.auto.add(&format!("settings.proxyProfiles.{name}.edit"), e.rect, "Edit");
+                if e.clicked() {
+                    ed = ProfileEditor { previous: Some(name.clone()), name: name.clone(), params: v["params"].as_str().unwrap_or("").to_string(), message: String::new() };
+                }
+                let r = ui.small_button(tl!("Delete"));
+                app.auto.add(&format!("settings.proxyProfiles.{name}.delete"), r.rect, "Delete");
+                if r.clicked() {
+                    ed.message = match app.session.execute("media.deleteProxyProfile", json!({"name": name})) {
+                        Ok(_) => tlf!("Deleted the proxy profile {name}.", name = name),
+                        Err(e) => e.to_string(),
+                    };
+                }
+            });
+        }
+        ui.horizontal(|ui| {
+            let r = ui.button(tl!("New from Selected Profile"));
+            app.auto.add("settings.proxyProfiles.new", r.rect, "New from Selected Profile");
+            if r.clicked() {
+                let sel = choice_text(get(&d.values, "media.proxyProfile"));
+                let sel = if sel.is_empty() { info["profile"].as_str().unwrap_or("").to_string() } else { sel };
+                let params = match sel.strip_prefix("custom:") {
+                    Some(n) => info["custom"].as_array().into_iter().flatten().find(|v| v["label"] == json!(n)).and_then(|v| v["params"].as_str()).unwrap_or("").to_string(),
+                    None => preset_params(&sel),
+                };
+                ed = ProfileEditor { previous: None, name: tl!("New Profile").to_string(), params, message: String::new() };
+            }
+        });
+        ui.horizontal(|ui| {
+            field_label(ui, tl!("Name"));
+            let r = ui.add(egui::TextEdit::singleline(&mut ed.name).desired_width(200.0));
+            app.auto.add("settings.proxyProfiles.name", r.rect, "Name");
+        });
+        ui.horizontal(|ui| {
+            field_label(ui, tl!("Parameters"));
+            let r = ui.add(egui::TextEdit::singleline(&mut ed.params).desired_width(360.0).hint_text("codec=prores profile=proxy width=640"));
+            app.auto.add("settings.proxyProfiles.params", r.rect, "Parameters");
+        });
+        // live check against the allowed parameters
+        let problems = redrob_film_engine::proxies::parse_profile(&ed.name, &ed.params).err();
+        if let Some(p) = &problems {
+            if !p.unknown.is_empty() {
+                let w = tlf!("Warning: parameters not allowed: {list}", list = p.unknown.join(", "));
+                let r = ui.label(RichText::new(&w).size(11.5).color(Color32::from_rgb(0xe0, 0xa0, 0x40)));
+                app.auto.add("settings.proxyProfiles.warning", r.rect, &w);
+            }
+            for e in &p.errors {
+                ui.label(RichText::new(e).size(11.5).color(Color32::from_rgb(0xe0, 0x60, 0x50)));
+            }
+        }
+        ui.horizontal(|ui| {
+            let r = ui.add_enabled(problems.is_none() && !ed.name.trim().is_empty(), egui::Button::new(if ed.previous.is_some() { tl!("Save Profile") } else { tl!("Add Profile") }));
+            app.auto.add("settings.proxyProfiles.save", r.rect, "Save Profile");
+            if r.clicked() {
+                let mut p = json!({"name": ed.name.trim(), "params": ed.params});
+                if let Some(prev) = &ed.previous {
+                    p["previous"] = json!(prev);
+                }
+                match app.session.execute("media.saveProxyProfile", p) {
+                    Ok(_) => {
+                        ed.message = tlf!("Saved the proxy profile {name}.", name = ed.name.trim());
+                        ed.previous = Some(ed.name.trim().to_string());
+                    }
+                    Err(e) => ed.message = e.to_string(),
+                }
+            }
+        });
+        if !ed.message.is_empty() {
+            note(ui, &tt, &ed.message);
+        }
+        let allowed: Vec<String> = info["allowedParams"].as_array().into_iter().flatten().map(|v| format!("{} = {}", v["key"].as_str().unwrap_or(""), v["values"].as_str().unwrap_or(""))).collect();
+        ui.label(RichText::new(tl!("Allowed parameters:")).size(11.5).color(tt.text_dim));
+        for a in allowed {
+            ui.label(RichText::new(a).size(11.0).color(tt.text_dim).monospace());
+        }
+    });
+    ui.ctx().data_mut(|m| m.insert_temp(id, ed));
 }
 
 fn rows(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft, list: &[Row]) {

@@ -1184,6 +1184,14 @@ fn build() -> Vec<CommandSpec> {
                     Value::Null
                 }
             };
+            // Preferences ▸ Media ▸ Proxy Clips: camera proxies and automatic proxies
+            let proxies = match crate::proxies::auto_proxies(s, &item_ids) {
+                Ok(v) => v,
+                Err(e) => {
+                    errors.push(format!("proxies: {e}"));
+                    Value::Null
+                }
+            };
             let mut out = if !ingest.is_null() {
                 json!({"items": ids, "sequences": sequences, "documents": reports, "errors": errors, "ingest": ingest})
             } else if reports.is_empty() {
@@ -1193,6 +1201,9 @@ fn build() -> Vec<CommandSpec> {
             };
             if !image_sequences.is_empty() {
                 out["imageSequences"] = json!(image_sequences);
+            }
+            if !proxies.is_null() {
+                out["proxies"] = proxies;
             }
             // Newly imported files may resolve paths the project already listed as offline
             // (issue #110): rebuild s.offline.missing so the "Media missing" badge clears, and drop

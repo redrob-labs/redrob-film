@@ -4420,3 +4420,23 @@
 	Exported the vectorscope background to {path}	Fondo del vectorscopio exportado a {path}
 	Could not export the vectorscope background: {error}	No se pudo exportar el fondo del vectorscopio: {error}
 	Auto Refresh off: click to refresh	Actualización automática desactivada: haga clic para actualizar
+# Kdenlive parity p03: proxy clips settings
+	Proxy Clips	Clips proxy
+	Generate proxies on import for videos wider than	Generar proxies al importar vídeos más anchos que
+	Video width	Ancho del vídeo
+	Proxy video resize (width, 0 = the profile's size)	Tamaño del vídeo proxy (ancho, 0 = el del perfil)
+	Generate proxies on import for images wider than	Generar proxies al importar imágenes más anchas que
+	Image width	Ancho de la imagen
+	Proxy image resize (width)	Tamaño de la imagen proxy (ancho)
+	Use the proxy files cameras record (GoPro, Sony, DJI)	Usar los archivos proxy que graban las cámaras (GoPro, Sony, DJI)
+	Encoding profile	Perfil de codificación
+	Profile for clips with alpha channel	Perfil para clips con canal alfa
+	Manage Proxy Profiles	Administrar perfiles de proxy
+	New from Selected Profile	Nuevo a partir del perfil seleccionado
+	New Profile	Perfil nuevo
+	Parameters	Parámetros
+	Warning: parameters not allowed: {list}	Advertencia: parámetros no permitidos: {list}
+	Add Profile	Añadir perfil
+	Saved the proxy profile {name}.	Se guardó el perfil de proxy {name}.
+	Deleted the proxy profile {name}.	Se eliminó el perfil de proxy {name}.
+	Allowed parameters:	Parámetros permitidos:

@@ -257,6 +257,35 @@ pub struct MediaPrefs {
     pub growing_refresh_seconds: u32,
     pub hardware_decoding: bool,
     pub prores_hardware_encoding: bool,
+    /// Proxy Clips: on import, make proxies of videos wider than `proxy_auto_video_width`
+    /// (needs Enable proxies).
+    pub proxy_auto_video: bool,
+    pub proxy_auto_video_width: u32,
+    /// Proxy video resize: the proxies' width in pixels (0 = the encoding profile's size).
+    pub proxy_video_width: u32,
+    /// Encoding profile of new proxies (a `proxies::PRESETS` id or `custom:<name>`; "" = default).
+    pub proxy_profile: String,
+    /// Encoding profile for clips with an alpha channel ("" = ProRes 4444, ¼ size).
+    pub proxy_alpha_profile: String,
+    /// Proxy Clips: on import, make proxies of stills wider than `proxy_auto_image_width`.
+    pub proxy_auto_image: bool,
+    pub proxy_auto_image_width: u32,
+    /// Proxy image resize: the width of still-image proxies in pixels.
+    pub proxy_image_width: u32,
+    /// External proxy clips: on import, attach the low-resolution files cameras record beside
+    /// their clips (GoPro `.LRV`, DJI `.LRF`, Sony `SUB/…S03.MP4`).
+    pub proxy_external: bool,
+    /// Custom proxy encoding profiles (Manage Proxy Profiles).
+    pub proxy_profiles: Vec<ProxyProfile>,
+}
+
+/// A user proxy encoding profile: a name and `key=value` parameters
+/// (`proxies::PROXY_PARAMS` lists the allowed keys).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ProxyProfile {
+    pub name: String,
+    pub params: String,
 }
 
 impl Default for MediaPrefs {
@@ -283,6 +312,16 @@ impl Default for MediaPrefs {
             growing_refresh_seconds: 60,
             hardware_decoding: true,
             prores_hardware_encoding: true,
+            proxy_auto_video: false,
+            proxy_auto_video_width: 1000,
+            proxy_video_width: 0,
+            proxy_profile: String::new(),
+            proxy_alpha_profile: String::new(),
+            proxy_auto_image: false,
+            proxy_auto_image_width: 2000,
+            proxy_image_width: 800,
+            proxy_external: false,
+            proxy_profiles: Vec::new(),
         }
     }
 }

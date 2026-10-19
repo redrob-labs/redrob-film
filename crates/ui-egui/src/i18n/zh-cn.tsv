@@ -4401,3 +4401,23 @@
 	Exported the vectorscope background to {path}	已将矢量示波器背景导出到 {path}
 	Could not export the vectorscope background: {error}	无法导出矢量示波器背景：{error}
 	Auto Refresh off: click to refresh	自动刷新已关闭：点击刷新
+# Kdenlive parity p03: proxy clips settings
+	Proxy Clips	代理剪辑
+	Generate proxies on import for videos wider than	导入宽度大于此值的视频时生成代理
+	Video width	视频宽度
+	Proxy video resize (width, 0 = the profile's size)	代理视频尺寸（宽度，0 = 配置文件的尺寸）
+	Generate proxies on import for images wider than	导入宽度大于此值的图像时生成代理
+	Image width	图像宽度
+	Proxy image resize (width)	代理图像尺寸（宽度）
+	Use the proxy files cameras record (GoPro, Sony, DJI)	使用摄像机录制的代理文件（GoPro、Sony、DJI）
+	Encoding profile	编码配置文件
+	Profile for clips with alpha channel	带 Alpha 通道剪辑的配置文件
+	Manage Proxy Profiles	管理代理配置文件
+	New from Selected Profile	基于所选配置文件新建
+	New Profile	新配置文件
+	Parameters	参数
+	Warning: parameters not allowed: {list}	警告：不允许的参数：{list}
+	Add Profile	添加配置文件
+	Saved the proxy profile {name}.	已保存代理配置文件 {name}。
+	Deleted the proxy profile {name}.	已删除代理配置文件 {name}。
+	Allowed parameters:	允许的参数：
