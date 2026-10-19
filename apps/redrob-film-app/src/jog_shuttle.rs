@@ -11,6 +11,9 @@
 //! The thread reads the preferences again every two seconds, so switching the shuttle off or
 //! choosing another device takes effect without a restart. Other systems do nothing here.
 
+// the reader runs on Linux only; elsewhere its helpers are compiled but unused
+#![cfg_attr(not(target_os = "linux"), allow(dead_code))]
+
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 
