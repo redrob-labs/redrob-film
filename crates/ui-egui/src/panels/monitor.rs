@@ -794,11 +794,70 @@ fn mini_timeline(
 ) {
     let t = app.tokens;
     let duration = end;
-    let dur = (end - origin).0.max(1) as f64;
-    let xof = |tk: Tick| bar.min.x + (((tk - origin).0 as f64 / dur) as f32).clamp(0.0, 1.0) * bar.width();
+    // Kdenlive's monitor ruler zoom: Ctrl / Cmd + the wheel over the ruler zooms it about the
+    // pointer; the zoom bar under a zoomed ruler is dragged to scroll, its ends to zoom, and a
+    // double-click on it shows the whole clip again
+    let zid = egui::Id::new((which as u8, "ruler-zoom"));
+    let (mut za, mut zb): (f64, f64) = ui.data(|d| d.get_temp(zid)).unwrap_or((0.0, 1.0));
+    if ui.rect_contains_pointer(bar)
+        && let Some(hp) = ui.ctx().pointer_hover_pos()
+    {
+        let wheel = crate::panels::timeline::wheel_input(ui.ctx());
+        if wheel.command && wheel.delta.y != 0.0 {
+            let span = zb - za;
+            let f = f64::from((1.0 - wheel.delta.y * 0.01).clamp(0.5, 2.0));
+            let at = za + span * f64::from(((hp.x - bar.min.x) / bar.width().max(1.0)).clamp(0.0, 1.0));
+            let ns = (span * f).clamp(0.001, 1.0);
+            za = (at - (at - za) * ns / span).clamp(0.0, 1.0 - ns);
+            zb = za + ns;
+        }
+    }
+    let zoomed = zb - za < 0.999;
+    let zbar = Rect::from_min_max(pos2(bar.min.x, bar.max.y), pos2(bar.max.x, bar.max.y + 4.0));
+    if zoomed {
+        let win = Rect::from_min_max(pos2(zbar.min.x + zbar.width() * za as f32, zbar.min.y), pos2(zbar.min.x + zbar.width() * zb as f32, zbar.max.y));
+        ui.painter().rect_filled(zbar, 1.0, t.tl_ruler_bg);
+        ui.painter().rect_filled(win, 1.0, t.text_dim);
+        let zr = ui.interact(zbar.expand2(vec2(0.0, 1.0)), egui::Id::new((which as u8, "ruler-zoom-bar")), Sense::click_and_drag());
+        app.auto.add(&format!("{}.rulerZoom", if which == Which::Program { "program" } else { "source" }), zbar, "ruler zoom bar");
+        let grab_id = egui::Id::new((which as u8, "ruler-zoom-grab"));
+        if zr.drag_started()
+            && let Some(o) = ui.input(|i| i.pointer.press_origin())
+        {
+            let g: u8 = if (o.x - win.min.x).abs() <= 4.0 {
+                0
+            } else if (o.x - win.max.x).abs() <= 4.0 {
+                1
+            } else {
+                2
+            };
+            ui.data_mut(|d| d.insert_temp(grab_id, g));
+        }
+        if zr.dragged() {
+            let dx = f64::from(zr.drag_delta().x / zbar.width().max(1.0));
+            match ui.data(|d| d.get_temp::<u8>(grab_id)).unwrap_or(2) {
+                0 => za = (za + dx).clamp(0.0, zb - 0.001),
+                1 => zb = (zb + dx).clamp(za + 0.001, 1.0),
+                _ => {
+                    let sp = zb - za;
+                    za = (za + dx).clamp(0.0, 1.0 - sp);
+                    zb = za + sp;
+                }
+            }
+        }
+        if zr.double_clicked() {
+            (za, zb) = (0.0, 1.0);
+        }
+    }
+    ui.data_mut(|d| d.insert_temp(zid, (za, zb)));
+    let full = (end - origin).0.max(1) as f64;
+    let vis0 = origin.0 as f64 + za * full;
+    let dur = ((zb - za) * full).max(1.0);
+    let xof = |tk: Tick| bar.min.x + (((tk.0 as f64 - vis0) / dur) as f32).clamp(0.0, 1.0) * bar.width();
     let resp = ui.interact(bar, egui::Id::new((which as u8, "scrub")), Sense::click_and_drag());
     app.auto.add(if which == Which::Program { "program.scrubBar" } else { "source.scrubBar" }, bar, "scrub bar");
-    let interaction = crate::panels::source_range::interact(app, ui, bar, which);
+    // dragging the marked range works on the whole ruler (a zoomed one scrubs only)
+    let interaction = if zoomed { crate::panels::source_range::Interaction::default() } else { crate::panels::source_range::interact(app, ui, bar, which) };
     let p = ui.painter();
     // ticks: minor 4 pt, major 10 pt, ~20 pt spacing
     let n = ((bar.width() / 20.0) as i32).max(2);
@@ -879,7 +938,7 @@ fn mini_timeline(
         if !interaction.handled && (resp.dragged() || resp.clicked()) {
             resp.interact_pointer_pos().map(|pos| {
                 let f = ((pos.x - bar.min.x) / bar.width().max(1.0)).clamp(0.0, 1.0) as f64;
-                rate.snap(origin + Tick((f * dur) as i64))
+                rate.snap(Tick((vis0 + f * dur) as i64).max(origin))
             })
         } else {
             None
