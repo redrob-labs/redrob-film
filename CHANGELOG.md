@@ -13,6 +13,8 @@
 - Audio: an output that is lost during playback (stream error, stalled or unplugged device) is
   opened again (up to 4 tries per play) while playback continues on the wall clock; a reopened
   device takes the clock back only once it actually consumes samples.
+- Audio (Linux, Windows): a silent stream keeps the output awake between plays, so a sound server
+  that suspended the idle device no longer holds the first picture of a play for ~0.9 s.
 - Previews: render previews stay ProRes 422 HQ by default; the lighter flavours are explicit
   choices in Sequence Settings.
 
