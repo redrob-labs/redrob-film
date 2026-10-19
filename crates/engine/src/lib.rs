@@ -12,6 +12,8 @@
 
 pub mod aaf_omf;
 pub mod archive;
+pub mod backups;
+pub mod cache_manager;
 pub mod autosave;
 pub mod captions;
 pub mod clip_ops;
@@ -426,6 +428,10 @@ pub struct Session {
     pub post_exports: Vec<render_jobs::PostExport>,
     /// An export asked to shut the computer down once every export has finished.
     pub shutdown_armed: bool,
+    /// The window layout the frontend keeps up to date, saved with the project's view.
+    pub ui_layout: Option<Value>,
+    /// The layout of a project just opened, for the frontend to apply (it takes it).
+    pub restored_layout: Option<Value>,
 }
 
 /// An export advanced a batch at a time on the host's thread ([`Session::pump_jobs`]).
@@ -519,6 +525,8 @@ impl Session {
             media_scan: None,
             post_exports: Vec::new(),
             shutdown_armed: false,
+            ui_layout: None,
+            restored_layout: None,
         }
     }
 
@@ -770,6 +778,7 @@ impl Session {
             active_sequence: self.state.active_sequence.filter(is_seq),
             sequences: self.state.timeline_views.iter().filter(|(id, _)| is_seq(id)).map(|(id, v)| (*id, *v)).collect(),
             playheads: self.state.playheads.iter().filter(|(id, _)| is_seq(id)).map(|(id, t)| (*id, *t)).collect(),
+            layout: self.ui_layout.clone(),
         }
     }
 
@@ -779,6 +788,8 @@ impl Session {
     /// view without any open sequence leaves the project on its first sequence: a project saved
     /// by a session that never showed one (a script, the CLI) should not open on an empty Timeline.
     pub fn restore_project_view(&mut self, view: redrob_film_project::ProjectView) {
+        // the frontend applies the window layout (and takes it from here)
+        self.restored_layout = view.layout.clone().filter(Value::is_object);
         let mut open: Vec<ItemId> = Vec::new();
         for id in view.open_sequences {
             if self.project.sequence(id).is_some() && !open.contains(&id) {

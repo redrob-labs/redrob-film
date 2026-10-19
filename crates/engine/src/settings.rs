@@ -675,7 +675,12 @@ const fn float(min: f64, max: f64, decimals: usize, unit: &'static str) -> Kind 
     Kind::Float { min, max, decimals, unit }
 }
 
-const STARTUP: &[(&str, &str)] = &[("showHome", "Show Home"), ("openMostRecent", "Open Most Recent"), ("emptyProject", "Start with an Empty Project")];
+const STARTUP: &[(&str, &str)] = &[
+    ("showHome", "Show Home"),
+    ("showWelcome", "Show Welcome Screen"),
+    ("openMostRecent", "Open Most Recent"),
+    ("emptyProject", "Start with an Empty Project"),
+];
 const OPENING: &[(&str, &str)] = &[("showOpenDialog", "Show Open Dialog"), ("showHome", "Show Home")];
 const BIN_OPEN: &[(&str, &str)] = &[("openInPlace", "Open in place"), ("openNewTab", "Open new tab"), ("openNewWindow", "Open in new window")];
 const PROJECT_OPEN: &[(&str, &str)] = &[("openNewTab", "Open new tab"), ("openNewWindow", "Open in new window")];
@@ -742,6 +747,7 @@ const CACHE_MGMT: &[(&str, &str)] = &[
     ("never", "Do not delete cache files automatically"),
     ("olderThan", "Automatically delete cache files older than"),
     ("exceedsSize", "Automatically delete oldest cache files when cache exceeds"),
+    ("warnSize", "Warn when the cache exceeds"),
 ];
 const AUTO_SCROLL: &[(&str, &str)] = &[("noScroll", "No Scroll"), ("pageScroll", "Page Scroll"), ("smoothScroll", "Smooth Scroll")];
 const MOUSE_SCROLL: &[(&str, &str)] = &[("vertical", "Vertical"), ("horizontal", "Horizontal")];
@@ -1033,6 +1039,7 @@ static CATEGORIES: &[Category] = &[
                     b("mediaCache.saveNextToMedia", "Save .cfa and .pek media cache files next to original media files when possible", false),
                     Row::Button { id: "mediaCache.clean", label: "Delete…", command: "mediaCache.clean" },
                     Row::Custom("mediaCacheInfo"),
+                    Row::Custom("cacheManager"),
                 ],
             ),
             Row::Group("Media Cache Database", &[f("mediaCache.databaseLocation", "Location", Kind::Path, false)]),
@@ -1041,7 +1048,7 @@ static CATEGORIES: &[Category] = &[
                 &[
                     f("mediaCache.management", "Policy", Kind::Choice(CACHE_MGMT), true),
                     f("mediaCache.olderThanDays", "Delete files older than", int(1.0, 3650.0, "days"), true),
-                    f("mediaCache.maxSizeGb", "Delete oldest files when the cache exceeds", int(1.0, 100_000.0, "GB"), true),
+                    f("mediaCache.maxSizeGb", "Delete oldest files (or warn) when the cache exceeds", int(1.0, 100_000.0, "GB"), true),
                 ],
             ),
             Row::Note(
@@ -1487,6 +1494,20 @@ impl Session {
         }
         let keep = self.previews.dir();
         enforce_policy(&dir, &self.prefs.media_cache, keep.as_deref(), std::time::SystemTime::now());
+        // Warn when the cache exceeds: nothing is deleted, the user is told (Manage Cached Data)
+        if self.prefs.media_cache.management == "warnSize" {
+            let (bytes, _) = cache_usage(&dir);
+            let limit = u64::from(self.prefs.media_cache.max_size_gb) * 1_000_000_000;
+            if bytes > limit {
+                let msg = format!(
+                    "The media cache uses {} (over the {} GB warning size): Settings ▸ Media Cache ▸ Manage Cached Data… frees space",
+                    redrob_film_export::format_bytes(bytes),
+                    self.prefs.media_cache.max_size_gb
+                );
+                self.log.push(crate::panels::Level::Warning, "mediaCache", msg.clone());
+                self.events.push(crate::Event::Toast { message: msg, error: false });
+            }
+        }
     }
 
     /// Note a project file as the most recent one (General ▸ At Startup ▸ Open Most Recent).

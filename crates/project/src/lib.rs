@@ -1310,6 +1310,10 @@ pub struct ProjectView {
     /// written before it existed have none, and every playhead starts at zero as it did then.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub playheads: BTreeMap<ItemId, Tick>,
+    /// The window layout when the project was saved (`{"workspace": name, "dock": tree}`, as the
+    /// frontend writes it), restored when the project opens. Opaque here.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub layout: Option<serde_json::Value>,
 }
 
 impl ProjectView {

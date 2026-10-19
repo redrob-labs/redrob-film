@@ -172,6 +172,10 @@ pub fn targets_source(app: &FilmcraftApp, params: &Value) -> bool {
 
 /// Execute a UI or engine command by id.
 pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params: Value) -> Result<Value, String> {
+    // the window layout goes into the project file's view (restored when it opens)
+    if matches!(id, "file.save" | "file.saveAs" | "file.saveCopy") {
+        app.session.ui_layout = Some(json!({"workspace": app.ui.workspace, "dock": serde_json::to_value(&app.ui.dock).unwrap_or_default()}));
+    }
     if redrob_film_engine::source_monitor::source_command(id) && targets_source(app, &params) && params.get("target").is_none() {
         let object = params.as_object_mut().ok_or("command parameters must be an object")?;
         object.insert("target".into(), json!("source"));

@@ -1707,6 +1707,15 @@ impl FilmcraftApp {
                 redrob_film_engine::Event::ProjectChanged { .. } => {}
             }
         }
+        // a project just opened brings the window layout it was saved with
+        if let Some(l) = self.session.restored_layout.take() {
+            if let Ok(d) = serde_json::from_value::<crate::dock::DockNode>(l["dock"].clone()) {
+                self.ui.dock = d;
+            }
+            if let Some(w) = l["workspace"].as_str() {
+                self.ui.workspace = w.to_string();
+            }
+        }
         self.sync_timeline_view();
         self.handle_drops(&ctx);
         if let Some(rx) = self.command_inbox.take() {

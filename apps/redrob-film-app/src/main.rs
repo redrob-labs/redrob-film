@@ -183,6 +183,7 @@ fn main() -> eframe::Result {
             // voice-over recording reads the microphone through cpal
             session.voiceover.input = Some(Box::new(audio_in::CpalIn::new(&session.prefs.audio_hardware.device_class)));
             let project = files.iter().find(|f| f.ends_with(".rfilm") || f.ends_with(".fcproj")).cloned(); // legacy: .fcproj still opens
+            let project_given = project.clone();
             if let Some(p) = project {
                 if let Err(e) = session.execute("file.open", json!({"path": p})) {
                     log::error!("{e}");
@@ -200,7 +201,7 @@ fn main() -> eframe::Result {
                         let _ = session.execute("file.openDemoProject", json!({}));
                     }
                 }
-            } else if !startup_flag && session.prefs.general.at_startup == "emptyProject" {
+            } else if !startup_flag && matches!(session.prefs.general.at_startup.as_str(), "emptyProject" | "showWelcome") {
             } else if demo {
                 let _ = session.execute("file.openDemoProject", json!({}));
             }
@@ -219,6 +220,8 @@ fn main() -> eframe::Result {
             if recover == Some(false) {
                 app.dialog = None;
             }
+            // Settings ▸ General ▸ At Startup ▸ Show Welcome Screen
+            app.ui.extras.welcome = project_given.is_none() && !startup_flag && app.session.prefs.general.at_startup == "showWelcome";
             app.integrated_titlebar = cfg!(target_os = "macos");
             if let Some(rs) = cc.wgpu_render_state.clone()
                 && std::env::var_os("REDROB_FILM_CPU_COMPOSITE").is_none()
