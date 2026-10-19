@@ -19,7 +19,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | G3 | 10-bit and 4:2:2 camera media needs hardware | codec | yes | 30–50 h |
 | G4 | Crashes at start-up, and no test CI on pull requests | stability | yes | 40–80 h |
 | G5 | Hardware acceleration is partial | hardware | partly | 120–200 h |
-| G6 | Real-world media corpus: harness and nightly job in, not yet green or pinned | measurement | yes | 20–40 h |
+| G6 | Real-world media corpus: harness in, not yet green or pinned | measurement | yes | 20–40 h |
 | G7 | No measured parity tool in CI | measurement | no | 10–20 h |
 | G8 | UI fidelity: monitor handles, Effect Controls, docking | UI / UX | partly | 120–200 h |
 | G9 | Windows and Linux at run time | platforms | partly | 50–90 h |
@@ -145,9 +145,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   says whether the round trip must pass, must fail with an error, or is only reported (known G3 /
   G10 gaps, open issues). `crates/engine/src/corpus_tests.rs` runs every present file through
   import → razor → move → effect → export and checks duration, frame count, audio and a clean
-  decode with ffprobe / ffmpeg; `.github/workflows/nightly-corpus.yml` generates the small tier
-  and runs it nightly.
-- **Missing:** a first green nightly run (the harness has not run yet, so the `pass` / `report`
+  decode with ffprobe / ffmpeg; `scripts/corpus.py generate` makes the small tier, and the
+  harness is run by hand before a release (no scheduled CI job).
+- **Missing:** a first green run (the harness has not run yet, so the `pass` / `report`
   labels are a starting guess to correct from its log); the 8 real originals and their sha256
   pins; pinned hashes for the generated tier (ffmpeg output differs between builds, so only the
   size limit is enforced); scripted MCP sessions that do real jobs end to end.
@@ -156,7 +156,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   in #361, reporters not yet confirmed); bitrate target produced 6.1 Mb/s for 40 (#371). Each has
   a corpus entry carrying its issue number.
 - **Done when:** corpus fetched pinned and sha256-verified (as PhotoCraft's `cargo xtask corpus`,
-  craftrules `standards/test-corpora.md`), runs nightly, ≥ 50 files. **20–40 h left.**
+  craftrules `standards/test-corpora.md`), runs green before each release, ≥ 50 files. **20–40 h left.**
 
 ## G7. No measured parity tool in CI
 
@@ -307,4 +307,4 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 |---|---|---|
 | 2026-10-10 | major | Created from ROADMAP.md's "Where we are lacking" (2026-10-05); re-ranked against Premiere 26.5.2 and the 188 open issues; added `.prproj`, 10-bit / 4:2:2 camera decode, launch crashes and missing PR CI, localization, delivery formats |
 | 2026-10-19 | minor | 0.4.0: G16 idle repaint fix and G17 audio reopen / keep-alive recorded with measured numbers (Linux); G20 marked closed in the table; FilmCraft → Redrob Film in the prose |
-| 2026-10-19 | minor | G6: real-world media corpus manifest (106 entries), generator, engine acceptance harness and nightly workflow; left: a green run, real originals, pins |
+| 2026-10-19 | minor | G6: real-world media corpus manifest (106 entries), generator, engine acceptance harness (run by hand); left: a green run, real originals, pins |

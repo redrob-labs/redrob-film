@@ -150,12 +150,7 @@ fn write_log(summary: &str) {
     let os = OS.lock().unwrap_or_else(|e| e.into_inner()).clone().unwrap_or_else(|| format!("{} ({})", std::env::consts::OS, std::env::consts::ARCH));
     let gpu = GPU.lock().unwrap_or_else(|e| e.into_inner()).clone().unwrap_or_else(|| "not chosen yet".into());
     if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
-        let _ = writeln!(
-            f,
-            "=== {} Redrob Film {} (unix {secs})\nOS: {os}\nGPU: {gpu}\n{summary}\n{bt}\n",
-            env!("CARGO_PKG_NAME"),
-            env!("CARGO_PKG_VERSION")
-        );
+        let _ = writeln!(f, "=== {} Redrob Film {} (unix {secs})\nOS: {os}\nGPU: {gpu}\n{summary}\n{bt}\n", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
         // the next start says where this report is (`take_pending_report`)
         if let Some(d) = path.parent() {
             mark_pending(d, &path);

@@ -404,9 +404,8 @@ fn attempts(
     push(&mut out, wanted.clone(), cpal::BufferSize::Default);
     let base = default.unwrap_or_else(|| wanted.clone());
     push(&mut out, base.clone(), cpal::BufferSize::Default);
-    let like = |channels: u16, rate: u32, format: cpal::SampleFormat| {
-        cpal::SupportedStreamConfig::new(channels, cpal::SampleRate(rate), *base.buffer_size(), format)
-    };
+    let like =
+        |channels: u16, rate: u32, format: cpal::SampleFormat| cpal::SupportedStreamConfig::new(channels, cpal::SampleRate(rate), *base.buffer_size(), format);
     let rate = base.sample_rate().0;
     push(&mut out, like(base.channels(), rate, cpal::SampleFormat::F32), cpal::BufferSize::Default);
     push(&mut out, like(2, rate, cpal::SampleFormat::F32), cpal::BufferSize::Default);

@@ -272,14 +272,7 @@ impl H264Decoder {
             let v = tight_plane(p.v, p.uv_stride, cw, ch);
             redrob_film_frame::PixelData::Yuv8 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma, alpha: None }
         };
-        let frame = VideoFrame {
-            width: p.width,
-            height: p.height,
-            data,
-            color,
-            par,
-            pts: redrob_film_time::Tick::ZERO,
-        };
+        let frame = VideoFrame { width: p.width, height: p.height, data, color, par, pts: redrob_film_time::Tick::ZERO };
         DecodedFrame { pts: p.pts, frame, draft }
     }
 }

@@ -365,9 +365,7 @@ impl Decoder {
         let Some(pending) = self.pending.as_mut() else {
             return invalid("slice without a started picture");
         };
-        let refs = self
-            .dpb
-            .build_ref_lists(&sh, pending.poc.frame(), sps.max_frame_num(), |e| (e.frame.clone(), e.mark == RefMark::Long))?;
+        let refs = self.dpb.build_ref_lists(&sh, pending.poc.frame(), sps.max_frame_num(), |e| (e.frame.clone(), e.mark == RefMark::Long))?;
         if !sh.slice_type.is_intra() {
             ensure!(!refs[0].is_empty(), "no reference pictures available for inter slice");
             if sh.slice_type.is_b() {
@@ -406,9 +404,7 @@ impl Decoder {
         // Activate SPS; a resolution change flushes the DPB.
         let changed = match &self.active_sps {
             None => true,
-            Some(a) => {
-                a.width() != sps.width() || a.height() != sps.height() || a.max_dpb_frames() != sps.max_dpb_frames() || sps_format(a) != sps_format(sps)
-            }
+            Some(a) => a.width() != sps.width() || a.height() != sps.height() || a.max_dpb_frames() != sps.max_dpb_frames() || sps_format(a) != sps_format(sps),
         };
         if changed && self.active_sps.is_some() {
             let mut outs = Vec::new();
@@ -439,7 +435,8 @@ impl Decoder {
                 let mut make = |_fnum: u32| {
                     let id = *next_id;
                     *next_id += 1;
-                    let frame = if fmt.high() { gap_frame::<u16>(last.as_ref(), id, mb_w, mb_h, fmt) } else { gap_frame::<u8>(last.as_ref(), id, mb_w, mb_h, fmt) };
+                    let frame =
+                        if fmt.high() { gap_frame::<u16>(last.as_ref(), id, mb_w, mb_h, fmt) } else { gap_frame::<u8>(last.as_ref(), id, mb_w, mb_h, fmt) };
                     (frame, 0, meta.clone())
                 };
                 let mut upd = |fnum: u32| poc_state.update_gap_frame(fnum, sps);

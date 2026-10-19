@@ -244,11 +244,11 @@ mod tests {
     #[test]
     fn adapters_are_ordered_hardware_first_and_software_first_in_safe_mode() {
         let list = [
-            c(DeviceType::Cpu, true, false),            // 0: WARP / llvmpipe
-            c(DeviceType::IntegratedGpu, false, false), // 1
-            c(DeviceType::DiscreteGpu, false, true),    // 2: discrete, OpenGL
-            c(DeviceType::DiscreteGpu, false, false),   // 3: discrete, Vulkan / DX12 / Metal
-            c(DeviceType::Other, true, false),          // 4: llvmpipe reporting "Other"
+            c(DeviceType::Cpu, true, false),                                           // 0: WARP / llvmpipe
+            c(DeviceType::IntegratedGpu, false, false),                                // 1
+            c(DeviceType::DiscreteGpu, false, true),                                   // 2: discrete, OpenGL
+            c(DeviceType::DiscreteGpu, false, false),                                  // 3: discrete, Vulkan / DX12 / Metal
+            c(DeviceType::Other, true, false),                                         // 4: llvmpipe reporting "Other"
             Candidate { presents: false, ..c(DeviceType::DiscreteGpu, false, false) }, // 5: cannot draw to the window
         ];
         assert_eq!(order(&list, false), [3, 2, 1, 0, 4]);

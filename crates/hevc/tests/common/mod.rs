@@ -337,7 +337,8 @@ pub fn check_fixture(name: &str) -> Result<bool, String> {
                 return Err(format!("{name} (threads {threads}): decode error at access unit {au}: {e} (after {} pictures) {cmp}", partial.len()));
             }
         };
-        compare_fmt(&pics, &reference, f.width as usize, f.height as usize, f.bit_depth, f.chroma422).map_err(|e| format!("{name} (threads {threads}): {e}"))?;
+        compare_fmt(&pics, &reference, f.width as usize, f.height as usize, f.bit_depth, f.chroma422)
+            .map_err(|e| format!("{name} (threads {threads}): {e}"))?;
         check_pts(&pics).map_err(|e| format!("{name} (threads {threads}): {e}"))?;
         if pics.iter().any(|p| p.draft) {
             return Err(format!("{name} (threads {threads}): picture flagged draft without draft mode"));

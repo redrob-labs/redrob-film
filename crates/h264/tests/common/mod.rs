@@ -597,7 +597,9 @@ pub fn compare_fmt(pics: &[Picture], reference: &[u8], w: usize, h: usize, pix_f
     let (sub_h, bytes) = raw_layout(pix_fmt);
     let (cw, ch) = (w.div_ceil(2), h.div_ceil(sub_h));
     let fsize = (w * h + 2 * cw * ch) * bytes;
-    let raw = |b: &[u8]| -> Vec<u16> { if bytes == 2 { b.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect() } else { b.iter().map(|&v| v as u16).collect() } };
+    let raw = |b: &[u8]| -> Vec<u16> {
+        if bytes == 2 { b.as_chunks::<2>().0.iter().map(|c| u16::from_le_bytes(*c)).collect() } else { b.iter().map(|&v| v as u16).collect() }
+    };
     let nref = reference.len() / fsize;
     for (i, p) in pics.iter().enumerate() {
         if i >= nref {

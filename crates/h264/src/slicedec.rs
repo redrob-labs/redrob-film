@@ -236,7 +236,18 @@ pub struct SliceDecoder<'a, T> {
 /// and the corresponding chroma blocks into `c` (stride `cs`).
 #[allow(clippy::too_many_arguments)]
 #[inline]
-fn predict_block<T: Sample>(f: &Frame<T>, mv: [i16; 2], px: usize, py: usize, bw: usize, bh: usize, y: (&mut [T], usize), c: [&mut [T]; 2], cs: usize, max_y: i32) {
+fn predict_block<T: Sample>(
+    f: &Frame<T>,
+    mv: [i16; 2],
+    px: usize,
+    py: usize,
+    bw: usize,
+    bh: usize,
+    y: (&mut [T], usize),
+    c: [&mut [T]; 2],
+    cs: usize,
+    max_y: i32,
+) {
     const LW: usize = 24;
     let mut win = [T::default(); LW * 21];
     let ix = px as i32 + (mv[0] as i32 >> 2);
@@ -790,7 +801,18 @@ impl<'a, T: Sample> SliceDecoder<'a, T> {
             let l = if use0 { 0 } else { 1 };
             let f = &self.refs[l][refs[l] as usize].frame;
             let planes = &mut self.pic.planes;
-            predict_block(f, mvs[l], px, py, bw, bh, (&mut planes.y[py * ys + px..], ys), [&mut planes.cb[cy * cs + cx..], &mut planes.cr[cy * cs + cx..]], cs, max_y);
+            predict_block(
+                f,
+                mvs[l],
+                px,
+                py,
+                bw,
+                bh,
+                (&mut planes.y[py * ys + px..], ys),
+                [&mut planes.cb[cy * cs + cx..], &mut planes.cr[cy * cs + cx..]],
+                cs,
+                max_y,
+            );
             return;
         }
         let s = &mut *self.s;

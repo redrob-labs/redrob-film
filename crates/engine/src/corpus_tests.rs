@@ -10,8 +10,8 @@
 //! Expectations come from the manifest: `pass` must succeed, `error` must fail with an error,
 //! `report` only prints its outcome. A panic fails every expectation. Absent files are skipped
 //! by name; without a corpus directory the test skips. The small tier is made by
-//! `scripts/corpus.py generate --out target/corpus` and runs nightly
-//! (`.github/workflows/nightly-corpus.yml`).
+//! `scripts/corpus.py generate --out target/corpus`; the harness is run by hand before a
+//! release (no scheduled CI job).
 //!
 //! Environment: `REDROB_FILM_CORPUS` (directory), `REDROB_FILM_CORPUS_SECONDS` (exported length,
 //! default 3), `REDROB_FILM_CORPUS_ONLY` (comma-separated ids), `REDROB_FILM_CORPUS_KEEP=1` (keep
@@ -370,8 +370,10 @@ fn corpus_round_trip() {
     };
     let Some(ffprobe) = redrob_film_testkit::ffprobe_or_skip("corpus_round_trip") else { return };
     let oracles = Oracles { ffprobe, ffmpeg: redrob_film_testkit::ffmpeg() };
-    let seconds = std::env::var("REDROB_FILM_CORPUS_SECONDS").ok().and_then(|v| v.parse::<f64>().ok()).filter(|v| v.is_finite() && *v > 0.0).unwrap_or(DEFAULT_SECONDS);
-    let only: Vec<String> = std::env::var("REDROB_FILM_CORPUS_ONLY").map(|v| v.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect()).unwrap_or_default();
+    let seconds =
+        std::env::var("REDROB_FILM_CORPUS_SECONDS").ok().and_then(|v| v.parse::<f64>().ok()).filter(|v| v.is_finite() && *v > 0.0).unwrap_or(DEFAULT_SECONDS);
+    let only: Vec<String> =
+        std::env::var("REDROB_FILM_CORPUS_ONLY").map(|v| v.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect()).unwrap_or_default();
     let keep = std::env::var("REDROB_FILM_CORPUS_KEEP").is_ok_and(|v| v == "1");
     let out_root = redrob_film_testkit::workspace_root().join("target").join("corpus-out").join(format!("run-{}", std::process::id()));
     std::fs::create_dir_all(&out_root).unwrap();

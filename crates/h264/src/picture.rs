@@ -16,8 +16,6 @@ pub struct Format {
 }
 
 impl Format {
-    pub const YUV420_8: Format = Format { c422: false, bit_depth_y: 8, bit_depth_c: 8 };
-
     /// MbHeightC: chroma lines per macroblock (8 for 4:2:0, 16 for 4:2:2).
     #[inline(always)]
     pub fn mbh_c(self) -> usize {
@@ -571,12 +569,6 @@ impl AnyFrame {
         match self {
             AnyFrame::U8(f) => f.poc,
             AnyFrame::U16(f) => f.poc,
-        }
-    }
-    pub fn mb_w(&self) -> usize {
-        match self {
-            AnyFrame::U8(f) => f.mb_w,
-            AnyFrame::U16(f) => f.mb_w,
         }
     }
     pub fn mb_h(&self) -> usize {

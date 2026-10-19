@@ -227,7 +227,7 @@ pub struct Playback {
     audio_tries: u8,
     /// A reopened output has not consumed any samples yet: the wall clock keeps driving until
     /// it does, so waiting on a device that may never wake does not freeze the playhead.
-    audio_waking: bool,
+    pub audio_waking: bool,
     /// Where the current output's sound starts (the playhead `start_audio` mixed from).
     audio_from: Tick,
     /// The sound of this play was started again at the picture once (it joined too late).
