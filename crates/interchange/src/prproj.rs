@@ -380,7 +380,8 @@ pub(crate) fn import(bytes: &[u8], opts: &ImportOptions, report: &mut Report) ->
     }
     let top: Vec<ItemId> = imp.seq_order.iter().copied().filter(|s| !imp.nested.contains(s)).collect();
     imp.b.top = if top.is_empty() { imp.seq_order.clone() } else { top };
-    if imp.b.p.items.is_empty() {
+    // An empty Premiere project (no clips, no sequences) opens as an empty project.
+    if imp.b.p.items.is_empty() && project.is_none() {
         return Err(Error::Empty);
     }
     Ok(imp.b.finish())
