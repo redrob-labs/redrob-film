@@ -106,6 +106,12 @@ impl Blend {
     pub fn reads_destination(self) -> bool {
         !matches!(self, Blend::Normal | Blend::Dissolve)
     }
+    /// The bitwise operations: a channel value one 8-bit step away can change every bit, so GPU
+    /// and CPU renders (half-float accumulator, f32 maths) agree only where both land on the
+    /// same 8-bit value, and parity is checked loosely for them.
+    pub fn is_bitwise(self) -> bool {
+        matches!(self, Blend::BitOr | Blend::BitAnd | Blend::BitXor | Blend::BitNor | Blend::BitNand | Blend::BitNotXor)
+    }
     /// The Porter-Duff alpha operations, which replace the blend-mode compositing equation.
     pub fn is_alpha_op(self) -> bool {
         matches!(self, Blend::AlphaAtop | Blend::AlphaXor | Blend::DestinationOut)

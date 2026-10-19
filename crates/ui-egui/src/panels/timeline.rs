@@ -2441,7 +2441,7 @@ fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &
         && let Hit::Clip { track, clip, edge: Some(edge) } = hit(seq, layout, p)
         && let Some(tr) = seq.track(track)
         && let Some((_, it)) = seq.find_item(clip)
-        && tr.items.iter().any(|o| o.id != clip && if edge == redrob_film_edit::Edge::In { o.end() == it.start } else { o.start == it.end() })
+        && tr.items.iter().any(|o| o.id != clip && (if edge == redrob_film_edit::Edge::In { o.end() == it.start } else { o.start == it.end() }))
     {
         let side = if edge == redrob_film_edit::Edge::In { "in" } else { "out" };
         let cmd = if tr.kind == TrackKind::Video { "sequence.applyVideoTransition" } else { "sequence.applyAudioTransition" };

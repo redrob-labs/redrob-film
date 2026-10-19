@@ -378,7 +378,7 @@ fn track_to_motion(s: &mut Session, p: &Value) -> Result<Value> {
         let moves: Vec<(Tick, redrob_film_geom::Vec2)> = centres
             .iter()
             .map(|(t, cc)| {
-                let k = scale_at(motion, *t) * sign;
+                let k = scale_at(&*motion, *t) * sign;
                 (*t, redrob_film_geom::Vec2::new(base.x + (cc.x - c0.x) * k, base.y + (cc.y - c0.y) * k))
             })
             .collect();
