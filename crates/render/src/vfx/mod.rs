@@ -17,6 +17,7 @@ mod color;
 pub(crate) use color::cdl;
 mod distort;
 mod immersive;
+mod kfx;
 mod lights;
 mod stylize;
 mod temporal;
@@ -66,6 +67,12 @@ pub trait FxEnv: Sync {
     fn sequence_audio(&self, _dt: f64, _seconds: f64) -> Option<redrob_film_frame::AudioBuffer> {
         None
     }
+    /// Wall-clock time of the frame shown now, in milliseconds since 1970 (UTC), for effects that
+    /// match the picture to recorded data (GPS). Taken from the media file: its modification
+    /// time minus its duration is the recording start. `None` when unknown.
+    fn media_datetime_ms(&self) -> Option<f64> {
+        None
+    }
 }
 
 /// The environment of a track item being rendered by [`crate::item_layer`].
@@ -92,7 +99,7 @@ fn resize(img: Image, w: usize, h: usize) -> Image {
 
 /// Effects that read other frames (skipped when rendering another frame for one of them).
 pub fn is_temporal(id: &str) -> bool {
-    matches!(id, "posterize_time" | "echo" | "warp_stabilizer" | "auto_reframe")
+    matches!(id, "posterize_time" | "echo" | "warp_stabilizer" | "auto_reframe") || kfx::is_temporal(id)
 }
 
 impl FxEnv for ItemEnv<'_> {
@@ -170,6 +177,15 @@ impl FxEnv for ItemEnv<'_> {
     }
     fn source_size(&self) -> (u32, u32) {
         crate::source_size(self.project, self.item.item).unwrap_or((self.seq.settings.width, self.seq.settings.height))
+    }
+    fn media_datetime_ms(&self) -> Option<f64> {
+        let pi = self.project.item(self.item.item)?;
+        let redrob_film_project::ItemKind::Media(mc) = &pi.kind else { return None };
+        let redrob_film_project::MediaRef::File { path } = &mc.media else { return None };
+        let modified = std::fs::metadata(path).ok()?.modified().ok()?;
+        let end_ms = modified.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs_f64() * 1000.0;
+        let start_ms = end_ms - mc.info.duration.seconds() * 1000.0;
+        Some(start_ms + self.item.source_time_at(self.t).seconds() * 1000.0)
     }
     fn clip_key(&self) -> u64 {
         let mut h = 0xcbf2_9ce4_8422_2325u64;
@@ -469,6 +485,9 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         a.effect = base.to_string();
         crate::effects::apply(img, &a, cx);
     };
+    if kfx::apply(img, e, cx) {
+        return true;
+    }
     match e.effect.as_str() {
         // Adjust / Color / Image Control / Keying / Utility colour
         "lighting_effects" => color::lighting(img, e, cx),

@@ -3728,3 +3728,300 @@
 	All Tracks	すべてのトラック
 	Apply to Group	グループに適用
 	Only Equal Values	同じ値のみ
+# More Video Effects bin
+	More Video Effects	その他のビデオエフェクト
+	Grain and Noise	グレインとノイズ
+	Misc	その他
+	Deprecated	非推奨
+	Y (Luminance)	Y（輝度）
+	U (Chroma)	U（色差）
+	YU	YU
+	V (Chroma)	V（色差）
+	YV	YV
+	UV	UV
+	Magma	Magma
+	Inferno	Inferno
+	Plasma	Plasma
+	Viridis	Viridis
+	Turbo	Turbo
+	Cividis	Cividis
+	Range1	範囲 1
+	Range2	範囲 2
+	Solar	ソーラー
+	Nominal	公称
+	Preferred	推奨
+	Total	全体
+	Spectral	スペクトル
+	Cool	クール
+	Heat	ヒート
+	Fiery	ファイア
+	Blues	ブルー
+	Greens	グリーン
+	Helix	ヘリックス
+	HH:MM:SS	HH:MM:SS
+	HH:MM:SS.S	HH:MM:SS.S
+	MM:SS	MM:SS
+	MM:SS.SS	MM:SS.SS
+	MM:SS.SSS	MM:SS.SSS
+	SS	SS
+	SS.S	SS.S
+	SS.SS	SS.SS
+	SS.SSS	SS.SSS
+	Middle	中央
+	Regular	標準
+	Bold	太字
+	Italic	斜体
+	Bold Italic	太字斜体
+	GPS Location	GPS 位置
+	Altitude	高度
+	Heart Rate	心拍数
+	Basic Graph	基本グラフ
+	Follow Current Position	現在位置を追従
+	Speedometer	スピードメーター
+	One Color	単色
+	Two Colors	2 色
+	Solid Past, Thin Future	過去を太く、未来を細く
+	Solid Future, Thin Past	未来を太く、過去を細く
+	Vertical Gradient	垂直グラデーション
+	Horizontal Gradient	水平グラデーション
+	Color by Duration	経過時間で色分け
+	Color by Altitude	高度で色分け
+	Color by Heart Rate	心拍数で色分け
+	Color by Speed	速度で色分け
+	gps_lat	gps_lat
+	gps_lon	gps_lon
+	gps_elev	gps_elev
+	gps_speed	gps_speed
+	gps_dist	gps_dist
+	gps_datetime_now	gps_datetime_now
+	vid_datetime_now	vid_datetime_now
+	gps_hr	gps_hr
+	gps_bearing	gps_bearing
+	gps_compass	gps_compass
+	gps_vdist_up	gps_vdist_up
+	gps_vdist_down	gps_vdist_down
+	gps_dist_uphill	gps_dist_uphill
+	gps_dist_downhill	gps_dist_downhill
+	gps_dist_flat	gps_dist_flat
+	Planes	プレーン
+	Delta	デルタ
+	Font Family	フォントファミリー
+	Outline Width	アウトラインの幅
+	Padding	パディング
+	Foreground Color	前景色
+	Outline Color	アウトラインの色
+	X	X
+	Geometry	ジオメトリ
+	Y	Y
+	W	幅
+	H	高さ
+	GPS File	GPS ファイル
+	Time Offset in Seconds	時間オフセット（秒）
+	Smoothing Level	スムージングレベル
+	3-Level Threshold	3 段階しきい値
+	Analog Video Echo	アナログビデオエコー
+	Fade Factor	フェード係数
+	Brighter	明るく
+	Darker	暗く
+	Keep Red	赤を保持
+	Keep Green	緑を保持
+	Keep Blue	青を保持
+	Strobe Period	ストロボ周期
+	Binarize	2 値化
+	Use Transparency	透明度を使用
+	Threshold Value	しきい値
+	Binarize Dynamically	動的 2 値化
+	Burning TV	バーニング TV
+	Foreground Only	前景のみ
+	Movement Threshold	動きのしきい値
+	Cartoon	カートゥーン
+	Level of Trip	トリップレベル
+	Difference Space	差分距離
+	Charcoal	木炭画
+	Horizontal Scatter	水平方向の散らばり
+	Vertical Scatter	垂直方向の散らばり
+	Color Distance	カラー距離
+	Source Color	ソースカラー
+	Color Effect	カラーエフェクト
+	X-Pro	X-Pro
+	Sepia	セピア
+	Old Photo	古い写真
+	X-Ray	X 線
+	Esses	S 字カーブ
+	Yellow-Blue	黄-青
+	Heatmap0r	Heatmap0r
+	Map Grey To	グレーをマップ
+	Specify Source Segment	ソースセグメントを指定
+	Segmentation Direction	分割方向
+	Counter Clockwise	反時計回り
+	Reflect Edges	端を反射
+	Preferred Corner	優先する角
+	Corner Search	角の検索
+	No Alpha Background	アルファなし背景
+	Origin X	原点 X
+	Origin Y	原点 Y
+	Segmentation	分割数
+	Source Segment	ソースセグメント
+	Kirsch	Kirsch
+	Light Graffiti	ライトグラフィティ
+	Show Brightness Statistics	明るさの統計を表示
+	Statistics	統計
+	Show Background Difference Statistics	背景との差の統計を表示
+	Show Background Difference Sum Statistics	背景との差の合計の統計を表示
+	Transparent Background	透明な背景
+	Nonlinear Dimming	非線形の減光
+	Brightness Threshold	明るさのしきい値
+	Difference Threshold	差のしきい値
+	Difference Sum Threshold	差の合計のしきい値
+	Lower Overexposure	露出オーバーを抑える
+	Dimming	減光
+	Background Weight	背景の重み
+	α	α
+	NDVI Filter	NDVI フィルター
+	VIS Scale	VIS スケール
+	VIS Offset	VIS オフセット
+	NIR Scale	NIR スケール
+	NIR Offset	NIR オフセット
+	NTSC	NTSC
+	Progressive Scan	プログレッシブスキャン
+	Scanlines	走査線
+	Signal Noise	信号ノイズ
+	Old Film Simulator	古いフィルムのシミュレーター
+	Maximum Up/Down Move	上下移動の最大値
+	Frames With Movement	動きのあるフレーム
+	Brightness Up	明るくする量
+	Brightness Down	暗くする量
+	Brightness Every	明るさを変えるフレーム
+	Uneven Develop Up	現像ムラ（明）
+	Uneven Develop Down	現像ムラ（暗）
+	Uneven Develop Duration	現像ムラの周期
+	Photosensitivity Filter	光過敏フィルター
+	Frames to Use	使用するフレーム数
+	Skip	スキップ
+	Pixelize (advanced)	ピクセル化（詳細）
+	Pixelize Mode	ピクセル化モード
+	Average	平均
+	Pixels0rt	Pixels0rt
+	Vertical Top to Bottom	垂直（上から下）
+	Vertical Bottom to Top	垂直（下から上）
+	Horizontal Left to Right	水平（左から右）
+	Horizontal Right to Left	水平（右から左）
+	Reversed	逆順
+	Transparency Threshold	透明度のしきい値
+	Posterize (ELBG)	ポスタリゼーション（ELBG）
+	Codebook Length	コードブック長
+	Steps	ステップ
+	Prewitt	Prewitt
+	Primaries	原色
+	Factor	係数
+	Pseudo Color	疑似カラー
+	Base Component	基準成分
+	RGB Splitter	RGB スプリッター
+	Vertical Split Distance	垂直方向の分離距離
+	Horizontal Split Distance	水平方向の分離距離
+	Roberts	Roberts
+	Scharr	Scharr
+	Sobel	Sobel
+	Sobel with Planes	Sobel（プレーン指定）
+	Squigglevision	Squigglevision
+	FPS	FPS
+	Frames Step	フレームステップ
+	Fluctuation	ゆらぎ
+	Char by Char	1 文字ずつ
+	Word by Word	1 単語ずつ
+	Line by Line	1 行ずつ
+	3D FFT Denoiser	3D FFT ノイズ除去
+	Sigma	Sigma
+	Block	ブロック
+	Overlap	重なり
+	Wiener	Wiener
+	Add Previous Frame to Temporal Denoise	前のフレームを時間方向のノイズ除去に追加
+	Add Next Frame to Temporal Denoise	次のフレームを時間方向のノイズ除去に追加
+	Chroma Noise Reduction	色ノイズ除去
+	Y+U+V Threshold	Y+U+V しきい値
+	Horizontal Size	水平サイズ
+	Vertical Size	垂直サイズ
+	Horizontal Step	水平ステップ
+	Vertical Step	垂直ステップ
+	Y Threshold	Y しきい値
+	U Threshold	U しきい値
+	V Threshold	V しきい値
+	Manhattan	Manhattan
+	Euclidean	ユークリッド
+	HQ 3D Denoiser	HQ 3D ノイズ除去
+	Spatial	空間
+	Temporal	時間
+	Dither	ディザー
+	Matrix ID	マトリックス ID
+	Dust	ほこり
+	Maximum Diameter	最大直径
+	Maximum Number of Particles	最大粒子数
+	Film Grain	フィルムグレイン
+	Grain Amount	グレインの量
+	Red Grain	赤のグレイン
+	Green Grain	緑のグレイン
+	Blue Grain	青のグレイン
+	Dust Amount	ほこりの量
+	Gradfun	Gradfun
+	Scratch Lines	スクラッチライン
+	Width of Line	線の幅
+	Max Number of Lines	最大線数
+	Max Darker	最大暗さ
+	Max Lighter	最大明るさ
+	Wavelet Denoiser	ウェーブレットノイズ除去
+	Garrote	Garrote
+	Threshold Type	しきい値の種類
+	Universal	ユニバーサル
+	Bayes	Bayes
+	Percentage	割合
+	Draw Box	ボックスを描画
+	Replace Color and Alpha	カラーとアルファを置換
+	Top-left X	左上 X
+	Top-left Y	左上 Y
+	Width (px)	幅（px）
+	Height (px)	高さ（px）
+	Thickness (px)	太さ（px）
+	Scanline0r	Scanline0r
+	Alphaextract	Alphaextract
+	Xine Deinterlacer	Xine インターレース解除
+	Linear Blend	リニアブレンド
+	One Field	1 フィールド
+	Linear Interpolation	線形補間
+	Bottom Field First	下位フィールド優先
+	Box Blur	ボックスブラー
+	Denoiser	ノイズ除去
+	Grain	グレイン
+	Hqdn3d	Hqdn3d
+	K-Means Clustering	k-means クラスタリング
+	Number of Clusters	クラスター数
+	Distance Weight	距離の重み
+	Start	開始
+	Up	カウントアップ
+	Down	カウントダウン
+	Timer	タイマー
+	Keyword	キーワード
+	Updates per Second	1 秒あたりの更新回数
+	Strikethrough	取り消し線
+	GPS Text	GPS テキスト
+	Speed Multiplier	速度倍率
+	Graph Data Source	グラフのデータソース
+	Graph Type	グラフの種類
+	Trim Start	開始をトリミング
+	Trim End	終了をトリミング
+	Crop Mode Horizontal (Absolute)	水平クロップモード（絶対値）
+	Crop Left	左をクロップ
+	Crop Right	右をクロップ
+	Crop Mode Vertical (Absolute)	垂直クロップモード（絶対値）
+	Crop Bottom	下をクロップ
+	Crop Top	上をクロップ
+	Graph Color Style	グラフの色スタイル
+	Show Now Dot	現在位置の点を表示
+	Now Dot Color	現在位置の点の色
+	Show Now Text	現在値を表示
+	Line Thickness (px)	線の太さ（px）
+	Draw Legend	凡例を描画
+	Legend Unit	凡例の単位
+	Show Dots Only	点のみ表示
+	Background Image	背景画像
+	Background Scale	背景のスケール
+	GPS Graphic	GPS グラフィック

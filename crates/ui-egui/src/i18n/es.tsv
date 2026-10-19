@@ -3740,3 +3740,300 @@
 	All Tracks	Todas las pistas
 	Apply to Group	Aplicar al grupo
 	Only Equal Values	Solo valores iguales
+# More Video Effects bin
+	More Video Effects	Más efectos de video
+	Grain and Noise	Grano y ruido
+	Misc	Varios
+	Deprecated	Obsoletos
+	Y (Luminance)	Y (luminancia)
+	U (Chroma)	U (croma)
+	YU	YU
+	V (Chroma)	V (croma)
+	YV	YV
+	UV	UV
+	Magma	Magma
+	Inferno	Inferno
+	Plasma	Plasma
+	Viridis	Viridis
+	Turbo	Turbo
+	Cividis	Cividis
+	Range1	Rango 1
+	Range2	Rango 2
+	Solar	Solar
+	Nominal	Nominal
+	Preferred	Preferido
+	Total	Total
+	Spectral	Espectral
+	Cool	Frío
+	Heat	Calor
+	Fiery	Fuego
+	Blues	Azules
+	Greens	Verdes
+	Helix	Hélice
+	HH:MM:SS	HH:MM:SS
+	HH:MM:SS.S	HH:MM:SS.S
+	MM:SS	MM:SS
+	MM:SS.SS	MM:SS.SS
+	MM:SS.SSS	MM:SS.SSS
+	SS	SS
+	SS.S	SS.S
+	SS.SS	SS.SS
+	SS.SSS	SS.SSS
+	Middle	Medio
+	Regular	Normal
+	Bold	Negrita
+	Italic	Cursiva
+	Bold Italic	Negrita cursiva
+	GPS Location	Ubicación GPS
+	Altitude	Altitud
+	Heart Rate	Frecuencia cardíaca
+	Basic Graph	Gráfico básico
+	Follow Current Position	Seguir la posición actual
+	Speedometer	Velocímetro
+	One Color	Un color
+	Two Colors	Dos colores
+	Solid Past, Thin Future	Pasado grueso, futuro fino
+	Solid Future, Thin Past	Futuro grueso, pasado fino
+	Vertical Gradient	Degradado vertical
+	Horizontal Gradient	Degradado horizontal
+	Color by Duration	Color por duración
+	Color by Altitude	Color por altitud
+	Color by Heart Rate	Color por frecuencia cardíaca
+	Color by Speed	Color por velocidad
+	gps_lat	gps_lat
+	gps_lon	gps_lon
+	gps_elev	gps_elev
+	gps_speed	gps_speed
+	gps_dist	gps_dist
+	gps_datetime_now	gps_datetime_now
+	vid_datetime_now	vid_datetime_now
+	gps_hr	gps_hr
+	gps_bearing	gps_bearing
+	gps_compass	gps_compass
+	gps_vdist_up	gps_vdist_up
+	gps_vdist_down	gps_vdist_down
+	gps_dist_uphill	gps_dist_uphill
+	gps_dist_downhill	gps_dist_downhill
+	gps_dist_flat	gps_dist_flat
+	Planes	Planos
+	Delta	Delta
+	Font Family	Familia de fuente
+	Outline Width	Grosor del contorno
+	Padding	Relleno
+	Foreground Color	Color de primer plano
+	Outline Color	Color del contorno
+	X	X
+	Geometry	Geometría
+	Y	Y
+	W	An
+	H	Al
+	GPS File	Archivo GPS
+	Time Offset in Seconds	Desfase de tiempo en segundos
+	Smoothing Level	Nivel de suavizado
+	3-Level Threshold	Umbral de 3 niveles
+	Analog Video Echo	Eco de vídeo analógico
+	Fade Factor	Factor de desvanecimiento
+	Brighter	Más claro
+	Darker	Más oscuro
+	Keep Red	Conservar rojo
+	Keep Green	Conservar verde
+	Keep Blue	Conservar azul
+	Strobe Period	Periodo estroboscópico
+	Binarize	Binarizar
+	Use Transparency	Usar transparencia
+	Threshold Value	Valor de umbral
+	Binarize Dynamically	Binarizar dinámicamente
+	Burning TV	TV en llamas
+	Foreground Only	Solo primer plano
+	Movement Threshold	Umbral de movimiento
+	Cartoon	Dibujo animado
+	Level of Trip	Nivel de disparo
+	Difference Space	Espacio de diferencia
+	Charcoal	Carboncillo
+	Horizontal Scatter	Dispersión horizontal
+	Vertical Scatter	Dispersión vertical
+	Color Distance	Distancia de color
+	Source Color	Color de origen
+	Color Effect	Efecto de color
+	X-Pro	X-Pro
+	Sepia	Sepia
+	Old Photo	Foto antigua
+	X-Ray	Rayos X
+	Esses	Curvas S
+	Yellow-Blue	Amarillo-azul
+	Heatmap0r	Heatmap0r
+	Map Grey To	Asignar gris a
+	Specify Source Segment	Especificar segmento de origen
+	Segmentation Direction	Dirección de segmentación
+	Counter Clockwise	Antihorario
+	Reflect Edges	Reflejar bordes
+	Preferred Corner	Esquina preferida
+	Corner Search	Búsqueda de esquina
+	No Alpha Background	Fondo sin alfa
+	Origin X	Origen X
+	Origin Y	Origen Y
+	Segmentation	Segmentación
+	Source Segment	Segmento de origen
+	Kirsch	Kirsch
+	Light Graffiti	Grafiti de luz
+	Show Brightness Statistics	Mostrar estadísticas de brillo
+	Statistics	Estadísticas
+	Show Background Difference Statistics	Mostrar estadísticas de diferencia con el fondo
+	Show Background Difference Sum Statistics	Mostrar estadísticas de suma de diferencias con el fondo
+	Transparent Background	Fondo transparente
+	Nonlinear Dimming	Atenuación no lineal
+	Brightness Threshold	Umbral de brillo
+	Difference Threshold	Umbral de diferencia
+	Difference Sum Threshold	Umbral de suma de diferencias
+	Lower Overexposure	Reducir sobreexposición
+	Dimming	Atenuación
+	Background Weight	Peso del fondo
+	α	α
+	NDVI Filter	Filtro NDVI
+	VIS Scale	Escala VIS
+	VIS Offset	Desfase VIS
+	NIR Scale	Escala NIR
+	NIR Offset	Desfase NIR
+	NTSC	NTSC
+	Progressive Scan	Exploración progresiva
+	Scanlines	Líneas de exploración
+	Signal Noise	Ruido de señal
+	Old Film Simulator	Simulador de película antigua
+	Maximum Up/Down Move	Movimiento máximo arriba/abajo
+	Frames With Movement	Fotogramas con movimiento
+	Brightness Up	Aclarar
+	Brightness Down	Oscurecer
+	Brightness Every	Cambio de brillo cada
+	Uneven Develop Up	Revelado irregular más claro
+	Uneven Develop Down	Revelado irregular más oscuro
+	Uneven Develop Duration	Duración del revelado irregular
+	Photosensitivity Filter	Filtro de fotosensibilidad
+	Frames to Use	Fotogramas que usar
+	Skip	Omitir píxeles
+	Pixelize (advanced)	Pixelar (avanzado)
+	Pixelize Mode	Modo de pixelado
+	Average	Promedio
+	Pixels0rt	Pixels0rt
+	Vertical Top to Bottom	Vertical de arriba abajo
+	Vertical Bottom to Top	Vertical de abajo arriba
+	Horizontal Left to Right	Horizontal de izquierda a derecha
+	Horizontal Right to Left	Horizontal de derecha a izquierda
+	Reversed	Invertido
+	Transparency Threshold	Umbral de transparencia
+	Posterize (ELBG)	Posterizar (ELBG)
+	Codebook Length	Longitud del libro de códigos
+	Steps	Pasos
+	Prewitt	Prewitt
+	Primaries	Primarios
+	Factor	Factor
+	Pseudo Color	Pseudocolor
+	Base Component	Componente base
+	RGB Splitter	Separador RGB
+	Vertical Split Distance	Distancia de separación vertical
+	Horizontal Split Distance	Distancia de separación horizontal
+	Roberts	Roberts
+	Scharr	Scharr
+	Sobel	Sobel
+	Sobel with Planes	Sobel con planos
+	Squigglevision	Squigglevision
+	FPS	FPS
+	Frames Step	Paso en fotogramas
+	Fluctuation	Fluctuación
+	Char by Char	Carácter a carácter
+	Word by Word	Palabra a palabra
+	Line by Line	Línea a línea
+	3D FFT Denoiser	Reductor de ruido FFT 3D
+	Sigma	Sigma
+	Block	Bloque
+	Overlap	Solapamiento
+	Wiener	Wiener
+	Add Previous Frame to Temporal Denoise	Añadir el fotograma anterior a la reducción temporal
+	Add Next Frame to Temporal Denoise	Añadir el fotograma siguiente a la reducción temporal
+	Chroma Noise Reduction	Reducción de ruido de croma
+	Y+U+V Threshold	Umbral Y+U+V
+	Horizontal Size	Tamaño horizontal
+	Vertical Size	Tamaño vertical
+	Horizontal Step	Paso horizontal
+	Vertical Step	Paso vertical
+	Y Threshold	Umbral Y
+	U Threshold	Umbral U
+	V Threshold	Umbral V
+	Manhattan	Manhattan
+	Euclidean	Euclídea
+	HQ 3D Denoiser	Reductor de ruido 3D HQ
+	Spatial	Espacial
+	Temporal	Temporal
+	Dither	Tramado
+	Matrix ID	ID de matriz
+	Dust	Polvo
+	Maximum Diameter	Diámetro máximo
+	Maximum Number of Particles	Número máximo de partículas
+	Film Grain	Grano de película
+	Grain Amount	Cantidad de grano
+	Red Grain	Grano rojo
+	Green Grain	Grano verde
+	Blue Grain	Grano azul
+	Dust Amount	Cantidad de polvo
+	Gradfun	Gradfun
+	Scratch Lines	Líneas de rayado
+	Width of Line	Ancho de línea
+	Max Number of Lines	Número máximo de líneas
+	Max Darker	Oscurecimiento máximo
+	Max Lighter	Aclarado máximo
+	Wavelet Denoiser	Reductor de ruido por ondículas
+	Garrote	Garrote
+	Threshold Type	Tipo de umbral
+	Universal	Universal
+	Bayes	Bayes
+	Percentage	Porcentaje
+	Draw Box	Dibujar recuadro
+	Replace Color and Alpha	Reemplazar color y alfa
+	Top-left X	X superior izquierda
+	Top-left Y	Y superior izquierda
+	Width (px)	Ancho (px)
+	Height (px)	Alto (px)
+	Thickness (px)	Grosor (px)
+	Scanline0r	Scanline0r
+	Alphaextract	Alphaextract
+	Xine Deinterlacer	Desentrelazador Xine
+	Linear Blend	Mezcla lineal
+	One Field	Un campo
+	Linear Interpolation	Interpolación lineal
+	Bottom Field First	Campo inferior primero
+	Box Blur	Desenfoque de cuadro
+	Denoiser	Reductor de ruido
+	Grain	Grano
+	Hqdn3d	Hqdn3d
+	K-Means Clustering	Agrupamiento k-means
+	Number of Clusters	Número de grupos
+	Distance Weight	Peso de la distancia
+	Start	Inicio
+	Up	Ascendente
+	Down	Descendente
+	Timer	Temporizador
+	Keyword	Palabra clave
+	Updates per Second	Actualizaciones por segundo
+	Strikethrough	Tachado
+	GPS Text	Texto GPS
+	Speed Multiplier	Multiplicador de velocidad
+	Graph Data Source	Fuente de datos del gráfico
+	Graph Type	Tipo de gráfico
+	Trim Start	Recortar inicio
+	Trim End	Recortar final
+	Crop Mode Horizontal (Absolute)	Modo de recorte horizontal (absoluto)
+	Crop Left	Recorte izquierdo
+	Crop Right	Recorte derecho
+	Crop Mode Vertical (Absolute)	Modo de recorte vertical (absoluto)
+	Crop Bottom	Recorte inferior
+	Crop Top	Recorte superior
+	Graph Color Style	Estilo de color del gráfico
+	Show Now Dot	Mostrar punto actual
+	Now Dot Color	Color del punto actual
+	Show Now Text	Mostrar valor actual
+	Line Thickness (px)	Grosor de línea (px)
+	Draw Legend	Dibujar leyenda
+	Legend Unit	Unidad de la leyenda
+	Show Dots Only	Mostrar solo puntos
+	Background Image	Imagen de fondo
+	Background Scale	Escala del fondo
+	GPS Graphic	Gráfico GPS

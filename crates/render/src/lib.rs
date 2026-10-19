@@ -615,7 +615,7 @@ pub(crate) fn base_layer(
             // standard effects work on the graphic at source resolution, then Motion places it
             let (gw, gh) = (((src_size.0 as f32 * want).ceil() as usize).max(1), ((src_size.1 as f32 * want).ceil() as usize).max(1));
             let mut img = Image::new(gw, gh);
-            graphic_clip::render_graphic(item, mt, src_size, &Affine::scale(want as f64, want as f64), &mut img);
+            graphic_clip::render_graphic_rate(item, mt, src_size, &Affine::scale(want as f64, want as f64), &mut img, seq.settings.frame_rate.as_f64());
             img
         }
     })

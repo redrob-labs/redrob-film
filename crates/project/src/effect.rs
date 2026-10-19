@@ -17,6 +17,8 @@ use crate::mask::Mask;
 pub use audio::{GEQ10_LABELS, GEQ20_LABELS, GEQ30_LABELS, PREMIERE_AUDIO_EFFECTS};
 
 mod vfx;
+mod kfx;
+pub use kfx::{GPS_KEYWORDS, MORE_TOP, PSEUDO_PRESETS, TIMER_FORMATS};
 pub use vfx::{EASINGS, ECHO_OPERATORS, FRAME_LAYOUTS, LIGHT_IDS, SIMPLE_BLEND, TRACK_CHOICES, auto_point, ultra_key_setting};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -839,6 +841,7 @@ fn build_effects() -> Vec<EffectDef> {
     ];
     v.extend(audio::defs());
     v.extend(vfx::defs());
+    v.extend(kfx::defs());
     vfx::extend_core(&mut v);
     v.extend(crate::vtransition::video_transition_defs());
     v.extend(crate::graphic::layer_defs());
@@ -850,6 +853,7 @@ fn build_effects() -> Vec<EffectDef> {
     }
     vfx::apply_badges(&mut v);
     v.extend(audio::visualization_defs());
+    kfx::apply_badges(&mut v);
     v
 }
 

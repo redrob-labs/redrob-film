@@ -376,3 +376,365 @@
 	Track Compositing	Композиция дорожек
 	Disable Timeline Effects	Отключить эффекты монтажного стола
 	Clip Duration…	Длительность клипа…
+# More Video Effects bin
+	More Video Effects	Другие видеоэффекты
+	Stylize	Стилизация
+	Grain and Noise	Зерно и шум
+	Generate	Генерация
+	Misc	Разное
+	Deprecated	Устаревшие
+	None	Нет
+	Y (Luminance)	Y (яркость)
+	U (Chroma)	U (цветность)
+	YU	YU
+	V (Chroma)	V (цветность)
+	YV	YV
+	UV	UV
+	All	Все
+	Magma	Magma
+	Inferno	Inferno
+	Plasma	Plasma
+	Viridis	Viridis
+	Turbo	Turbo
+	Cividis	Cividis
+	Range1	Диапазон 1
+	Range2	Диапазон 2
+	Shadows	Тени
+	Highlights	Света
+	Solar	Солнечная
+	Nominal	Номинальная
+	Preferred	Предпочтительная
+	Total	Полная
+	Spectral	Спектральная
+	Cool	Холодная
+	Heat	Тепло
+	Fiery	Огненная
+	Blues	Синие
+	Greens	Зелёные
+	Helix	Спираль
+	HH:MM:SS	HH:MM:SS
+	HH:MM:SS.S	HH:MM:SS.S
+	MM:SS	MM:SS
+	MM:SS.SS	MM:SS.SS
+	MM:SS.SSS	MM:SS.SSS
+	SS	SS
+	SS.S	SS.S
+	SS.SS	SS.SS
+	SS.SSS	SS.SSS
+	Center	По центру
+	Middle	Посередине
+	Regular	Обычный
+	Bold	Жирный
+	Italic	Курсив
+	Bold Italic	Жирный курсив
+	GPS Location	GPS-координаты
+	Altitude	Высота
+	Heart Rate	Пульс
+	Speed	Скорость
+	Basic Graph	Простой график
+	Follow Current Position	Следовать за текущей позицией
+	Speedometer	Спидометр
+	One Color	Один цвет
+	Two Colors	Два цвета
+	Solid Past, Thin Future	Прошлое толстой, будущее тонкой
+	Solid Future, Thin Past	Будущее толстой, прошлое тонкой
+	Vertical Gradient	Вертикальный градиент
+	Horizontal Gradient	Горизонтальный градиент
+	Color by Duration	Цвет по времени
+	Color by Altitude	Цвет по высоте
+	Color by Heart Rate	Цвет по пульсу
+	Color by Speed	Цвет по скорости
+	gps_lat	gps_lat
+	gps_lon	gps_lon
+	gps_elev	gps_elev
+	gps_speed	gps_speed
+	gps_dist	gps_dist
+	gps_datetime_now	gps_datetime_now
+	vid_datetime_now	vid_datetime_now
+	gps_hr	gps_hr
+	gps_bearing	gps_bearing
+	gps_compass	gps_compass
+	gps_vdist_up	gps_vdist_up
+	gps_vdist_down	gps_vdist_down
+	gps_dist_uphill	gps_dist_uphill
+	gps_dist_downhill	gps_dist_downhill
+	gps_dist_flat	gps_dist_flat
+	Random Seed	Случайное зерно
+	Planes	Плоскости
+	Scale	Масштаб
+	Delta	Смещение
+	Font Family	Семейство шрифта
+	Font Style	Начертание
+	Size	Размер
+	Outline Width	Толщина контура
+	Padding	Отступ
+	Horizontal Alignment	Выравнивание по горизонтали
+	Vertical Alignment	Выравнивание по вертикали
+	Opacity	Непрозрачность
+	Foreground Color	Цвет переднего плана
+	Background Color	Цвет фона
+	Outline Color	Цвет контура
+	X	X
+	Geometry	Геометрия
+	Y	Y
+	W	Ш
+	H	В
+	GPS File	GPS-файл
+	Time Offset in Seconds	Сдвиг времени в секундах
+	Smoothing Level	Уровень сглаживания
+	3-Level Threshold	Трёхуровневый порог
+	Analog Video Echo	Аналоговое видеоэхо
+	Fade Factor	Коэффициент затухания
+	Direction	Направление
+	Brighter	Светлее
+	Darker	Темнее
+	Keep Red	Сохранять красный
+	Keep Green	Сохранять зелёный
+	Keep Blue	Сохранять синий
+	Strobe Period	Период стробоскопа
+	Binarize	Бинаризация
+	Use Transparency	Использовать прозрачность
+	Threshold Value	Пороговое значение
+	Binarize Dynamically	Динамическая бинаризация
+	Burning TV	Горящий телевизор
+	Foreground Only	Только передний план
+	Movement Threshold	Порог движения
+	Cartoon	Мультфильм
+	Level of Trip	Уровень срабатывания
+	Difference Space	Шаг разности
+	Charcoal	Уголь
+	Invert	Инвертировать
+	Horizontal Scatter	Горизонтальный разброс
+	Vertical Scatter	Вертикальный разброс
+	Mix	Смешивание
+	Color Distance	Цветовое расстояние
+	Source Color	Исходный цвет
+	Color Effect	Цветовой эффект
+	Type	Тип
+	X-Pro	X-Pro
+	Sepia	Сепия
+	Red-Green	Красно-зелёный
+	Old Photo	Старое фото
+	X-Ray	Рентген
+	Esses	S-кривые
+	Yellow-Blue	Жёлто-синий
+	Heatmap0r	Heatmap0r
+	Map Black To	Чёрный в
+	Map Grey To	Серый в
+	Map White To	Белый в
+	Kaleidoscope	Калейдоскоп
+	Specify Source Segment	Указать исходный сегмент
+	Segmentation Direction	Направление сегментации
+	Counter Clockwise	Против часовой стрелки
+	Clockwise	По часовой стрелке
+	Reflect Edges	Отражать края
+	Preferred Corner	Предпочтительный угол
+	Top Right	Вверху справа
+	Top Left	Вверху слева
+	Bottom Left	Внизу слева
+	Bottom Right	Внизу справа
+	Corner Search	Поиск угла
+	No Alpha Background	Фон без альфы
+	Origin X	Начало X
+	Origin Y	Начало Y
+	Segmentation	Сегментация
+	Source Segment	Исходный сегмент
+	Edge Threshold	Порог края
+	Kirsch	Kirsch
+	Light Graffiti	Световое граффити
+	Show Brightness Statistics	Показать статистику яркости
+	Statistics	Статистика
+	Show Background Difference Statistics	Показать статистику отличия от фона
+	Show Background Difference Sum Statistics	Показать статистику суммы отличий от фона
+	Transparent Background	Прозрачный фон
+	Nonlinear Dimming	Нелинейное затемнение
+	Reset	Сброс
+	Brightness Threshold	Порог яркости
+	Difference Threshold	Порог отличия
+	Difference Sum Threshold	Порог суммы отличий
+	Sensitivity	Чувствительность
+	Lower Overexposure	Уменьшить пересвет
+	Dimming	Затемнение
+	Background Weight	Вес фона
+	α	α
+	Saturation	Насыщенность
+	NDVI Filter	Фильтр NDVI
+	Levels	Уровни
+	VIS Scale	Масштаб VIS
+	VIS Offset	Смещение VIS
+	NIR Scale	Масштаб NIR
+	NIR Offset	Смещение NIR
+	NTSC	NTSC
+	Progressive Scan	Прогрессивная развёртка
+	Scanlines	Строки развёртки
+	Signal Noise	Шум сигнала
+	Old Film Simulator	Имитация старой плёнки
+	Maximum Up/Down Move	Макс. сдвиг вверх/вниз
+	Frames With Movement	Кадры со сдвигом
+	Brightness Up	Повышение яркости
+	Brightness Down	Понижение яркости
+	Brightness Every	Частота изменения яркости
+	Uneven Develop Up	Неравномерная проявка светлее
+	Uneven Develop Down	Неравномерная проявка темнее
+	Uneven Develop Duration	Период неравномерной проявки
+	Photosensitivity Filter	Фильтр фоточувствительности
+	Bypass	Обход
+	Frames to Use	Число кадров
+	Threshold	Порог
+	Skip	Пропуск
+	Pixelize (advanced)	Пикселизация (расширенная)
+	Pixelize Mode	Режим пикселизации
+	Average	Среднее
+	Minimum	Минимум
+	Maximum	Максимум
+	Block Width	Ширина блока
+	Block Height	Высота блока
+	Pixels0rt	Pixels0rt
+	Vertical Top to Bottom	Вертикально сверху вниз
+	Vertical Bottom to Top	Вертикально снизу вверх
+	Horizontal Left to Right	Горизонтально слева направо
+	Horizontal Right to Left	Горизонтально справа налево
+	Reversed	В обратном порядке
+	Transparency Threshold	Порог прозрачности
+	Posterize (ELBG)	Постеризация (ELBG)
+	Codebook Length	Размер кодовой книги
+	Steps	Шаги
+	Prewitt	Prewitt
+	Primaries	Основные цвета
+	Factor	Коэффициент
+	Pseudo Color	Псевдоцвет
+	Base Component	Базовый канал
+	Preset	Пресет
+	RGB Splitter	Разделение RGB
+	Vertical Split Distance	Расстояние по вертикали
+	Horizontal Split Distance	Расстояние по горизонтали
+	Roberts	Roberts
+	Scharr	Scharr
+	Sobel	Sobel
+	Sobel with Planes	Собель по плоскостям
+	Squigglevision	Squigglevision
+	Strength	Сила
+	FPS	FPS
+	Typewriter	Пишущая машинка
+	Frames Step	Шаг в кадрах
+	Fluctuation	Колебание
+	Char by Char	По символам
+	Word by Word	По словам
+	Line by Line	По строкам
+	3D FFT Denoiser	Шумоподавление 3D FFT
+	Sigma	Sigma
+	Amount	Величина
+	Block	Блок
+	Overlap	Перекрытие
+	Method	Метод
+	Wiener	Wiener
+	Hard	Жёсткий
+	Add Previous Frame to Temporal Denoise	Учитывать предыдущий кадр
+	Add Next Frame to Temporal Denoise	Учитывать следующий кадр
+	Chroma Noise Reduction	Подавление цветового шума
+	Y+U+V Threshold	Порог Y+U+V
+	Horizontal Size	Размер по горизонтали
+	Vertical Size	Размер по вертикали
+	Horizontal Step	Шаг по горизонтали
+	Vertical Step	Шаг по вертикали
+	Y Threshold	Порог Y
+	U Threshold	Порог U
+	V Threshold	Порог V
+	Distance	Расстояние
+	Manhattan	Manhattan
+	Euclidean	Евклидово
+	HQ 3D Denoiser	Шумоподавление HQ 3D
+	Spatial	Пространственное
+	Temporal	Временное
+	Dither	Дизеринг
+	Matrix ID	ID матрицы
+	Dust	Пыль
+	Maximum Diameter	Максимальный диаметр
+	Maximum Number of Particles	Макс. число частиц
+	Film Grain	Плёночное зерно
+	Grain Amount	Величина зерна
+	Red Grain	Зерно красного
+	Green Grain	Зерно зелёного
+	Blue Grain	Зерно синего
+	Blur Amount	Величина размытия
+	Dust Amount	Количество пыли
+	Flicker	Мерцание
+	Gradfun	Gradfun
+	Radius	Радиус
+	Scratch Lines	Царапины
+	Width of Line	Ширина линии
+	Max Number of Lines	Макс. число линий
+	Max Darker	Макс. затемнение
+	Max Lighter	Макс. осветление
+	Wavelet Denoiser	Вейвлет-шумоподавление
+	Soft	Мягкий
+	Garrote	Garrote
+	Threshold Type	Тип порога
+	Universal	Универсальный
+	Bayes	Bayes
+	Percentage	Процент
+	Draw Box	Рисовать рамку
+	Color	Цвет
+	Replace Color and Alpha	Заменять цвет и альфу
+	Top-left X	X левого верхнего угла
+	Top-left Y	Y левого верхнего угла
+	Width (px)	Ширина (px)
+	Height (px)	Высота (px)
+	Thickness (px)	Толщина (px)
+	Scanline0r	Scanline0r
+	Alphaextract	Alphaextract
+	Xine Deinterlacer	Деинтерлейсер Xine
+	Linear Blend	Линейное смешивание
+	One Field	Одно поле
+	Linear Interpolation	Линейная интерполяция
+	Bottom Field First	Нижнее поле первым
+	Box Blur	Прямоугольное размытие
+	Horizontal	По горизонтали
+	Vertical	По вертикали
+	Denoiser	Шумоподавление
+	Grain	Зерно
+	Noise	Шум
+	Hqdn3d	Hqdn3d
+	K-Means Clustering	Кластеризация k-средних
+	Number of Clusters	Число кластеров
+	Distance Weight	Вес расстояния
+	Format	Формат
+	Start	Начало
+	Duration	Длительность
+	Offset	Смещение
+	Up	Вверх
+	Down	Вниз
+	Timer	Таймер
+	Keyword	Ключевое слово
+	Updates per Second	Обновлений в секунду
+	Underline	Подчёркивание
+	Strikethrough	Зачёркивание
+	GPS Text	GPS-текст
+	Speed Multiplier	Множитель скорости
+	Graph Data Source	Источник данных графика
+	Graph Type	Тип графика
+	Trim Start	Обрезать начало
+	Trim End	Обрезать конец
+	Crop Mode Horizontal (Absolute)	Режим обрезки по горизонтали (абсолютный)
+	Crop	Обрезка
+	Crop Left	Обрезка слева
+	Crop Right	Обрезка справа
+	Crop Mode Vertical (Absolute)	Режим обрезки по вертикали (абсолютный)
+	Crop Bottom	Обрезка снизу
+	Crop Top	Обрезка сверху
+	Graph Color Style	Цветовой стиль графика
+	Color 1	Цвет 1
+	Color 2	Цвет 2
+	Show Now Dot	Показывать текущую точку
+	Now Dot Color	Цвет текущей точки
+	Show Now Text	Показывать текущее значение
+	Rotation	Поворот
+	Line Thickness (px)	Толщина линии (px)
+	Draw Legend	Рисовать легенду
+	Legend Unit	Единица легенды
+	Show Dots Only	Только точки
+	Background Image	Фоновое изображение
+	Background	Фон
+	Background Scale	Масштаб фона
+	Background Opacity	Непрозрачность фона
+	GPS Graphic	GPS-график
