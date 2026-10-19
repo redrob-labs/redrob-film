@@ -442,7 +442,7 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         }
         // the voice-over take being recorded on this track, drawn live
         if r.kind == TrackKind::Audio && !r.lane && app.session.voiceover.rec.as_ref().is_some_and(|x| x.track == r.track && Some(x.seq) == app.session.state.active_sequence) {
-            draw_recording(app, &p, r.rect, &|tk| layout.x_of(tk), app.session.playhead());
+            draw_recording(app, &p, r.rect, &|tk: Tick| layout.x_of(tk), app.session.playhead());
             app.auto.add("timeline.recording", r.rect.intersect(content), "Recording voice-over");
             ctx.request_repaint();
         }
