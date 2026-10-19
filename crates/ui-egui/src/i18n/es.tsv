@@ -3586,3 +3586,30 @@
 	The reply hit its length limit.	La respuesta alcanzó su límite de longitud.
 	The turn ended: {reason}.	El turno terminó: {reason}.
 	Workspace changed. The next message starts the agent with it.	El espacio de trabajo cambió. El próximo mensaje inicia el agente con él.
+	Tags	Etiquetas
+	{count} (filtered)	{count} (filtrado)
+	Rating	Valoración
+	Not Rated	Sin valorar
+	Usage	Uso
+	Clear Filters	Borrar filtros
+	Click to tag the selected items; right-click to edit; drag to reorder	Haz clic para etiquetar los elementos seleccionados; clic derecho para editar; arrastra para reordenar
+	Select items to tag	Selecciona elementos para etiquetar
+	Edit Tag…	Editar etiqueta…
+	Filter by This Tag	Filtrar por esta etiqueta
+	Delete Tag	Eliminar etiqueta
+	Add Tag	Añadir etiqueta
+	No Rating	Sin valoración
+	1 Star	1 estrella
+	{n} Stars	{n} estrellas
+	Default Folder for Sequences	Carpeta predeterminada para secuencias
+	Default Folder for Audio Captures	Carpeta predeterminada para capturas de audio
+	Used {n} times	Usado {n} veces
+	Edit Tag	Editar etiqueta
+	Audio and Video	Audio y video
+	Color and Generators	Color y generadores
+	Subclip	Subclip
+	Adjustment Layer	Capa de ajuste
+	Used	Usados
+	Unused	Sin usar
+	Insert Order	Orden de inserción
+	Ignore subfolder structure on import	Ignorar la estructura de subcarpetas al importar

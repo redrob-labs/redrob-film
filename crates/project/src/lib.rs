@@ -308,6 +308,36 @@ pub struct ProjectItem {
     /// item's In/Out for one channel (J- and L-cuts).
     #[serde(default, skip_serializing_if = "SplitMarks::is_empty")]
     pub split: SplitMarks,
+    /// Star rating, 0 (none) to 5 (Project panel Rating column, sort and filter). Older files
+    /// have none.
+    #[serde(default, skip_serializing_if = "is_zero_u8")]
+    pub rating: u8,
+    /// Bin tags: ids into [`Project::tags`], any number per item, in the order they were added.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<u32>,
+}
+
+fn is_zero_u8(v: &u8) -> bool {
+    *v == 0
+}
+
+/// A bin tag (Project panel ▸ Tags): a coloured, named marker any number of items can carry.
+/// The project's tags are an ordered list; their order is the order of the Tags bar.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BinTag {
+    pub id: u32,
+    pub name: String,
+    /// `[r, g, b]`.
+    pub color: [u8; 3],
+}
+
+/// The tags a new project starts with (five colours, unnamed descriptions the user edits).
+pub fn default_bin_tags() -> Vec<BinTag> {
+    [[0xff, 0x00, 0x00], [0xff, 0x80, 0x00], [0xff, 0xff, 0x00], [0x00, 0xc0, 0x00], [0x00, 0x60, 0xff]]
+        .into_iter()
+        .enumerate()
+        .map(|(i, color)| BinTag { id: i as u32 + 1, name: format!("Tag {}", i + 1), color })
+        .collect()
 }
 
 impl ProjectItem {
@@ -1154,6 +1184,12 @@ pub struct ProjectSettings {
     /// Project Settings ▸ Scratch Disks. Schema v11.
     #[serde(default)]
     pub scratch: ScratchDisks,
+    /// Default folder of new sequences (None: the project's root).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sequence_bin: Option<BinId>,
+    /// Default folder of audio captures (voice-over recordings; None: the project's root).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub capture_bin: Option<BinId>,
 }
 
 fn title_safe_default() -> (f64, f64) {
@@ -1221,6 +1257,8 @@ impl Default for ProjectSettings {
             action_safe: action_safe_default(),
             capture_format: capture_format_default(),
             scratch: ScratchDisks::default(),
+            sequence_bin: None,
+            capture_bin: None,
         }
     }
 }
@@ -1257,6 +1295,10 @@ pub struct Project {
     /// instructions for whoever opens it next, frame numbers and the like. Schema v15.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub notes: String,
+    /// Bin tags (Project panel ▸ Tags). None = the default set ([`default_bin_tags`]), until the
+    /// tags are first edited.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<BinTag>>,
 }
 
 /// How a sequence is shown in the Timeline panel: its zoom, scroll position and track heights.
@@ -1353,7 +1395,19 @@ impl Project {
             source_graphics: BTreeMap::new(),
             narrations: BTreeMap::new(),
             notes: String::new(),
+            tags: None,
         }
+    }
+
+    /// The project's bin tags in Tags-bar order.
+    pub fn bin_tags(&self) -> Vec<BinTag> {
+        self.tags.clone().unwrap_or_else(default_bin_tags)
+    }
+
+    /// The bin new items of a kind go to when it is set and still exists: `sequence_bin` for new
+    /// sequences, `capture_bin` for recordings (Project Settings ▸ default folders).
+    pub fn default_bin(&self, bin: Option<BinId>) -> Option<BinId> {
+        bin.filter(|b| self.root.find_bin(*b).is_some())
     }
 
     pub fn alloc_id(&mut self) -> u64 {
@@ -1366,7 +1420,10 @@ impl Project {
     pub fn add_item(&mut self, name: &str, label: Label, kind: ItemKind, bin: Option<BinId>) -> ItemId {
         let id = ItemId(self.alloc_id());
         let created = id.0;
-        self.items.insert(id, ProjectItem { id, name: name.into(), label, kind, metadata: BTreeMap::new(), created, split: SplitMarks::default() });
+        self.items.insert(
+            id,
+            ProjectItem { id, name: name.into(), label, kind, metadata: BTreeMap::new(), created, split: SplitMarks::default(), rating: 0, tags: Vec::new() },
+        );
         if let Some(b) = bin.and_then(|b| self.root.find_bin_mut(b)) {
             b.children.push(BinEntry::Item(id));
         } else {

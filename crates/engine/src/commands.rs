@@ -916,7 +916,9 @@ fn build() -> Vec<CommandSpec> {
                 let name = str_p(p, "name").map(str::to_string).unwrap_or_else(|| format!("Sequence {n:02}"));
                 let seq_label = s.prefs.labels.defaults.sequence;
                 let id = s.edit("New Sequence", |pr, st2| {
-                    let id = pr.new_sequence(&name, st, nv as usize, na as usize, None);
+                    // Project Settings ▸ default folder for new sequences
+                    let folder = pr.default_bin(pr.settings.sequence_bin);
+                    let id = pr.new_sequence(&name, st, nv as usize, na as usize, folder);
                     if let Some(it) = pr.item_mut(id) {
                         it.label = seq_label;
                     }
@@ -2951,6 +2953,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::narration::commands());
     v.extend(crate::keyboard::commands());
     v.extend(crate::project_panel::commands());
+    v.extend(crate::bin_tags::commands());
     v.extend(crate::media_browser::commands());
     v.extend(crate::paste_media::commands());
     // Edit ▸ Label ▸ <colour>, Paste Attributes, subclips, Video / Audio Options, Replace With Clip…

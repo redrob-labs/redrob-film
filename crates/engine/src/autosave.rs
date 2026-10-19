@@ -247,6 +247,9 @@ pub struct MediaPrefs {
     pub create_folder_for_imported_projects: bool,
     pub auto_hide_dependent_clips: bool,
     pub import_image_sequences: bool,
+    /// Importing a folder puts every file of its sub-folders into the one bin named after it,
+    /// instead of a bin per sub-folder.
+    pub ignore_subfolder_structure: bool,
     pub refresh_growing_files: bool,
     pub resume_growing_playback: bool,
     pub growing_refresh_seconds: u32,
@@ -271,6 +274,7 @@ impl Default for MediaPrefs {
             create_folder_for_imported_projects: false,
             auto_hide_dependent_clips: false,
             import_image_sequences: false,
+            ignore_subfolder_structure: false,
             refresh_growing_files: true,
             resume_growing_playback: false,
             growing_refresh_seconds: 60,

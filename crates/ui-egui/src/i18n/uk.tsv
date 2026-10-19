@@ -359,3 +359,39 @@
 	Redrob Account…	Обліковий запис Redrob…
 	Agent	Агент
 	Add Redrob Film to Redrob Code	Додати Redrob Film до Redrob Code
+	Filter	Фільтр
+	Type	Тип
+	Description:	Опис:
+	Color:	Колір:
+	Video Only	Лише відео
+	Audio Only	Лише аудіо
+	Image	Зображення
+	Image Sequence	Послідовність зображень
+	Title	Титр
+	Tags	Теги
+	{count} (filtered)	{count} (відфільтровано)
+	Rating	Оцінка
+	Not Rated	Без оцінки
+	Usage	Використання
+	Clear Filters	Скинути фільтри
+	Click to tag the selected items; right-click to edit; drag to reorder	Клацніть, щоб позначити вибрані елементи; правий клік — змінити; перетягніть, щоб змінити порядок
+	Select items to tag	Виберіть елементи для позначення
+	Edit Tag…	Змінити тег…
+	Filter by This Tag	Фільтрувати за цим тегом
+	Delete Tag	Видалити тег
+	Add Tag	Додати тег
+	No Rating	Без оцінки
+	1 Star	1 зірка
+	{n} Stars	Зірок: {n}
+	Default Folder for Sequences	Тека за замовчуванням для послідовностей
+	Default Folder for Audio Captures	Тека за замовчуванням для аудіозаписів
+	Used {n} times	Використано разів: {n}
+	Edit Tag	Змінити тег
+	Audio and Video	Аудіо та відео
+	Color and Generators	Колір і генератори
+	Subclip	Підкліп
+	Adjustment Layer	Коригувальний шар
+	Used	Використані
+	Unused	Невикористані
+	Insert Order	Порядок додавання
+	Ignore subfolder structure on import	Ігнорувати структуру підтек під час імпорту

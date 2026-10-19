@@ -76,7 +76,57 @@ fn paint_badges(ui: &egui::Ui, b: &Badge, at: egui::Pos2, t: &Tokens) {
 }
 
 fn matches_filter(app: &FilmcraftApp, id: ItemId, filter: &str) -> bool {
-    app.session.project.item(id).is_some_and(|i| pp::listed(&app.session.project, i) && (filter.is_empty() || i.name.to_ascii_lowercase().contains(filter)))
+    let p = &app.session.project;
+    p.item(id).is_some_and(|i| {
+        pp::listed(p, i) && (filter.is_empty() || i.name.to_ascii_lowercase().contains(filter)) && pp::passes(p, i, &app.session.prefs.project_panel.filter)
+    })
+}
+
+/// The items a context-menu command on `id` applies to: the selection when it holds `id`, else `id`.
+fn menu_targets(app: &FilmcraftApp, id: ItemId) -> Vec<u64> {
+    let sel = &app.session.state.project_selection;
+    if sel.contains(&id) { sel.iter().map(|i| i.0).collect() } else { vec![id.0] }
+}
+
+/// A menu label for a rating: "No Rating", "1 Star", "3 Stars"….
+pub fn rating_label(r: u8) -> String {
+    match r {
+        0 => tl!("No Rating").to_string(),
+        1 => tl!("1 Star").to_string(),
+        n => tlf!("{n} Stars", n),
+    }
+}
+
+/// A five-pointed star of outer radius `r` at `c` (a centre pentagon plus five tips, all convex).
+pub fn paint_star(p: &egui::Painter, c: egui::Pos2, r: f32, fill: Color32) {
+    let pt = |k: usize, rad: f32| {
+        let a = -std::f32::consts::FRAC_PI_2 + k as f32 * std::f32::consts::PI / 5.0;
+        pos2(c.x + rad * a.cos(), c.y + rad * a.sin())
+    };
+    let inner = r * 0.42;
+    let pent: Vec<egui::Pos2> = (0..5).map(|k| pt(2 * k + 1, inner)).collect();
+    p.add(egui::Shape::convex_polygon(pent, fill, Stroke::NONE));
+    for k in 0..5 {
+        p.add(egui::Shape::convex_polygon(vec![pt((2 * k + 9) % 10, inner), pt(2 * k, r), pt(2 * k + 1, inner)], fill, Stroke::NONE));
+    }
+}
+
+const STAR_ON: Color32 = Color32::from_rgb(0xf5, 0xc5, 0x42);
+
+/// Tag dots (the item's tags' colours) from `at`, left to right; returns where they end.
+fn paint_tag_dots(app: &FilmcraftApp, ui: &egui::Ui, it: &redrob_film_project::ProjectItem, at: egui::Pos2) -> f32 {
+    if it.tags.is_empty() {
+        return at.x;
+    }
+    let tags = app.session.project.bin_tags();
+    let mut x = at.x;
+    for id in &it.tags {
+        if let Some(tg) = tags.iter().find(|t| t.id == *id) {
+            ui.painter().circle_filled(pos2(x + 4.0, at.y), 3.5, Color32::from_rgb(tg.color[0], tg.color[1], tg.color[2]));
+            x += 9.0;
+        }
+    }
+    x
 }
 
 fn label_color(app: &FilmcraftApp, l: redrob_film_project::Label) -> Color32 {
@@ -262,6 +312,33 @@ fn item_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, id: ItemId, kind: &ItemK
             }
         }
     });
+    let targets = menu_targets(app, id);
+    let cur = app.session.project.item(id).map(|i| (i.rating, i.tags.clone())).unwrap_or_default();
+    let rr = ui.menu_button(tl!("Rating"), |ui| {
+        for r in 0..=5u8 {
+            let label = rating_label(r);
+            let b = ui.add(egui::Button::selectable(cur.0 == r, label.as_str()));
+            app.auto.add(&format!("project.itemMenu.rating.{r}"), b.rect, &label);
+            if b.clicked() {
+                actions.push(("clip.setRating".into(), json!({"items": targets, "rating": r})));
+                ui.close();
+            }
+        }
+    });
+    app.auto.add("project.itemMenu.rating", rr.response.rect, "Rating");
+    let tr = ui.menu_button(tl!("Tags"), |ui| {
+        for tg in app.session.project.bin_tags() {
+            let on = cur.1.contains(&tg.id);
+            let text = egui::RichText::new(format!("● {}", tg.name)).color(Color32::from_rgb(tg.color[0], tg.color[1], tg.color[2]));
+            let b = ui.add(egui::Button::selectable(on, text));
+            app.auto.add(&format!("project.itemMenu.tag.{}", tg.id), b.rect, &tg.name);
+            if b.clicked() {
+                actions.push(("clip.toggleTag".into(), json!({"items": targets, "tag": tg.id, "on": !on})));
+                ui.close();
+            }
+        }
+    });
+    app.auto.add("project.itemMenu.tags", tr.response.rect, "Tags");
     if matches!(kind, ItemKind::Media(m) if matches!(m.media, redrob_film_project::MediaRef::File { .. })) {
         ui.separator();
         for (label, cmd) in [(tl!("Link Media…"), "media.linkMedia"), (tl!("Make Offline…"), "media.makeOffline")] {
@@ -313,6 +390,22 @@ fn bin_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, v: &View, bin: u64, actio
     if ui.button(tl!("New Bin")).clicked() {
         actions.push(("file.newBin".into(), json!({"parent": bin, "panel": v.prefix})));
         ui.close();
+    }
+    ui.separator();
+    // default folders: new sequences and audio captures go here
+    let st = &app.session.project.settings;
+    let (seq_here, cap_here) = (st.sequence_bin == Some(BinId(bin)), st.capture_bin == Some(BinId(bin)));
+    for (key, label, kind, here) in [
+        ("defaultSequences", tl!("Default Folder for Sequences"), "sequences", seq_here),
+        ("defaultAudioCapture", tl!("Default Folder for Audio Captures"), "audioCapture", cap_here),
+    ] {
+        let b = ui.add(egui::Button::selectable(here, label));
+        app.auto.add(&format!("{}.binMenu.{key}", v.prefix), b.rect, label);
+        if b.clicked() {
+            let target: Option<u64> = if here { None } else { Some(bin) };
+            actions.push(("project.setDefaultFolder".into(), json!({"kind": kind, "bin": target})));
+            ui.close();
+        }
     }
     ui.separator();
     if ui.button(tl!("Clear")).clicked() {
@@ -723,8 +816,9 @@ fn list_bin(app: &mut FilmcraftApp, ui: &mut egui::Ui, bin: &Bin, depth: usize, 
                 Tokens::ui(lc.font),
                 if badge.offline { OFFLINE } else { t.text },
             );
-            if nr.max.x + 40.0 < name_r.max.x {
-                paint_badges(ui, &badge, pos2(nr.max.x + 6.0, r.center().y), &t);
+            let dots = if nr.max.x + 30.0 < name_r.max.x { paint_tag_dots(app, ui, &it, pos2(nr.max.x + 6.0, r.center().y)) } else { nr.max.x };
+            if dots + 40.0 < name_r.max.x {
+                paint_badges(ui, &badge, pos2(dots + 6.0, r.center().y), &t);
             }
         }
         x += name_w;
@@ -734,6 +828,22 @@ fn list_bin(app: &mut FilmcraftApp, ui: &mut egui::Ui, bin: &Bin, depth: usize, 
             if c.name == "Label" {
                 p.rect_filled(Rect::from_center_size(pos2(cr.min.x + 12.0, cr.center().y), vec2(10.0, 10.0)), 2.0, label_color(app, it.label));
                 p.text(pos2(cr.min.x + 22.0, cr.center().y), Align2::LEFT_CENTER, crate::i18n::t(it.label.name()), Tokens::ui(lc.font - 0.5), t.text_dim);
+            } else if c.name == "Rating" {
+                // five stars; clicking star k rates the item k (clicking its current rating clears it)
+                let stars = Rect::from_min_size(pos2(cr.min.x + 4.0, cr.center().y - 6.0), vec2(60.0, 12.0)).intersect(cr);
+                for k in 0..5u8 {
+                    let on = k < it.rating;
+                    paint_star(&p, pos2(stars.min.x + 6.0 + k as f32 * 12.0, stars.center().y), 5.0, if on { STAR_ON } else { t.text_faint.gamma_multiply(0.6) });
+                }
+                let sresp = ui.interact(stars, egui::Id::new((&v.prefix, "rate", id.0)), Sense::click()).on_hover_text(tl!("Rating"));
+                app.auto.add(&format!("{}.item.{}.rating", v.prefix, id.0), stars, &rating_label(it.rating));
+                if sresp.clicked()
+                    && let Some(pos) = sresp.interact_pointer_pos()
+                {
+                    let k = (((pos.x - stars.min.x) / 12.0).floor() as i32 + 1).clamp(1, 5) as u8;
+                    let r = if k == it.rating { 0 } else { k };
+                    actions.push(("clip.setRating".into(), json!({"items": menu_targets(app, id), "rating": r})));
+                }
             } else {
                 let (text, _) = pp::cell(&app.session.project, &it, &c.name);
                 let text = if c.name == "Media Type" { crate::i18n::t(&text).to_string() } else { text };
@@ -828,8 +938,35 @@ fn card(app: &mut FilmcraftApp, ui: &mut egui::Ui, r: Rect, id: ItemId, pre: &st
             let br = Rect::from_min_max(pos2(bx - 15.0, th.max.y - 17.0), pos2(bx, th.max.y - 5.0));
             ui.painter().rect_filled(br, 2.0, Color32::from_black_alpha(160));
             icons::paint(ui.painter(), br.shrink(1.5), icon, Color32::from_rgb(0x8f, 0xb8, 0xf5));
+            let kind = match icon {
+                Icon::Audio => "audio",
+                Icon::Film => "video",
+                _ => "sequence",
+            };
+            app.auto.add(&format!("{pre}.item.{}.stream.{kind}", id.0), br, kind);
             bx -= 17.0;
         }
+    }
+    // instance count: how many times the item is used in the project's sequences
+    let (vu, au) = pp::usage(&app.session.project, id);
+    let uses = vu.max(au);
+    if uses > 0 {
+        let g = ui.painter().layout_no_wrap(uses.to_string(), Tokens::ui(10.0), Color32::WHITE);
+        let ur = Rect::from_min_size(pos2(th.min.x + 4.0, th.min.y + 4.0), vec2(g.size().x + 8.0, 14.0));
+        ui.painter().rect_filled(ur, 7.0, Color32::from_rgba_unmultiplied(0x2a, 0x6e, 0xd8, 220));
+        ui.painter().galley(pos2(ur.center().x - g.size().x / 2.0, ur.center().y - g.size().y / 2.0), g, Color32::WHITE);
+        app.auto.add(&format!("{pre}.item.{}.uses", id.0), ur, &tlf!("Used {n} times", n = uses));
+    }
+    // tags and rating along the top of the thumbnail
+    paint_tag_dots(app, ui, &it, pos2(th.min.x + if uses > 0 { 30.0 } else { 4.0 }, th.min.y + 11.0));
+    if it.rating > 0 {
+        let n = it.rating.min(5) as usize;
+        let sr = Rect::from_min_size(pos2(th.max.x - 26.0 - n as f32 * 10.0, th.min.y + 4.0), vec2(n as f32 * 10.0 + 2.0, 12.0));
+        ui.painter().rect_filled(sr, 2.0, Color32::from_black_alpha(140));
+        for k in 0..n {
+            paint_star(ui.painter(), pos2(sr.min.x + 6.0 + k as f32 * 10.0, sr.center().y), 4.5, STAR_ON);
+        }
+        app.auto.add(&format!("{pre}.item.{}.rating", id.0), sr, &rating_label(it.rating));
     }
     let badge = media_badge(app, &it);
     if badge.offline {

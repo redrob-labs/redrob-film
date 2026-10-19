@@ -988,6 +988,7 @@ static CATEGORIES: &[Category] = &[
             b("media.createFolderForImportedProjects", "Create folder for imported projects", false),
             b("media.autoHideDependentClips", "Automatically Hide Dependent Clips", false),
             b("media.importImageSequences", "Import numbered stills as image sequences", false),
+            b("media.ignoreSubfolderStructure", "Ignore subfolder structure on import", true),
             Row::Group(
                 "Growing Files",
                 &[

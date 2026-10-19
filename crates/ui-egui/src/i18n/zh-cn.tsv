@@ -3567,3 +3567,30 @@
 	The reply hit its length limit.	回复已达到长度上限。
 	The turn ended: {reason}.	本轮已结束：{reason}。
 	Workspace changed. The next message starts the agent with it.	工作区已更改。下一条消息将用它启动智能体。
+	Tags	标签
+	{count} (filtered)	{count}（已筛选）
+	Rating	评级
+	Not Rated	未评级
+	Usage	使用情况
+	Clear Filters	清除筛选
+	Click to tag the selected items; right-click to edit; drag to reorder	单击为所选项目添加标签；右键单击编辑；拖动以重新排序
+	Select items to tag	请选择要添加标签的项目
+	Edit Tag…	编辑标签…
+	Filter by This Tag	按此标签筛选
+	Delete Tag	删除标签
+	Add Tag	添加标签
+	No Rating	无评级
+	1 Star	1 星
+	{n} Stars	{n} 星
+	Default Folder for Sequences	序列的默认文件夹
+	Default Folder for Audio Captures	音频录制的默认文件夹
+	Used {n} times	已使用 {n} 次
+	Edit Tag	编辑标签
+	Audio and Video	音频和视频
+	Color and Generators	颜色和生成器
+	Subclip	子剪辑
+	Adjustment Layer	调整图层
+	Used	已使用
+	Unused	未使用
+	Insert Order	添加顺序
+	Ignore subfolder structure on import	导入时忽略子文件夹结构

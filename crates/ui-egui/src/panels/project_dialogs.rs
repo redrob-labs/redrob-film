@@ -23,6 +23,7 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
         ProjectDialog::ManagePresets { .. } => tl!("Manage Saved View Presets"),
         ProjectDialog::FreeformOptions { .. } => tl!("Freeform View Options"),
         ProjectDialog::SaveArrangement { .. } => tl!("Save Arrangement"),
+        ProjectDialog::EditTag { .. } => tl!("Edit Tag"),
     };
     let mut win = egui::Window::new(title).id(egui::Id::new("project-dialog")).collapsible(false).resizable(false).anchor(Align2::CENTER_CENTER, [0.0, 0.0]);
     // a fixed size keeps the two-list dialog from shifting while its lists settle
@@ -78,6 +79,22 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                 });
                 if ok_cancel(app, ui, &mut close) && !name.trim().is_empty() {
                     run = Some(("project.freeform.saveArrangement".into(), json!({"name": name, "bin": bin})));
+                }
+            }
+            ProjectDialog::EditTag { tag, name, color } => {
+                ui.horizontal(|ui| {
+                    ui.label(tl!("Description:"));
+                    let r = ui.add(egui::TextEdit::singleline(name).desired_width(220.0));
+                    push(app, "projectDialog.name", &r, "Description");
+                });
+                ui.horizontal(|ui| {
+                    ui.label(tl!("Color:"));
+                    let r = ui.color_edit_button_srgb(color);
+                    push(app, "projectDialog.color", &r, "Color");
+                });
+                if ok_cancel(app, ui, &mut close) && !name.trim().is_empty() {
+                    let hex = redrob_film_engine::bin_tags::color_hex(*color);
+                    run = Some(("project.tags.edit".into(), json!({"tag": tag, "name": name.trim(), "color": hex})));
                 }
             }
         }

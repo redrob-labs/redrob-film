@@ -479,7 +479,9 @@ fn stop(s: &mut Session, p: &Value) -> Result<Value> {
     s.services.write_file(&path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     // import + place as one undo step
     let n0 = s.history.undo.len();
-    let item = crate::commands::import_bytes(s, &path, bytes.into(), None)?;
+    // into the project's default folder for audio captures, when one is set
+    let folder = s.project.default_bin(s.project.settings.capture_bin);
+    let item = crate::commands::import_bytes(s, &path, bytes.into(), folder)?;
     let dur = Tick::from_units(sample_count as i64, sr);
     let at = rec.record_start;
     let track = rec.track;

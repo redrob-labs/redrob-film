@@ -359,3 +359,39 @@
 	Redrob Account…	Conta Redrob…
 	Agent	Agente
 	Add Redrob Film to Redrob Code	Adicionar Redrob Film ao Redrob Code
+	Filter	Filtro
+	Type	Tipo
+	Description:	Descrição:
+	Color:	Cor:
+	Video Only	Somente vídeo
+	Audio Only	Somente áudio
+	Image	Imagem
+	Image Sequence	Sequência de imagens
+	Title	Título
+	Tags	Etiquetas
+	{count} (filtered)	{count} (filtrado)
+	Rating	Classificação
+	Not Rated	Sem classificação
+	Usage	Uso
+	Clear Filters	Limpar filtros
+	Click to tag the selected items; right-click to edit; drag to reorder	Clique para etiquetar os itens selecionados; clique com o botão direito para editar; arraste para reordenar
+	Select items to tag	Selecione itens para etiquetar
+	Edit Tag…	Editar etiqueta…
+	Filter by This Tag	Filtrar por esta etiqueta
+	Delete Tag	Excluir etiqueta
+	Add Tag	Adicionar etiqueta
+	No Rating	Sem classificação
+	1 Star	1 estrela
+	{n} Stars	{n} estrelas
+	Default Folder for Sequences	Pasta padrão para sequências
+	Default Folder for Audio Captures	Pasta padrão para capturas de áudio
+	Used {n} times	Usado {n} vezes
+	Edit Tag	Editar etiqueta
+	Audio and Video	Áudio e vídeo
+	Color and Generators	Cor e geradores
+	Subclip	Subclipe
+	Adjustment Layer	Camada de ajuste
+	Used	Usados
+	Unused	Não usados
+	Insert Order	Ordem de inserção
+	Ignore subfolder structure on import	Ignorar a estrutura de subpastas ao importar

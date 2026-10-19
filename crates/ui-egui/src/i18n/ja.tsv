@@ -3574,3 +3574,30 @@
 	The reply hit its length limit.	返答が長さの上限に達しました。
 	The turn ended: {reason}.	ターンが終了しました: {reason}。
 	Workspace changed. The next message starts the agent with it.	ワークスペースが変わりました。次のメッセージでそのワークスペースのエージェントが起動します。
+	Tags	タグ
+	{count} (filtered)	{count}（フィルター中）
+	Rating	評価
+	Not Rated	評価なし
+	Usage	使用状況
+	Clear Filters	フィルターをクリア
+	Click to tag the selected items; right-click to edit; drag to reorder	クリックで選択項目にタグを付け、右クリックで編集、ドラッグで並べ替え
+	Select items to tag	タグを付ける項目を選択してください
+	Edit Tag…	タグを編集…
+	Filter by This Tag	このタグで絞り込む
+	Delete Tag	タグを削除
+	Add Tag	タグを追加
+	No Rating	評価なし
+	1 Star	星 1 つ
+	{n} Stars	星 {n} つ
+	Default Folder for Sequences	シーケンスの既定のフォルダー
+	Default Folder for Audio Captures	オーディオ録音の既定のフォルダー
+	Used {n} times	{n} 回使用
+	Edit Tag	タグを編集
+	Audio and Video	オーディオとビデオ
+	Color and Generators	カラーとジェネレーター
+	Subclip	サブクリップ
+	Adjustment Layer	調整レイヤー
+	Used	使用中
+	Unused	未使用
+	Insert Order	追加順
+	Ignore subfolder structure on import	読み込み時にサブフォルダー構造を無視
