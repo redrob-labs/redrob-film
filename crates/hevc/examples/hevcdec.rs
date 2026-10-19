@@ -1,4 +1,4 @@
-//! Decode an Annex-B H.265 file to raw planar YUV (yuv420p or yuv420p10le):
+//! Decode an Annex-B H.265 file to raw planar YUV (yuv420p / yuv422p, or their 10-bit LE forms):
 //! `cargo run --release -p redrob-film-hevc --example hevcdec -- in.hevc out.yuv`
 
 use redrob_film_hevc::Decoder;

@@ -22,7 +22,7 @@ and fixture generators.
 | VPS, SPS (VUI, HRD skipped, scaling lists, st/lt RPS, PCM), PPS (tiles, WPP, deblocking control, scaling lists, list modification) | done |
 | Slice segment header (all fields: st/lt RPS, list modification, pred weight table, entry points, header extension) | done |
 | POC, RPS marking, missing-reference generation, RefPicList construction, DPB output / bumping (C.5.2) | done |
-| CABAC: all Main / Main 10 syntax elements, WPP context sync, dependent slice context restore, tiles | done |
+| CABAC: all Main / Main 10 / Main 4:2:2 10 syntax elements, WPP context sync, dependent slice context restore, tiles | done |
 | Coding quadtree, CU (skip / intra / inter, AMP, PCM, transquant bypass), PU, transform tree | done |
 | Intra: 35 modes, reference substitution, [1 2 1] filtering, strong intra smoothing, constrained intra | done |
 | Inter: merge (spatial, temporal, combined bi-pred, zero), AMVP, TMVP, 8-tap / 4-tap interpolation, default and explicit weighted prediction | done |
@@ -31,7 +31,8 @@ and fixture generators.
 | Frame-level multithreading (CTB-row granularity dependencies) | done |
 | Draft mode (non-reference pictures skip deblocking / SAO; reduced-resolution playback only) | done |
 | Tiles / WPP | parsed and decoded sequentially within a picture (parallelism is across pictures) |
-| 4:2:2 / 4:4:4 / monochrome, range-extension tools (RExt), 12-bit+ with extended precision | not yet (`Error::Unsupported`) |
+| 4:2:2 (Main 4:2:2 10, 8/10-bit; ChromaArrayType 2 without RExt tools): chroma geometry, two square chroma blocks per TU with their own cbf flags, Table 8-3 intra chroma mode mapping, QpC = Min(qPi, 51), chroma deblocking on the 8x8 chroma grid, SAO, chroma MC (vertical mvC = 2 mv) | done |
+| 4:4:4 / monochrome, range-extension tools (RExt), 12-bit+ with extended precision | not yet (`Error::Unsupported`) |
 | SCC, multilayer (SHVC / MV-HEVC), 3D extensions | not supported (layers > 0 are ignored) |
 
 ## API
@@ -42,7 +43,8 @@ use redrob_film_hevc::{Decoder, Plane};
 let mut dec = Decoder::new(); // or Decoder::with_threads(n), Decoder::from_hvcc(&hvcc)?
 for (pts, access_unit) in access_units {
     for pic in dec.decode(access_unit, pts)? {
-        // pic.width / pic.height (cropped), pic.bit_depth,
+        // pic.width / pic.height (cropped), pic.bit_depth, pic.chroma_format (Yuv420 / Yuv422),
+        // pic.chroma_width / pic.chroma_height,
         // pic.y / pic.u / pic.v: Plane::U8(Vec<u8>) for 8-bit, Plane::U16(Vec<u16>) above,
         // pic.y_stride / pic.uv_stride, pic.pts, pic.poc, pic.key (IRAP), pic.color (VUI), pic.sar
     }
@@ -95,12 +97,14 @@ with ffmpeg; tests print a message and skip when ffmpeg is absent).
 - Robustness: hvcC input with pts round trip; randomly corrupted, truncated and garbage input never
   panics or deadlocks (single- and multi-threaded).
 - Conformance (`tests/conformance.rs`): every fixture is decoded with 1 thread, 3 threads and every
-  core and compared sample-exactly with `ffmpeg -f rawvideo -pix_fmt yuv420p / yuv420p10le`; on mismatch
+  core and compared sample-exactly with `ffmpeg -f rawvideo -pix_fmt yuv420p / yuv420p10le`
+  (`yuv422p / yuv422p10le` for 4:2:2); on mismatch
   the first differing frame, plane, sample, CTB and 8x8 block are reported. Output pts/POC order is
   checked too, and that no picture is flagged draft without draft mode. `compare_detects_mismatch`
   guards the harness itself. Draft mode (`draft_mode_changes_only_flagged_non_reference_pictures`):
   on B-pyramid / weighted fixtures, single- and frame-threaded, every unflagged picture is
-  bit-exact and only flagged pictures differ.
+  bit-exact and only flagged pictures differ. `main422_framemd5`: every 4:2:2 fixture's frames
+  hash to the same MD5 as `ffmpeg -f framemd5` (our output is hashed by the same ffmpeg command).
 
 ### Fixture matrix (all bit-exact, single- and multi-threaded)
 
@@ -131,6 +135,11 @@ libx265 unless noted (x265 enables WPP by default, so most streams carry entry p
 | hd_1080p | 1920x1080 | preset fast |
 | uhd_4k_main10 | 3840x2160 | Main 10 ultrafast |
 | vt_main / vt_main10 | 640x360 | Apple VideoToolbox (hevc_videotoolbox), macOS only |
+| intra_422_10 / main422_10 / main422_8 | testsrc2+noise 176x144 | Main 4:2:2 10: intra only, default GOP (10-bit and 8-bit 4:2:2) |
+| slow_422_10 / bframes_422_10 | mandelbrot / testsrc2 176x144 | 4:2:2 preset slow (rect + AMP), B-pyramid |
+| tskip_422_10 / cu_lossless_422_10 / scaling_list_422_10 / ctu32_tu4_422_10 | 176x144 | 4:2:2 transform skip, transquant bypass, default scaling lists, 4x4 TUs (chroma 4x8 at blkIdx 3) |
+| weightp_422_10 / constrained_intra_422_10 / no_sao_422_10 | 176x144 | 4:2:2 weighted prediction, constrained intra, SAO off |
+| odd_174x139_422_10 | 174x139 | 4:2:2 conformance window (odd height: SubHeightC = 1) |
 | synthetic (7 streams) | 96x64 | tiles, PCM, slices, dependent segments, LTR, list modification |
 
 `cargo test -p redrob-film-hevc --test conformance coverage_report -- --ignored --nocapture` prints the
@@ -183,12 +192,12 @@ context-coded bins are branch-free. Single-threaded 4K now splits into CABAC res
 
 ## Known gaps
 
-- 4:2:2 (Main 4:2:2 10, RExt) is the next step: chroma geometry is 4:2:0-specific in `slicedec`
-  (chroma TU placement, second chroma cbf flags, Table 8-3 intra mode mapping), `inter` (vertical
-  chroma MV scaling), `filter` (chroma edge spacing, QpC = Min(qPi, 51)) and `picture`. Range
-  extension tools (implicit / explicit RDPCM, cross-component prediction, extended precision,
-  persistent Rice adaptation, bypass alignment, chroma QP offset lists) are rejected with
-  `Error::Unsupported`.
+- 4:2:2 covers Main 4:2:2 10 as libx265 and cameras write it (no SPS / PPS range extension).
+  Range extension tools (implicit / explicit RDPCM, cross-component prediction, extended
+  precision, persistent Rice adaptation, bypass alignment, transform skip above 4x4, chroma QP
+  offset lists), 4:4:4 and monochrome are rejected with `Error::Unsupported`. The synthetic
+  streams (PCM, tiles...) are 4:2:0 only; libx265 never writes PCM, so 4:2:2 PCM is untested.
+- VA-API takes 4:2:0 HEVC only; 4:2:2 clips decode in software on Linux.
 - Tiles and WPP substreams are decoded sequentially (entry points are parsed but the decoder finds
   substream starts itself); parallelism is at the picture level.
 - Error concealment is minimal: missing references are replaced by grey pictures, undecodable

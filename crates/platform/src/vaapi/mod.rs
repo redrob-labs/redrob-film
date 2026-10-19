@@ -148,6 +148,11 @@ mod linux {
                     if sps.range_extension {
                         return Err("HEVC range extensions are not taken".into());
                     }
+                    // The software decoder takes 4:2:2 (Sps::check_supported allows it); this front
+                    // end and its surfaces are 4:2:0 only.
+                    if sps.chroma_format_idc != 1 {
+                        return Err(format!("HEVC chroma_format_idc {} is not taken", sps.chroma_format_idc));
+                    }
                     let count = (sps.max_dec_pic_buffering as usize).saturating_add(2).min(18);
                     let size = (sps.width, sps.height);
                     let session = Session::new(profiles, size, count, geometry)?;

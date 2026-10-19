@@ -60,7 +60,36 @@ fixture_tests!(
     uhd_4k_main10,
     vt_main,
     vt_main10,
+    intra_422_10,
+    main422_10,
+    main422_8,
+    slow_422_10,
+    bframes_422_10,
+    tskip_422_10,
+    cu_lossless_422_10,
+    scaling_list_422_10,
+    ctu32_tu4_422_10,
+    weightp_422_10,
+    constrained_intra_422_10,
+    no_sao_422_10,
+    odd_174x139_422_10,
 );
+
+/// Main 4:2:2 10: every frame's MD5 equals `ffmpeg -f framemd5` (yuv422p10le / yuv422p).
+#[test]
+fn main422_framemd5() {
+    let mut checked = 0;
+    for f in common::FIXTURES.iter().filter(|f| f.chroma422) {
+        match common::check_framemd5(f.name) {
+            Ok(true) => checked += 1,
+            Ok(false) => {}
+            Err(e) => panic!("{e}"),
+        }
+    }
+    if checked == 0 {
+        eprintln!("skipped: no 4:2:2 fixtures");
+    }
+}
 
 /// Draft mode: sub-layer non-reference pictures skip deblocking and SAO and are flagged; every
 /// other picture stays bit-exact, single-threaded and frame-threaded.
