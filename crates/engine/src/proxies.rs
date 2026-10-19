@@ -342,6 +342,38 @@ pub fn proxy_dir(media: &str, dest: Option<&str>) -> PathBuf {
     }
 }
 
+/// After a project opens: proxies whose files are gone (but whose originals are there) are made
+/// again at the same paths, in the background (`wait` blocks); returns the job when one started.
+/// The preset follows the proxy file's extension (`.mp4` = H.264, else ProRes Proxy) at ¼ size.
+pub fn recreate_missing(s: &mut Session, wait: bool) -> Option<u64> {
+    let mut work = Vec::new();
+    for (id, it) in s.project.items.iter() {
+        let Some(m) = it.as_media() else { continue };
+        let (Some(MediaRef::File { path: proxy }), MediaRef::File { path: original }) = (&m.proxy, &m.media) else { continue };
+        if m.offline || s.services.file_size(proxy).is_ok() || s.services.file_size(original).is_err() {
+            continue;
+        }
+        let pr = if proxy.to_ascii_lowercase().ends_with(".mp4") { preset("h264_quarter") } else { preset(DEFAULT_PROXY_PRESET) };
+        if let Some(pr) = pr {
+            work.push((*id, proxy.clone(), pr));
+        }
+    }
+    if work.is_empty() {
+        return None;
+    }
+    let n = work.len();
+    match start_job(s, format!("Recreate Missing Proxies ({n})"), work, OnDone::AttachProxies, wait) {
+        Ok(job) => {
+            s.toast(format!("{n} proxy file(s) were missing; recreating them"));
+            Some(job)
+        }
+        Err(e) => {
+            s.log.push(crate::panels::Level::Warning, "proxies", format!("recreating missing proxies: {e}"));
+            None
+        }
+    }
+}
+
 /// `media.createProxies {items?, preset?, destination?, wait?}`.
 pub fn create(s: &mut Session, p: &Value) -> Result<Value> {
     let pr = preset(str_p(p, "preset").unwrap_or(DEFAULT_PROXY_PRESET)).ok_or_else(|| bad("media.createProxies", "unknown preset (see media.proxyPresets)"))?;

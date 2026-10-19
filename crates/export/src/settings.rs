@@ -41,6 +41,86 @@ impl FieldOrder {
     }
 }
 
+/// Export ▸ Scaling interpolation: the filter that resizes the rendered picture to the output
+/// frame. `Area` (the default) is the triangle filter widened by the reduction factor that every
+/// export used before; choosing another one renders at full size and resizes with it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ScaleFilter {
+    #[default]
+    Area,
+    /// Nearest neighbour (no filtering, hard pixel edges).
+    Nearest,
+    /// Two-tap linear (not widened when reducing).
+    Bilinear,
+    /// Catmull-Rom cubic, widened by the reduction factor.
+    Bicubic,
+    /// Lanczos, three lobes, widened by the reduction factor.
+    Lanczos,
+}
+
+impl ScaleFilter {
+    pub const ALL: [ScaleFilter; 5] = [ScaleFilter::Area, ScaleFilter::Nearest, ScaleFilter::Bilinear, ScaleFilter::Bicubic, ScaleFilter::Lanczos];
+    pub fn label(self) -> &'static str {
+        match self {
+            ScaleFilter::Area => "Area (default)",
+            ScaleFilter::Nearest => "Nearest Neighbor",
+            ScaleFilter::Bilinear => "Bilinear",
+            ScaleFilter::Bicubic => "Bicubic",
+            ScaleFilter::Lanczos => "Lanczos",
+        }
+    }
+}
+
+/// Export ▸ Deinterlacer: how an interlaced (combed) picture is made progressive before encoding.
+/// Applied to every output frame; `None` leaves the picture as rendered.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Deinterlace {
+    #[default]
+    None,
+    /// One field (fast): the upper field's lines, the lower field's interpolated from them.
+    OneField,
+    /// Linear blend: every line mixed with its neighbours (1-2-1), no combing, softer.
+    LinearBlend,
+    /// Edge-directed: each lower-field line interpolated along the direction (of three) whose upper
+    /// and lower neighbours match best, so diagonals stay sharp.
+    EdgeDirected,
+}
+
+impl Deinterlace {
+    pub const ALL: [Deinterlace; 4] = [Deinterlace::None, Deinterlace::OneField, Deinterlace::LinearBlend, Deinterlace::EdgeDirected];
+    pub fn label(self) -> &'static str {
+        match self {
+            Deinterlace::None => "None",
+            Deinterlace::OneField => "One Field (fast)",
+            Deinterlace::LinearBlend => "Linear Blend",
+            Deinterlace::EdgeDirected => "Edge Directed",
+        }
+    }
+}
+
+/// Export ▸ Encoder speed of the built-in H.264 encoder (slower = smaller file at the same quality).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum EncoderSpeed {
+    Slow,
+    #[default]
+    Medium,
+    Fast,
+}
+
+impl EncoderSpeed {
+    pub const ALL: [EncoderSpeed; 3] = [EncoderSpeed::Slow, EncoderSpeed::Medium, EncoderSpeed::Fast];
+    pub fn label(self) -> &'static str {
+        match self {
+            EncoderSpeed::Slow => "Slow (best compression)",
+            EncoderSpeed::Medium => "Medium",
+            EncoderSpeed::Fast => "Fast",
+        }
+    }
+}
+
 /// H.264 profile.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -273,11 +353,22 @@ pub struct TextOverlay {
     pub size_percent: f32,
     /// 0–100 (the text and its backing box).
     pub opacity: f32,
+    /// Timecode overlay: show the frame number (counted from the sequence start) instead of the
+    /// timecode.
+    pub frame_count: bool,
 }
 
 impl Default for TextOverlay {
     fn default() -> Self {
-        TextOverlay { enabled: false, text: String::new(), placement: Placement::BottomCenter, offset: (0.0, 0.0), size_percent: 5.0, opacity: 100.0 }
+        TextOverlay {
+            enabled: false,
+            text: String::new(),
+            placement: Placement::BottomCenter,
+            offset: (0.0, 0.0),
+            size_percent: 5.0,
+            opacity: 100.0,
+            frame_count: false,
+        }
     }
 }
 
@@ -382,7 +473,7 @@ impl ExportSettings {
     /// Targa and OpenEXR sequences and ProRes 4444 / 4444 XQ QuickTime movies.
     pub fn supports_alpha(&self) -> bool {
         match self.format {
-            Format::PngSequence | Format::TiffSequence | Format::TgaSequence | Format::ExrSequence => true,
+            Format::PngSequence | Format::TiffSequence | Format::TgaSequence | Format::ExrSequence | Format::WebpSequence => true,
             Format::ProRes => crate::prores_profile(&self.prores_profile).chroma() == redrob_film_prores::ChromaFormat::Yuv444,
             _ => false,
         }
@@ -404,6 +495,11 @@ impl ExportSettings {
             Some((w, h)) => (w.max(2), h.max(2)),
             None => (((seq_w as f32 * self.scale).round() as u32).max(2), ((seq_h as f32 * self.scale).round() as u32).max(2)),
         };
+        // Render at preview resolution: the output shrinks by the monitor's playback resolution
+        if let Some(d) = self.preview_scale.filter(|d| d.is_finite() && *d > 0.0 && *d < 1.0) {
+            w = ((w as f32 * d).round() as u32).max(2);
+            h = ((h as f32 * d).round() as u32).max(2);
+        }
         if !self.is_image_sequence() && self.format != Format::Gif {
             w &= !1;
             h &= !1;
@@ -431,7 +527,7 @@ impl ExportSettings {
     /// The audio codec actually used.
     pub fn audio_codec(&self) -> AudioCodec {
         match (self.format, self.audio.codec) {
-            (Format::Wav | Format::Aiff | Format::MxfOp1a | Format::MxfOpAtom, _) => AudioCodec::Pcm,
+            (Format::Wav | Format::Aiff | Format::Flac | Format::MxfOp1a | Format::MxfOpAtom, _) => AudioCodec::Pcm,
             (Format::Aac, _) => AudioCodec::Aac,
             (f, _) if f.is_mp4_with(self.multiplexer) => AudioCodec::Aac,
             (_, AudioCodec::Auto) if self.format.is_mp4_video() => AudioCodec::Aac,
@@ -445,13 +541,39 @@ impl ExportSettings {
         self.include_audio && !self.is_image_sequence() && self.format != Format::Gif
     }
 
-    /// Whether the format carries video.
+    /// Whether the format carries video (a movie format with its video stream turned off,
+    /// [`ExportSettings::include_video`], does not).
     pub fn has_video(&self) -> bool {
-        !self.format.is_audio_only()
+        !self.format.is_audio_only() && (self.include_video || self.is_image_sequence() || self.format == Format::Gif)
+    }
+
+    /// The settings actually encoded: a movie format with the video stream turned off becomes its
+    /// audio alone (AAC Audio for the MPEG-4 formats, Waveform Audio for the QuickTime and MXF
+    /// ones), the path taking the audio file's extension.
+    pub fn normalized(&self) -> ExportSettings {
+        if self.has_video() || self.format.is_audio_only() {
+            return self.clone();
+        }
+        let mut s = self.clone();
+        s.format = if self.format.is_mp4_video() && self.audio_codec() == AudioCodec::Aac { Format::Aac } else { Format::Wav };
+        s.include_audio = true;
+        s.include_video = true;
+        if s.format == Format::Wav {
+            s.audio.codec = AudioCodec::Pcm;
+            s.audio.bits = if self.audio.bits >= 24 { 24 } else { 16 };
+        }
+        if !s.path.is_empty() {
+            let stem = s.path.rsplit_once('.').map_or(s.path.as_str(), |x| x.0).to_string();
+            s.path = format!("{stem}.{}", s.format.extension());
+        }
+        s
     }
 
     /// File extension of the output.
     pub fn extension(&self) -> &'static str {
+        if !self.has_video() && !self.format.is_audio_only() {
+            return self.normalized().format.extension();
+        }
         if self.format.is_h26x() && self.multiplexer == Multiplexer::Mov { "mov" } else { self.format.extension() }
     }
 
@@ -493,11 +615,16 @@ impl ExportSettings {
             // two bytes per half-float channel
             Format::ExrSequence => px * if self.keeps_alpha() { 8.0 } else { 6.0 } * 8.0 * fps,
             Format::Gif => px * 0.6 * 8.0 * fps,
-            Format::Wav | Format::Aiff | Format::MxfOp1a | Format::MxfOpAtom => 0.0,
+            Format::PpmSequence => px * 3.0 * 8.0 * fps,
+            // lossless WebP: roughly PNG's ratio
+            Format::WebpSequence => px * 4.0 * 0.4 * 8.0 * fps,
+            Format::Wav | Format::Aiff | Format::Flac | Format::MxfOp1a | Format::MxfOpAtom => 0.0,
         };
         let audio_bps = if self.has_audio() || self.format.is_audio_only() {
             match self.audio_codec() {
                 AudioCodec::Aac => self.audio.bitrate_kbps as f64 * 1000.0,
+                // lossless FLAC: about 60 % of the PCM rate for program material
+                _ if self.format == Format::Flac => 0.6 * r.sample_rate as f64 * r.channels as f64 * if self.audio.bits >= 24 { 24.0 } else { 16.0 },
                 _ => r.sample_rate as f64 * r.channels as f64 * if self.audio.bits >= 24 { 24.0 } else { 16.0 },
             }
         } else {
@@ -588,6 +715,7 @@ impl ExportSettings {
             };
             match self.audio_codec() {
                 AudioCodec::Aac => format!("AAC, {} kbps, {} Hz, {ch}", self.audio.bitrate_kbps, r.sample_rate),
+                _ if self.format == Format::Flac => format!("FLAC (lossless) {}-bit, {} Hz, {ch}", if self.audio.bits >= 24 { 24 } else { 16 }, r.sample_rate),
                 _ => format!("Uncompressed {}-bit PCM, {} Hz, {ch}", if self.audio.bits >= 24 { 24 } else { 16 }, r.sample_rate),
             }
         } else {

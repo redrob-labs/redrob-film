@@ -1320,6 +1320,21 @@ impl FilmcraftApp {
                 let Some(path) = self.hooks.pick_open_project.as_mut().and_then(|f| f()) else { return Ok(Value::Null) };
                 self.session.execute("file.open", json!({"path": path})).map_err(|e| e.to_string())
             }
+            // File ▸ Open Archived Project…: a .tar.gz / .zip made by Project Manager ▸ Archive
+            "file.openArchive" => {
+                let paths = self.hooks.pick_files.as_mut().map(|f| f(&["gz", "tgz", "zip"])).unwrap_or_default();
+                let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
+                self.session.execute("file.openArchive", json!({"path": path})).map_err(|e| e.to_string())
+            }
+            // Project panel ▸ Replace Audio / Video Part…: the file whose part replaces the clip's
+            "clip.replacePart" => {
+                let exts: Vec<&str> = redrob_film_media::VIDEO_EXTENSIONS.iter().chain(redrob_film_media::AUDIO_EXTENSIONS).copied().collect();
+                let paths = self.hooks.pick_files.as_mut().map(|f| f(&exts)).unwrap_or_default();
+                let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
+                let mut p = params.clone();
+                p["path"] = json!(path);
+                self.session.execute("clip.replacePart", p).map_err(|e| e.to_string())
+            }
             "graphics.newFromFile" => {
                 let exts: Vec<&str> = redrob_film_media::STILL_EXTENSIONS.iter().chain(redrob_film_media::VIDEO_EXTENSIONS).copied().collect();
                 let paths = self.hooks.pick_files.as_mut().map(|f| f(&exts)).unwrap_or_default();
@@ -1722,8 +1737,27 @@ impl FilmcraftApp {
                     self.ui.dock.activate(PanelKind::Source);
                 }
                 redrob_film_engine::Event::RevealInProject(item) => self.reveal_in_project(item),
+                redrob_film_engine::Event::OpenPath { path, reveal } => {
+                    if let Err(e) = crate::panels::menu_dialogs::open_path(self, &ctx, &path, reveal) {
+                        self.ui.status = e;
+                    }
+                }
+                redrob_film_engine::Event::Shutdown => {
+                    if let Err(e) = shut_down_computer() {
+                        self.ui.status = e;
+                    }
+                }
                 redrob_film_engine::Event::Toast { message, .. } => self.toast = Some((message, ctx.input(|i| i.time))),
                 redrob_film_engine::Event::ProjectChanged { .. } => {}
+            }
+        }
+        // a project just opened brings the window layout it was saved with
+        if let Some(l) = self.session.restored_layout.take() {
+            if let Ok(d) = serde_json::from_value::<crate::dock::DockNode>(l["dock"].clone()) {
+                self.ui.dock = d;
+            }
+            if let Some(w) = l["workspace"].as_str() {
+                self.ui.workspace = w.to_string();
             }
         }
         self.sync_timeline_view();
@@ -2106,6 +2140,32 @@ impl eframe::App for FilmcraftApp {
         }
     }
 }
+/// Export ▸ Shut down computer after renderings: ask the operating system to power off (one
+/// minute's grace on Windows; the desktop session's own power-off elsewhere).
+fn shut_down_computer() -> Result<(), String> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        Err("shutting down is not available in the browser".into())
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let mut cmd = if cfg!(target_os = "windows") {
+            let mut c = std::process::Command::new("shutdown");
+            c.args(["/s", "/t", "60"]);
+            c
+        } else if cfg!(target_os = "macos") {
+            let mut c = std::process::Command::new("osascript");
+            c.args(["-e", "tell application \"System Events\" to shut down"]);
+            c
+        } else {
+            let mut c = std::process::Command::new("systemctl");
+            c.arg("poweroff");
+            c
+        };
+        cmd.spawn().map(|_| ()).map_err(|e| format!("can't shut down: {e}"))
+    }
+}
+
 
 /// Effective sample rate for shuttle playback. The audio device still runs at `device_rate`,
 /// so at 2x its output samples represent twice the timeline duration. Reverse and

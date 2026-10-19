@@ -653,6 +653,9 @@ pub struct UiState {
     /// `panels::menu_dialogs`.
     #[serde(default)]
     pub extras: crate::panels::menu_dialogs::Extras,
+    /// The clip job dialogs (speed change, transcode, custom jobs). See `panels::clip_jobs`.
+    #[serde(default)]
+    pub clip_jobs: crate::panels::clip_jobs::ClipJobsUi,
     /// Essential Graphics ▸ Browse and the graphics template / Replace Fonts dialogs. See
     /// `panels::graphics_templates`.
     #[serde(default)]
@@ -837,6 +840,8 @@ pub struct ProjectManagerDraft {
     pub include_proxies: bool,
     pub include_previews: bool,
     pub destination: String,
+    /// Archive Project: "" (a folder), "tarGz" or "zip".
+    pub archive: String,
     /// Last dry-run estimate: (original bytes, resulting bytes, files).
     pub estimate: Option<(u64, u64, usize)>,
     pub message: String,
@@ -853,6 +858,7 @@ impl Default for ProjectManagerDraft {
             include_proxies: true,
             include_previews: false,
             destination: String::new(),
+            archive: String::new(),
             estimate: None,
             message: String::new(),
         }
@@ -1088,6 +1094,7 @@ impl Default for UiState {
             workspace_dialog: None,
             clip_dialog: None,
             extras: Default::default(),
+            clip_jobs: Default::default(),
             gfx_templates: Default::default(),
             panels: Default::default(),
             keys: Default::default(),

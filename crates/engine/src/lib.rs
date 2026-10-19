@@ -11,9 +11,13 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 pub mod aaf_omf;
+pub mod archive;
+pub mod backups;
+pub mod cache_manager;
 pub mod autosave;
 pub mod bin_tags;
 pub mod captions;
+pub mod clip_jobs;
 pub mod clip_ops;
 pub mod clip_props;
 pub mod color;
@@ -46,6 +50,7 @@ pub mod project_tools;
 pub mod proxies;
 pub mod relink;
 pub mod remix;
+pub mod render_jobs;
 pub mod scene_detect;
 pub mod scopes;
 pub mod sequence_extras;
@@ -358,6 +363,15 @@ pub enum Event {
     OpenSource(ItemId),
     /// Show this item in the Project panel (Reveal in Project).
     RevealInProject(ItemId),
+    /// Hand a file to the operating system: open it in its default application, or reveal it in
+    /// the file manager (after an export, a finished queue item).
+    OpenPath {
+        path: String,
+        reveal: bool,
+    },
+    /// Every export with "shut down after rendering" has finished: the host shuts the computer
+    /// down.
+    Shutdown,
 }
 
 pub struct Session {
@@ -428,6 +442,16 @@ pub struct Session {
     pub media_stamps: std::collections::HashMap<String, media_watch::Stamp>,
     /// The stamps being taken on a worker thread ([`Session::start_media_scan`]).
     pub media_scan: Option<media_watch::MediaScan>,
+    /// Export jobs whose after-export actions (open, play, add, log) run when they end.
+    pub post_exports: Vec<render_jobs::PostExport>,
+    /// An export asked to shut the computer down once every export has finished.
+    pub shutdown_armed: bool,
+    /// The window layout the frontend keeps up to date, saved with the project's view.
+    pub ui_layout: Option<Value>,
+    /// The layout of a project just opened, for the frontend to apply (it takes it).
+    pub restored_layout: Option<Value>,
+    /// Clip jobs (stabilize, speed change, transcode, custom) whose outputs are added when done.
+    pub clip_jobs: Vec<clip_jobs::PendingClipJob>,
 }
 
 /// An export advanced a batch at a time on the host's thread ([`Session::pump_jobs`]).
@@ -519,6 +543,11 @@ impl Session {
             exec_depth: 0,
             media_stamps: Default::default(),
             media_scan: None,
+            post_exports: Vec::new(),
+            shutdown_armed: false,
+            ui_layout: None,
+            restored_layout: None,
+            clip_jobs: Vec::new(),
         }
     }
 
@@ -605,6 +634,8 @@ impl Session {
         masks::poll(self);
         scene_detect::poll(self);
         export_tools::pump_queue(self, false);
+        render_jobs::poll(self);
+        clip_jobs::poll(self);
         panels::log_jobs(self);
         let Some(p) = self.persistence.as_mut() else { return };
         for ev in p.drain_events() {
@@ -769,6 +800,7 @@ impl Session {
             active_sequence: self.state.active_sequence.filter(is_seq),
             sequences: self.state.timeline_views.iter().filter(|(id, _)| is_seq(id)).map(|(id, v)| (*id, *v)).collect(),
             playheads: self.state.playheads.iter().filter(|(id, _)| is_seq(id)).map(|(id, t)| (*id, *t)).collect(),
+            layout: self.ui_layout.clone(),
         }
     }
 
@@ -778,6 +810,8 @@ impl Session {
     /// view without any open sequence leaves the project on its first sequence: a project saved
     /// by a session that never showed one (a script, the CLI) should not open on an empty Timeline.
     pub fn restore_project_view(&mut self, view: redrob_film_project::ProjectView) {
+        // the frontend applies the window layout (and takes it from here)
+        self.restored_layout = view.layout.clone().filter(Value::is_object);
         let mut open: Vec<ItemId> = Vec::new();
         for id in view.open_sequences {
             if self.project.sequence(id).is_some() && !open.contains(&id) {

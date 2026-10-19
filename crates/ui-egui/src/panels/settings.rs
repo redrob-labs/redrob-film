@@ -39,6 +39,11 @@ pub struct SettingsDraft {
     /// `mediaCache.info` when the Media Cache page was shown.
     #[serde(default)]
     pub cache_info: Value,
+    /// `cache.usage` (Manage Cached Data) and the "older than" filter in days (0 = everything).
+    #[serde(default)]
+    pub cache_usage: Value,
+    #[serde(default)]
+    pub cache_older_days: u32,
     /// Audio devices reported by the platform (Audio Hardware page).
     #[serde(default)]
     pub devices: Option<AudioDevices>,
@@ -601,6 +606,48 @@ fn custom(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft, name: &str
             let size = mb(d.cache_info["bytes"].as_u64().unwrap_or(0));
             let files = d.cache_info["files"].as_u64().unwrap_or(0);
             note(ui, &t, &tlf!("Currently: {loc} — {files} file(s), {size}", loc, files, size));
+        }
+        // Manage Cached Data: the current project's and every project's cached files by kind
+        "cacheManager" => {
+            if d.cache_usage.is_null() {
+                d.cache_usage = app.session.execute("cache.usage", json!({})).unwrap_or(json!({}));
+            }
+            ui.label(egui::RichText::new(tl!("Manage Cached Data")).strong());
+            ui.horizontal(|ui| {
+                ui.label(tl!("Delete only files older than"));
+                let r = ui.add(egui::DragValue::new(&mut d.cache_older_days).range(0..=3650).suffix(tl!(" days")));
+                app.auto.add("settings.cacheManager.olderThan", r.rect, "older than");
+                ui.label(egui::RichText::new(tl!("(0 = all)")).weak());
+            });
+            let cats = d.cache_usage["categories"].as_array().cloned().unwrap_or_default();
+            let mut del: Option<String> = None;
+            for scope in ["current", "all"] {
+                ui.label(egui::RichText::new(if scope == "current" { tl!("Current project") } else { tl!("All projects") }).color(t.text_dim));
+                for c in cats.iter().filter(|c| c["scope"] == scope) {
+                    let id = c["id"].as_str().unwrap_or("").to_string();
+                    ui.horizontal(|ui| {
+                        field_label(ui, crate::i18n::t(c["label"].as_str().unwrap_or("")));
+                        ui.label(tlf!("{files} file(s), {size}", files = c["files"].as_u64().unwrap_or(0), size = mb(c["bytes"].as_u64().unwrap_or(0))));
+                        let b = ui.add_enabled(c["files"].as_u64().unwrap_or(0) > 0, egui::Button::new(tl!("Delete")));
+                        app.auto.add(&format!("settings.cacheManager.{id}.delete"), b.rect, "Delete");
+                        if b.clicked() {
+                            del = Some(id.clone());
+                        }
+                    });
+                }
+            }
+            if let Some(kind) = del {
+                let mut p = json!({"kind": kind});
+                if d.cache_older_days > 0 {
+                    p["olderThanDays"] = json!(d.cache_older_days);
+                }
+                d.message = match app.session.execute("cache.delete", p) {
+                    Ok(v) => tlf!("Deleted {n} file(s), {size}.", n = v["files"].as_u64().unwrap_or(0), size = mb(v["bytes"].as_u64().unwrap_or(0))),
+                    Err(e) => e.to_string(),
+                };
+                d.cache_usage = Value::Null;
+                d.cache_info = Value::Null;
+            }
         }
         "outputMapping" => {
             let ch = d.devices.as_ref().map(|x| x.output_channels).unwrap_or(0);

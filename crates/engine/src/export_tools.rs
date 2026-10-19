@@ -390,6 +390,12 @@ fn is_folder(x: &str) -> bool {
 
 /// Output path for `seq`: the `path` param (a file, or a directory ending in `/` or existing), else
 /// `<default dir>/<sequence name>.<ext>`; `suffix` distinguishes several items.
+/// The output path an export command writes (`path` file or folder, else the default folder),
+/// with the format's extension.
+pub fn resolve_output_path(s: &Session, p: &Value, seq: ItemId, settings: &ExportSettings) -> String {
+    output_path(s, p, seq, settings, None)
+}
+
 fn output_path(s: &Session, p: &Value, seq: ItemId, settings: &ExportSettings, suffix: Option<usize>) -> String {
     let name = s.project.item(seq).map(|i| i.name.clone()).unwrap_or_else(|| "Sequence".into());
     let base = match str_p(p, "path").map(expand_home) {
@@ -424,7 +430,9 @@ fn write_sidecar(s: &Session, project: &Project, seq: ItemId, settings: &ExportS
 }
 
 /// Run an export of `seq` in `project` as a background job (or now, with `wait`); returns the job id.
-pub fn spawn_export(s: &mut Session, project: Arc<Project>, seq: ItemId, mut settings: ExportSettings, label: String, wait: bool) -> Result<u64> {
+pub fn spawn_export(s: &mut Session, project: Arc<Project>, seq: ItemId, settings: ExportSettings, label: String, wait: bool) -> Result<u64> {
+    // the video stream turned off: the audio alone (its own format and extension)
+    let mut settings = settings.normalized();
     let format = settings.format;
     if !redrob_film_export::available(format) {
         return Err(EngineError::Other(format!("{} export is not available (no encoder registered)", format.label())));
@@ -439,8 +447,13 @@ pub fn spawn_export(s: &mut Session, project: Arc<Project>, seq: ItemId, mut set
     write_sidecar(s, &project, seq, &settings)?;
     let id = s.jobs.iter().map(|j| j.id).max().unwrap_or(0) + 1;
     let job = crate::Job { id, label, progress: Default::default(), result: Default::default() };
-    // Export always renders full-resolution media, whatever the proxy toggle says.
-    let provider = s.media.full_res_provider(project.clone(), s.services.clone());
+    // Export renders full-resolution media, whatever the proxy toggle says, unless the export asks
+    // for proxies (Use proxy clips, a fast draft).
+    let provider = if settings.use_proxies {
+        s.media.proxy_provider(project.clone(), s.services.clone())
+    } else {
+        s.media.full_res_provider(project.clone(), s.services.clone())
+    };
     let (prog, res) = (job.progress.clone(), job.result.clone());
     if cfg!(target_arch = "wasm32") && !wait && redrob_film_export::stepped(format) {
         // No threads: the host advances the export between UI frames (`Session::pump_jobs`).
@@ -503,7 +516,11 @@ pub fn export_media(s: &mut Session, p: &Value) -> Result<Value> {
     settings.path = output_path(s, p, seq, &settings, None);
     let wait = bool_p(p, "wait").unwrap_or(false);
     let path = settings.path.clone();
-    let id = spawn_export(s, project, seq, settings, format!("Export {}", file_name(&path)), wait)?;
+    let after = crate::render_jobs::AfterExport::from_params(p);
+    let id = crate::render_jobs::spawn_with_after(s, project, seq, settings, format!("Export {}", file_name(&path)), wait, after)?;
+    if wait {
+        crate::render_jobs::poll(s);
+    }
     let mut out = json!({"job": id, "path": path});
     if let Some(pr) = preset {
         out["preset"] = json!(pr.name);
@@ -546,6 +563,8 @@ pub struct QueueItem {
     /// The background job while encoding / after it ran.
     pub job: Option<u64>,
     pub error: Option<String>,
+    /// What to do when it finishes (Render dialog options).
+    pub after: crate::render_jobs::AfterExport,
     /// The project as it was when the item was queued.
     #[serde(skip)]
     pub project: Arc<Project>,
@@ -630,7 +649,7 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
         };
         let it = s.export_queue.items[i].clone();
         let label = format!("Queue: {} → {}", it.sequence_name, file_name(&it.settings.path));
-        match spawn_export(s, it.project.clone(), it.sequence, it.settings.clone(), label, wait) {
+        match crate::render_jobs::spawn_with_after(s, it.project.clone(), it.sequence, it.settings.clone(), label, wait, it.after) {
             Ok(job) => {
                 let x = &mut s.export_queue.items[i];
                 x.status = QueueStatus::Encoding;
@@ -706,6 +725,7 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
             status: QueueStatus::Ready,
             job: None,
             error: None,
+            after: crate::render_jobs::AfterExport::from_params(p),
             project: project.clone(),
         });
         ids.push(id);

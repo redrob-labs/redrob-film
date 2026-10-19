@@ -846,3 +846,175 @@
 	24-bit	24 bits
 	16-bit	16 bits
 	Add Effect…	Adicionar efeito…
+# Kdenlive parity p11: render options, clip jobs, archives, backups, cache
+	Open folder after export	Abrir pasta após exportar
+	Play after render	Reproduzir após renderizar
+	Add rendered file to project	Adicionar arquivo renderizado ao projeto
+	Keep log file next to the output	Manter arquivo de log ao lado da saída
+	Separate file for each audio track	Arquivo separado para cada faixa de áudio
+	Shut down computer after renderings	Desligar o computador após renderizar
+	Render Options	Opções de renderização
+	After Export	Após exportar
+	Video Stream	Fluxo de vídeo
+	Export video	Exportar vídeo
+	Aspect Ratio	Proporção
+	Match Source	Igual à origem
+	Scaling Interpolation	Interpolação de escala
+	Deinterlacer	Desentrelaçador
+	Encoder Speed	Velocidade do codificador
+	Render full color range	Renderizar com faixa de cor completa
+	Render at preview resolution ({res})	Renderizar na resolução de pré-visualização ({res})
+	Use proxy clips	Usar clipes proxy
+	Parallel processing	Processamento paralelo
+	Encoding Threads	Threads de codificação
+	0 = one per core	0 = um por núcleo
+	Show frame count instead of timecode	Mostrar contagem de quadros em vez do timecode
+	All markers	Todos os marcadores
+	Queue Marker Sections	Enfileirar seções de marcadores
+	Generate Script	Gerar script
+	Render script saved: {name}	Script de renderização salvo: {name}
+	Queued {n} marker sections	{n} seções de marcadores na fila
+	Play	Reproduzir
+	Open Folder	Abrir pasta
+	Add to Project	Adicionar ao projeto
+	Render Scripts	Scripts de renderização
+	From marker	Do marcador
+	to	até
+	Sequence End	Fim da sequência
+	Edit…	Editar…
+	Editing preset {name}	Editando a predefinição {name}
+	Preset Name	Nome da predefinição
+	Save Changes	Salvar alterações
+	Done	Concluído
+	Saved preset {name}	Predefinição {name} salva
+	Area (default)	Área (padrão)
+	Nearest Neighbor	Vizinho mais próximo
+	Bilinear	Bilinear
+	Bicubic	Bicúbica
+	Lanczos	Lanczos
+	One Field (fast)	Um campo (rápido)
+	Edge Directed	Orientado por bordas
+	Slow (best compression)	Lenta (melhor compressão)
+	Medium	Média
+	Fast	Rápida
+	16:9	16:9
+	4:3	4:3
+	1:1 (square)	1:1 (quadrado)
+	4:5 (portrait)	4:5 (retrato)
+	9:16 (vertical)	9:16 (vertical)
+	2.39:1 (scope)	2.39:1 (scope)
+	1.85:1 (flat)	1.85:1 (flat)
+	PPM	PPM
+	WebP	WebP
+	FLAC Audio	Áudio FLAC
+	PPM Sequence	Sequência PPM
+	WebP Sequence	Sequência WebP
+	WebP Sequence with Alpha	Sequência WebP com alfa
+	Numbered PPM stills (binary, 8-bit RGB)	Imagens PPM numeradas (binário, RGB de 8 bits)
+	Numbered WebP stills (lossless)	Imagens WebP numeradas (sem perdas)
+	Numbered WebP stills (lossless, RGBA)	Imagens WebP numeradas (sem perdas, RGBA)
+	FLAC 48 kHz 16-bit	FLAC 48 kHz 16 bits
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24 bits
+	FLAC, stereo 48 kHz 16-bit, lossless	FLAC, estéreo 48 kHz 16 bits, sem perdas
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, estéreo 48 kHz 24 bits, sem perdas
+	Open Export Output	Abrir arquivo exportado
+	Add Export Output to Project	Adicionar arquivo exportado ao projeto
+	Generate Render Script	Gerar script de renderização
+	List Render Scripts	Listar scripts de renderização
+	Start Render Script	Iniciar script de renderização
+	Delete Render Script	Excluir script de renderização
+	Remove Missing Clips	Remover clipes ausentes
+	Open Archived Project…	Abrir projeto arquivado…
+	List Project Backups	Listar backups do projeto
+	Open Backup File…	Abrir arquivo de backup…
+	Cached Data Usage	Uso de dados em cache
+	Delete Cached Data	Excluir dados em cache
+	Stabilize Clip	Estabilizar clipe
+	Duplicate Clip with Speed Change	Duplicar clipe com mudança de velocidade
+	Transcode Clips	Transcodificar clipes
+	List Transcode Profiles	Listar perfis de transcodificação
+	Save Transcode Profile	Salvar perfil de transcodificação
+	Delete Transcode Profile	Excluir perfil de transcodificação
+	List Clip Jobs	Listar tarefas de clipe
+	Save Clip Job	Salvar tarefa de clipe
+	Delete Clip Job	Excluir tarefa de clipe
+	Run Clip Job	Executar tarefa de clipe
+	Clip in Timeline	Clipe na linha do tempo
+	Go to Clip in Timeline	Ir para o clipe na linha do tempo
+	Reveal in File Manager	Mostrar no gerenciador de arquivos
+	Replace Audio or Video Part	Substituir parte de áudio ou vídeo
+	Adjust Profile to Current Clip	Ajustar perfil ao clipe atual
+	Insert at Timecode	Inserir no timecode
+	Delete Clips In Use	Excluir clipes em uso
+	{clips} of these clips are used in the timeline ({uses} timeline clips). Delete them and their timeline clips?	{clips} destes clipes são usados na linha do tempo ({uses} clipes na linha do tempo). Excluí-los junto com os clipes da linha do tempo?
+	Cancel	Cancelar
+	Remove from Project	Remover do projeto
+	Remove All Missing	Remover todos os ausentes
+	Open Recent	Abrir recentes
+	Clear List	Limpar lista
+	Archive:	Arquivo compactado:
+	Folder only	Somente pasta
+	Open Backup File	Abrir arquivo de backup
+	Last hour	Última hora
+	Last day	Último dia
+	Last week	Última semana
+	Older	Mais antigos
+	No backups yet: every save of the project keeps one.	Ainda não há backups: cada vez que o projeto é salvo, um é mantido.
+	Restore	Restaurar
+	Welcome to Redrob Film	Boas-vindas ao Redrob Film
+	New Project	Novo projeto
+	Recent Projects	Projetos recentes
+	No recent projects	Nenhum projeto recente
+	Show this screen at startup	Mostrar esta tela ao iniciar
+	Show Welcome Screen	Mostrar tela de boas-vindas
+	Warn when the cache exceeds	Avisar quando o cache exceder
+	Delete oldest files (or warn) when the cache exceeds	Excluir os arquivos mais antigos (ou avisar) quando o cache exceder
+	Manage Cached Data	Gerenciar dados em cache
+	Delete only files older than	Excluir apenas arquivos com mais de
+	 days	 dias
+	(0 = all)	(0 = todos)
+	Current project	Projeto atual
+	All projects	Todos os projetos
+	Render previews	Pré-visualizações renderizadas
+	Proxy clips	Clipes proxy
+	Backups	Backups
+	Backups of all projects	Backups de todos os projetos
+	Media cache (all projects)	Cache de mídia (todos os projetos)
+	{files} file(s), {size}	{files} arquivo(s), {size}
+	Replace Audio Part…	Substituir parte de áudio…
+	Replace Video Part…	Substituir parte de vídeo…
+	Clip Jobs	Tarefas de clipe
+	Stabilize	Estabilizar
+	Duplicate with Speed Change…	Duplicar com mudança de velocidade…
+	Transcode…	Transcodificar…
+	Configure Clip Jobs…	Configurar tarefas de clipe…
+	Duplicate with Speed Change	Duplicar com mudança de velocidade
+	Custom Clip Jobs	Tarefas de clipe personalizadas
+	Reverse	Inverter
+	Pitch compensation	Compensação de tom
+	Create	Criar
+	Profile	Perfil
+	Add the result to the project	Adicionar o resultado ao projeto
+	Replace the original clip	Substituir o clipe original
+	Transcode	Transcodificar
+	New or changed profile	Perfil novo ou alterado
+	Name	Nome
+	Export preset	Predefinição de exportação
+	Save Profile	Salvar perfil
+	Saved jobs	Tarefas salvas
+	No custom clip jobs yet.	Ainda não há tarefas de clipe personalizadas.
+	Run	Executar
+	Arguments ({input}, {output})	Argumentos ({input}, {output})
+	Output extension	Extensão de saída
+	Save Job	Salvar tarefa
+	Started job {job}	Tarefa {job} iniciada
+	Saved	Salvo
+	ProRes 422 LT (edit friendly)	ProRes 422 LT (bom para edição)
+	ProRes 422 HQ	ProRes 422 HQ
+	DNxHR SQ (edit friendly)	DNxHR SQ (bom para edição)
+	DNxHR HQ	DNxHR HQ
+	APV 422-10	APV 422-10
+	WAV 24-bit (audio)	WAV 24 bits (áudio)
+# Kdenlive parity p11: shortcut categories
+	Cache	Cache
+	ClipJobs	Tarefas de clipe

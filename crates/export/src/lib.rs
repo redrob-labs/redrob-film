@@ -17,6 +17,7 @@ use std::io::Write;
 
 mod aac_out;
 mod audio_out;
+mod flac_out;
 mod job;
 mod mxf_out;
 mod pace;
@@ -110,6 +111,12 @@ pub enum Format {
     /// Numbered OpenEXR stills (half-float scene-linear RGB, RGBA with [`ExportSettings::alpha`]).
     #[serde(rename = "exr", alias = "ExrSequence")]
     ExrSequence,
+    /// Numbered PPM stills (binary portable pixmap, 8-bit RGB).
+    #[serde(rename = "ppm", alias = "PpmSequence")]
+    PpmSequence,
+    /// Numbered WebP stills (lossless; RGBA with [`ExportSettings::alpha`]).
+    #[serde(rename = "webp", alias = "WebpSequence")]
+    WebpSequence,
     #[serde(rename = "gif", alias = "Gif")]
     Gif,
     #[serde(rename = "wav", alias = "Wav")]
@@ -120,6 +127,9 @@ pub enum Format {
     /// the path ends in `.aac`.
     #[serde(rename = "aac", alias = "Aac")]
     Aac,
+    /// FLAC Audio: the mix alone, losslessly compressed (`.flac`, 16 or 24-bit).
+    #[serde(rename = "flac", alias = "Flac")]
+    Flac,
     /// MXF OP1a (SMPTE ST 378): frame-wrapped DNxHR, ProRes or H.264 ([`MxfVideoCodec`]) + PCM.
     #[serde(rename = "mxf-op1a", alias = "MxfOp1a")]
     MxfOp1a,
@@ -149,6 +159,9 @@ impl Format {
             "tga" | "targa" | "tgasequence" | "targasequence" => Format::TgaSequence,
             "dpx" | "dpxsequence" => Format::DpxSequence,
             "exr" | "openexr" | "exrsequence" | "openexrsequence" => Format::ExrSequence,
+            "ppm" | "pnm" | "ppmsequence" => Format::PpmSequence,
+            "webp" | "webpsequence" => Format::WebpSequence,
+            "flac" | "flacaudio" => Format::Flac,
             "gif" | "animatedgif" => Format::Gif,
             "wav" | "waveform" | "waveformaudio" => Format::Wav,
             "aif" | "aiff" | "aifc" => Format::Aiff,
@@ -173,10 +186,13 @@ impl Format {
             Format::TgaSequence => "tga",
             Format::DpxSequence => "dpx",
             Format::ExrSequence => "exr",
+            Format::PpmSequence => "ppm",
+            Format::WebpSequence => "webp",
             Format::Gif => "gif",
             Format::Wav => "wav",
             Format::Aiff => "aiff",
             Format::Aac => "aac",
+            Format::Flac => "flac",
             Format::MxfOp1a => "mxf-op1a",
             Format::MxfOpAtom => "mxf-opatom",
         }
@@ -192,10 +208,13 @@ impl Format {
             Format::TgaSequence => "tga",
             Format::DpxSequence => "dpx",
             Format::ExrSequence => "exr",
+            Format::PpmSequence => "ppm",
+            Format::WebpSequence => "webp",
             Format::Gif => "gif",
             Format::Wav => "wav",
             Format::Aiff => "aif",
             Format::Aac => "m4a",
+            Format::Flac => "flac",
             Format::MxfOp1a | Format::MxfOpAtom => "mxf",
         }
     }
@@ -215,10 +234,13 @@ impl Format {
             Format::TgaSequence => "Targa",
             Format::DpxSequence => "DPX",
             Format::ExrSequence => "OpenEXR",
+            Format::PpmSequence => "PPM",
+            Format::WebpSequence => "WebP",
             Format::Gif => "Animated GIF",
             Format::Wav => "Waveform Audio",
             Format::Aiff => "AIFF",
             Format::Aac => "AAC Audio",
+            Format::Flac => "FLAC Audio",
             Format::MxfOp1a => "MXF OP1a",
             Format::MxfOpAtom => "MXF OP-Atom",
         }
@@ -234,6 +256,8 @@ impl Format {
                 | Format::TgaSequence
                 | Format::DpxSequence
                 | Format::ExrSequence
+                | Format::PpmSequence
+                | Format::WebpSequence
         )
     }
     /// An MXF container format.
@@ -245,9 +269,9 @@ impl Format {
     pub fn has_builtin_encoder(self) -> bool {
         !matches!(self, Format::Hevc | Format::Av1)
     }
-    /// Sound without picture: Waveform Audio, AIFF and AAC Audio.
+    /// Sound without picture: Waveform Audio, AIFF, AAC Audio and FLAC Audio.
     pub fn is_audio_only(self) -> bool {
-        matches!(self, Format::Wav | Format::Aiff | Format::Aac)
+        matches!(self, Format::Wav | Format::Aiff | Format::Aac | Format::Flac)
     }
     /// H.264 or H.265: MPEG-4 (or QuickTime) with AAC audio, set up with the same bitrate controls.
     pub fn is_h26x(self) -> bool {
@@ -261,7 +285,7 @@ impl Format {
     pub fn is_mp4_with(self, mux: Multiplexer) -> bool {
         self == Format::Av1 || (self.is_h26x() && mux == Multiplexer::Mp4)
     }
-    pub const ALL: [Format; 20] = [
+    pub const ALL: [Format; 23] = [
         Format::H264,
         Format::Hevc,
         Format::Av1,
@@ -276,10 +300,13 @@ impl Format {
         Format::TgaSequence,
         Format::DpxSequence,
         Format::ExrSequence,
+        Format::PpmSequence,
+        Format::WebpSequence,
         Format::Gif,
         Format::Wav,
         Format::Aiff,
         Format::Aac,
+        Format::Flac,
         Format::MxfOp1a,
         Format::MxfOpAtom,
     ];
@@ -378,6 +405,24 @@ pub struct ExportSettings {
     pub render_at_max_depth: bool,
     /// Use Maximum Render Quality: render at full size and scale with an area filter.
     pub max_render_quality: bool,
+    /// Scaling interpolation (Area = the default filter; another renders at full size first).
+    pub scale_filter: ScaleFilter,
+    /// Deinterlacer applied to every output frame.
+    pub deinterlace: Deinterlace,
+    /// Encoder speed of the built-in H.264 encoder.
+    pub encoder_speed: EncoderSpeed,
+    /// Encode H.264 in full range (0–255 luma, signalled in the VUI) instead of video range.
+    pub full_range: bool,
+    /// The video stream: off exports the audio alone ([`ExportSettings::normalized`]).
+    pub include_video: bool,
+    /// Render at preview resolution: the output frame shrinks by this factor (0..1).
+    pub preview_scale: Option<f32>,
+    /// Render from proxy clips where items have them (fast draft renders).
+    pub use_proxies: bool,
+    /// Parallel processing: render several frames at a time. Off renders one frame at a time.
+    pub parallel: bool,
+    /// Encoding threads (None or 0 = one per core).
+    pub threads: Option<u32>,
     pub audio: AudioSettings,
     pub multiplexer: Multiplexer,
     /// Captions ▸ Create Sidecar File: `srt` or `vtt` next to the output (written by the engine).
@@ -562,6 +607,15 @@ impl Default for ExportSettings {
             keyframe_distance: None,
             render_at_max_depth: false,
             max_render_quality: false,
+            scale_filter: ScaleFilter::Area,
+            deinterlace: Deinterlace::None,
+            encoder_speed: EncoderSpeed::Medium,
+            full_range: false,
+            include_video: true,
+            preview_scale: None,
+            use_proxies: false,
+            parallel: true,
+            threads: None,
             audio: AudioSettings::default(),
             multiplexer: Multiplexer::Mp4,
             caption_sidecar: None,
@@ -1415,6 +1469,8 @@ struct H264Encoder {
     u: Vec<u8>,
     v: Vec<u8>,
     signal: ColorSignal,
+    /// Full-range output (`ExportSettings::full_range`, SDR only): video-range planes expanded.
+    full_range: bool,
 }
 
 impl H264Encoder {
@@ -1446,6 +1502,9 @@ impl VideoEncoder for H264Encoder {
             }
             None => rgba_to_yuv420_8(f.rgba, f.width as usize, f.height as usize, &mut self.y, &mut self.u, &mut self.v),
         });
+        if self.full_range && f.hdr.is_none() {
+            expand_to_full_range(&mut self.y, &mut self.u, &mut self.v);
+        }
         let cw = (f.width as usize).div_ceil(2);
         let frame = redrob_film_h264enc::YuvFrame { y: &self.y, u: &self.u, v: &self.v, y_stride: f.width as usize, uv_stride: cw };
         let ps = self.enc.try_encode(&frame, f.index as i64 * self.rate.den).map_err(|e| ExportError::Encode(e.to_string()))?;
@@ -1461,6 +1520,14 @@ impl VideoEncoder for H264Encoder {
     }
     fn pass_stats(&self) -> Option<redrob_film_h264enc::PassStats> {
         self.enc.pass_stats()
+    }
+}
+
+/// Video-range 8-bit planes (Y 16–235, C 16–240) stretched to full range (0–255).
+pub fn expand_to_full_range(y: &mut [u8], u: &mut [u8], v: &mut [u8]) {
+    y.par_iter_mut().for_each(|p| *p = ((f32::from(*p) - 16.0) * 255.0 / 219.0).round().clamp(0.0, 255.0) as u8);
+    for c in [u, v] {
+        c.par_iter_mut().for_each(|p| *p = ((f32::from(*p) - 128.0) * 255.0 / 224.0 + 128.0).round().clamp(0.0, 255.0) as u8);
     }
 }
 
@@ -1616,6 +1683,15 @@ fn h264_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSetti
         H264Profile::High => redrob_film_h264enc::Profile::High,
     };
     cfg.level = s.h264_level;
+    cfg.preset = match s.encoder_speed {
+        EncoderSpeed::Slow => redrob_film_h264enc::Preset::Quality,
+        EncoderSpeed::Medium => redrob_film_h264enc::Preset::Balanced,
+        EncoderSpeed::Fast => redrob_film_h264enc::Preset::Speed,
+    };
+    let full_range = s.full_range && !s.signal.is_hdr();
+    if full_range {
+        cfg.color = redrob_film_h264enc::ColorConfig { full_range: true, ..Default::default() };
+    }
     if let Some((n, d)) = s.pixel_aspect {
         cfg.sar = (n.clamp(1, 65535) as u16, d.clamp(1, 65535) as u16);
     }
@@ -1630,7 +1706,7 @@ fn h264_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSetti
     }
     Some(
         redrob_film_h264enc::Encoder::new(cfg)
-            .map(|enc| Box::new(H264Encoder { enc, w, h, rate, y: Vec::new(), u: Vec::new(), v: Vec::new(), signal: s.signal }) as Box<dyn VideoEncoder>)
+            .map(|enc| Box::new(H264Encoder { enc, w, h, rate, y: Vec::new(), u: Vec::new(), v: Vec::new(), signal: s.signal, full_range }) as Box<dyn VideoEncoder>)
             .map_err(|e| ExportError::Encode(e.to_string())),
     )
 }
@@ -1729,6 +1805,22 @@ pub fn encode_still_with_quality(format: Format, rgba: Vec<u8>, w: u32, h: u32, 
                 image::DynamicImage::ImageRgba8(img).to_rgb8().write_to(&mut out, f).map_err(enc)?
             }
         }
+        Format::PpmSequence => {
+            // binary PPM (P6): an ASCII header, then 8-bit RGB rows
+            let rgb = raster::rgb(&rgba, w, h)?;
+            let mut v = format!("P6\n{w} {h}\n255\n").into_bytes();
+            v.extend_from_slice(&rgb);
+            return Ok(v);
+        }
+        Format::WebpSequence => {
+            let enc_webp = image::codecs::webp::WebPEncoder::new_lossless(&mut out);
+            if alpha {
+                image::ImageEncoder::write_image(enc_webp, &rgba, w, h, image::ExtendedColorType::Rgba8).map_err(enc)?
+            } else {
+                let rgb = raster::rgb(&rgba, w, h)?;
+                image::ImageEncoder::write_image(enc_webp, &rgb, w, h, image::ExtendedColorType::Rgb8).map_err(enc)?
+            }
+        }
         _ => return Err(ExportError::Unsupported(format!("{} is not an image sequence", format.label()))),
     }
     Ok(out.into_inner())
@@ -1736,6 +1828,22 @@ pub fn encode_still_with_quality(format: Format, rgba: Vec<u8>, w: u32, h: u32, 
 
 /// Run an export (blocking; call from a worker thread).
 pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
+    // the video stream turned off: the audio alone
+    if !settings.has_video() && !settings.format.is_audio_only() {
+        return export(project, seq, &settings.normalized(), sources, progress);
+    }
+    // Parallel processing off, or a fixed thread count: run the export on a pool of its own size
+    let threads = if !settings.parallel { Some(1) } else { settings.threads.filter(|n| *n > 0).map(|n| n as usize) };
+    if let Some(n) = threads
+        && n != rayon::current_num_threads()
+        && let Ok(pool) = rayon::ThreadPoolBuilder::new().num_threads(n).thread_name(|i| format!("redrob-film-export-{i}")).build()
+    {
+        return pool.install(|| export_on_pool(project, seq, settings, sources, progress));
+    }
+    export_on_pool(project, seq, settings, sources, progress)
+}
+
+fn export_on_pool(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, sources: &dyn SourceProvider, progress: &Progress) -> Result<Report> {
     settings.validate()?;
     if stepped(settings.format) {
         let mut ex = Exporter::new(project.clone(), seq, settings, progress)?;
@@ -1754,6 +1862,7 @@ pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, so
     let batch = rayon::current_num_threads().clamp(2, 16) as i64;
     let (bytes, nframes) = match settings.format {
         Format::Aac => aac_out::export(project, seq, settings, range, sources, progress)?,
+        Format::Flac => flac_out::export(project, seq, settings, range, sources, progress)?,
         Format::Wav | Format::Aiff => {
             let mut a = audio_out::AudioOut::new(project.clone(), seq, settings, range)?;
             let (ch, sr, bits) = (a.channels as u16, a.sr, settings.audio.bits);

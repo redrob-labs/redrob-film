@@ -166,6 +166,14 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
             "Numbered OpenEXR stills (half float, linear, uncompressed)",
             ExportSettings { format: Format::ExrSequence, ..Default::default() },
         ),
+        p("PPM Sequence", "Image Sequence", "Numbered PPM stills (binary, 8-bit RGB)", ExportSettings { format: Format::PpmSequence, ..Default::default() }),
+        p("WebP Sequence", "Image Sequence", "Numbered WebP stills (lossless)", ExportSettings { format: Format::WebpSequence, ..Default::default() }),
+        p(
+            "WebP Sequence with Alpha",
+            "Image Sequence",
+            "Numbered WebP stills (lossless, RGBA)",
+            ExportSettings { format: Format::WebpSequence, alpha: true, ..Default::default() },
+        ),
         p(
             "Animated GIF 640×360",
             "Animated GIF",
@@ -175,6 +183,8 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
         p("Waveform Audio 48 kHz 16-bit", "Audio Only", "WAV, stereo 48 kHz 16-bit PCM", audio_only(Format::Wav, 16)),
         p("Waveform Audio 48 kHz 24-bit", "Audio Only", "WAV, stereo 48 kHz 24-bit PCM", audio_only(Format::Wav, 24)),
         p("AIFF 48 kHz 16-bit", "Audio Only", "AIFF, stereo 48 kHz 16-bit PCM", audio_only(Format::Aiff, 16)),
+        p("FLAC 48 kHz 16-bit", "Audio Only", "FLAC, stereo 48 kHz 16-bit, lossless", audio_only(Format::Flac, 16)),
+        p("FLAC 48 kHz 24-bit", "Audio Only", "FLAC, stereo 48 kHz 24-bit, lossless", audio_only(Format::Flac, 24)),
         p(
             "AAC Audio 48 kHz 320 kbps",
             "Audio Only",

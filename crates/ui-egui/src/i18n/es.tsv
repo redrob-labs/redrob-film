@@ -4239,3 +4239,163 @@
 	Copy Track to Position	Copiar seguimiento a la posición
 	Stabilize Position with Track	Estabilizar la posición con el seguimiento
 	Copy Mask Track to Position	Copiar seguimiento de máscara a la posición
+# Kdenlive parity p11: render options, clip jobs, archives, backups, cache
+	Open folder after export	Abrir carpeta tras exportar
+	Play after render	Reproducir tras procesar
+	Add rendered file to project	Añadir el archivo procesado al proyecto
+	Keep log file next to the output	Guardar un registro junto al archivo
+	Separate file for each audio track	Un archivo por cada pista de audio
+	Shut down computer after renderings	Apagar el equipo tras procesar
+	Render Options	Opciones de procesamiento
+	After Export	Tras exportar
+	Video Stream	Flujo de video
+	Export video	Exportar video
+	Aspect Ratio	Relación de aspecto
+	Scaling Interpolation	Interpolación de escala
+	Deinterlacer	Desentrelazado
+	Encoder Speed	Velocidad del codificador
+	Render full color range	Procesar con rango de color completo
+	Render at preview resolution ({res})	Procesar a la resolución de previsualización ({res})
+	Use proxy clips	Usar clips proxy
+	Parallel processing	Procesamiento en paralelo
+	Encoding Threads	Hilos de codificación
+	0 = one per core	0 = uno por núcleo
+	Show frame count instead of timecode	Mostrar el número de fotograma en lugar del código de tiempo
+	All markers	Todos los marcadores
+	Queue Marker Sections	Poner en cola las secciones entre marcadores
+	Generate Script	Generar script
+	Render script saved: {name}	Script de procesamiento guardado: {name}
+	Queued {n} marker sections	{n} secciones entre marcadores en cola
+	Play	Reproducir
+	Open Folder	Abrir carpeta
+	Add to Project	Añadir al proyecto
+	Render Scripts	Scripts de procesamiento
+	From marker	Desde el marcador
+	to	a
+	Sequence End	Final de la secuencia
+	Editing preset {name}	Editando el ajuste preestablecido {name}
+	Preset Name	Nombre del ajuste preestablecido
+	Save Changes	Guardar cambios
+	Saved preset {name}	Ajuste preestablecido {name} guardado
+	Area (default)	Área (predeterminado)
+	Nearest Neighbor	Vecino más cercano
+	Bilinear	Bilineal
+	Bicubic	Bicúbica
+	Lanczos	Lanczos
+	One Field (fast)	Un campo (rápido)
+	Edge Directed	Según los bordes
+	Slow (best compression)	Lenta (mejor compresión)
+	16:9	16:9
+	4:3	4:3
+	1:1 (square)	1:1 (cuadrado)
+	4:5 (portrait)	4:5 (vertical)
+	9:16 (vertical)	9:16 (vertical)
+	2.39:1 (scope)	2.39:1 (scope)
+	1.85:1 (flat)	1.85:1 (flat)
+	PPM	PPM
+	WebP	WebP
+	FLAC Audio	Audio FLAC
+	PPM Sequence	Secuencia PPM
+	WebP Sequence	Secuencia WebP
+	WebP Sequence with Alpha	Secuencia WebP con alfa
+	Numbered PPM stills (binary, 8-bit RGB)	Imágenes PPM numeradas (binario, RGB de 8 bits)
+	Numbered WebP stills (lossless)	Imágenes WebP numeradas (sin pérdida)
+	Numbered WebP stills (lossless, RGBA)	Imágenes WebP numeradas (sin pérdida, RGBA)
+	FLAC 48 kHz 16-bit	FLAC 48 kHz 16 bits
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24 bits
+	FLAC, stereo 48 kHz 16-bit, lossless	FLAC, estéreo 48 kHz 16 bits, sin pérdida
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC, estéreo 48 kHz 24 bits, sin pérdida
+	Open Export Output	Abrir el archivo exportado
+	Add Export Output to Project	Añadir el archivo exportado al proyecto
+	Generate Render Script	Generar script de procesamiento
+	List Render Scripts	Listar scripts de procesamiento
+	Start Render Script	Iniciar script de procesamiento
+	Delete Render Script	Eliminar script de procesamiento
+	Remove Missing Clips	Quitar los clips que faltan
+	Open Archived Project…	Abrir proyecto archivado…
+	List Project Backups	Listar copias de seguridad del proyecto
+	Open Backup File…	Abrir copia de seguridad…
+	Cached Data Usage	Uso de datos en caché
+	Delete Cached Data	Eliminar datos en caché
+	Stabilize Clip	Estabilizar clip
+	Duplicate Clip with Speed Change	Duplicar clip con cambio de velocidad
+	Transcode Clips	Transcodificar clips
+	List Transcode Profiles	Listar perfiles de transcodificación
+	Save Transcode Profile	Guardar perfil de transcodificación
+	Delete Transcode Profile	Eliminar perfil de transcodificación
+	List Clip Jobs	Listar tareas de clip
+	Save Clip Job	Guardar tarea de clip
+	Delete Clip Job	Eliminar tarea de clip
+	Run Clip Job	Ejecutar tarea de clip
+	Clip in Timeline	Clip en la línea de tiempo
+	Go to Clip in Timeline	Ir al clip en la línea de tiempo
+	Reveal in File Manager	Mostrar en el gestor de archivos
+	Replace Audio or Video Part	Sustituir la parte de audio o de video
+	Adjust Profile to Current Clip	Ajustar el perfil al clip actual
+	Insert at Timecode	Insertar en el código de tiempo
+	Delete Clips In Use	Eliminar clips en uso
+	{clips} of these clips are used in the timeline ({uses} timeline clips). Delete them and their timeline clips?	{clips} de estos clips se usan en la línea de tiempo ({uses} clips en la línea de tiempo). ¿Eliminarlos junto con sus clips en la línea de tiempo?
+	Remove from Project	Quitar del proyecto
+	Remove All Missing	Quitar todos los que faltan
+	Open Recent	Abrir recientes
+	Clear List	Borrar la lista
+	Archive:	Archivo comprimido:
+	Folder only	Solo carpeta
+	Open Backup File	Abrir copia de seguridad
+	Last hour	Última hora
+	Last day	Último día
+	Last week	Última semana
+	Older	Más antiguas
+	No backups yet: every save of the project keeps one.	Aún no hay copias de seguridad: cada vez que se guarda el proyecto se conserva una.
+	Welcome to Redrob Film	Te damos la bienvenida a Redrob Film
+	New Project	Proyecto nuevo
+	Recent Projects	Proyectos recientes
+	No recent projects	No hay proyectos recientes
+	Show this screen at startup	Mostrar esta pantalla al iniciar
+	Show Welcome Screen	Mostrar la pantalla de bienvenida
+	Warn when the cache exceeds	Avisar cuando la caché supere
+	Delete oldest files (or warn) when the cache exceeds	Eliminar los archivos más antiguos (o avisar) cuando la caché supere
+	Manage Cached Data	Gestionar datos en caché
+	Delete only files older than	Eliminar solo archivos de más de
+	 days	 días
+	(0 = all)	(0 = todos)
+	Current project	Proyecto actual
+	All projects	Todos los proyectos
+	Render previews	Previsualizaciones procesadas
+	Proxy clips	Clips proxy
+	Backups	Copias de seguridad
+	Backups of all projects	Copias de seguridad de todos los proyectos
+	Media cache (all projects)	Caché de medios (todos los proyectos)
+	{files} file(s), {size}	{files} archivo(s), {size}
+	Replace Audio Part…	Sustituir la parte de audio…
+	Replace Video Part…	Sustituir la parte de video…
+	Clip Jobs	Tareas de clip
+	Stabilize	Estabilizar
+	Duplicate with Speed Change…	Duplicar con cambio de velocidad…
+	Transcode…	Transcodificar…
+	Configure Clip Jobs…	Configurar tareas de clip…
+	Duplicate with Speed Change	Duplicar con cambio de velocidad
+	Custom Clip Jobs	Tareas de clip personalizadas
+	Pitch compensation	Compensación de tono
+	Create	Crear
+	Add the result to the project	Añadir el resultado al proyecto
+	Replace the original clip	Sustituir el clip original
+	New or changed profile	Perfil nuevo o modificado
+	Export preset	Ajuste preestablecido de exportación
+	Save Profile	Guardar perfil
+	Saved jobs	Tareas guardadas
+	No custom clip jobs yet.	Todavía no hay tareas de clip personalizadas.
+	Run	Ejecutar
+	Arguments ({input}, {output})	Argumentos ({input}, {output})
+	Output extension	Extensión de salida
+	Save Job	Guardar tarea
+	Started job {job}	Tarea {job} iniciada
+	Saved	Guardado
+	ProRes 422 LT (edit friendly)	ProRes 422 LT (apto para edición)
+	ProRes 422 HQ	ProRes 422 HQ
+	DNxHR SQ (edit friendly)	DNxHR SQ (apto para edición)
+	DNxHR HQ	DNxHR HQ
+	WAV 24-bit (audio)	WAV 24 bits (audio)
+# Kdenlive parity p11: shortcut categories
+	Cache	Caché
+	ClipJobs	Tareas de clip

@@ -433,6 +433,7 @@ fn item_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, id: ItemId, kind: &ItemK
             }
         });
     }
+    crate::panels::clip_jobs::item_menu(app, ui, id, kind, actions);
     ui.separator();
     if ui.button(tl!("Clear")).clicked() {
         actions.push(("project.delete".into(), json!({"items": [id.0]})));

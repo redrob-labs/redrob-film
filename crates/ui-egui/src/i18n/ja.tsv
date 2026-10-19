@@ -4227,3 +4227,163 @@
 	Copy Track to Position	トラッキングを位置にコピー
 	Stabilize Position with Track	トラッキングで位置を安定化
 	Copy Mask Track to Position	マスクのトラッキングを位置にコピー
+# Kdenlive parity p11: render options, clip jobs, archives, backups, cache
+	Open folder after export	書き出し後にフォルダーを開く
+	Play after render	レンダリング後に再生
+	Add rendered file to project	レンダリングしたファイルをプロジェクトに追加
+	Keep log file next to the output	出力の隣にログファイルを残す
+	Separate file for each audio track	オーディオトラックごとに別ファイル
+	Shut down computer after renderings	レンダリング後にコンピューターをシャットダウン
+	Render Options	レンダリングオプション
+	After Export	書き出し後
+	Video Stream	ビデオストリーム
+	Export video	ビデオを書き出す
+	Aspect Ratio	アスペクト比
+	Scaling Interpolation	スケーリング補間
+	Deinterlacer	インターレース解除
+	Encoder Speed	エンコーダー速度
+	Render full color range	フルカラーレンジでレンダリング
+	Render at preview resolution ({res})	プレビュー解像度でレンダリング ({res})
+	Use proxy clips	プロキシクリップを使用
+	Parallel processing	並列処理
+	Encoding Threads	エンコードスレッド
+	0 = one per core	0 = コアごとに 1 つ
+	Show frame count instead of timecode	タイムコードの代わりにフレーム番号を表示
+	All markers	すべてのマーカー
+	Queue Marker Sections	マーカー区間をキューに追加
+	Generate Script	スクリプトを生成
+	Render script saved: {name}	レンダリングスクリプトを保存しました: {name}
+	Queued {n} marker sections	{n} 個のマーカー区間をキューに追加しました
+	Play	再生
+	Open Folder	フォルダーを開く
+	Add to Project	プロジェクトに追加
+	Render Scripts	レンダリングスクリプト
+	From marker	マーカーから
+	to	から
+	Sequence End	シーケンスの終わり
+	Editing preset {name}	プリセット {name} を編集中
+	Preset Name	プリセット名
+	Save Changes	変更を保存
+	Saved preset {name}	プリセット {name} を保存しました
+	Area (default)	エリア (デフォルト)
+	Nearest Neighbor	ニアレストネイバー
+	Bilinear	バイリニア
+	Bicubic	バイキュービック
+	Lanczos	Lanczos
+	One Field (fast)	単一フィールド (高速)
+	Edge Directed	エッジ方向
+	Slow (best compression)	低速 (最高圧縮)
+	16:9	16:9
+	4:3	4:3
+	1:1 (square)	1:1 (正方形)
+	4:5 (portrait)	4:5 (縦)
+	9:16 (vertical)	9:16 (縦長)
+	2.39:1 (scope)	2.39:1 (シネスコ)
+	1.85:1 (flat)	1.85:1 (ビスタ)
+	PPM	PPM
+	WebP	WebP
+	FLAC Audio	FLAC オーディオ
+	PPM Sequence	PPM シーケンス
+	WebP Sequence	WebP シーケンス
+	WebP Sequence with Alpha	アルファ付き WebP シーケンス
+	Numbered PPM stills (binary, 8-bit RGB)	連番 PPM 静止画 (バイナリ、8 ビット RGB)
+	Numbered WebP stills (lossless)	連番 WebP 静止画 (ロスレス)
+	Numbered WebP stills (lossless, RGBA)	連番 WebP 静止画 (ロスレス、RGBA)
+	FLAC 48 kHz 16-bit	FLAC 48 kHz 16 ビット
+	FLAC 48 kHz 24-bit	FLAC 48 kHz 24 ビット
+	FLAC, stereo 48 kHz 16-bit, lossless	FLAC、ステレオ 48 kHz 16 ビット、ロスレス
+	FLAC, stereo 48 kHz 24-bit, lossless	FLAC、ステレオ 48 kHz 24 ビット、ロスレス
+	Open Export Output	書き出したファイルを開く
+	Add Export Output to Project	書き出したファイルをプロジェクトに追加
+	Generate Render Script	レンダリングスクリプトを生成
+	List Render Scripts	レンダリングスクリプトの一覧
+	Start Render Script	レンダリングスクリプトを開始
+	Delete Render Script	レンダリングスクリプトを削除
+	Remove Missing Clips	見つからないクリップを削除
+	Open Archived Project…	アーカイブしたプロジェクトを開く…
+	List Project Backups	プロジェクトのバックアップ一覧
+	Open Backup File…	バックアップファイルを開く…
+	Cached Data Usage	キャッシュデータの使用量
+	Delete Cached Data	キャッシュデータを削除
+	Stabilize Clip	クリップを安定化
+	Duplicate Clip with Speed Change	速度を変えてクリップを複製
+	Transcode Clips	クリップをトランスコード
+	List Transcode Profiles	トランスコードプロファイルの一覧
+	Save Transcode Profile	トランスコードプロファイルを保存
+	Delete Transcode Profile	トランスコードプロファイルを削除
+	List Clip Jobs	クリップジョブの一覧
+	Save Clip Job	クリップジョブを保存
+	Delete Clip Job	クリップジョブを削除
+	Run Clip Job	クリップジョブを実行
+	Clip in Timeline	タイムライン内のクリップ
+	Go to Clip in Timeline	タイムラインのクリップへ移動
+	Reveal in File Manager	ファイルマネージャーで表示
+	Replace Audio or Video Part	オーディオまたはビデオ部分を置き換え
+	Adjust Profile to Current Clip	プロファイルを現在のクリップに合わせる
+	Insert at Timecode	タイムコード位置に挿入
+	Delete Clips In Use	使用中のクリップを削除
+	{clips} of these clips are used in the timeline ({uses} timeline clips). Delete them and their timeline clips?	これらのうち {clips} 個のクリップがタイムラインで使われています (タイムライン上のクリップ {uses} 個)。タイムライン上のクリップごと削除しますか?
+	Remove from Project	プロジェクトから削除
+	Remove All Missing	見つからないものをすべて削除
+	Open Recent	最近使用したファイルを開く
+	Clear List	リストを消去
+	Archive:	アーカイブ:
+	Folder only	フォルダーのみ
+	Open Backup File	バックアップファイルを開く
+	Last hour	過去 1 時間
+	Last day	過去 1 日
+	Last week	過去 1 週間
+	Older	それ以前
+	No backups yet: every save of the project keeps one.	まだバックアップはありません。プロジェクトを保存するたびに 1 つ残ります。
+	Welcome to Redrob Film	Redrob Film へようこそ
+	New Project	新規プロジェクト
+	Recent Projects	最近のプロジェクト
+	No recent projects	最近のプロジェクトはありません
+	Show this screen at startup	起動時にこの画面を表示
+	Show Welcome Screen	ようこそ画面を表示
+	Warn when the cache exceeds	キャッシュが超えたら警告
+	Delete oldest files (or warn) when the cache exceeds	キャッシュが超えたら古いファイルを削除 (または警告)
+	Manage Cached Data	キャッシュデータを管理
+	Delete only files older than	次より古いファイルのみ削除
+	 days	 日
+	(0 = all)	(0 = すべて)
+	Current project	現在のプロジェクト
+	All projects	すべてのプロジェクト
+	Render previews	レンダリングプレビュー
+	Proxy clips	プロキシクリップ
+	Backups	バックアップ
+	Backups of all projects	すべてのプロジェクトのバックアップ
+	Media cache (all projects)	メディアキャッシュ (すべてのプロジェクト)
+	{files} file(s), {size}	{files} 個のファイル、{size}
+	Replace Audio Part…	オーディオ部分を置き換え…
+	Replace Video Part…	ビデオ部分を置き換え…
+	Clip Jobs	クリップジョブ
+	Stabilize	安定化
+	Duplicate with Speed Change…	速度を変えて複製…
+	Transcode…	トランスコード…
+	Configure Clip Jobs…	クリップジョブを設定…
+	Duplicate with Speed Change	速度を変えて複製
+	Custom Clip Jobs	カスタムクリップジョブ
+	Pitch compensation	ピッチ補正
+	Create	作成
+	Add the result to the project	結果をプロジェクトに追加
+	Replace the original clip	元のクリップを置き換え
+	New or changed profile	新規または変更したプロファイル
+	Export preset	書き出しプリセット
+	Save Profile	プロファイルを保存
+	Saved jobs	保存したジョブ
+	No custom clip jobs yet.	カスタムクリップジョブはまだありません。
+	Run	実行
+	Arguments ({input}, {output})	引数 ({input}, {output})
+	Output extension	出力の拡張子
+	Save Job	ジョブを保存
+	Started job {job}	ジョブ {job} を開始しました
+	Saved	保存しました
+	ProRes 422 LT (edit friendly)	ProRes 422 LT (編集向き)
+	ProRes 422 HQ	ProRes 422 HQ
+	DNxHR SQ (edit friendly)	DNxHR SQ (編集向き)
+	DNxHR HQ	DNxHR HQ
+	WAV 24-bit (audio)	WAV 24 ビット (オーディオ)
+# Kdenlive parity p11: shortcut categories
+	Cache	キャッシュ
+	ClipJobs	クリップジョブ

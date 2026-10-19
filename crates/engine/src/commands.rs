@@ -3084,10 +3084,15 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::relink::commands());
     v.extend(crate::proxies::commands());
     v.extend(crate::project_manager::commands());
+    v.extend(crate::archive::commands());
+    v.extend(crate::backups::commands());
+    v.extend(crate::cache_manager::commands());
+    v.extend(crate::clip_jobs::commands());
     v.extend(crate::masks::commands());
     v.extend(crate::effect_stack::commands());
     v.extend(crate::presets::commands());
     v.extend(crate::export_tools::commands());
+    v.extend(crate::render_jobs::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
     v.extend(crate::scopes::commands());
@@ -3978,6 +3983,10 @@ fn write_project(s: &mut Session, path: &str, adopt: bool) -> Result<Value> {
     }
     s.services.write_file(path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     if adopt {
+        // Open Backup File: every save keeps a dated copy
+        crate::backups::on_save(s, path, &bytes);
+    }
+    if adopt {
         s.path = Some(path.to_string());
         s.previews_follow_path();
         s.note_recent_project();
@@ -3990,6 +3999,11 @@ fn write_project(s: &mut Session, path: &str, adopt: bool) -> Result<Value> {
 fn schema_backup_path(path: &str, schema: u32) -> String {
     let stem = redrob_film_format::strip_project_extension(path);
     format!("{stem} (schema v{schema} backup).rfilm")
+}
+
+/// Make `proj` the session's project as an unsaved version of `path` (a restored backup).
+pub(crate) fn install_unsaved(s: &mut Session, proj: redrob_film_project::Project, path: Option<String>) {
+    install_project(s, proj, path, false);
 }
 
 /// Make `proj` the session's project (fresh history, media pool and editor state).
@@ -4036,7 +4050,8 @@ fn open_project(s: &mut Session, path: &str) -> Result<Value> {
         s.toast(format!("Upgraded project from schema v{from} to v{}; the original is kept as a backup when you save", redrob_film_format::SCHEMA_VERSION));
     }
     let missing = crate::relink::on_open(s);
-    Ok(json!({"path": path, "schemaVersion": from, "migrated": migrated, "missingMedia": missing}))
+    let proxy_job = crate::proxies::recreate_missing(s, false);
+    Ok(json!({"path": path, "schemaVersion": from, "migrated": migrated, "missingMedia": missing, "recreatingProxies": proxy_job}))
 }
 
 /// Load a recovery candidate (newest when `id` is None) as the current, unsaved project.
