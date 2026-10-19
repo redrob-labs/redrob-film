@@ -162,7 +162,13 @@ def generate(entries: list[dict], out: Path, tier: str, only: list[str], force: 
                 tmp.unlink(missing_ok=True)
                 continue
             if "post" in e:
-                post(e["post"], ffmpeg, tmp, e["id"])
+                try:
+                    post(e["post"], ffmpeg, tmp, e["id"])
+                except (subprocess.CalledProcessError, OSError, ValueError) as err:
+                    failed.append(e["id"])
+                    print(f"SKIP {e['id']}: post step `{e['post']}` failed: {err}", file=sys.stderr)
+                    tmp.unlink(missing_ok=True)
+                    continue
             tmp.replace(path)
             made.append(e["id"])
         size = path.stat().st_size
