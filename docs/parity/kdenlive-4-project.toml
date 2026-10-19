@@ -784,7 +784,7 @@ feature = "Clip Properties: override scanning and field order"
 manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
 film = "partial"
 evidence = "crates/project/src/lib.rs:613"
-gap = "field options per timeline clip, not per source"
+gap = "field options are per timeline clip, not per source; FilmCraft renders progressive frames, so a per-source scanning override would be stored only"
 
 [[row]]
 id = "K4-088"
@@ -829,7 +829,7 @@ feature = "Audio Properties: enable/disable/rename channels per stream"
 manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
 film = "partial"
 evidence = "crates/project/src/lib.rs:186"
-gap = "Modify > Audio Channels maps channels; no rename"
+gap = "Modify > Audio Channels enables and maps channels per source; streams and channels cannot be renamed"
 
 [[row]]
 id = "K4-093"
@@ -838,7 +838,7 @@ feature = "Audio Properties: normalize / swap / copy channel / gain"
 manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
 film = "partial"
 evidence = "crates/engine/src/clip_ops.rs:310"
-gap = "gain/normalize via Audio Gain; swap/copy via channel map"
+gap = "gain/normalize through Audio Gain and swap/copy through the channel map, per clip; not as per-source Clip Properties switches"
 
 [[row]]
 id = "K4-094"
@@ -883,7 +883,7 @@ feature = "Import formats: stills (png, jpg, gif, webp, tiff, bmp, tga, dpx)"
 manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clips.html"
 film = "partial"
 evidence = "crates/media/src/lib.rs:174"
-gap = "no svg, psd layers, exr stills, heic"
+gap = "no SVG, layered PSD, EXR stills or HEIC decoders (each needs its own clean-room decoder)"
 
 [[row]]
 id = "K4-099"
@@ -973,7 +973,7 @@ feature = "Title clip in the bin (title editor)"
 manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/title_clip.html"
 film = "partial"
 evidence = "crates/project/src/graphic_design.rs:445"
-gap = "text graphics live on the timeline; no title clip item in the bin"
+gap = "titles are made on the timeline and become bin items with Upgrade to Source Graphic; no New Title item that starts in the bin"
 
 [[row]]
 id = "K4-109"
@@ -982,7 +982,7 @@ feature = "Template title (%s placeholder)"
 manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/template_title.html"
 film = "partial"
 evidence = "crates/engine/src/graphic_templates.rs:1154"
-gap = "graphics templates with editable text fields"
+gap = "graphics templates have editable text fields; no %s placeholder filled from each clip's description"
 
 [[row]]
 id = "K4-110"
@@ -991,7 +991,7 @@ feature = "Create animation (Glaxnimate)"
 manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/animation.html"
 film = "none"
 evidence = ""
-gap = "no vector animation clip / external animator"
+gap = "no vector animation clip and no external animator (Glaxnimate) link"
 
 [[row]]
 id = "K4-111"
@@ -1009,7 +1009,7 @@ feature = "Online resources (Pixabay, Freesound, Archive.org)"
 manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/online_resources.html"
 film = "none"
 evidence = ""
-gap = "no online stock search"
+gap = "no online stock search: needs network APIs and per-provider licence handling (Pixabay, Freesound, Archive.org)"
 
 [[row]]
 id = "K4-113"
@@ -1054,7 +1054,7 @@ feature = "Import all streams of multi-stream clips"
 manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
 film = "partial"
 evidence = "crates/project/src/lib.rs:566"
-gap = "audio stream selectable per clip; extra video streams not imported"
+gap = "every audio stream is imported and selectable per clip; extra video streams of a file are not imported"
 
 [[row]]
 id = "K4-118"
@@ -1063,15 +1063,15 @@ feature = "Read Magic Lantern metadata"
 manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_misc.html"
 film = "none"
 evidence = ""
-gap = ""
+gap = "Magic Lantern metadata is not read (no reader for its sidecar or embedded fields)"
 
 [[row]]
 id = "K4-119"
 group = "import"
 feature = "Multi-stream audio: create enough tracks on import"
 manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_timeline.html"
-film = "partial"
-evidence = "crates/engine/src/settings.rs:500"
+film = "full"
+evidence = "crates/engine/src/commands.rs:732 (ensure_audio_tracks: placing a multi-stream clip adds the audio tracks it needs below the destination)"
 gap = ""
 
 [[row]]
@@ -1081,7 +1081,7 @@ feature = "Capture: screen grab (region, follow mouse, fps, profile)"
 manual = "https://docs.kdenlive.org/en/project_and_asset_management/capturing_video.html"
 film = "none"
 evidence = ""
-gap = "no screen recording"
+gap = "no screen recording (needs per-OS capture FFI in the platform crate)"
 
 [[row]]
 id = "K4-121"
@@ -1090,7 +1090,7 @@ feature = "Capture: Blackmagic DeckLink video capture"
 manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_capture.html"
 film = "none"
 evidence = ""
-gap = ""
+gap = "no DeckLink capture (vendor SDK, not clean-room portable)"
 
 [[row]]
 id = "K4-122"
@@ -1099,7 +1099,7 @@ feature = "Capture: webcam"
 manual = "https://docs.kdenlive.org/en/project_and_asset_management/capturing_video.html"
 film = "none"
 evidence = ""
-gap = ""
+gap = "no webcam capture (needs per-OS camera FFI in the platform crate)"
 
 [[row]]
 id = "K4-123"
@@ -1116,8 +1116,8 @@ group = "import"
 feature = "Capture audio settings: device, volume, channels, sample rate, sample format"
 manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_capture.html"
 film = "partial"
-evidence = "crates/engine/src/voiceover.rs:134"
-gap = "device/channel in prefs; no capture volume or sample format"
+evidence = "crates/engine/src/voiceover.rs:529 (Voice-Over Record Settings: device, input channel, capture volume, sample format f32/s24/s16)"
+gap = "recordings are mono at the sequence's sample rate; no channel count or sample rate choice"
 
 [[row]]
 id = "K4-125"

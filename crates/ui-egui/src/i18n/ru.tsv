@@ -463,3 +463,8 @@
 	Open in Separate Window	Открыть в отдельном окне
 	Delete	Удалить
 	OK	OK
+	Capture volume:	Громкость записи:
+	Sample format:	Формат сэмплов:
+	32-bit float	32-бит с плавающей точкой
+	24-bit	24 бита
+	16-bit	16 бит

@@ -463,3 +463,8 @@
 	Open in Separate Window	Відкрити в окремому вікні
 	Delete	Видалити
 	OK	OK
+	Capture volume:	Гучність запису:
+	Sample format:	Формат семплів:
+	32-bit float	32-біт з рухомою комою
+	24-bit	24 біти
+	16-bit	16 біт

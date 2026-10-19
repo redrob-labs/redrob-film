@@ -295,6 +295,24 @@ fn settings_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
             let r = ui.add(egui::DragValue::new(&mut d.prefs.postroll_seconds).speed(0.1).range(0.0..=60.0).suffix(tl!(" seconds")));
             elems.push(("voiceover.postroll".into(), r.rect, format!("{}", d.prefs.postroll_seconds)));
             ui.end_row();
+            ui.label(tl!("Capture volume:"));
+            let r = ui.add(egui::Slider::new(&mut d.prefs.volume_db, -40.0..=20.0).suffix(" dB"));
+            elems.push(("voiceover.volume".into(), r.rect, format!("{:.1} dB", d.prefs.volume_db)));
+            ui.end_row();
+            ui.label(tl!("Sample format:"));
+            let fmts = redrob_film_engine::voiceover::SAMPLE_FORMATS;
+            let cur = fmts.iter().find(|(k, _)| *k == d.prefs.sample_format).map_or(fmts[0].1, |f| f.1);
+            let cb = egui::ComboBox::from_id_salt("voiceover-format").selected_text(crate::i18n::t(cur)).width(220.0).show_ui(ui, |ui| {
+                for (k, label) in fmts {
+                    let r = ui.selectable_label(d.prefs.sample_format == k, crate::i18n::t(label));
+                    elems.push((format!("voiceover.format.{k}"), r.rect, label.to_string()));
+                    if r.clicked() {
+                        d.prefs.sample_format = k.to_string();
+                    }
+                }
+            });
+            elems.push(("voiceover.format".into(), cb.response.rect, cur.to_string()));
+            ui.end_row();
         });
         ui.label(
             RichText::new(tl!("Playback starts the pre-roll before the playhead (or the In point); with In/Out marked, recording punches in and out there."))
@@ -348,6 +366,8 @@ fn settings_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
             "name": v.name,
             "countdownSoundCues": v.countdown_sound_cues,
             "prerollSeconds": v.preroll_seconds,
+            "volumeDb": v.volume_db,
+            "sampleFormat": v.sample_format,
             "postrollSeconds": v.postroll_seconds,
         });
         match app.session.execute("audio.voiceover.settings", p) {

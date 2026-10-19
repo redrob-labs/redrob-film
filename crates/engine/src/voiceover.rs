@@ -144,12 +144,53 @@ pub struct VoiceOverPrefs {
     pub preroll_seconds: f64,
     /// Playback continues this long after the punch-out (Out) point (seconds).
     pub postroll_seconds: f64,
+    /// Capture volume: gain applied to the recording (dB, -40…+20).
+    pub volume_db: f64,
+    /// Sample format of the recorded file: `f32` (32-bit float), `s24` or `s16` (integer PCM).
+    pub sample_format: String,
 }
 
 impl Default for VoiceOverPrefs {
     fn default() -> Self {
-        Self { source: String::new(), input_channel: 0, name: "Voice-over".into(), countdown_sound_cues: true, preroll_seconds: 2.0, postroll_seconds: 2.0 }
+        Self {
+            source: String::new(),
+            input_channel: 0,
+            name: "Voice-over".into(),
+            countdown_sound_cues: true,
+            preroll_seconds: 2.0,
+            postroll_seconds: 2.0,
+            volume_db: 0.0,
+            sample_format: "f32".into(),
+        }
     }
+}
+
+/// Sample formats of recordings (key, label).
+pub const SAMPLE_FORMATS: [(&str, &str); 3] = [("f32", "32-bit float"), ("s24", "24-bit"), ("s16", "16-bit")];
+
+/// Mono integer PCM WAV (`bits` 16 or 24).
+pub fn write_wav_pcm(samples: &[f32], rate: u32, bits: u16) -> Vec<u8> {
+    let bytes = usize::from(bits / 8);
+    let data_len = samples.len() * bytes;
+    let mut v = Vec::with_capacity(44 + data_len);
+    v.extend_from_slice(b"RIFF");
+    v.extend_from_slice(&((36 + data_len) as u32).to_le_bytes());
+    v.extend_from_slice(b"WAVEfmt ");
+    v.extend_from_slice(&16u32.to_le_bytes());
+    v.extend_from_slice(&1u16.to_le_bytes());
+    v.extend_from_slice(&1u16.to_le_bytes());
+    v.extend_from_slice(&rate.to_le_bytes());
+    v.extend_from_slice(&(rate * bytes as u32).to_le_bytes());
+    v.extend_from_slice(&(bytes as u16).to_le_bytes());
+    v.extend_from_slice(&bits.to_le_bytes());
+    v.extend_from_slice(b"data");
+    v.extend_from_slice(&(data_len as u32).to_le_bytes());
+    let max = ((1i64 << (bits - 1)) - 1) as f64;
+    for s in samples {
+        let q = (f64::from(s.clamp(-1.0, 1.0)) * max).round() as i32;
+        v.extend_from_slice(&q.to_le_bytes()[..bytes]);
+    }
+    v
 }
 
 // ------------------------------------------------------------------------------------- state
@@ -321,6 +362,16 @@ fn settings(s: &mut Session, p: &Value) -> Result<Value> {
     if let Some(v) = f64_p(p, "postrollSeconds") {
         vo.postroll_seconds = v.clamp(0.0, 60.0);
     }
+    if let Some(v) = f64_p(p, "volumeDb") {
+        vo.volume_db = v.clamp(-40.0, 20.0);
+    }
+    if let Some(v) = str_p(p, "sampleFormat") {
+        let k = SAMPLE_FORMATS
+            .iter()
+            .find(|(k, _)| k.eq_ignore_ascii_case(v))
+            .ok_or_else(|| bad("audio.voiceover.settings", format!("unknown sample format `{v}` (f32, s24, s16)")))?;
+        vo.sample_format = k.0.to_string();
+    }
     if vo != s.prefs.voice_over {
         let mut prefs = s.prefs.clone();
         prefs.voice_over = vo;
@@ -475,7 +526,14 @@ fn stop(s: &mut Session, p: &Value) -> Result<Value> {
         std::fs::create_dir_all(&dir).map_err(|e| EngineError::Other(format!("{dir}: {e}")))?;
     }
     let samples = s.voiceover.captured.get(skip..).ok_or_else(|| bad("audio.voiceover.stop", "invalid recording trim range"))?;
-    let bytes = write_wav_f32(samples, sr as u32);
+    // capture volume, then the chosen sample format
+    let gain = 10f64.powf(s.prefs.voice_over.volume_db / 20.0) as f32;
+    let leveled: Vec<f32> = if (gain - 1.0).abs() > 1e-6 { samples.iter().map(|x| (x * gain).clamp(-1.0, 1.0)).collect() } else { samples.to_vec() };
+    let bytes = match s.prefs.voice_over.sample_format.as_str() {
+        "s16" => write_wav_pcm(&leveled, sr as u32, 16),
+        "s24" => write_wav_pcm(&leveled, sr as u32, 24),
+        _ => write_wav_f32(&leveled, sr as u32),
+    };
     s.services.write_file(&path, &bytes).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
     // import + place as one undo step
     let n0 = s.history.undo.len();
@@ -541,7 +599,7 @@ pub fn commands() -> Vec<CommandSpec> {
         spec(
             "audio.voiceover.settings",
             "Voice-Over Record Settings",
-            r#"{"source":str?,"inputChannel":n?,"name":str?,"countdownSoundCues":bool?,"prerollSeconds":f64?,"postrollSeconds":f64?}"#,
+            r#"{"source":str?,"inputChannel":n?,"name":str?,"countdownSoundCues":bool?,"prerollSeconds":f64?,"postrollSeconds":f64?,"volumeDb":f64?,"sampleFormat":"f32|s24|s16"?}"#,
             crate::commands::always,
             settings,
             true,
