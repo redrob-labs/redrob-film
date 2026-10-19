@@ -1612,6 +1612,46 @@ fn build() -> Vec<CommandSpec> {
             |s, p| crate::mixer::audio_gain(s, p)
         ),
         query!("clip.audioPeak", "Audio Clip Peak Amplitude", r#"{"clips":[id]?}"#, |s, p| crate::mixer::audio_peak(s, p)),
+        // Kdenlive's Switch Track Target Audio Stream: the selected audio clips play the next audio
+        // stream of their media (or `stream`), wrapping around
+        cmd!(
+            "clip.switchAudioStream",
+            "Switch Audio Stream",
+            ["Clip", "Audio Options"],
+            None,
+            r#"{"clips":[id]?,"stream":n?}"#,
+            has_selection,
+            |s, p| {
+                let sel = clips_p(s, p);
+                let want = u64_p(p, "stream").map(|v| v as usize);
+                let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
+                let mut plan: Vec<(ClipId, usize)> = Vec::new();
+                for c in &sel {
+                    let Some((tid, it)) = seq.find_item(*c) else { continue };
+                    if !seq.audio_tracks.iter().any(|t| t.id == tid) {
+                        continue;
+                    }
+                    let n = s.project.item(it.item).and_then(|i| i.as_media()).map_or(1, |m| m.info.audio_streams.len().max(1));
+                    let next = want.map_or((it.audio_stream + 1) % n, |w| w.min(n - 1));
+                    if n > 1 && next != it.audio_stream {
+                        plan.push((*c, next));
+                    }
+                }
+                if plan.is_empty() {
+                    return Err(bad("clip.switchAudioStream", "no selected audio clip has another audio stream"));
+                }
+                let out: Vec<Value> = plan.iter().map(|(c, k)| json!({"clip": c.0, "stream": k})).collect();
+                s.edit_sequence("Switch Audio Stream", move |q, _, _| {
+                    for (c, k) in &plan {
+                        if let Some((_, i)) = q.find_item_mut(*c) {
+                            i.audio_stream = *k;
+                        }
+                    }
+                    Ok(())
+                })?;
+                Ok(json!({"clips": out}))
+            }
+        ),
         cmd!("clip.frameHold", "Add Frame Hold", ["Clip", "Video Options"], None, r#"{"clips":[id]?,"time":ticks?}"#, has_seq, |s, p| {
             crate::clip_ops::add_frame_hold(s, p)
         }),

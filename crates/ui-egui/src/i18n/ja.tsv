@@ -3664,3 +3664,25 @@
 	Separate Audio Channels	オーディオチャンネルを分けて表示
 	Audio Waveform Colors	オーディオ波形の色
 	Reset Colors	色をリセット
+	Audio Visualization	オーディオビジュアライゼーション
+	Audio Level Visualization	オーディオレベル表示
+	Audio Spectrum	オーディオスペクトラム
+	Dance	ダンス
+	Light Show	ライトショー
+	Position X	位置 X
+	Position Y	位置 Y
+	Peak Color	ピークの色
+	Bands	バンド数
+	Lowest Frequency	最低周波数
+	Highest Frequency	最高周波数
+	Floor	下限
+	Line	ライン
+	Filled	塗りつぶし
+	Mirrored	ミラー
+	Frequency Band	周波数帯域
+	Horizontal Move	水平移動
+	Vertical Move	垂直移動
+	Audio Streams	オーディオストリーム
+	Stream {n}	ストリーム {n}
+	Enabled	有効
+	Switch Audio Stream	オーディオストリームを切り替え

@@ -565,6 +565,80 @@ pub(super) fn defs() -> Vec<EffectDef> {
     v
 }
 
+/// Kdenlive's On Master audio visualisations: video effects drawn from the sequence's audio at
+/// the frame's time (the render reads the Mix around each frame). Applied to any clip, usually
+/// one that spans the sequence (a colour matte, or the picture itself).
+pub(super) fn visualization_defs() -> Vec<EffectDef> {
+    use super::{col, video};
+    const VIZ: &[&str] = &["Audio Visualization"];
+    const BANDS: &[&str] = &["Full", "Low", "Mid", "High"];
+    let frame = |x: f64, y: f64, w: f64, h: f64| {
+        vec![
+            f("x", "Position X", x, 0.0, 100.0, "%"),
+            f("y", "Position Y", y, 0.0, 100.0, "%"),
+            f("width", "Width", w, 1.0, 100.0, "%"),
+            f("height", "Height", h, 1.0, 100.0, "%"),
+        ]
+    };
+    let mut levels = vec![ch("orientation", "Orientation", &["Vertical", "Horizontal"], 0)];
+    levels.extend(frame(92.0, 50.0, 4.0, 60.0));
+    levels.extend([
+        col("color", "Color", [0.35, 0.85, 0.35, 1.0]),
+        col("peak_color", "Peak Color", [0.9, 0.25, 0.25, 1.0]),
+        f("opacity", "Opacity", 100.0, 0.0, 100.0, "%"),
+    ]);
+    let mut spectrum = vec![fixed(num("bands", "Bands", 32.0, 4.0, 128.0, "", 0))];
+    spectrum.extend(frame(50.0, 80.0, 80.0, 30.0));
+    spectrum.extend([
+        hz("low_freq", "Lowest Frequency", 40.0, 20.0, 1000.0),
+        hz("high_freq", "Highest Frequency", 16000.0, 1000.0, 20000.0),
+        db("floor", "Floor", -60.0, -96.0, -20.0),
+        col("color", "Color", [0.3, 0.7, 1.0, 1.0]),
+        f("opacity", "Opacity", 100.0, 0.0, 100.0, "%"),
+    ]);
+    let mut wave = vec![ch("style", "Style", &["Line", "Filled", "Mirrored"], 0)];
+    wave.extend(frame(50.0, 50.0, 90.0, 30.0));
+    wave.extend([
+        ms("window", "Window", 40.0, 5.0, 500.0),
+        f("thickness", "Thickness", 2.0, 1.0, 20.0, "px"),
+        col("color", "Color", [1.0, 1.0, 1.0, 1.0]),
+        f("opacity", "Opacity", 100.0, 0.0, 100.0, "%"),
+    ]);
+    let mut v = vec![
+        video("audio_levels_viz", "Audio Level Visualization", VIZ, levels),
+        video("audio_spectrum_viz", "Audio Spectrum", VIZ, spectrum),
+        video("audio_waveform_viz", "Audio Waveform", VIZ, wave),
+        video(
+            "audio_dance",
+            "Dance",
+            VIZ,
+            vec![
+                ch("band", "Frequency Band", BANDS, 1),
+                f("scale", "Scale Amount", 20.0, 0.0, 100.0, "%"),
+                f("move_x", "Horizontal Move", 0.0, 0.0, 50.0, "%"),
+                f("move_y", "Vertical Move", 5.0, 0.0, 50.0, "%"),
+                f("sensitivity", "Sensitivity", 100.0, 10.0, 400.0, "%"),
+            ],
+        ),
+        video(
+            "audio_light_show",
+            "Light Show",
+            VIZ,
+            vec![
+                ch("band", "Frequency Band", BANDS, 0),
+                col("color", "Color", [1.0, 0.85, 0.3, 1.0]),
+                f("intensity", "Intensity", 60.0, 0.0, 100.0, "%"),
+                f("sensitivity", "Sensitivity", 100.0, 10.0, 400.0, "%"),
+                ch("mode", "Mode", &["Add", "Tint"], 0),
+            ],
+        ),
+    ];
+    for d in &mut v {
+        d.accelerated = false;
+    }
+    v
+}
+
 /// Effects of Kdenlive's audio families that the Premiere set has no counterpart for (Tools,
 /// Volume and Dynamics extras, EQ and Filters, Modulators, Channels, Stereo images, Audio misc).
 /// Their parameter ids, ranges and defaults are those of the DSP effects they map to one-to-one.

@@ -3657,3 +3657,25 @@
 	Separate Audio Channels	分开显示音频声道
 	Audio Waveform Colors	音频波形颜色
 	Reset Colors	重置颜色
+	Audio Visualization	音频可视化
+	Audio Level Visualization	音频电平可视化
+	Audio Spectrum	音频频谱
+	Dance	舞动
+	Light Show	灯光秀
+	Position X	位置 X
+	Position Y	位置 Y
+	Peak Color	峰值颜色
+	Bands	频段数
+	Lowest Frequency	最低频率
+	Highest Frequency	最高频率
+	Floor	下限
+	Line	线条
+	Filled	填充
+	Mirrored	镜像
+	Frequency Band	频段
+	Horizontal Move	水平移动
+	Vertical Move	垂直移动
+	Audio Streams	音频流
+	Stream {n}	音频流 {n}
+	Enabled	启用
+	Switch Audio Stream	切换音频流

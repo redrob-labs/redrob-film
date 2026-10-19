@@ -849,6 +849,7 @@ fn build_effects() -> Vec<EffectDef> {
         }
     }
     vfx::apply_badges(&mut v);
+    v.extend(audio::visualization_defs());
     v
 }
 
