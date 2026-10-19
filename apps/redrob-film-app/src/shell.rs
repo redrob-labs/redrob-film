@@ -301,6 +301,8 @@ pub struct ShellApp {
     bundle: BundleTracker,
     /// The window title the shell set last.
     last_title: Option<String>,
+    /// The non-empty title the window reported last frame (see `sync_window_title`).
+    last_reported_title: Option<String>,
     /// A close was approved while Effects had unsaved changes: the next request passes.
     close_approved: bool,
     /// The Redrob Code app bridge (`app_bridge.rs`), registered while the window lives.
@@ -327,6 +329,7 @@ impl ShellApp {
             edit_tx,
             bundle: BundleTracker::default(),
             last_title: None,
+            last_reported_title: None,
             close_approved: false,
             app_bridge: None,
         }
@@ -567,11 +570,19 @@ impl ShellApp {
     /// The window title is the shell's ([`window_title`]). The Effects editor sends its own on a
     /// document change (crafts/effectcraft/crates/ui-egui/src/lib.rs L1663); the window reports
     /// it back the next frame and the shell sets its own again.
+    ///
+    /// Only a title the window actually reports counts: winit returns an empty title on X11 and
+    /// Wayland, and treating that as "overridden" sent the title every frame. Every viewport
+    /// command asks egui for another frame, so the window never went idle (125 fps and 6 cores
+    /// on a software rasteriser with nothing happening, which made the timeline needle lag).
+    /// A title is also re-sent only when the reported one changed, so two senders cannot loop.
     fn sync_window_title(&mut self, ctx: &egui::Context) {
         let doc = self.active_document();
         let want = window_title(doc.as_ref().map(|(name, dirty)| (name.as_str(), *dirty)));
-        let reported = ctx.input(|i| i.viewport().title.clone());
-        let overridden = reported.is_some_and(|t| t != want);
+        let reported = ctx.input(|i| i.viewport().title.clone()).filter(|t| !t.is_empty());
+        let fresh = reported != self.last_reported_title;
+        self.last_reported_title = reported.clone();
+        let overridden = fresh && reported.is_some_and(|t| t != want);
         if overridden || self.last_title.as_ref() != Some(&want) {
             self.last_title = Some(want.clone());
             ctx.send_viewport_cmd(egui::ViewportCommand::Title(want));
