@@ -1,0 +1,70 @@
+# Kdenlive 26.08.2 (official AppImage, extracted) -- stage-2 results for docs/gap/kdenlive-tasks.toml
+# Host: 32 cores, llvmpipe (no GPU), :0 1920x1080 xfwm4, PulseAudio null sink "dcv".
+# Window 1700x960 at +20,+56 (not maximised). Driven with XTest/xdotool + shortcuts, active window checked.
+# Evidence paths are relative to /home/ubuntu/workplace/film-gap/ (not in git).
+# Corpus notes: tasks that name media the first corpus job did not make use files from
+# tools/make_gap_corpus.sh (framecode strip, flash/beep, 1 kHz -12 dBFS tones, 4K, DNxHR, 2-stream MKV, VFR phone clip ...).
+# corpus/edit_project = results/kdenlive/projects/edit_project.orig.kdenlive (10 x 4 s of framecode_tone_1080p25_60s.mov,
+# linked V1/A1, 1080p25 48 kHz), built in the app (insert zone + 9 x Shift+R).
+# Tone files made by make_gap_corpus.sh are -33.05 dBFS RMS (not -12): level passes are judged as recorded vs source (unity +-3 dB).
+# Latency numbers include one 60 fps capture interval (~8 ms mean quantisation) and the xfwm4 compositor.
+
+[SC-01]
+verdict = "slow"
+value = "needle 53 ms p50 / 66 ms p95 (n=120, 3 runs of 20 x 30 px / 16 ms + back); task cadence 20 px / 33 ms: 52 / 59 ms; monitor exact frame 121 / 151 ms p50/p95 for the 28 of 120 targets it showed; settle after stop 144 ms p50 / 170 ms max"
+evidence = "results/kdenlive/SC-01/all.txt, run1..run3/{cap.mkv,drag.log,scan.txt,latency.txt}, run4_task/"
+note = "Needle tracks the pointer within ~3 capture frames and lands exactly on the pointer x after stop (894/294 px), but p50 53 ms is just past the 50 ms limit; the monitor skips 77% of intermediate positions under a 16 ms drag."
+
+[SC-02]
+verdict = "works"
+value = "monitor 13-16 distinct frames/s during a 16 ms-step drag in the empty V2 area; final picture = needle frame (695 = 695) 147-150 ms after the last move, before release"
+evidence = "results/kdenlive/SC-02/run1..run3/{cap.mkv,drag.log,scan.txt,latency.txt}, after_release.png"
+note = "Dragging in an empty track area seeks like the ruler (needle 58-60 ms p50); monitor exact frame 108-122 ms p50 for the targets it shows, ~75% of intermediate positions skipped."
+
+[PB-01]
+verdict = "works"
+value = "first new monitor frame 60 / 62 / 87 ms, first audio window > -40 dBFS 59 / 68 / 88 ms after Space (3 runs); 0 silent 50 ms windows in 4.5 s; level -33.1 dBFS = source"
+evidence = "results/kdenlive/PB-01/run1..run3/{cap.mkv,aud.mka,keys.log,scan.txt}"
+note = "Parked at frame 50; playback shows frame 54 first (frames 51-53 never displayed), picture and sound start together within ~10 ms."
+
+[PB-02]
+verdict = "works"
+value = "600 distinct frames in 20.0 s (29.98 fps), 0 dropped, max hold 50 ms"
+evidence = "results/kdenlive/PB-02/run1/{cap.mkv,distinct.txt}, results/kdenlive/projects/pb02.kdenlive"
+note = "1080p30 project (default profile atsc_1080p_30), h264_1080p30_60s.mp4 on V1/A1, played from 00:00:05:00 at 1080p preview resolution on llvmpipe."
+
+[SC-04]
+verdict = "slow"
+value = "scrub audio in 59/59 (100%) 50 ms windows while dragging 5 px / 33 ms (~5.8x); first sound 39 ms after the first move; sound continues 322-327 ms after the needle stops (limit 200 ms)"
+evidence = "results/kdenlive/SC-04/run1..run2/{aud.mka,drag.log,win50.txt}, run1/cap.mkv"
+note = "Default settings. Scrub audio is continuous normal-pitch playback (ZCR 1001 Hz, 0 gaps > 1 ms), level -33 dBFS then -30 when A2 joins; it keeps playing ~1/3 s after the pointer stops while the button is still held."
+
+[AU-01]
+verdict = "works"
+value = "-33.05 / -33.05 dBFS RMS L/R for 9.70 of 9.70 s (source -33.05, 0.00 dB), 1000.0 Hz"
+evidence = "results/kdenlive/AU-01/run1/{aud.mka,stats.txt}"
+note = "Default sink dcv (pactl get-default-sink), default audio settings, tone1k_48k_30s.wav on A1 of corpus/overlap_project, played 0-9.8 s; bit-exact level."
+
+[AU-02]
+verdict = "works"
+value = "0 silences >= 10 ms in 29.8 s of playback (5-35 s); 12-28 s: 1000 Hz band -33.07 dBFS, 500 Hz band -33.07 dBFS (each = source -33.07)"
+evidence = "results/kdenlive/AU-02/run1/{aud.mka,bands.txt}, results/kdenlive/projects/overlap_project.orig.kdenlive"
+note = "A1 1 kHz 0-30 s, A2 500 Hz 10-40 s, V1 video-only h264 0-40 s; both tones summed at unity, 500 Hz absent before 10 s (-68.6) and 1 kHz absent after 30 s (-80.5)."
+
+[AU-03]
+verdict = "works"
+value = "playback 1000.00 Hz, -33.05 dBFS, 0 clicks over 19 s; CLI export WAV 48000 Hz 20.000 s, 999.98 Hz, 0 clicks, rendered in 2.0 s"
+evidence = "results/kdenlive/AU-03/{au03.kdenlive,play/aud.mka,play/freq.txt,export.wav,export.wav.render.log}"
+note = "tone1k_44k1_20s.wav (44.1 kHz) in a 48 kHz 1080p25 project resampled correctly; no flash/beep video on V1 (its own audio would mix into A1)."
+
+[TL-01]
+verdict = "works"
+value = "Shift+R at frame 250 on selected clip 3 -> V1 and A1 both 200-249 + 250-299; cut drawn 149 ms after the key; exported frames 245..255 = framecodes 245..255 (1000/1000 frames exact)"
+evidence = "results/kdenlive/TL-01/{tl01.kdenlive,run/cap.mkv,run/keys.log,export.mp4,export_fc.txt}"
+note = "Linked audio is cut with the video; the export (command-line render, MP4-H264/AAC) has no repeated or skipped frame at the cut."
+
+[EX-01]
+verdict = "works"
+value = "40 s sequence rendered in 10.7 s wall (3.7x real time); h264 1920x1080 25/1 + aac 48000 Hz 2 ch, duration 40.000 s, framecodes 0..999 with 0 missing/repeated"
+evidence = "results/kdenlive/EX-01/{export.mp4,ffprobe.txt,export_fc.txt,time.txt}"
+note = "Rendered with the app's documented command-line render (kdenlive --render --render-preset MP4-H264/AAC), not the render dialog, so :0 could be freed; same render pipeline as the dialog per the manual."
