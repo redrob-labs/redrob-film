@@ -1408,7 +1408,8 @@ impl FilmcraftApp {
             Some(d) => d.iter().collect(),
             None => vec![result],
         };
-        let premiere: Vec<&&Value> = docs.iter().filter(|d| d.get("format").and_then(Value::as_str) == Some(redrob_film_interchange::Format::Prproj.name())).collect();
+        let premiere: Vec<&&Value> =
+            docs.iter().filter(|d| d.get("format").and_then(Value::as_str) == Some(redrob_film_interchange::Format::Prproj.name())).collect();
         if premiere.is_empty() {
             return;
         }
