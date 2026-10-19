@@ -203,7 +203,7 @@ fn export_keyframes(s: &mut Session, p: &Value) -> Result<Value> {
         .iter()
         .map(|k| {
             let mut k = k.clone();
-            k.time = k.time - source_in;
+            k.time -= source_in;
             k
         })
         .collect();
@@ -326,7 +326,7 @@ fn shift_keyframes(s: &mut Session, p: &Value) -> Result<Value> {
             let prm = crate::masks::target_param(e, &sel, &pid).ok_or_else(|| bad("effects.shiftKeyframes", "no such param"))?;
             let (moving, mut rest): (Vec<Keyframe>, Vec<Keyframe>) = prm.keyframes.drain(..).partition(|k| times.contains(&k.time));
             for mut k in moving {
-                k.time = k.time + delta;
+                k.time += delta;
                 // a moved keyframe replaces one that sat where it lands
                 rest.retain(|x| x.time != k.time);
                 rest.push(k);

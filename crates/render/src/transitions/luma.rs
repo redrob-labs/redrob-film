@@ -143,7 +143,7 @@ pub(crate) fn decode(name: &str, bytes: &[u8]) -> Option<Luma> {
     if w == 0 || h == 0 || r.rgba.len() < w * h * 4 {
         return None;
     }
-    let v = r.rgba.chunks_exact(4).map(|p| (0.299 * p[0] as f32 + 0.587 * p[1] as f32 + 0.114 * p[2] as f32) / 255.0).collect();
+    let v = r.rgba.as_chunks::<4>().0.iter().map(|p| (0.299 * p[0] as f32 + 0.587 * p[1] as f32 + 0.114 * p[2] as f32) / 255.0).collect();
     Some(Luma { w, h, v })
 }
 
@@ -184,7 +184,7 @@ fn netpbm(b: &[u8]) -> Option<Luma> {
         if max < 256 {
             data.get(..n)?.iter().map(|&x| x as f32 / max as f32).collect()
         } else {
-            data.get(..n * 2)?.chunks_exact(2).map(|c| u16::from_be_bytes([c[0], c[1]]) as f32 / max as f32).collect()
+            data.get(..n * 2)?.as_chunks::<2>().0.iter().map(|c| u16::from_be_bytes([c[0], c[1]]) as f32 / max as f32).collect()
         }
     } else {
         let text = std::str::from_utf8(&b[i..]).ok()?;
@@ -194,7 +194,7 @@ fn netpbm(b: &[u8]) -> Option<Luma> {
         }
         v
     };
-    let v = if channels == 3 { samples.chunks_exact(3).map(|c| 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]).collect() } else { samples };
+    let v = if channels == 3 { samples.as_chunks::<3>().0.iter().map(|c| 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]).collect() } else { samples };
     Some(Luma { w, h, v })
 }
 

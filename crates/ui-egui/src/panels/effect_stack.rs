@@ -360,7 +360,7 @@ pub fn copy_keyframes(app: &mut FilmcraftApp, ctx: &egui::Context) -> Result<Val
     for g in &mut groups {
         g.keyframes.sort_by_key(|k| k.time);
         for k in &mut g.keyframes {
-            k.time = k.time - first;
+            k.time -= first;
         }
     }
     let n: usize = groups.iter().map(|g| g.keyframes.len()).sum();

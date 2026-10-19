@@ -553,8 +553,7 @@ fn remove_all_spaces_after(s: &mut Session, p: &Value) -> Result<Value> {
             None => tr.items.iter().filter(|i| i.end() <= t).map(|i| i.end()).max().unwrap_or(Tick::ZERO),
         };
         let mut removed = Tick::ZERO;
-        loop {
-            let Some((id, start)) = tr.items.iter().filter(|i| i.start >= pos).min_by_key(|i| i.start).map(|i| (i.id, i.start)) else { break };
+        while let Some((id, start)) = tr.items.iter().filter(|i| i.start >= pos).min_by_key(|i| i.start).map(|i| (i.id, i.start)) {
             if start > pos {
                 edit::shift_track_from(tr, start, pos - start);
                 removed += start - pos;

@@ -173,7 +173,7 @@ pub fn effect_controls_keys(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool
     match app.session.execute("effects.shiftKeyframes", json!({"clip": clip, "keyframes": refs, "delta": delta.0})) {
         Ok(_) => {
             for k in app.ui.keyframe_selection.iter_mut().filter(|k| k.clip == clip) {
-                k.time = k.time + delta;
+                k.time += delta;
             }
         }
         Err(e) => app.ui.status = e.to_string(),

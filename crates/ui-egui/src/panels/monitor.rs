@@ -1485,7 +1485,7 @@ fn draw_pattern(p: &egui::Painter, pic: Rect, n: u8, c: Color32) {
             }
         }
         5 => {
-            let g = 1.0 / 1.618_034;
+            let g = 2.0 / (1.0 + 5f32.sqrt()); // 1 / golden ratio
             for f in [1.0 - g, g] {
                 v(p, f);
                 h(p, f);

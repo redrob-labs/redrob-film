@@ -504,7 +504,7 @@ pub fn start_media_job(s: &mut Session, label: String, work: Vec<(ItemId, String
         } else {
             std::thread::scope(|sc| {
                 for _ in 0..threads.min(n) {
-                    sc.spawn(&worker);
+                    sc.spawn(worker);
                 }
             });
         }

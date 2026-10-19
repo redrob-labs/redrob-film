@@ -165,6 +165,7 @@ const CAP_BOTTOM: [&str; 10] = [
     "bottom_bh_end",
 ];
 
+#[allow(clippy::vec_init_then_push)] // one push per effect, in the manual's groups
 pub(super) fn defs() -> Vec<EffectDef> {
     let mut v = Vec::new();
     // ---------------------------------------------------------------- Alpha, Mask and Keying

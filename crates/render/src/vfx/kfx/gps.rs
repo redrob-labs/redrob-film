@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use redrob_film_geom::Affine;
-use redrob_film_media::MediaSource;
 
 use super::text::{TextBox, draw_text_box};
 use super::*;

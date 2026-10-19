@@ -114,7 +114,6 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, p: PanelKind, rect: Rect)
         PanelKind::ProjectNotes => notes::show(app, ui, rect),
         PanelKind::Libraries => library::show(app, ui, rect),
         PanelKind::Agent => crate::agent::show(app, ui, rect),
-        other => crate::dock::placeholder(ui, rect, &app.tokens, &tlf!("{panel} — coming in a later milestone", panel = crate::i18n::t(other.title()))),
     }
 }
 

@@ -200,9 +200,9 @@ pub(super) fn levels(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
             while s < to {
                 let end = if segments { (s + seg - gap).min(to) } else { to };
                 if vertical {
-                    fill_rect_with(layer, a0, base - end, a0 + size, base - s, op, &grad);
+                    fill_rect_with(layer, a0, base - end, a0 + size, base - s, op, grad);
                 } else {
-                    fill_rect_with(layer, base + s, a0, base + end, a0 + size, op, &grad);
+                    fill_rect_with(layer, base + s, a0, base + end, a0 + size, op, grad);
                 }
                 s += seg;
                 if !segments {

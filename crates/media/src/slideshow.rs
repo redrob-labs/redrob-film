@@ -151,14 +151,14 @@ impl SlideshowSource {
             // zoom 100 % → 115 % (in on even images, out on odd ones), drifting diagonally
             let span = (self.opts.image_frames.max(1) + self.opts.dissolve_frames) as f32;
             let p = (local as f32 / span).clamp(0.0, 1.0);
-            let p = if idx % 2 == 0 { p } else { 1.0 - p };
+            let p = if idx.is_multiple_of(2) { p } else { 1.0 - p };
             scale *= 1.0 + 0.15 * p;
-            let dir = if idx % 3 == 0 { 1.0 } else { -1.0 };
+            let dir = if idx.is_multiple_of(3) { 1.0 } else { -1.0 };
             ox = dir * 0.04 * w as f32 * (p - 0.5);
             oy = 0.03 * h as f32 * (p - 0.5);
         }
         let mut out = vec![0u8; w * h * 4];
-        for (k, c) in out.chunks_exact_mut(4).enumerate() {
+        for (k, c) in out.as_chunks_mut::<4>().0.iter_mut().enumerate() {
             c[3] = 255;
             let (x, y) = ((k % w) as f32 + 0.5, (k / w) as f32 + 0.5);
             // output pixel → image coordinates (image centred in the frame)
@@ -194,7 +194,7 @@ impl SlideshowSource {
             let progress = (into + 1) as f32 / (d + 1) as f32;
             let other = self.placed(next, into as u32, w, h)?;
             let soft = self.opts.softness.clamp(0.0, 1.0).max(0.001);
-            for (k, (a, b)) in px.chunks_exact_mut(4).zip(other.chunks_exact(4)).enumerate() {
+            for (k, (a, b)) in px.as_chunks_mut::<4>().0.iter_mut().zip(other.as_chunks::<4>().0).enumerate() {
                 let (u, vv) = ((k % w) as f32 / w as f32, (k / w) as f32 / h as f32);
                 let mix = if self.opts.wipe == SlideWipe::Dissolve {
                     progress

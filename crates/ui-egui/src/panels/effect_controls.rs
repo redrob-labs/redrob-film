@@ -766,7 +766,7 @@ pub(crate) fn param_row(
                         .map(|s| json!({"effect": s.effect, "param": s.param, "mask": s.mask, "mediaTime": s.time.0}))
                         .collect();
                     for s in app.ui.keyframe_selection.iter_mut().filter(|s| s.clip == clip.0) {
-                        s.time = s.time + delta;
+                        s.time += delta;
                     }
                     actions.push(("effects.shiftKeyframes".into(), json!({"clip": clip.0, "keyframes": refs, "delta": delta.0})));
                 } else if new_media != k.time {

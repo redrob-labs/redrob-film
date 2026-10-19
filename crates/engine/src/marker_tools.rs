@@ -172,7 +172,7 @@ fn add_interval(s: &mut Session, p: &Value) -> Result<Value> {
     let mut t = from;
     while times.len() < count.unwrap_or(10_000) && (count.is_some() || t <= to) {
         times.push(t);
-        t = t + step;
+        t += step;
     }
     if times.is_empty() {
         return Err(bad(id, "no marker fits between `from` and `to`"));

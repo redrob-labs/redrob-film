@@ -45,7 +45,7 @@ pub fn list(s: &Session, project: &str) -> Vec<(PathBuf, i64)> {
                 .collect()
         })
         .unwrap_or_default();
-    v.sort_by(|a, b| b.1.cmp(&a.1));
+    v.sort_by_key(|x| std::cmp::Reverse(x.1));
     v
 }
 
@@ -71,13 +71,13 @@ pub fn prune(s: &Session, project: &str, now: i64) -> usize {
                 hour += 1;
                 hour <= 10
             }
-            "older" if seen.iter().any(|x| *x == (t, bucket)) => false,
+            "older" if seen.contains(&(t, bucket)) => false,
             "older" => {
                 older += 1;
                 seen.push((t, bucket));
                 older <= 8
             }
-            _ if seen.iter().any(|x| *x == (t, bucket)) => false,
+            _ if seen.contains(&(t, bucket)) => false,
             _ => {
                 seen.push((t, bucket));
                 true

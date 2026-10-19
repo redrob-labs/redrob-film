@@ -124,7 +124,7 @@ fn place_pieces(s: &mut Session, pieces: &[(redrob_film_project::ItemId, Tick, T
     for (item, src_in, dur) in pieces {
         let r = s.execute("timeline.place", json!({"item": item.0, "time": at.0, "sourceIn": src_in.0, "duration": dur.0, "insert": insert}))?;
         clips.extend(r["clips"].as_array().into_iter().flatten().filter_map(Value::as_u64));
-        at = at + *dur;
+        at += *dur;
     }
     s.set_playhead(at);
     Ok(clips)

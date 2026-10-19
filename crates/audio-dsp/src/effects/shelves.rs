@@ -90,7 +90,7 @@ impl<const HIGH: bool> AudioEffect for Shelf<HIGH> {
             self.freq.tick();
             self.gain.tick();
             let mix = self.mix.tick() as f64;
-            if self.n % GRID == 0 {
+            if self.n.is_multiple_of(GRID) {
                 self.design();
             }
             self.n += 1;
@@ -252,7 +252,7 @@ impl AudioEffect for TiltShelf {
         grow(&mut self.hi, channels.len());
         for i in 0..len {
             self.tilt.tick();
-            if self.n % GRID == 0 {
+            if self.n.is_multiple_of(GRID) {
                 self.design();
             }
             self.n += 1;
@@ -434,7 +434,7 @@ impl AudioEffect for DynamicEq {
             if self.env < 1e-20 {
                 self.env = 0.0;
             }
-            if self.n % GRID == 0 {
+            if self.n.is_multiple_of(GRID) {
                 let target = self.gain_for(super::util::lin_db(self.env));
                 // the gain itself is already smoothed by the envelope; step it on the grid
                 if (target - self.gain_db).abs() > 1e-4 {

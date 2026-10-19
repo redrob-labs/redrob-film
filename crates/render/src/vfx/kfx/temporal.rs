@@ -166,10 +166,11 @@ fn sequential<S: Clone + Send>(
         }
     };
     let mut map = store.lock().unwrap_or_else(|p| p.into_inner());
-    if map.len() > 8 && !map.contains_key(&key) {
-        if let Some(k) = map.keys().next().copied() {
-            map.remove(&k);
-        }
+    if map.len() > 8
+        && !map.contains_key(&key)
+        && let Some(k) = map.keys().next().copied()
+    {
+        map.remove(&k);
     }
     map.insert(key, Seq { n, state, out: out.clone() });
     Some(out)

@@ -836,7 +836,7 @@ pub fn deinterlace(img: &mut Image, e: &EffectInstance) {
             _ if y % 2 == keep => {}
             // one field: the line above (or below at the top) repeated
             1 => {
-                let s = if yi - 1 >= 0 && (yi - 1) as usize % 2 == keep { line(yi - 1) } else { line(yi + 1) };
+                let s = if yi > 0 && (yi - 1) as usize % 2 == keep { line(yi - 1) } else { line(yi + 1) };
                 row.copy_from_slice(s);
             }
             // interpolation between the kept lines around it

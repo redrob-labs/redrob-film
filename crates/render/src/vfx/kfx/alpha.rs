@@ -7,7 +7,6 @@ use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 
 use redrob_film_geom::Vec2;
-use redrob_film_media::MediaSource;
 use redrob_film_project::MaskMode;
 
 use super::*;
@@ -636,7 +635,7 @@ pub fn motion_tracker(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     let (xa, ya, xb, yb) = (r[0].floor() as usize, r[1].floor() as usize, (r[2].ceil() as usize).min(img.w), (r[3].ceil() as usize).min(img.h));
     let cw = xb.saturating_sub(xa);
     let treated: Option<Image> = match pick(e, "blur_type") {
-        1 | 2 | 3 => {
+        1..=3 => {
             // a crop with a margin, processed on its own
             let m = (blur.ceil() as usize * 3).min(256);
             let (ox, oy) = (xa.saturating_sub(m), ya.saturating_sub(m));

@@ -321,7 +321,7 @@ fn wave_values(filter: u32, comps: &[usize], p: [f32; 4], out: &mut Vec<(usize, 
             out.push((0, (q[0] + chroma).min(1.0), COMP_COLORS[0]));
             out.push((0, (q[0] - chroma).max(0.0), COMP_COLORS[0]));
         }
-        2 | 3 | 4 => {
+        2..=4 => {
             let cols = match filter {
                 2 => [COMP_COLORS[0], COMP_COLORS[1], COMP_COLORS[2]],
                 3 => [[0.9, 0.9, 0.3], [0.3, 0.9, 0.9], [0.9, 0.3, 0.9]],
@@ -795,7 +795,7 @@ pub fn cie_scope(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
         let (pu, pv) = (u * rx, (1.0 - v) * ry);
         let (n, _) = g.cell(u, v);
         if n > 0.0 {
-            return Some(([1.0, 1.0, 1.0], (n * gain).min(1.0).max(0.35)));
+            return Some(([1.0, 1.0, 1.0], (n * gain).clamp(0.35, 1.0)));
         }
         if !fill_cie || !inside(&locus, pu, pv) {
             return None;
