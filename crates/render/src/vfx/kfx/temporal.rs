@@ -63,15 +63,14 @@ pub fn burning_tv(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     let rd = Disp::of(&r);
     let mut d = Disp::of(img);
     let (w, h) = (d.w, d.h);
-    let mask: Vec<f32> = d
-        .px
-        .par_iter()
-        .zip(rd.px.par_iter())
-        .map(|(a, b)| {
-            let m = (a[0] - b[0]).abs().max((a[1] - b[1]).abs()).max((a[2] - b[2]).abs());
-            if m > thr { 1.0 } else { 0.0 }
-        })
-        .collect();
+    let mask: Vec<f32> =
+        d.px.par_iter()
+            .zip(rd.px.par_iter())
+            .map(|(a, b)| {
+                let m = (a[0] - b[0]).abs().max((a[1] - b[1]).abs()).max((a[2] - b[2]).abs());
+                if m > thr { 1.0 } else { 0.0 }
+            })
+            .collect();
     let n = frame_no(cx);
     let s = cx.px_scale.max(0.05);
     let decay = 0.93f32.powf(1.0 / s);
@@ -230,11 +229,8 @@ fn graffiti_step(st: &mut Graffiti, f: &Disp, p: &GraffitiParams) -> Vec<[f32; 4
         }
         // saturation of the lights
         let g = (l[0] + l[1] + l[2]) / 3.0;
-        let lit = [
-            (g + (l[0] - g) * p.saturation).clamp(0.0, 1.0),
-            (g + (l[1] - g) * p.saturation).clamp(0.0, 1.0),
-            (g + (l[2] - g) * p.saturation).clamp(0.0, 1.0),
-        ];
+        let lit =
+            [(g + (l[0] - g) * p.saturation).clamp(0.0, 1.0), (g + (l[1] - g) * p.saturation).clamp(0.0, 1.0), (g + (l[2] - g) * p.saturation).clamp(0.0, 1.0)];
         *o = if p.transparent {
             [lit[0], lit[1], lit[2], lit[0].max(lit[1]).max(lit[2])]
         } else {
@@ -317,7 +313,8 @@ pub fn photosensitivity(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
         // levels per frame at 1.0)
         let badness = st.history.iter().sum::<f32>() / st.history.len().max(1) as f32;
         let k = ((badness / (thr * 10.0)) - 1.0).clamp(0.0, 1.0);
-        let out: Vec<[f32; 4]> = f.px.iter().zip(&st.avg).map(|(c, a)| [c[0] + (a[0] - c[0]) * k, c[1] + (a[1] - c[1]) * k, c[2] + (a[2] - c[2]) * k, c[3]]).collect();
+        let out: Vec<[f32; 4]> =
+            f.px.iter().zip(&st.avg).map(|(c, a)| [c[0] + (a[0] - c[0]) * k, c[1] + (a[1] - c[1]) * k, c[2] + (a[2] - c[2]) * k, c[3]]).collect();
         let r = 1.0 / frames as f32;
         for (a, o) in st.avg.iter_mut().zip(&out) {
             for i in 0..4 {

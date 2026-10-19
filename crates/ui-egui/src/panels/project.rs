@@ -643,7 +643,17 @@ fn tags_bar(app: &mut FilmcraftApp, ui: &mut egui::Ui, r: Rect, pre: &str, actio
             .interact(cr, egui::Id::new((pre, "tag", tag.id)), Sense::click_and_drag())
             .on_hover_text(tl!("Click to tag the selected items; right-click to edit; drag to reorder"));
         app.auto.add(&format!("{pre}.tag.{}", tag.id), cr, &tag.name);
-        painter.rect_filled(cr, 9.0, if on[k] { t.pressed } else if resp.hovered() { t.hover } else { t.panel_bg });
+        painter.rect_filled(
+            cr,
+            9.0,
+            if on[k] {
+                t.pressed
+            } else if resp.hovered() {
+                t.hover
+            } else {
+                t.panel_bg
+            },
+        );
         if filter_tags.contains(&tag.id) {
             painter.rect_stroke(cr, 9.0, Stroke::new(1.2, t.accent), egui::StrokeKind::Inside);
         }

@@ -16,9 +16,9 @@ mod audio;
 use crate::mask::Mask;
 pub use audio::{GEQ10_LABELS, GEQ20_LABELS, GEQ30_LABELS, PREMIERE_AUDIO_EFFECTS};
 
-mod vfx;
-mod kfx;
 mod kcolor;
+mod kfx;
+mod vfx;
 pub use kcolor::{COLOR_MATRICES, PHASE_MODES};
 mod kdx;
 pub use kdx::{MASK_APPLY, MASK_STARTS};

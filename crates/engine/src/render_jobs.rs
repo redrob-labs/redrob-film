@@ -90,7 +90,15 @@ pub fn watch(s: &mut Session, job: u64, after: AfterExport, settings: &ExportSet
 
 /// Export `seq` with `settings` and start the audio stems when `after` asks for them; registers the
 /// after-export actions. Returns the main job's id.
-pub fn spawn_with_after(s: &mut Session, project: Arc<Project>, seq: ItemId, settings: ExportSettings, label: String, wait: bool, after: AfterExport) -> Result<u64> {
+pub fn spawn_with_after(
+    s: &mut Session,
+    project: Arc<Project>,
+    seq: ItemId,
+    settings: ExportSettings,
+    label: String,
+    wait: bool,
+    after: AfterExport,
+) -> Result<u64> {
     let settings = settings.normalized();
     let name = project.item(seq).map(|i| i.name.clone()).unwrap_or_default();
     let stems = if after.separate_audio_tracks { stem_jobs(&project, seq, &settings) } else { Vec::new() };
@@ -156,7 +164,10 @@ pub fn poll(s: &mut Session) {
         let pe = s.post_exports.remove(i);
         finish(s, pe, res);
     }
-    if s.shutdown_armed && s.post_exports.is_empty() && !s.export_queue.is_active() && !s.jobs.iter().any(|j| j.result.lock().unwrap_or_else(|e| e.into_inner()).is_none())
+    if s.shutdown_armed
+        && s.post_exports.is_empty()
+        && !s.export_queue.is_active()
+        && !s.jobs.iter().any(|j| j.result.lock().unwrap_or_else(|e| e.into_inner()).is_none())
     {
         s.shutdown_armed = false;
         s.log.push(crate::panels::Level::Info, "export", "All exports finished: shutting the computer down".to_string());
@@ -442,7 +453,14 @@ fn queue_markers(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"added": added, "sections": n}))
 }
 
-fn spec(id: &'static str, label: &'static str, params: &'static str, enabled: fn(&Session) -> std::result::Result<(), String>, run: fn(&mut Session, &Value) -> Result<Value>, journal: bool) -> CommandSpec {
+fn spec(
+    id: &'static str,
+    label: &'static str,
+    params: &'static str,
+    enabled: fn(&Session) -> std::result::Result<(), String>,
+    run: fn(&mut Session, &Value) -> Result<Value>,
+    journal: bool,
+) -> CommandSpec {
     CommandSpec { id, label, menu: &[], shortcut: None, params, enabled, run, journal }
 }
 

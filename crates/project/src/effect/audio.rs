@@ -778,26 +778,11 @@ fn kdenlive_defs() -> Vec<EffectDef> {
                 db("level_out", "Output Level", 0.0, -24.0, 12.0),
             ],
         ),
-        audio(
-            "vibrato",
-            "Vibrato",
-            A_MOD,
-            vec![num("frequency", "Modulation Frequency", 5.0, 0.1, 20.0, "Hz", 2), pct("depth", "Depth", 50.0, 0.0, 100.0)],
-        ),
-        audio(
-            "freq_shift",
-            "Frequency Shifter",
-            A_MOD,
-            vec![num("shift", "Shift", 0.0, -2000.0, 2000.0, "Hz", 1), db("level", "Level", 0.0, -24.0, 12.0)],
-        ),
+        audio("vibrato", "Vibrato", A_MOD, vec![num("frequency", "Modulation Frequency", 5.0, 0.1, 20.0, "Hz", 2), pct("depth", "Depth", 50.0, 0.0, 100.0)]),
+        audio("freq_shift", "Frequency Shifter", A_MOD, vec![num("shift", "Shift", 0.0, -2000.0, 2000.0, "Hz", 1), db("level", "Level", 0.0, -24.0, 12.0)]),
         audio("phase_shift", "Phase Shifter", A_MOD, vec![num("shift", "Shift", 0.0, -1.0, 1.0, "", 2), db("level", "Level", 0.0, -24.0, 12.0)]),
         // ---- Stereo Imagery (Kdenlive: Channels, Stereo and Binaural Images)
-        audio(
-            "mixdown",
-            "Mixdown",
-            A_STEREO,
-            vec![ch("channels", "Number of Output Channels", &["Mono", "Stereo", "2.1", "4 Channels", "5.1", "7.1"], 1)],
-        ),
+        audio("mixdown", "Mixdown", A_STEREO, vec![ch("channels", "Number of Output Channels", &["Mono", "Stereo", "2.1", "4 Channels", "5.1", "7.1"], 1)]),
         audio("stereo_to_mono", "Stereo to Mono", A_STEREO, vec![ch("from", "From", SIDES, 0), ch("to", "To", SIDES, 1), b("swap", "Swap Channels", false)]),
         audio(
             "crossfeed",
@@ -865,12 +850,7 @@ fn kdenlive_defs() -> Vec<EffectDef> {
         ),
         audio("derivative", "Derivative", A_SPECIAL, vec![]),
         audio("integral", "Integral", A_SPECIAL, vec![]),
-        audio(
-            "virtual_bass",
-            "Virtual Bass",
-            A_SPECIAL,
-            vec![hz("cutoff", "Cutoff", 120.0, 40.0, 250.0), pct("strength", "Strength", 50.0, 0.0, 100.0)],
-        ),
+        audio("virtual_bass", "Virtual Bass", A_SPECIAL, vec![hz("cutoff", "Cutoff", 120.0, 40.0, 250.0), pct("strength", "Strength", 50.0, 0.0, 100.0)]),
     ]
 }
 

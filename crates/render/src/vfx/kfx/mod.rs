@@ -34,23 +34,23 @@ pub fn is_temporal(id: &str) -> bool {
     matches!(id, "k_analog_echo" | "k_burning_tv" | "k_light_graffiti" | "k_photosensitivity" | "k_hqdn3d" | "k_hqdn3d_legacy" | "k_denoiser" | "k_fft_denoise")
         || matches!(id, "k_normaliz0r" | "k_normalize" | "k_mcdeint" | "k_phase")
         || matches!(
-        id,
-        "k_analog_echo"
-            | "k_burning_tv"
-            | "k_light_graffiti"
-            | "k_photosensitivity"
-            | "k_hqdn3d"
-            | "k_hqdn3d_legacy"
-            | "k_denoiser"
-            | "k_fft_denoise"
-            | "k_backgroundkey"
-            | "k_lagfun"
-            | "k_nervous"
-            | "k_vertigo"
-            | "k_vr_stabilize"
-            | "k_waveform"
-            | "k_vectorscope_adv"
-    )
+            id,
+            "k_analog_echo"
+                | "k_burning_tv"
+                | "k_light_graffiti"
+                | "k_photosensitivity"
+                | "k_hqdn3d"
+                | "k_hqdn3d_legacy"
+                | "k_denoiser"
+                | "k_fft_denoise"
+                | "k_backgroundkey"
+                | "k_lagfun"
+                | "k_nervous"
+                | "k_vertigo"
+                | "k_vr_stabilize"
+                | "k_waveform"
+                | "k_vectorscope_adv"
+        )
 }
 
 /// Apply `e` if it belongs to this bin; `false` for any other id.
@@ -376,12 +376,7 @@ impl Planes {
 /// Split a picture into planes (`Planes::yuv` decides the representation), 4 planes of w×h.
 pub(crate) fn split_planes(d: &Disp, yuv: bool) -> [Vec<f32>; 4] {
     let conv: Vec<[f32; 4]> = if yuv { d.px.par_iter().map(|p| to_yuv(*p)).collect() } else { d.px.clone() };
-    [
-        conv.iter().map(|p| p[0]).collect(),
-        conv.iter().map(|p| p[1]).collect(),
-        conv.iter().map(|p| p[2]).collect(),
-        conv.iter().map(|p| p[3]).collect(),
-    ]
+    [conv.iter().map(|p| p[0]).collect(), conv.iter().map(|p| p[1]).collect(), conv.iter().map(|p| p[2]).collect(), conv.iter().map(|p| p[3]).collect()]
 }
 /// Inverse of [`split_planes`].
 pub(crate) fn merge_planes(d: &mut Disp, planes: &[Vec<f32>; 4], yuv: bool) {

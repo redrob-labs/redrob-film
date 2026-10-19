@@ -93,8 +93,12 @@ fn timeline_time_of(it: &TrackItem, m: Tick) -> Tick {
 
 fn go_keyframe(app: &mut FilmcraftApp, next: bool) -> Result<Value, String> {
     let (_, it) = target_clip(app).ok_or_else(|| tl!("Select a clip first").to_string())?;
-    let mut times: Vec<Tick> =
-        it.effects.iter().filter(|e| e.enabled).flat_map(|e| e.params.values().flat_map(|p| p.keyframes.iter().map(|k| timeline_time_of(&it, k.time)))).collect();
+    let mut times: Vec<Tick> = it
+        .effects
+        .iter()
+        .filter(|e| e.enabled)
+        .flat_map(|e| e.params.values().flat_map(|p| p.keyframes.iter().map(|k| timeline_time_of(&it, k.time))))
+        .collect();
     times.sort();
     times.dedup();
     let ph = app.session.playhead();
@@ -188,33 +192,36 @@ fn caption_import(app: &mut FilmcraftApp, ctx: &egui::Context) {
     let Some((path, mut enc)) = app.ui.kp.caption_import.clone() else { return };
     let mut open = true;
     let mut done = false;
-    egui::Window::new(tl!("Import Subtitle File")).id(egui::Id::new("Import Subtitle dialog")).open(&mut open).collapsible(false).resizable(false).show(ctx, |ui| {
-        ui.label(egui::RichText::new(&path).color(app.tokens.text_dim));
-        ui.horizontal(|ui| {
-            ui.label(tl!("Encoding:"));
-            let shown = if enc == "auto" { tl!("Automatic").to_string() } else { enc.clone() };
-            let r = egui::ComboBox::from_id_salt("importSubtitle.encoding").selected_text(shown).show_ui(ui, |ui| {
-                ui.selectable_value(&mut enc, "auto".to_string(), tl!("Automatic"));
-                for e in ["utf-8", "utf-16le", "utf-16be", "windows-1252", "latin-1"] {
-                    ui.selectable_value(&mut enc, e.to_string(), e);
+    egui::Window::new(tl!("Import Subtitle File")).id(egui::Id::new("Import Subtitle dialog")).open(&mut open).collapsible(false).resizable(false).show(
+        ctx,
+        |ui| {
+            ui.label(egui::RichText::new(&path).color(app.tokens.text_dim));
+            ui.horizontal(|ui| {
+                ui.label(tl!("Encoding:"));
+                let shown = if enc == "auto" { tl!("Automatic").to_string() } else { enc.clone() };
+                let r = egui::ComboBox::from_id_salt("importSubtitle.encoding").selected_text(shown).show_ui(ui, |ui| {
+                    ui.selectable_value(&mut enc, "auto".to_string(), tl!("Automatic"));
+                    for e in ["utf-8", "utf-16le", "utf-16be", "windows-1252", "latin-1"] {
+                        ui.selectable_value(&mut enc, e.to_string(), e);
+                    }
+                });
+                app.auto.add("importSubtitle.encoding", r.response.rect, "Encoding");
+            });
+            ui.horizontal(|ui| {
+                if ui.button(tl!("Cancel")).clicked() {
+                    done = true;
+                }
+                let r = ui.button(tl!("Import"));
+                app.auto.add("importSubtitle.ok", r.rect, "Import");
+                if r.clicked() {
+                    if let Err(e) = app.session.execute("captions.import", json!({"path": path, "encoding": enc})) {
+                        app.ui.status = e.to_string();
+                    }
+                    done = true;
                 }
             });
-            app.auto.add("importSubtitle.encoding", r.response.rect, "Encoding");
-        });
-        ui.horizontal(|ui| {
-            if ui.button(tl!("Cancel")).clicked() {
-                done = true;
-            }
-            let r = ui.button(tl!("Import"));
-            app.auto.add("importSubtitle.ok", r.rect, "Import");
-            if r.clicked() {
-                if let Err(e) = app.session.execute("captions.import", json!({"path": path, "encoding": enc})) {
-                    app.ui.status = e.to_string();
-                }
-                done = true;
-            }
-        });
-    });
+        },
+    );
     app.ui.kp.caption_import = if !open || done { None } else { Some((path, enc)) };
 }
 
@@ -241,7 +248,8 @@ fn command_bar(app: &mut FilmcraftApp, ctx: &egui::Context) {
     hi = hi.min(shown.len().saturating_sub(1));
     let mut open = true;
     let mut run: Option<String> = None;
-    let (down, up, enter, esc) = ctx.input(|i| (i.key_pressed(egui::Key::ArrowDown), i.key_pressed(egui::Key::ArrowUp), i.key_pressed(egui::Key::Enter), i.key_pressed(egui::Key::Escape)));
+    let (down, up, enter, esc) = ctx
+        .input(|i| (i.key_pressed(egui::Key::ArrowDown), i.key_pressed(egui::Key::ArrowUp), i.key_pressed(egui::Key::Enter), i.key_pressed(egui::Key::Escape)));
     if down {
         hi = (hi + 1).min(shown.len().saturating_sub(1));
     }

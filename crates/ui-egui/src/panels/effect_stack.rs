@@ -631,35 +631,41 @@ fn char_picker(app: &mut FilmcraftApp, ctx: &egui::Context) {
     let Some(mut code) = app.ui.fx.char_picker.clone() else { return };
     let mut open = true;
     let mut pick: Option<String> = None;
-    egui::Window::new(tl!("Insert Special Character")).id(egui::Id::new("Insert Special Character")).open(&mut open).collapsible(false).resizable(false).show(ctx, |ui| {
-        egui::Grid::new("special-chars").spacing([2.0, 2.0]).show(ui, |ui| {
-            for (i, c) in SPECIAL_CHARACTERS.chars().enumerate() {
-                let b = ui.add_sized([26.0, 26.0], egui::Button::new(egui::RichText::new(c.to_string()).size(15.0)));
-                app.auto.add(&format!("specialCharacter.{:04X}", c as u32), b.rect, &c.to_string());
-                if b.on_hover_text(format!("U+{:04X}", c as u32)).clicked() {
+    egui::Window::new(tl!("Insert Special Character")).id(egui::Id::new("Insert Special Character")).open(&mut open).collapsible(false).resizable(false).show(
+        ctx,
+        |ui| {
+            egui::Grid::new("special-chars").spacing([2.0, 2.0]).show(ui, |ui| {
+                for (i, c) in SPECIAL_CHARACTERS.chars().enumerate() {
+                    let b = ui.add_sized([26.0, 26.0], egui::Button::new(egui::RichText::new(c.to_string()).size(15.0)));
+                    app.auto.add(&format!("specialCharacter.{:04X}", c as u32), b.rect, &c.to_string());
+                    if b.on_hover_text(format!("U+{:04X}", c as u32)).clicked() {
+                        pick = Some(c.to_string());
+                    }
+                    if i % 12 == 11 {
+                        ui.end_row();
+                    }
+                }
+            });
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label(tl!("Unicode (hex):"));
+                let r = ui.add(egui::TextEdit::singleline(&mut code).desired_width(80.0).hint_text("2764"));
+                app.auto.add("specialCharacter.code", r.rect, "Unicode");
+                let typed = u32::from_str_radix(code.trim().trim_start_matches("U+").trim_start_matches("u+"), 16)
+                    .ok()
+                    .and_then(char::from_u32)
+                    .filter(|c| !c.is_control());
+                ui.label(egui::RichText::new(typed.map(String::from).unwrap_or_default()).size(18.0));
+                let b = ui.add_enabled(typed.is_some(), egui::Button::new(tl!("Insert")));
+                app.auto.add("specialCharacter.insert", b.rect, "Insert");
+                if b.clicked()
+                    && let Some(c) = typed
+                {
                     pick = Some(c.to_string());
                 }
-                if i % 12 == 11 {
-                    ui.end_row();
-                }
-            }
-        });
-        ui.separator();
-        ui.horizontal(|ui| {
-            ui.label(tl!("Unicode (hex):"));
-            let r = ui.add(egui::TextEdit::singleline(&mut code).desired_width(80.0).hint_text("2764"));
-            app.auto.add("specialCharacter.code", r.rect, "Unicode");
-            let typed = u32::from_str_radix(code.trim().trim_start_matches("U+").trim_start_matches("u+"), 16).ok().and_then(char::from_u32).filter(|c| !c.is_control());
-            ui.label(egui::RichText::new(typed.map(String::from).unwrap_or_default()).size(18.0));
-            let b = ui.add_enabled(typed.is_some(), egui::Button::new(tl!("Insert")));
-            app.auto.add("specialCharacter.insert", b.rect, "Insert");
-            if b.clicked()
-                && let Some(c) = typed
-            {
-                pick = Some(c.to_string());
-            }
-        });
-    });
+            });
+        },
+    );
     if let Some(s) = pick
         && let Err(e) = insert_text(app, &s)
     {

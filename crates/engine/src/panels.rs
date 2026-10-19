@@ -433,10 +433,8 @@ pub fn active_note_timecodes(s: &Session) -> Vec<NoteTimecode> {
 
 /// `project.notesTimecodes`: the timecodes written in the notes, with the sequence times they name.
 fn notes_timecodes(s: &mut Session, _: &Value) -> Result<Value> {
-    let list: Vec<Value> = active_note_timecodes(s)
-        .into_iter()
-        .map(|t| json!({"text": t.text, "start": t.start, "end": t.end, "time": t.time.0, "rest": t.rest}))
-        .collect();
+    let list: Vec<Value> =
+        active_note_timecodes(s).into_iter().map(|t| json!({"text": t.text, "start": t.start, "end": t.end, "time": t.time.0, "rest": t.rest})).collect();
     Ok(json!({"timecodes": list}))
 }
 

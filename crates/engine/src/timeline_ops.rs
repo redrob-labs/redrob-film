@@ -43,7 +43,15 @@ use crate::{EngineError, Result, Session};
 type Run = fn(&mut Session, &Value) -> Result<Value>;
 type Enabled = fn(&Session) -> std::result::Result<(), String>;
 
-fn spec(id: &'static str, label: &'static str, menu: &'static [&'static str], shortcut: Option<&'static str>, params: &'static str, enabled: Enabled, run: Run) -> CommandSpec {
+fn spec(
+    id: &'static str,
+    label: &'static str,
+    menu: &'static [&'static str],
+    shortcut: Option<&'static str>,
+    params: &'static str,
+    enabled: Enabled,
+    run: Run,
+) -> CommandSpec {
     CommandSpec { id, label, menu, shortcut, params, enabled, run, journal: true }
 }
 
@@ -614,8 +622,7 @@ fn insert_space(s: &mut Session, p: &Value) -> Result<Value> {
 /// The empty stretches between the sequence start and the end of the last clip, on the given
 /// tracks together (time where none of them has a clip).
 pub fn gaps(q: &Sequence, tracks: &[TrackId]) -> Vec<TimeRange> {
-    let mut spans: Vec<(Tick, Tick)> =
-        q.all_tracks().filter(|t| tracks.contains(&t.id)).flat_map(|t| t.items.iter().map(|i| (i.start, i.end()))).collect();
+    let mut spans: Vec<(Tick, Tick)> = q.all_tracks().filter(|t| tracks.contains(&t.id)).flat_map(|t| t.items.iter().map(|i| (i.start, i.end()))).collect();
     spans.sort_unstable();
     let mut out = Vec::new();
     let mut pos = Tick::ZERO;
@@ -704,7 +711,8 @@ fn step_tab(s: &mut Session, next: bool) -> Result<Value> {
 fn toggle_effect_stack(s: &mut Session, p: &Value) -> Result<Value> {
     let clips = with_links(s, &clips_p(s, p));
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
-    let standard = |e: &redrob_film_project::EffectInstance| e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e) && !e.essential;
+    let standard =
+        |e: &redrob_film_project::EffectInstance| e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e) && !e.essential;
     let any_on = clips.iter().filter_map(|c| q.find_item(*c)).any(|(_, it)| it.effects.iter().any(|e| standard(e) && e.enabled));
     let on = bool_p(p, "on").unwrap_or(!any_on);
     s.edit_sequence(if on { "Enable Clip Effects" } else { "Disable Clip Effects" }, |q, _, _| {
@@ -785,7 +793,8 @@ fn pitch_compensation(s: &mut Session, p: &Value) -> Result<Value> {
     let clips = with_links(s, &clips_p(s, p));
     let on = bool_p(p, "on").unwrap_or(true);
     let n = s.edit_sequence(if on { "Maintain Audio Pitch" } else { "Remove Pitch Compensation" }, |q, _, _| {
-        let audio: Vec<ClipId> = clips.iter().copied().filter(|c| q.find_item(*c).and_then(|(t, _)| q.track(t)).is_some_and(|t| t.kind == TrackKind::Audio)).collect();
+        let audio: Vec<ClipId> =
+            clips.iter().copied().filter(|c| q.find_item(*c).and_then(|(t, _)| q.track(t)).is_some_and(|t| t.kind == TrackKind::Audio)).collect();
         let mut n = 0;
         for c in &audio {
             let Some((_, it)) = q.find_item_mut(*c) else { continue };

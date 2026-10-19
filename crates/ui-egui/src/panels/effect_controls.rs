@@ -197,11 +197,8 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                 }
                 if resp.clicked() && !fxresp.clicked() && !rresp.clicked() {
                     // Shift+click collapses / expands every effect of the clip
-                    let keys: Vec<String> = if bui.input(|i| i.modifiers.shift) {
-                        (0..it.effects.len()).map(|i| format!("{}:{}", clip.0, i)).collect()
-                    } else {
-                        vec![key.clone()]
-                    };
+                    let keys: Vec<String> =
+                        if bui.input(|i| i.modifiers.shift) { (0..it.effects.len()).map(|i| format!("{}:{}", clip.0, i)).collect() } else { vec![key.clone()] };
                     for k in keys {
                         app.ui.collapsed_fx.retain(|c| *c != k);
                         if open {
@@ -718,7 +715,8 @@ pub(crate) fn param_row(
                 }
             } else if resp.clicked() && shift {
                 // Shift+click selects the parameter's keyframes from the last selected one to this one
-                let anchor = app.ui.keyframe_selection.iter().rev().find(|s| s.clip == clip.0 && s.effect == idx && s.mask == mask && s.param == pd.id).map(|s| s.time);
+                let anchor =
+                    app.ui.keyframe_selection.iter().rev().find(|s| s.clip == clip.0 && s.effect == idx && s.mask == mask && s.param == pd.id).map(|s| s.time);
                 let (a, b) = match anchor {
                     Some(a) => (a.min(k.time), a.max(k.time)),
                     None => (k.time, k.time),
@@ -1162,11 +1160,13 @@ pub fn properties_panel(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
 /// Automation ids `effectControls.stackEnabled`, `effectControls.options`.
 fn stack_header(app: &mut FilmcraftApp, ui: &mut egui::Ui, hr: Rect, clip: ClipId, it: &TrackItem, actions: &mut Vec<(String, Value)>) {
     let t = app.tokens;
-    let standard: Vec<&EffectInstance> = it.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e)).collect();
+    let standard: Vec<&EffectInstance> =
+        it.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e)).collect();
     if !standard.is_empty() {
         let on = standard.iter().any(|e| e.enabled);
         let r = Rect::from_center_size(pos2(hr.max.x - 40.0, hr.center().y), vec2(16.0, 16.0));
-        let resp = ui.interact(r, egui::Id::new(("fx-stack", clip.0)), Sense::click()).on_hover_text(tl!("Effects enabled (switch the whole effect stack on or off)"));
+        let resp =
+            ui.interact(r, egui::Id::new(("fx-stack", clip.0)), Sense::click()).on_hover_text(tl!("Effects enabled (switch the whole effect stack on or off)"));
         icons::paint(ui.painter(), r.shrink(1.0), if on { Icon::Eye } else { Icon::EyeOff }, if resp.hovered() { t.text } else { t.text_dim });
         app.auto.add("effectControls.stackEnabled", r, "Effects enabled");
         if resp.clicked() {
@@ -1264,7 +1264,10 @@ fn effect_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, clip: ClipId, idx: usi
     if standard {
         ui.separator();
         let others = |up: bool| {
-            it.effects.iter().enumerate().any(|(i, o)| (if up { i < idx } else { i > idx }) && o.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(o))
+            it.effects
+                .iter()
+                .enumerate()
+                .any(|(i, o)| (if up { i < idx } else { i > idx }) && o.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(o))
         };
         for (up, label) in [(true, tl!("Move Effect Up")), (false, tl!("Move Effect Down"))] {
             let b = ui.add_enabled(others(up), egui::Button::new(label));
@@ -1281,7 +1284,11 @@ fn effect_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, clip: ClipId, idx: usi
         let b = ui.button(if zoned { tl!("✓ Use Effect Zone") } else { tl!("Use Effect Zone") });
         app.auto.add(&format!("effectControls.effect.{}.zone", e.effect), b.rect, "Use Effect Zone");
         if b.clicked() {
-            let p = if zoned { json!({"clip": clip.0, "index": idx, "clear": true}) } else { json!({"clip": clip.0, "index": idx, "in": it.start.0, "out": it.end().0}) };
+            let p = if zoned {
+                json!({"clip": clip.0, "index": idx, "clear": true})
+            } else {
+                json!({"clip": clip.0, "index": idx, "in": it.start.0, "out": it.end().0})
+            };
             actions.push(("effects.setZone".into(), p));
             ui.close();
         }

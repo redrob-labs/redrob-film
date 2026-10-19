@@ -558,16 +558,7 @@ fn fill(px: &mut [u8], w: usize, x0: usize, x1: usize, y0: usize, y1: usize, c: 
 }
 
 const fn bars8(on: u8) -> [[u8; 4]; 8] {
-    [
-        [on, on, on, 255],
-        [on, on, 0, 255],
-        [0, on, on, 255],
-        [0, on, 0, 255],
-        [on, 0, on, 255],
-        [on, 0, 0, 255],
-        [0, 0, on, 255],
-        [0, 0, 0, 255],
-    ]
+    [[on, on, on, 255], [on, on, 0, 255], [0, on, on, 255], [0, on, 0, 255], [on, 0, on, 255], [on, 0, 0, 255], [0, 0, on, 255], [0, 0, 0, 255]]
 }
 
 /// Color bars test patterns (our own layouts of each named pattern).

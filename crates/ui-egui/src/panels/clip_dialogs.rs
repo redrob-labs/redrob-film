@@ -242,7 +242,8 @@ fn defaults(app: &FilmcraftApp, id: &str) -> (Value, Value) {
             let it = q.and_then(|q| s.state.selection.iter().find_map(|c| q.find_item(*c).map(|x| x.1.clone())));
             match it {
                 Some(i) => {
-                    let v = json!({"startFrame": rate.frame_at(i.start), "sourceInFrame": rate.frame_at(i.source_in), "durationFrames": rate.frame_at(i.duration)});
+                    let v =
+                        json!({"startFrame": rate.frame_at(i.start), "sourceInFrame": rate.frame_at(i.source_in), "durationFrames": rate.frame_at(i.duration)});
                     let mut params = v.clone();
                     params["clip"] = json!(i.id.0);
                     // the values shown at first: a field left alone is not sent (frames round)

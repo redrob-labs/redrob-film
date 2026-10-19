@@ -287,9 +287,13 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     // Project Settings ▸ Metadata fills the fields the export settings leave empty
     let pm = &s.project.metadata;
     let md = &mut settings.metadata;
-    for (slot, key) in
-        [(&mut md.title, "title"), (&mut md.creator, "creator"), (&mut md.copyright, "copyright"), (&mut md.description, "description"), (&mut md.comment, "comment")]
-    {
+    for (slot, key) in [
+        (&mut md.title, "title"),
+        (&mut md.creator, "creator"),
+        (&mut md.copyright, "copyright"),
+        (&mut md.description, "description"),
+        (&mut md.comment, "comment"),
+    ] {
         if slot.trim().is_empty()
             && let Some(v) = pm.get(key)
         {

@@ -612,7 +612,9 @@ fn custom(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft, name: &str
                 app.auto.add("settings.mediaCache.reveal", r.rect, "Show in File Manager");
                 if r.clicked() {
                     let ctx = ui.ctx().clone();
-                    if let Err(e) = std::fs::create_dir_all(&dir).map_err(|e| e.to_string()).and_then(|_| crate::panels::menu_dialogs::open_path(app, &ctx, &dir, false)) {
+                    if let Err(e) =
+                        std::fs::create_dir_all(&dir).map_err(|e| e.to_string()).and_then(|_| crate::panels::menu_dialogs::open_path(app, &ctx, &dir, false))
+                    {
                         d.message = e;
                     }
                 }
@@ -827,7 +829,12 @@ fn proxy_profiles(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft) {
                 let e = ui.small_button(tl!("Edit"));
                 app.auto.add(&format!("settings.proxyProfiles.{name}.edit"), e.rect, "Edit");
                 if e.clicked() {
-                    ed = ProfileEditor { previous: Some(name.clone()), name: name.clone(), params: v["params"].as_str().unwrap_or("").to_string(), message: String::new() };
+                    ed = ProfileEditor {
+                        previous: Some(name.clone()),
+                        name: name.clone(),
+                        params: v["params"].as_str().unwrap_or("").to_string(),
+                        message: String::new(),
+                    };
                 }
                 let r = ui.small_button(tl!("Delete"));
                 app.auto.add(&format!("settings.proxyProfiles.{name}.delete"), r.rect, "Delete");
@@ -846,7 +853,14 @@ fn proxy_profiles(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft) {
                 let sel = choice_text(get(&d.values, "media.proxyProfile"));
                 let sel = if sel.is_empty() { info["profile"].as_str().unwrap_or("").to_string() } else { sel };
                 let params = match sel.strip_prefix("custom:") {
-                    Some(n) => info["custom"].as_array().into_iter().flatten().find(|v| v["label"] == json!(n)).and_then(|v| v["params"].as_str()).unwrap_or("").to_string(),
+                    Some(n) => info["custom"]
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .find(|v| v["label"] == json!(n))
+                        .and_then(|v| v["params"].as_str())
+                        .unwrap_or("")
+                        .to_string(),
                     None => preset_params(&sel),
                 };
                 ed = ProfileEditor { previous: None, name: tl!("New Profile").to_string(), params, message: String::new() };
@@ -875,7 +889,10 @@ fn proxy_profiles(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft) {
             }
         }
         ui.horizontal(|ui| {
-            let r = ui.add_enabled(problems.is_none() && !ed.name.trim().is_empty(), egui::Button::new(if ed.previous.is_some() { tl!("Save Profile") } else { tl!("Add Profile") }));
+            let r = ui.add_enabled(
+                problems.is_none() && !ed.name.trim().is_empty(),
+                egui::Button::new(if ed.previous.is_some() { tl!("Save Profile") } else { tl!("Add Profile") }),
+            );
             app.auto.add("settings.proxyProfiles.save", r.rect, "Save Profile");
             if r.clicked() {
                 let mut p = json!({"name": ed.name.trim(), "params": ed.params});
@@ -894,7 +911,12 @@ fn proxy_profiles(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft) {
         if !ed.message.is_empty() {
             note(ui, &tt, &ed.message);
         }
-        let allowed: Vec<String> = info["allowedParams"].as_array().into_iter().flatten().map(|v| format!("{} = {}", v["key"].as_str().unwrap_or(""), v["values"].as_str().unwrap_or(""))).collect();
+        let allowed: Vec<String> = info["allowedParams"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|v| format!("{} = {}", v["key"].as_str().unwrap_or(""), v["values"].as_str().unwrap_or("")))
+            .collect();
         ui.label(RichText::new(tl!("Allowed parameters:")).size(11.5).color(tt.text_dim));
         for a in allowed {
             ui.label(RichText::new(a).size(11.0).color(tt.text_dim).monospace());

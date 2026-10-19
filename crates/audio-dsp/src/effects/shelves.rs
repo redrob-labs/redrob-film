@@ -398,8 +398,7 @@ impl DynamicEq {
         self.design_eq();
     }
     fn design_eq(&mut self) {
-        self.c_eq =
-            Coeffs::design(FilterType::Peaking, self.sr as f64, self.pv.v("target_freq") as f64, self.pv.v("target_q") as f64, self.gain_db as f64);
+        self.c_eq = Coeffs::design(FilterType::Peaking, self.sr as f64, self.pv.v("target_freq") as f64, self.pv.v("target_q") as f64, self.gain_db as f64);
     }
     /// Gain (dB) of the target band for a detection level (dB).
     pub fn gain_for(&self, level_db: f32) -> f32 {

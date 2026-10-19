@@ -158,10 +158,21 @@ enum PresetAction {
 /// The Sequence Presets tab: the presets (built-in, then the user's) narrowed to a frame rate; a
 /// click applies one to the other tabs. The current settings can be saved as a preset, a user
 /// preset deleted, and one made the default of File ▸ New ▸ Sequence….
-fn presets(ui: &mut egui::Ui, d: &mut SequenceSettingsDraft, list: &[(redrob_film_engine::sequence_presets::SequencePreset, bool)], default: &str, elems: &mut Elems, action: &mut Option<PresetAction>) {
+fn presets(
+    ui: &mut egui::Ui,
+    d: &mut SequenceSettingsDraft,
+    list: &[(redrob_film_engine::sequence_presets::SequencePreset, bool)],
+    default: &str,
+    elems: &mut Elems,
+    action: &mut Option<PresetAction>,
+) {
     ui.horizontal(|ui| {
         ui.label(tl!("Frame rate:"));
-        let shown = if d.preset_filter.is_empty() { tl!("All frame rates").to_string() } else { d.preset_filter.split_once('/').and_then(|(n, dd)| Some(FrameRate { num: n.parse().ok()?, den: dd.parse().ok()? }.label())).unwrap_or_default() };
+        let shown = if d.preset_filter.is_empty() {
+            tl!("All frame rates").to_string()
+        } else {
+            d.preset_filter.split_once('/').and_then(|(n, dd)| Some(FrameRate { num: n.parse().ok()?, den: dd.parse().ok()? }.label())).unwrap_or_default()
+        };
         let resp = egui::ComboBox::from_id_salt("seq-presets-filter").selected_text(&shown).width(160.0).show_ui(ui, |ui| {
             let o = ui.selectable_value(&mut d.preset_filter, String::new(), tl!("All frame rates"));
             elems.push(("sequenceSettings.presets.filter.all".into(), o.rect, "All".into()));
@@ -208,7 +219,9 @@ fn presets(ui: &mut egui::Ui, d: &mut SequenceSettingsDraft, list: &[(redrob_fil
         elems.push(("sequenceSettings.presets.name".into(), r.rect, d.preset_name.clone()));
         let name = d.preset_name.trim().to_string();
         let builtin = list.iter().any(|(p, u)| !*u && p.name == name);
-        let r = ui.add_enabled(!name.is_empty() && !builtin, egui::Button::new(tl!("Save Preset"))).on_hover_text(tl!("Save the settings of the General and Tracks tabs as a preset"));
+        let r = ui
+            .add_enabled(!name.is_empty() && !builtin, egui::Button::new(tl!("Save Preset")))
+            .on_hover_text(tl!("Save the settings of the General and Tracks tabs as a preset"));
         elems.push(("sequenceSettings.presets.save".into(), r.rect, "Save Preset".into()));
         if r.clicked() {
             *action = Some(PresetAction::Save(name.clone()));
@@ -221,7 +234,8 @@ fn presets(ui: &mut egui::Ui, d: &mut SequenceSettingsDraft, list: &[(redrob_fil
         }
         let known = list.iter().any(|(p, _)| p.name == name);
         let is_default = default == name;
-        let r = ui.add_enabled(known || is_default || !default.is_empty(), egui::Button::new(if is_default { tl!("Clear Default") } else { tl!("Set as Default") }));
+        let r = ui
+            .add_enabled(known || is_default || !default.is_empty(), egui::Button::new(if is_default { tl!("Clear Default") } else { tl!("Set as Default") }));
         elems.push(("sequenceSettings.presets.default".into(), r.rect, "Set as Default".into()));
         if r.clicked() {
             *action = Some(PresetAction::SetDefault(if is_default || !known { String::new() } else { name }));

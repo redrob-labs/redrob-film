@@ -60,11 +60,8 @@ pub struct StereoToMono {
 
 impl StereoToMono {
     pub const SIDES: &'static [&'static str] = &["Left", "Right"];
-    pub const PARAMS: &'static [ParamSpec] = &[
-        ParamSpec::choice("from", "From", Self::SIDES, 0),
-        ParamSpec::choice("to", "To", Self::SIDES, 1),
-        ParamSpec::toggle("swap", "Swap Channels", false),
-    ];
+    pub const PARAMS: &'static [ParamSpec] =
+        &[ParamSpec::choice("from", "From", Self::SIDES, 0), ParamSpec::choice("to", "To", Self::SIDES, 1), ParamSpec::toggle("swap", "Swap Channels", false)];
 
     pub fn new(_sample_rate: f32, _channels: usize) -> Self {
         StereoToMono { pv: ParamValues::new(Self::PARAMS) }
@@ -161,8 +158,10 @@ impl AudioEffect for Crossfeed {
         for i in 0..n {
             let (k, gi, go) = (self.strength.tick(), self.level_in.tick(), self.level_out.tick());
             let (x_l, x_r) = (l[i] * gi, r[i] * gi);
-            let to_l = self.lp[1].lp(a, self.lp[0].lp(a, x_r));
-            let to_r = self.lp[3].lp(a, self.lp[2].lp(a, x_l));
+            let lr = self.lp[0].lp(a, x_r);
+            let to_l = self.lp[1].lp(a, lr);
+            let rl = self.lp[2].lp(a, x_l);
+            let to_r = self.lp[3].lp(a, rl);
             let norm = 1.0 / (1.0 + k);
             l[i] = (x_l + k * to_l) * norm * go;
             r[i] = (x_r + k * to_r) * norm * go;

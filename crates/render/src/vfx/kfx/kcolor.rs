@@ -326,10 +326,7 @@ pub(super) fn three_point(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 /// strongly a pixel belongs to that range; Relative scales them by the ink already present.
 pub(super) fn cmyk_adjust(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     const RANGES: [&str; 9] = ["reds", "yellows", "greens", "cyans", "blues", "magentas", "whites", "neutrals", "blacks"];
-    let adj: Vec<[f32; 4]> = RANGES
-        .iter()
-        .map(|r| ["c", "m", "y", "k"].map(|k| fv(e, &format!("{r}_{k}"), cx) / 100.0))
-        .collect();
+    let adj: Vec<[f32; 4]> = RANGES.iter().map(|r| ["c", "m", "y", "k"].map(|k| fv(e, &format!("{r}_{k}"), cx) / 100.0)).collect();
     if adj.iter().all(|a| a.iter().all(|v| *v == 0.0)) {
         return;
     }
@@ -468,8 +465,7 @@ pub(super) fn fftfilt(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
 /// (sorted by position); the stop's alpha scales the pixel's.
 pub(super) fn gradient_map(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     let n = fv(e, "stops", cx).round().clamp(2.0, 8.0) as usize;
-    let mut stops: Vec<(f32, [f32; 4])> =
-        (1..=n).map(|k| (fv(e, &format!("stop{k}_pos"), cx) / 100.0, color(e, &format!("stop{k}_color"), cx))).collect();
+    let mut stops: Vec<(f32, [f32; 4])> = (1..=n).map(|k| (fv(e, &format!("stop{k}_pos"), cx) / 100.0, color(e, &format!("stop{k}_color"), cx))).collect();
     stops.sort_by(|a, b| a.0.total_cmp(&b.0));
     let mut d = Disp::of(img);
     d.px.par_iter_mut().for_each(|p| {
@@ -910,36 +906,39 @@ pub(super) fn colorspace(img: &mut Image, e: &EffectInstance) {
     let mut d = Disp::of(img);
     let (w, h) = (d.w, d.h);
     // 1) input signal → output RGB, then → output Y'CbCr (offset chroma, 0..1)
-    let mut ycc: Vec<[f32; 3]> = d
-        .px
-        .par_iter()
-        .map(|p| {
-            // the picture as an input signal: Y'CbCr formed with the input matrix and range
-            let mut rgb = [p[0], p[1], p[2]];
-            if in_limited {
-                // a limited-range input occupies 16…235 of the code range
-                rgb = rgb.map(|v| (v - 16.0 / 255.0) * 255.0 / 219.0);
-            }
-            // an input matrix override: the data was formed with that matrix, not the shown one
-            if let Some(k) = kin
-                && k != shown
-            {
-                rgb = ycc_to_rgb(rgb_to_ycc(rgb, shown), k);
-            }
-            if !fast {
-                let lin = rgb.map(|v| trc_decode(it, v));
-                rgb = mul3(&conv, lin).map(|v| trc_encode(ot, v));
-            }
-            let c = match kout {
-                Some(k) => rgb_to_ycc(rgb, k),
-                None => {
-                    let (r, g, b) = (rgb[0], rgb[1], rgb[2]);
-                    [0.25 * r + 0.5 * g + 0.25 * b, -0.25 * r + 0.5 * g - 0.25 * b, 0.5 * r - 0.5 * b]
+    let mut ycc: Vec<[f32; 3]> =
+        d.px.par_iter()
+            .map(|p| {
+                // the picture as an input signal: Y'CbCr formed with the input matrix and range
+                let mut rgb = [p[0], p[1], p[2]];
+                if in_limited {
+                    // a limited-range input occupies 16…235 of the code range
+                    rgb = rgb.map(|v| (v - 16.0 / 255.0) * 255.0 / 219.0);
                 }
-            };
-            if out_limited { [16.0 / 255.0 + c[0] * 219.0 / 255.0, 0.5 + c[1] * 224.0 / 255.0, 0.5 + c[2] * 224.0 / 255.0] } else { [c[0], c[1] + 0.5, c[2] + 0.5] }
-        })
-        .collect();
+                // an input matrix override: the data was formed with that matrix, not the shown one
+                if let Some(k) = kin
+                    && k != shown
+                {
+                    rgb = ycc_to_rgb(rgb_to_ycc(rgb, shown), k);
+                }
+                if !fast {
+                    let lin = rgb.map(|v| trc_decode(it, v));
+                    rgb = mul3(&conv, lin).map(|v| trc_encode(ot, v));
+                }
+                let c = match kout {
+                    Some(k) => rgb_to_ycc(rgb, k),
+                    None => {
+                        let (r, g, b) = (rgb[0], rgb[1], rgb[2]);
+                        [0.25 * r + 0.5 * g + 0.25 * b, -0.25 * r + 0.5 * g - 0.25 * b, 0.5 * r - 0.5 * b]
+                    }
+                };
+                if out_limited {
+                    [16.0 / 255.0 + c[0] * 219.0 / 255.0, 0.5 + c[1] * 224.0 / 255.0, 0.5 + c[2] * 224.0 / 255.0]
+                } else {
+                    [c[0], c[1] + 0.5, c[2] + 0.5]
+                }
+            })
+            .collect();
     // 2) chroma subsampling
     if sub < 2 {
         let bh = if sub == 0 { 2 } else { 1 };
@@ -1337,11 +1336,8 @@ pub(super) fn mcdeint(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     let d = Disp::of(img);
     let (w, h) = (d.w, d.h);
     let here: &Image = img;
-    let refs: Vec<Disp> = [Some(-1.0), (mode == 3).then_some(1.0)]
-        .into_iter()
-        .flatten()
-        .filter_map(|dt| neighbour(here, e, cx, dt).map(|f| Disp::of(&f)))
-        .collect();
+    let refs: Vec<Disp> =
+        [Some(-1.0), (mode == 3).then_some(1.0)].into_iter().flatten().filter_map(|dt| neighbour(here, e, cx, dt).map(|f| Disp::of(&f))).collect();
     let spatial = |x: usize, y: usize| {
         let (u, dn) = (d.get(x as isize, y as isize - 1), d.get(x as isize, y as isize + 1));
         [0, 1, 2, 3].map(|k| 0.5 * (u[k] + dn[k]))

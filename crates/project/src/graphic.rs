@@ -142,7 +142,14 @@ pub(crate) fn layer_defs() -> Vec<EffectDef> {
                 // Kdenlive's typewriter: the text appears a character, word or line at a time
                 bo("typewriter", "Typewriter", false, TW),
                 chc("tw_unit", "Reveal By", TYPEWRITER_UNITS, 0, TW),
-                p("tw_step", "Step", ParamKind::Float { min: 0.0, max: 10.0, soft_min: 0.0, soft_max: 1.0, unit: "s", decimals: 2 }, ParamValue::Float(0.08), false, TW),
+                p(
+                    "tw_step",
+                    "Step",
+                    ParamKind::Float { min: 0.0, max: 10.0, soft_min: 0.0, soft_max: 1.0, unit: "s", decimals: 2 },
+                    ParamValue::Float(0.08),
+                    false,
+                    TW,
+                ),
                 p(
                     "tw_variation",
                     "Variation",
@@ -151,7 +158,14 @@ pub(crate) fn layer_defs() -> Vec<EffectDef> {
                     false,
                     TW,
                 ),
-                p("tw_seed", "Seed", ParamKind::Float { min: 0.0, max: 9999.0, soft_min: 0.0, soft_max: 100.0, unit: "", decimals: 0 }, ParamValue::Float(1.0), false, TW),
+                p(
+                    "tw_seed",
+                    "Seed",
+                    ParamKind::Float { min: 0.0, max: 9999.0, soft_min: 0.0, soft_max: 100.0, unit: "", decimals: 0 },
+                    ParamValue::Float(1.0),
+                    false,
+                    TW,
+                ),
             ],
         ),
         layer_def(

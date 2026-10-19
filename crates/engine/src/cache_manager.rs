@@ -61,7 +61,8 @@ fn kinds(s: &Session) -> Vec<(&'static str, &'static str, &'static str, Option<P
     v.push(("allBackups", "Backups of all projects", "all", all.clone(), all.as_deref().map(files_under).unwrap_or_default()));
     let cache = s.media_cache_dir();
     // the open project's previews are listed above, not here
-    let cache_files = cache.as_deref().map(files_under).unwrap_or_default().into_iter().filter(|f| previews.as_deref().is_none_or(|d| !f.0.starts_with(d))).collect();
+    let cache_files =
+        cache.as_deref().map(files_under).unwrap_or_default().into_iter().filter(|f| previews.as_deref().is_none_or(|d| !f.0.starts_with(d))).collect();
     v.push(("mediaCache", "Media cache (all projects)", "all", cache, cache_files));
     v
 }

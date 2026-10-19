@@ -12,10 +12,10 @@
 
 pub mod aaf_omf;
 pub mod archive;
-pub mod backups;
-pub mod cache_manager;
 pub mod autosave;
+pub mod backups;
 pub mod bin_tags;
+pub mod cache_manager;
 pub mod captions;
 pub mod clip_jobs;
 pub mod clip_ops;

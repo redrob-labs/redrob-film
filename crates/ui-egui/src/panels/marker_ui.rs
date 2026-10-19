@@ -129,7 +129,8 @@ pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<
     let empty = params.as_object().is_none_or(|m| m.is_empty());
     match id {
         "markers.exportChapters" if empty => {
-            app.ui.markers.export = Some(ExportDraft { format: redrob_film_engine::marker_tools::DEFAULT_CHAPTER_FORMAT.into(), json: false, offset: String::new(), color: None });
+            app.ui.markers.export =
+                Some(ExportDraft { format: redrob_film_engine::marker_tools::DEFAULT_CHAPTER_FORMAT.into(), json: false, offset: String::new(), color: None });
             Some(Ok(Value::Null))
         }
         "markers.import" if empty => {
@@ -248,7 +249,8 @@ pub fn ruler_menu(app: &mut FilmcraftApp, ctx: &egui::Context, ui: &mut egui::Ui
         c
     };
     let rate = app.session.sequence_rate();
-    let at_t = marker.or_else(|| app.session.active_sequence().and_then(|q| q.markers.iter().find(|m| rate.frame_at(m.start) == rate.frame_at(t)).map(|m| m.id.0)));
+    let at_t =
+        marker.or_else(|| app.session.active_sequence().and_then(|q| q.markers.iter().find(|m| rate.frame_at(m.start) == rate.frame_at(t)).map(|m| m.id.0)));
     if item(app, ui, "toggle", tl!("Add/Remove Timeline Marker"), true) {
         let at = at_t.and_then(|m| app.session.active_sequence().and_then(|q| q.markers.iter().find(|x| x.id.0 == m)).map(|x| x.start.0)).unwrap_or(t.0);
         run(app, ctx, "markers.toggleAtPlayhead", json!({"time": at}));
@@ -562,55 +564,59 @@ fn categories_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
     let mut open = true;
     let mut done = false;
     let mut remove: Option<usize> = None;
-    egui::Window::new(tl!("Marker Categories")).id(egui::Id::new("Marker Categories dialog")).open(&mut open).collapsible(false).resizable(false).show(ctx, |ui| {
-        ui.label(egui::RichText::new(tl!("Categories of this project (Project Settings ▸ Markers)")).color(app.tokens.text_dim));
-        for (i, (color, name)) in cats.iter_mut().enumerate() {
-            ui.horizontal(|ui| {
-                ui.label(format!("{}", i + 1));
-                let picked = *color;
-                egui::ComboBox::from_id_salt(("cat-color", i)).selected_text(egui::RichText::new("■").color(rgb(picked))).width(40.0).show_ui(ui, |ui| {
-                    for l in Label::ALL {
-                        ui.selectable_value(&mut *color, l, egui::RichText::new(format!("■ {}", crate::i18n::t(l.name()))).color(rgb(l)));
+    egui::Window::new(tl!("Marker Categories")).id(egui::Id::new("Marker Categories dialog")).open(&mut open).collapsible(false).resizable(false).show(
+        ctx,
+        |ui| {
+            ui.label(egui::RichText::new(tl!("Categories of this project (Project Settings ▸ Markers)")).color(app.tokens.text_dim));
+            for (i, (color, name)) in cats.iter_mut().enumerate() {
+                ui.horizontal(|ui| {
+                    ui.label(format!("{}", i + 1));
+                    let picked = *color;
+                    egui::ComboBox::from_id_salt(("cat-color", i)).selected_text(egui::RichText::new("■").color(rgb(picked))).width(40.0).show_ui(ui, |ui| {
+                        for l in Label::ALL {
+                            ui.selectable_value(&mut *color, l, egui::RichText::new(format!("■ {}", crate::i18n::t(l.name()))).color(rgb(l)));
+                        }
+                    });
+                    let r = ui.add(egui::TextEdit::singleline(&mut *name).desired_width(160.0));
+                    app.auto.add(&format!("markerCategories.{}.name", i + 1), r.rect, name.as_str());
+                    let r = ui.button("✕");
+                    app.auto.add(&format!("markerCategories.{}.delete", i + 1), r.rect, "Delete");
+                    if r.on_hover_text(tl!("Delete category")).clicked() {
+                        remove = Some(i);
                     }
                 });
-                let r = ui.add(egui::TextEdit::singleline(&mut *name).desired_width(160.0));
-                app.auto.add(&format!("markerCategories.{}.name", i + 1), r.rect, name.as_str());
-                let r = ui.button("✕");
-                app.auto.add(&format!("markerCategories.{}.delete", i + 1), r.rect, "Delete");
-                if r.on_hover_text(tl!("Delete category")).clicked() {
-                    remove = Some(i);
-                }
-            });
-        }
-        let r = ui.button(tl!("Add Category"));
-        app.auto.add("markerCategories.add", r.rect, "Add Category");
-        if r.clicked()
-            && let Some(l) = Label::ALL.into_iter().find(|l| !cats.iter().any(|c| c.0 == *l))
-        {
-            cats.push((l, crate::i18n::t(l.name()).to_string()));
-        }
-        ui.separator();
-        ui.horizontal(|ui| {
-            let r = ui.button(tl!("Cancel"));
-            app.auto.add("markerCategories.cancel", r.rect, "Cancel");
-            if r.clicked() {
-                done = true;
             }
-            let r = ui.button(tl!("OK"));
-            app.auto.add("markerCategories.ok", r.rect, "OK");
-            if r.clicked() {
-                let list: Vec<Value> = cats.iter().map(|(c, n)| json!({"color": c.name(), "name": n})).collect();
-                if let Some(e) = app.session.execute("markers.categories", json!({"categories": list})).err() {
-                    app.ui.status = e.to_string();
-                } else {
+            let r = ui.button(tl!("Add Category"));
+            app.auto.add("markerCategories.add", r.rect, "Add Category");
+            if r.clicked()
+                && let Some(l) = Label::ALL.into_iter().find(|l| !cats.iter().any(|c| c.0 == *l))
+            {
+                cats.push((l, crate::i18n::t(l.name()).to_string()));
+            }
+            ui.separator();
+            ui.horizontal(|ui| {
+                let r = ui.button(tl!("Cancel"));
+                app.auto.add("markerCategories.cancel", r.rect, "Cancel");
+                if r.clicked() {
                     done = true;
                 }
-            }
-        });
-    });
+                let r = ui.button(tl!("OK"));
+                app.auto.add("markerCategories.ok", r.rect, "OK");
+                if r.clicked() {
+                    let list: Vec<Value> = cats.iter().map(|(c, n)| json!({"color": c.name(), "name": n})).collect();
+                    if let Some(e) = app.session.execute("markers.categories", json!({"categories": list})).err() {
+                        app.ui.status = e.to_string();
+                    } else {
+                        done = true;
+                    }
+                }
+            });
+        },
+    );
     if let Some(i) = remove {
         let color = cats[i].0;
-        let used: usize = app.session.project.sequences().filter_map(|it| it.as_sequence()).map(|q| q.markers.iter().filter(|m| m.color == color).count()).sum();
+        let used: usize =
+            app.session.project.sequences().filter_map(|it| it.as_sequence()).map(|q| q.markers.iter().filter(|m| m.color == color).count()).sum();
         let saved = app.session.project.settings.marker_categories().iter().any(|c| c.color == color);
         if used > 0 && saved {
             let other = cats.iter().map(|c| c.0).find(|c| *c != color);
@@ -934,7 +940,12 @@ pub fn panel(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
             {
                 let h = row_h - 8.0;
                 let w = (size.x / size.y.max(1.0) * h).min(80.0);
-                ui.painter().image(tex, Rect::from_min_size(pos2(x, rr.min.y + 4.0), vec2(w, h)), Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
+                ui.painter().image(
+                    tex,
+                    Rect::from_min_size(pos2(x, rr.min.y + 4.0), vec2(w, h)),
+                    Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)),
+                    Color32::WHITE,
+                );
                 x += w + 8.0;
             }
             let name = if !m.name.is_empty() {
@@ -993,6 +1004,9 @@ pub fn panel(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         && let Some(pi) = app.session.project.item(item)
     {
         let (video, audio) = (pi.has_video(), pi.has_audio());
-        crate::panels::start_drag_source(ui, crate::panels::source_drag::SourceDrag { item, range: redrob_film_time::TimeRange { start: r.m.start, duration: r.m.duration }, video, audio });
+        crate::panels::start_drag_source(
+            ui,
+            crate::panels::source_drag::SourceDrag { item, range: redrob_film_time::TimeRange { start: r.m.start, duration: r.m.duration }, video, audio },
+        );
     }
 }

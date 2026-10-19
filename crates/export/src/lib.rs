@@ -1706,7 +1706,9 @@ fn h264_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSetti
     }
     Some(
         redrob_film_h264enc::Encoder::new(cfg)
-            .map(|enc| Box::new(H264Encoder { enc, w, h, rate, y: Vec::new(), u: Vec::new(), v: Vec::new(), signal: s.signal, full_range }) as Box<dyn VideoEncoder>)
+            .map(|enc| {
+                Box::new(H264Encoder { enc, w, h, rate, y: Vec::new(), u: Vec::new(), v: Vec::new(), signal: s.signal, full_range }) as Box<dyn VideoEncoder>
+            })
             .map_err(|e| ExportError::Encode(e.to_string())),
     )
 }

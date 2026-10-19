@@ -1173,11 +1173,8 @@ impl FilmcraftApp {
             self.playback.anchor_time = now;
             self.playback.audio_seen = (0, now);
             self.start_audio();
-            self.playback.audio_retry = if self.playback.audio_clock || tries + 1 >= AUDIO_RETRIES {
-                None
-            } else {
-                Some((now + AUDIO_RETRY_S * f64::from(tries + 2), tries + 1))
-            };
+            self.playback.audio_retry =
+                if self.playback.audio_clock || tries + 1 >= AUDIO_RETRIES { None } else { Some((now + AUDIO_RETRY_S * f64::from(tries + 2), tries + 1)) };
             if self.playback.audio_clock {
                 log::info!("audio output reopened after {} tries", tries + 1);
                 self.ui.status = tl!("Audio output restored").into();
@@ -1407,11 +1404,13 @@ impl FilmcraftApp {
             "captions.export" => {
                 let name = self.session.state.active_sequence.and_then(|s| self.session.project.item(s)).map(|i| i.name.clone()).unwrap_or_default();
                 let suggested = format!("{}.srt", name.replace(' ', "_"));
-                let Some(path) =
-                    self.hooks.pick_save_as.as_mut().and_then(|f| {
-                        f("Captions (SRT, WebVTT, SCC, MCC, EBU STL, TTML, DFXP, ASS, SBV)", &["srt", "vtt", "scc", "mcc", "stl", "ttml", "dfxp", "ass", "sbv"], &suggested)
-                    })
-                else {
+                let Some(path) = self.hooks.pick_save_as.as_mut().and_then(|f| {
+                    f(
+                        "Captions (SRT, WebVTT, SCC, MCC, EBU STL, TTML, DFXP, ASS, SBV)",
+                        &["srt", "vtt", "scc", "mcc", "stl", "ttml", "dfxp", "ass", "sbv"],
+                        &suggested,
+                    )
+                }) else {
                     return Ok(Value::Null);
                 };
                 let mut p = params.clone();
@@ -2306,7 +2305,6 @@ fn shut_down_computer() -> Result<(), String> {
         cmd.spawn().map(|_| ()).map_err(|e| format!("can't shut down: {e}"))
     }
 }
-
 
 /// Effective sample rate for shuttle playback. The audio device still runs at `device_rate`,
 /// so at 2x its output samples represent twice the timeline duration. Reverse and

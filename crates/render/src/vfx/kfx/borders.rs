@@ -173,7 +173,9 @@ pub fn pillar_echo(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     let (w, h) = (img.w as f64, img.h as f64);
     // the area scaled to cover the frame, centred
     let k = (w / rw).max(h / rh);
-    let m = Affine::translate(w / 2.0, h / 2.0).then_apply(&Affine::scale(k, k)).then_apply(&Affine::translate(-(r[0] as f64 + rw / 2.0), -(r[1] as f64 + rh / 2.0)));
+    let m = Affine::translate(w / 2.0, h / 2.0)
+        .then_apply(&Affine::scale(k, k))
+        .then_apply(&Affine::translate(-(r[0] as f64 + rw / 2.0), -(r[1] as f64 + rh / 2.0)));
     let mut back = img.transformed(img.w, img.h, &m);
     let sigma = fv(e, "blur", cx) / 100.0 * (img.w.max(img.h) as f32) * 0.05;
     if sigma > 0.3 {

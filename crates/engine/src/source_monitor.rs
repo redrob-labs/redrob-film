@@ -186,11 +186,7 @@ pub(crate) fn route(s: &mut Session, id: &str, p: &Value) -> Result<Option<Value
             points.extend(view.mark_out);
             points.push(view.start);
             points.push(Tick(view.end.0.saturating_sub(view.rate.frame_duration().0)).max(view.start));
-            let time = if id.ends_with("Next") {
-                points.into_iter().filter(|t| *t > cursor).min()
-            } else {
-                points.into_iter().filter(|t| *t < cursor).max()
-            };
+            let time = if id.ends_with("Next") { points.into_iter().filter(|t| *t > cursor).min() } else { points.into_iter().filter(|t| *t < cursor).max() };
             if let Some(t) = time {
                 s.execute("source.setPlayhead", json!({"time":t.0}))?;
             }

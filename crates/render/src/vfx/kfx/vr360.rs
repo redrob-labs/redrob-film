@@ -119,11 +119,7 @@ pub fn equi_mask(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
         if en <= s + 1e-4 {
             return if v > s { 1.0 } else { 0.0 };
         }
-        if hard {
-            if v > (s + en) / 2.0 { 1.0 } else { 0.0 }
-        } else {
-            smoothstep(s, en, v)
-        }
+        if hard { if v > (s + en) / 2.0 { 1.0 } else { 0.0 } } else { smoothstep(s, en, v) }
     };
     let (w, h) = (img.w, img.h);
     img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
@@ -184,18 +180,42 @@ struct Cap {
 
 fn cap_of(e: &EffectInstance, cx: &FxCtx, ids: [&str; 10]) -> Cap {
     let g = |i: usize| fv(e, ids[i], cx) as f64;
-    Cap { on: flag(e, ids[0]), start: g(1), end: g(2).max(g(1) + 0.01), blend_in: g(3), blend_out: g(4), fade_in: g(5).max(0.01), bw: (g(6), g(7)), bh: (g(8), g(9)) }
+    Cap {
+        on: flag(e, ids[0]),
+        start: g(1),
+        end: g(2).max(g(1) + 0.01),
+        blend_in: g(3),
+        blend_out: g(4),
+        fade_in: g(5).max(0.01),
+        bw: (g(6), g(7)),
+        bh: (g(8), g(9)),
+    }
 }
 
 /// VR360 Cap Top and Bottom: past Start (degrees from the horizon) towards each pole the picture
 /// is refilled from a band of latitudes near Start, stretched and blurred over the pole (blur
 /// widths / heights growing from Start to End), faded in over Fade In.
 pub fn vr_cap(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
-    let top = cap_of(e, cx, ["top", "top_start", "top_end", "top_blend_in", "top_blend_out", "top_fade_in", "top_bw_start", "top_bw_end", "top_bh_start", "top_bh_end"]);
+    let top = cap_of(
+        e,
+        cx,
+        ["top", "top_start", "top_end", "top_blend_in", "top_blend_out", "top_fade_in", "top_bw_start", "top_bw_end", "top_bh_start", "top_bh_end"],
+    );
     let bottom = cap_of(
         e,
         cx,
-        ["bottom", "bottom_start", "bottom_end", "bottom_blend_in", "bottom_blend_out", "bottom_fade_in", "bottom_bw_start", "bottom_bw_end", "bottom_bh_start", "bottom_bh_end"],
+        [
+            "bottom",
+            "bottom_start",
+            "bottom_end",
+            "bottom_blend_in",
+            "bottom_blend_out",
+            "bottom_fade_in",
+            "bottom_bw_start",
+            "bottom_bw_end",
+            "bottom_bh_start",
+            "bottom_bh_end",
+        ],
     );
     if !top.on && !bottom.on {
         return;
@@ -299,11 +319,7 @@ pub fn hemi2equi(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
         let rs = r * (da * rn.powi(3) + db * rn * rn + dc * rn + (1.0 - da - db - dc));
         let ang = up + (PI / 2.0 - phi);
         let (sx, sy) = (cxl * wf + rs * wf * ang.sin(), cyl * hf - rs * wf * ang.cos());
-        let mut p = if near {
-            src.get_clamped(sx.floor() as isize, sy.floor() as isize)
-        } else {
-            src.sample_bilinear_clamped(sx as f32, sy as f32)
-        };
+        let mut p = if near { src.get_clamped(sx.floor() as isize, sy.floor() as isize) } else { src.sample_bilinear_clamped(sx as f32, sy as f32) };
         let q = (r / vr as f64) as f32;
         let q2 = q * q;
         let v = (vig[0] + vig[1] * q2 + vig[2] * q2 * q2 + vig[3] * q2 * q2 * q2).max(0.05);
@@ -321,7 +337,13 @@ pub fn hemi2equi(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
         match (front, back) {
             (Some(f), Some(b)) => {
                 // across the overlap band around the 90° seam
-                let k = if overlap > 1e-6 { (((tf - PI / 2.0) / overlap) * 0.5 + 0.5).clamp(0.0, 1.0) as f32 } else if tf < PI / 2.0 { 0.0 } else { 1.0 };
+                let k = if overlap > 1e-6 {
+                    (((tf - PI / 2.0) / overlap) * 0.5 + 0.5).clamp(0.0, 1.0) as f32
+                } else if tf < PI / 2.0 {
+                    0.0
+                } else {
+                    1.0
+                };
                 [0, 1, 2, 3].map(|c| f[c] + (b[c] - f[c]) * k)
             }
             (Some(f), None) => f,
@@ -430,7 +452,8 @@ fn frame_rotation(a: &Gray, b: &Gray, points: &[(f64, f64)], patch: isize, searc
 }
 
 fn solve3(m: [[f64; 3]; 3], b: [f64; 3]) -> Option<[f64; 3]> {
-    let det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+    let det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+        + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
     if det.abs() < 1e-9 {
         return None;
     }
@@ -480,7 +503,8 @@ fn vr_path(img: &Image, e: &EffectInstance, cx: &FxCtx) -> Option<Arc<Vec<[f64; 
     // above this one leave it (so editing them re-analyses)
     let first = env.frame(-now, e)?;
     let thumb = Gray::of(&first, 32);
-    let mut key = env.clip_key() ^ (patch as u64).wrapping_mul(0x9E37_79B9) ^ (search as u64).wrapping_mul(0x85EB_CA6B) ^ (off.to_bits()).rotate_left(7) ^ back as u64;
+    let mut key =
+        env.clip_key() ^ (patch as u64).wrapping_mul(0x9E37_79B9) ^ (search as u64).wrapping_mul(0x85EB_CA6B) ^ (off.to_bits()).rotate_left(7) ^ back as u64;
     for v in &thumb.v {
         key = (key ^ ((v * 63.0).round() as u64)).wrapping_mul(0x0100_0000_01b3);
     }
@@ -633,20 +657,11 @@ fn paste(dst: &mut Image, src: &Image, x0: usize, y0: usize) {
 /// Dubois least-squares anaglyph matrices (left, right), rows = output R, G, B.
 const DUBOIS: [([[f32; 3]; 3], [[f32; 3]; 3]); 3] = [
     // red / cyan
-    (
-        [[0.437, 0.449, 0.164], [-0.062, -0.062, -0.024], [-0.048, -0.050, -0.017]],
-        [[-0.011, -0.032, -0.007], [0.377, 0.761, 0.009], [-0.026, -0.093, 1.234]],
-    ),
+    ([[0.437, 0.449, 0.164], [-0.062, -0.062, -0.024], [-0.048, -0.050, -0.017]], [[-0.011, -0.032, -0.007], [0.377, 0.761, 0.009], [-0.026, -0.093, 1.234]]),
     // green / magenta
-    (
-        [[-0.062, -0.158, -0.039], [0.284, 0.668, 0.143], [-0.015, -0.027, 0.021]],
-        [[0.529, 0.705, 0.024], [-0.016, -0.015, -0.065], [0.009, 0.075, 0.937]],
-    ),
+    ([[-0.062, -0.158, -0.039], [0.284, 0.668, 0.143], [-0.015, -0.027, 0.021]], [[0.529, 0.705, 0.024], [-0.016, -0.015, -0.065], [0.009, 0.075, 0.937]]),
     // yellow / blue
-    (
-        [[1.062, -0.205, 0.299], [-0.026, 0.908, 0.068], [-0.038, -0.173, 0.022]],
-        [[-0.016, -0.123, -0.017], [0.006, 0.062, -0.017], [0.094, 0.185, 0.911]],
-    ),
+    ([[1.062, -0.205, 0.299], [-0.026, 0.908, 0.068], [-0.038, -0.173, 0.022]], [[-0.016, -0.123, -0.017], [0.006, 0.062, -0.017], [0.094, 0.185, 0.911]]),
 ];
 
 /// One anaglyph pixel from the eyes' straight display colours.

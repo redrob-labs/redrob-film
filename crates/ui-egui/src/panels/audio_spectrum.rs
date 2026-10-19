@@ -127,7 +127,8 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     for c in 0..=cols {
         let x = plot.min.x + c as f32;
         let (a, b) = (hz_of(x), hz_of(x + 1.0));
-        let (ia, ib) = ((a * N as f32 / spec.sample_rate) as usize, ((b * N as f32 / spec.sample_rate) as usize).max((a * N as f32 / spec.sample_rate) as usize + 1));
+        let (ia, ib) =
+            ((a * N as f32 / spec.sample_rate) as usize, ((b * N as f32 / spec.sample_rate) as usize).max((a * N as f32 / spec.sample_rate) as usize + 1));
         let db = spec.db.get(ia.min(spec.db.len() - 1)..ib.min(spec.db.len())).and_then(|s| s.iter().copied().reduce(f32::max)).unwrap_or_else(|| spec.at(a));
         pts.push(pos2(x, y_of(db)));
     }

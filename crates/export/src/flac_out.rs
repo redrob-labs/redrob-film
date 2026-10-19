@@ -223,7 +223,14 @@ fn quantise(s: f32, bps: u32) -> i64 {
 }
 
 /// Export the mix of `range` as a FLAC file; returns (bytes written, sample frames).
-pub(crate) fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, range: TimeRange, sources: &dyn SourceProvider, progress: &Progress) -> Result<(u64, u64)> {
+pub(crate) fn export(
+    project: &Arc<Project>,
+    seq: ItemId,
+    settings: &ExportSettings,
+    range: TimeRange,
+    sources: &dyn SourceProvider,
+    progress: &Progress,
+) -> Result<(u64, u64)> {
     use std::io::Write;
     let mut a = AudioOut::new(project.clone(), seq, settings, range)?;
     let (channels, sr) = (a.channels as u32, a.sr);

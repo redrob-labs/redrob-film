@@ -1257,7 +1257,14 @@ pub fn commands() -> Vec<CommandSpec> {
             upgrade_caption,
         ),
         spec("graphics.upgradeToSourceGraphic", "Upgrade to Source Graphic", G, r#"{"clip":id?}"#, has_graphic, upgrade_to_source),
-        spec("graphics.addAsNewSourceGraphic", "Add as New Source Graphic", G, r#"{"clip":id?,"mode":"replace"|"keep"?="replace"}"#, has_graphic, add_as_new_source),
+        spec(
+            "graphics.addAsNewSourceGraphic",
+            "Add as New Source Graphic",
+            G,
+            r#"{"clip":id?,"mode":"replace"|"keep"?="replace"}"#,
+            has_graphic,
+            add_as_new_source,
+        ),
         spec(
             "file.replaceFonts",
             "Replace Fonts in Projects…",

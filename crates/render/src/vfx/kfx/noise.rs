@@ -187,7 +187,13 @@ pub fn chroma_nr(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     let euclid = pick(e, "distance") == 1;
     let mut d = Disp::of(img);
     let (w, h) = (d.w, d.h);
-    let yuv: Vec<[f32; 4]> = d.px.par_iter().map(|p| { let q = to_yuv(*p); [q[0] * 255.0, q[1] * 255.0, q[2] * 255.0, q[3]] }).collect();
+    let yuv: Vec<[f32; 4]> =
+        d.px.par_iter()
+            .map(|p| {
+                let q = to_yuv(*p);
+                [q[0] * 255.0, q[1] * 255.0, q[2] * 255.0, q[3]]
+            })
+            .collect();
     let out: Vec<[f32; 4]> = (0..w * h)
         .into_par_iter()
         .map(|i| {
@@ -214,11 +220,7 @@ pub fn chroma_nr(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
                     }
                 }
             }
-            if n > 0.0 {
-                from_yuv([c[0] / 255.0, su / n / 255.0, sv / n / 255.0, c[3]])
-            } else {
-                d.px[i]
-            }
+            if n > 0.0 { from_yuv([c[0] / 255.0, su / n / 255.0, sv / n / 255.0, c[3]]) } else { d.px[i] }
         })
         .collect();
     d.px = out;
@@ -570,7 +572,11 @@ fn wt2(p: &mut [f32], w: usize, cw: usize, ch: usize, inverse: bool) {
             .map(|x| {
                 let mut c: Vec<f32> = (0..ch).map(|y| p[y * w + x]).collect();
                 let mut tmp = Vec::new();
-                if inverse { iwt97(&mut c, &mut tmp) } else { fwt97(&mut c, &mut tmp) }
+                if inverse {
+                    iwt97(&mut c, &mut tmp)
+                } else {
+                    fwt97(&mut c, &mut tmp)
+                }
                 c
             })
             .collect();
@@ -609,10 +615,18 @@ pub fn wavelet(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
         let s = match method {
             0 => c.signum() * (a - t).max(0.0),
             1 => {
-                if a < t { 0.0 } else { c }
+                if a < t {
+                    0.0
+                } else {
+                    c
+                }
             }
             _ => {
-                if a < t { 0.0 } else { c - t * t / c }
+                if a < t {
+                    0.0
+                } else {
+                    c - t * t / c
+                }
             }
         };
         c + (s - c) * pctv

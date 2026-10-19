@@ -45,24 +45,14 @@ pub struct Target {
 /// Whether `it` is a clip with a picture of its own that Motion moves (not a graphic or an
 /// adjustment layer).
 fn movable(app: &FilmcraftApp, it: &TrackItem) -> bool {
-    matches!(
-        app.session.project.item(it.item).map(|i| &i.kind),
-        Some(ItemKind::Media(_) | ItemKind::Sequence(_) | ItemKind::Subclip { .. })
-    )
+    matches!(app.session.project.item(it.item).map(|i| &i.kind), Some(ItemKind::Media(_) | ItemKind::Sequence(_) | ItemKind::Subclip { .. }))
 }
 
 /// The enabled clips on visible video tracks under the playhead that Motion moves, topmost first.
 fn under_playhead(app: &FilmcraftApp) -> Vec<TrackItem> {
     let Some(seq) = app.session.active_sequence() else { return Vec::new() };
     let ph = app.session.playhead();
-    seq.video_tracks
-        .iter()
-        .rev()
-        .filter(|t| t.enabled)
-        .filter_map(|t| t.item_at(ph))
-        .filter(|it| it.enabled && movable(app, it))
-        .cloned()
-        .collect()
+    seq.video_tracks.iter().rev().filter(|t| t.enabled).filter_map(|t| t.item_at(ph)).filter(|it| it.enabled && movable(app, it)).cloned().collect()
 }
 
 fn target_of(app: &FilmcraftApp, it: TrackItem) -> Target {
@@ -88,10 +78,8 @@ fn motion(app: &FilmcraftApp, t: &Target) -> Option<Affine> {
 
 /// Sequence pixels → screen points over the picture `pic`.
 fn view(pic: Rect, frame: (u32, u32)) -> Affine {
-    Affine::translate(f64::from(pic.min.x), f64::from(pic.min.y)).then_apply(&Affine::scale(
-        f64::from(pic.width()) / f64::from(frame.0.max(1)),
-        f64::from(pic.height()) / f64::from(frame.1.max(1)),
-    ))
+    Affine::translate(f64::from(pic.min.x), f64::from(pic.min.y))
+        .then_apply(&Affine::scale(f64::from(pic.width()) / f64::from(frame.0.max(1)), f64::from(pic.height()) / f64::from(frame.1.max(1))))
 }
 
 fn sp(m: &Affine, v: Vec2) -> Pos2 {

@@ -770,8 +770,12 @@ pub fn commands() -> Vec<CommandSpec> {
         spec("playhead.selectedClipEnd", "Go to Selected Clip End", Some("Shift+End"), "{}", has_selection, |s, _| go_to_selected(s, true)),
         spec("sequence.revealNested", "Reveal Nested Sequence", Some("Cmd+Alt+F"), "{}", has_seq, |s, _| reveal_nested(s)),
         // Kdenlive: Go to Previous / Next Snap Point (clips, transitions, markers, In / Out)
-        spec("playhead.nextSnap", "Go to Next Snap Point", None, r#"{"target":"program|source"}"#, always, |s, p| source_or(s, "playhead.nextSnap", p, |s| go_to_snap(s, true))),
-        spec("playhead.prevSnap", "Go to Previous Snap Point", None, r#"{"target":"program|source"}"#, always, |s, p| source_or(s, "playhead.prevSnap", p, |s| go_to_snap(s, false))),
+        spec("playhead.nextSnap", "Go to Next Snap Point", None, r#"{"target":"program|source"}"#, always, |s, p| {
+            source_or(s, "playhead.nextSnap", p, |s| go_to_snap(s, true))
+        }),
+        spec("playhead.prevSnap", "Go to Previous Snap Point", None, r#"{"target":"program|source"}"#, always, |s, p| {
+            source_or(s, "playhead.prevSnap", p, |s| go_to_snap(s, false))
+        }),
         // Kdenlive: Forward / Rewind 1 Second (one second of frames at the sequence rate)
         spec("playhead.forwardSecond", "Forward 1 Second", None, r#"{"target":"program|source"}"#, always, |s, p| {
             source_or(s, "playhead.forwardSecond", p, |s| {

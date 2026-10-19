@@ -84,7 +84,16 @@ pub fn builtin() -> Vec<SequencePreset> {
         let rate = FrameRate { num: fps_num, den: fps_den };
         SequencePreset { name: name.into(), width, height, fps_num, fps_den, drop_frame: rate.supports_drop_frame(), ..SequencePreset::default() }
     };
-    let rates = [("23.976", (24_000, 1001)), ("24", (24, 1)), ("25", (25, 1)), ("29.97", (30_000, 1001)), ("30", (30, 1)), ("50", (50, 1)), ("59.94", (60_000, 1001)), ("60", (60, 1))];
+    let rates = [
+        ("23.976", (24_000, 1001)),
+        ("24", (24, 1)),
+        ("25", (25, 1)),
+        ("29.97", (30_000, 1001)),
+        ("30", (30, 1)),
+        ("50", (50, 1)),
+        ("59.94", (60_000, 1001)),
+        ("60", (60, 1)),
+    ];
     let mut v = Vec::new();
     for (label, r) in rates {
         v.push(p(&format!("HD 1080p {label} fps"), 1920, 1080, r));

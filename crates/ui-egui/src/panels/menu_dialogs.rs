@@ -838,8 +838,16 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                     "files" => {
                         let f = &d.info["files"];
                         let mb = |b: u64| format!("{:.1} MB", b as f64 / f64::from(1u32 << 20));
-                        ui.label(tlf!("Used in sequences: {n} file(s), {size}", n = f["used"]["files"].as_u64().unwrap_or(0), size = mb(f["used"]["bytes"].as_u64().unwrap_or(0))));
-                        ui.label(tlf!("Unused: {n} file(s), {size}", n = f["unused"]["files"].as_u64().unwrap_or(0), size = mb(f["unused"]["bytes"].as_u64().unwrap_or(0))));
+                        ui.label(tlf!(
+                            "Used in sequences: {n} file(s), {size}",
+                            n = f["used"]["files"].as_u64().unwrap_or(0),
+                            size = mb(f["used"]["bytes"].as_u64().unwrap_or(0))
+                        ));
+                        ui.label(tlf!(
+                            "Unused: {n} file(s), {size}",
+                            n = f["unused"]["files"].as_u64().unwrap_or(0),
+                            size = mb(f["unused"]["bytes"].as_u64().unwrap_or(0))
+                        ));
                         let missing = f["missing"].as_u64().unwrap_or(0);
                         if missing > 0 {
                             ui.label(RichText::new(tlf!("{n} file(s) not found on disk", n = missing)).weak());
@@ -849,7 +857,10 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                             ui.separator();
                             egui::ScrollArea::vertical().id_salt("project-files-unused").max_height(180.0).show(ui, |ui| {
                                 for u in &unused {
-                                    ui.label(RichText::new(format!("{}  ({})", u["name"].as_str().unwrap_or_default(), mb(u["bytes"].as_u64().unwrap_or(0)))).small());
+                                    ui.label(
+                                        RichText::new(format!("{}  ({})", u["name"].as_str().unwrap_or_default(), mb(u["bytes"].as_u64().unwrap_or(0))))
+                                            .small(),
+                                    );
                                 }
                             });
                         }

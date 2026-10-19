@@ -59,15 +59,69 @@ pub const PRESETS: &[Preset] = &[
         proxy: true,
         alpha: false,
     },
-    Preset { id: "prores_proxy_half", label: "ProRes 422 Proxy, ½ size", format: Format::ProRes, scale: 0.5, prores: "proxy", extension: "mov", proxy: true, alpha: false },
-    Preset { id: "prores_lt_half", label: "ProRes 422 LT, ½ size", format: Format::ProRes, scale: 0.5, prores: "lt", extension: "mov", proxy: true, alpha: false },
+    Preset {
+        id: "prores_proxy_half",
+        label: "ProRes 422 Proxy, ½ size",
+        format: Format::ProRes,
+        scale: 0.5,
+        prores: "proxy",
+        extension: "mov",
+        proxy: true,
+        alpha: false,
+    },
+    Preset {
+        id: "prores_lt_half",
+        label: "ProRes 422 LT, ½ size",
+        format: Format::ProRes,
+        scale: 0.5,
+        prores: "lt",
+        extension: "mov",
+        proxy: true,
+        alpha: false,
+    },
     Preset { id: "h264_quarter", label: "H.264, ¼ size", format: Format::H264, scale: 0.25, prores: "", extension: "mp4", proxy: true, alpha: false },
     Preset { id: "h264_half", label: "H.264, ½ size", format: Format::H264, scale: 0.5, prores: "", extension: "mp4", proxy: true, alpha: false },
-    Preset { id: "prores_lt", label: "ProRes 422 LT (full size)", format: Format::ProRes, scale: 1.0, prores: "lt", extension: "mov", proxy: false, alpha: false },
-    Preset { id: "prores_hq", label: "ProRes 422 HQ (full size)", format: Format::ProRes, scale: 1.0, prores: "hq", extension: "mov", proxy: false, alpha: false },
+    Preset {
+        id: "prores_lt",
+        label: "ProRes 422 LT (full size)",
+        format: Format::ProRes,
+        scale: 1.0,
+        prores: "lt",
+        extension: "mov",
+        proxy: false,
+        alpha: false,
+    },
+    Preset {
+        id: "prores_hq",
+        label: "ProRes 422 HQ (full size)",
+        format: Format::ProRes,
+        scale: 1.0,
+        prores: "hq",
+        extension: "mov",
+        proxy: false,
+        alpha: false,
+    },
     Preset { id: "h264", label: "H.264 (full size)", format: Format::H264, scale: 1.0, prores: "", extension: "mp4", proxy: false, alpha: false },
-    Preset { id: "prores_4444_quarter", label: "ProRes 4444 with alpha, ¼ size", format: Format::ProRes, scale: 0.25, prores: "4444", extension: "mov", proxy: true, alpha: true },
-    Preset { id: "prores_4444_half", label: "ProRes 4444 with alpha, ½ size", format: Format::ProRes, scale: 0.5, prores: "4444", extension: "mov", proxy: true, alpha: true },
+    Preset {
+        id: "prores_4444_quarter",
+        label: "ProRes 4444 with alpha, ¼ size",
+        format: Format::ProRes,
+        scale: 0.25,
+        prores: "4444",
+        extension: "mov",
+        proxy: true,
+        alpha: true,
+    },
+    Preset {
+        id: "prores_4444_half",
+        label: "ProRes 4444 with alpha, ½ size",
+        format: Format::ProRes,
+        scale: 0.5,
+        prores: "4444",
+        extension: "mov",
+        proxy: true,
+        alpha: true,
+    },
 ];
 
 pub const DEFAULT_PROXY_PRESET: &str = "prores_proxy_quarter";
@@ -313,9 +367,9 @@ pub fn transcode_with(
         scale,
         include_audio: has_a && (preset.audio || !has_v),
         quality: preset.quality,
-        bitrate_kbps: preset.bitrate_kbps.unwrap_or_else(|| {
-            ((info.video.as_ref().map_or(1920 * 1080, |v| v.width * v.height) as f64 * (scale * scale) as f64) / 200.0).max(800.0) as u32
-        }),
+        bitrate_kbps: preset
+            .bitrate_kbps
+            .unwrap_or_else(|| ((info.video.as_ref().map_or(1920 * 1080, |v| v.width * v.height) as f64 * (scale * scale) as f64) / 200.0).max(800.0) as u32),
         part_of_batch: true,
         prores_profile: preset.prores.clone(),
         alpha: preset.alpha && has_v,
@@ -1074,8 +1128,7 @@ pub fn commands() -> Vec<CommandSpec> {
 /// `media.proxyProfiles`: the built-in proxy presets, the custom profiles (with their parsed
 /// encoding or problems), the chosen profiles and the allowed parameters.
 pub fn profiles_json(s: &Session) -> Value {
-    let builtin: Vec<Value> =
-        PRESETS.iter().filter(|p| p.proxy).map(|p| json!({"id": p.id, "label": p.label, "alpha": p.alpha, "builtin": true})).collect();
+    let builtin: Vec<Value> = PRESETS.iter().filter(|p| p.proxy).map(|p| json!({"id": p.id, "label": p.label, "alpha": p.alpha, "builtin": true})).collect();
     let custom: Vec<Value> = s
         .prefs
         .media
@@ -1114,7 +1167,11 @@ fn save_profile(s: &mut Session, p: &Value) -> Result<Value> {
     if let Err(e) = parse_profile(&name, &params) {
         let mut why = Vec::new();
         if !e.unknown.is_empty() {
-            why.push(format!("parameters not allowed: {} (allowed: {})", e.unknown.join(", "), PROXY_PARAMS.iter().map(|x| x.0).collect::<Vec<_>>().join(", ")));
+            why.push(format!(
+                "parameters not allowed: {} (allowed: {})",
+                e.unknown.join(", "),
+                PROXY_PARAMS.iter().map(|x| x.0).collect::<Vec<_>>().join(", ")
+            ));
         }
         why.extend(e.errors);
         return Err(EngineError::Other(why.join("; ")));

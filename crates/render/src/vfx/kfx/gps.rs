@@ -164,7 +164,8 @@ fn parse_track(text: &str) -> Vec<Pt> {
             let end = text[a..].find("</Trackpoint>").map(|e| a + e).unwrap_or(text.len());
             let block = &text[a..end];
             from = end.max(a + 1);
-            let (Some(lat), Some(lon)) = (tag(block, "LatitudeDegrees").and_then(|v| v.parse::<f64>().ok()), tag(block, "LongitudeDegrees").and_then(|v| v.parse::<f64>().ok()))
+            let (Some(lat), Some(lon)) =
+                (tag(block, "LatitudeDegrees").and_then(|v| v.parse::<f64>().ok()), tag(block, "LongitudeDegrees").and_then(|v| v.parse::<f64>().ok()))
             else {
                 continue;
             };
@@ -610,7 +611,12 @@ pub fn gps_graphic(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     };
     let (now, _) = at(&tr, now_t);
     let (w, h) = (img.w as f32, img.h as f32);
-    let rect = [fv(e, "rect_x", cx) / 100.0 * w, fv(e, "rect_y", cx) / 100.0 * h, (fv(e, "rect_w", cx) / 100.0 * w).max(2.0), (fv(e, "rect_h", cx) / 100.0 * h).max(2.0)];
+    let rect = [
+        fv(e, "rect_x", cx) / 100.0 * w,
+        fv(e, "rect_y", cx) / 100.0 * h,
+        (fv(e, "rect_w", cx) / 100.0 * w).max(2.0),
+        (fv(e, "rect_h", cx) / 100.0 * h).max(2.0),
+    ];
     let (lw, lh) = (rect[2].ceil() as usize, rect[3].ceil() as usize);
     let mut layer = Image::new(lw, lh);
     let s = cx.px_scale.max(0.05);
@@ -621,7 +627,9 @@ pub fn gps_graphic(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
         && let Some(bg) = background(&text_param(e, "bg_image"))
     {
         let fit = (lw as f64 / bg.w as f64).max(lh as f64 / bg.h as f64) / bgs as f64;
-        let m = Affine::translate(lw as f64 / 2.0, lh as f64 / 2.0).then_apply(&Affine::scale(fit, fit)).then_apply(&Affine::translate(-(bg.w as f64) / 2.0, -(bg.h as f64) / 2.0));
+        let m = Affine::translate(lw as f64 / 2.0, lh as f64 / 2.0)
+            .then_apply(&Affine::scale(fit, fit))
+            .then_apply(&Affine::translate(-(bg.w as f64) / 2.0, -(bg.h as f64) / 2.0));
         let mut b = bg.transformed(lw, lh, &m);
         b.scale_alpha((fv(e, "bg_opacity", cx) / 100.0).clamp(0.0, 1.0));
         layer = b;
@@ -699,11 +707,7 @@ pub fn gps_graphic(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
         let (ccx, ccy) = (lw as f32 / 2.0, lh as f32 * 0.55);
         let r = (lw.min(lh) as f32 / 2.0 - thick - 2.0).max(2.0);
         let ang = |t: f32| (210.0 - 240.0 * t.clamp(0.0, 1.0)).to_radians();
-        let frac = if src == 0 {
-            norm(now.t, pts[0].t, pts[pts.len() - 1].t)
-        } else {
-            yv(&now).map_or(0.0, |v| norm(v, y0, y1))
-        };
+        let frac = if src == 0 { norm(now.t, pts[0].t, pts[pts.len() - 1].t) } else { yv(&now).map_or(0.0, |v| norm(v, y0, y1)) };
         let segs = 60;
         for k in 0..segs {
             let (ta, tb) = (k as f32 / segs as f32, (k + 1) as f32 / segs as f32);

@@ -236,7 +236,8 @@ pub fn backgroundkey(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     let back = -(env.clip_offset() * fps(cx));
     let Some(bg) = neighbour(img, e, cx, back) else { return };
     let (cur, bgd) = (Disp::of(img), Disp::of(&bg));
-    let diffs: Vec<f32> = cur.px.par_iter().zip(bgd.px.par_iter()).map(|(a, b)| ((a[0] - b[0]).abs() + (a[1] - b[1]).abs() + (a[2] - b[2]).abs()) / 3.0).collect();
+    let diffs: Vec<f32> =
+        cur.px.par_iter().zip(bgd.px.par_iter()).map(|(a, b)| ((a[0] - b[0]).abs() + (a[1] - b[1]).abs() + (a[2] - b[2]).abs()) / 3.0).collect();
     let mean = diffs.iter().sum::<f32>() / diffs.len().max(1) as f32;
     if mean > fv(e, "threshold", cx) {
         return;
@@ -397,11 +398,7 @@ pub fn premultiply(img: &mut Image, e: &EffectInstance) {
     d.px.par_iter_mut().for_each(|p| {
         let a = p[3];
         for k in 0..3 {
-            p[k] = if un {
-                if a > 1e-6 { (p[k] / a).min(1.0) } else { 0.0 }
-            } else {
-                p[k] * a
-            };
+            p[k] = if un { if a > 1e-6 { (p[k] / a).min(1.0) } else { 0.0 } } else { p[k] * a };
         }
     });
     d.store(img);

@@ -301,7 +301,8 @@ pub fn reencode(bytes: &[u8], encoding: &str) -> Option<Vec<u8>> {
         "utf-8" | "utf8" => String::from_utf8_lossy(bytes).into_owned(),
         e @ ("utf-16le" | "utf-16be" | "utf-16") => {
             let be = e == "utf-16be";
-            let units: Vec<u16> = bytes.as_chunks::<2>().0.iter().map(|c| if be { u16::from_be_bytes([c[0], c[1]]) } else { u16::from_le_bytes([c[0], c[1]]) }).collect();
+            let units: Vec<u16> =
+                bytes.as_chunks::<2>().0.iter().map(|c| if be { u16::from_be_bytes([c[0], c[1]]) } else { u16::from_le_bytes([c[0], c[1]]) }).collect();
             String::from_utf16_lossy(&units)
         }
         "windows-1252" | "cp1252" => bytes.iter().map(|&b| cp1252(b)).collect(),

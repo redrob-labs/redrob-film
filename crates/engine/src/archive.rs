@@ -206,7 +206,10 @@ fn write_zip(files: &[(String, PathBuf)], out: &Path) -> std::result::Result<(),
             enc.finish().map_err(io)?;
         }
         let comp = w.n - start;
-        let (comp, size) = (u32::try_from(comp).map_err(|_| format!("{rel}: over 4 GiB, use tar.gz"))?, u32::try_from(size).map_err(|_| format!("{rel}: over 4 GiB, use tar.gz"))?);
+        let (comp, size) = (
+            u32::try_from(comp).map_err(|_| format!("{rel}: over 4 GiB, use tar.gz"))?,
+            u32::try_from(size).map_err(|_| format!("{rel}: over 4 GiB, use tar.gz"))?,
+        );
         let mut dd = Vec::with_capacity(16);
         dd.extend_from_slice(&0x0807_4b50u32.to_le_bytes());
         dd.extend_from_slice(&crc.sum().to_le_bytes());
@@ -372,9 +375,11 @@ fn open_archive(s: &mut Session, p: &Value) -> Result<Value> {
     };
     extract(&path, &dest).map_err(EngineError::Other)?;
     let manifest: Value = std::fs::read(dest.join(MANIFEST)).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or(Value::Null);
-    let project = manifest["project"].as_str().map(|n| dest.join(n)).filter(|p| p.is_file()).or_else(|| {
-        walk(&dest).ok()?.into_iter().map(|(_, p)| p).find(|p| p.extension().and_then(|e| e.to_str()) == Some("rfilm"))
-    });
+    let project = manifest["project"]
+        .as_str()
+        .map(|n| dest.join(n))
+        .filter(|p| p.is_file())
+        .or_else(|| walk(&dest).ok()?.into_iter().map(|(_, p)| p).find(|p| p.extension().and_then(|e| e.to_str()) == Some("rfilm")));
     let project = project.ok_or_else(|| EngineError::Other("the archive holds no project file".into()))?;
     let project_s = project.to_string_lossy().into_owned();
     let mut out = s.execute("file.open", json!({"path": project_s}))?;

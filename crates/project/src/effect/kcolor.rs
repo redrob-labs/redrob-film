@@ -21,20 +21,8 @@ pub const CS_ALL: &[&str] = &["Auto", "BT.709", "BT.470M", "BT.470BG", "BT.601-6
 /// Color Space ▸ colour space (YUV matrix).
 pub const CS_SPACE: &[&str] = &["Auto", "BT.709", "FCC", "BT.470BG", "SMPTE 170M", "SMPTE 240M", "YCgCo", "BT.2020 NCL"];
 /// Color Space ▸ transfer characteristics.
-pub const CS_TRC: &[&str] = &[
-    "Auto",
-    "BT.709",
-    "BT.470M",
-    "BT.470BG",
-    "Gamma 2.2",
-    "Gamma 2.8",
-    "SMPTE 170M",
-    "SMPTE 240M",
-    "sRGB",
-    "xvYCC",
-    "BT.2020 10-bit",
-    "BT.2020 12-bit",
-];
+pub const CS_TRC: &[&str] =
+    &["Auto", "BT.709", "BT.470M", "BT.470BG", "Gamma 2.2", "Gamma 2.8", "SMPTE 170M", "SMPTE 240M", "sRGB", "xvYCC", "BT.2020 10-bit", "BT.2020 12-bit"];
 /// Color Space ▸ primaries.
 pub const CS_PRIMARIES: &[&str] =
     &["Auto", "BT.709", "BT.470M", "BT.470BG", "SMPTE 170M", "SMPTE 240M", "Film", "BT.2020", "SMPTE 431", "SMPTE 432", "JEDEC P22"];
@@ -116,7 +104,13 @@ pub(super) fn defs() -> Vec<EffectDef> {
         ("stop8_pos", "stop8_color", "Stop 8"),
     ];
     for (k, (pos, colr, g)) in gm_ids.into_iter().enumerate() {
-        let x = if k == 0 { 0.0 } else if k == 1 { 100.0 } else { (k as f64 - 1.0) * 100.0 / 7.0 };
+        let x = if k == 0 {
+            0.0
+        } else if k == 1 {
+            100.0
+        } else {
+            (k as f64 - 1.0) * 100.0 / 7.0
+        };
         let c = if k == 0 { 0.0 } else { 1.0 };
         gmap.push(grp(f(pos, "Position", x, 0.0, 100.0, "%"), g));
         gmap.push(grp(col(colr, "Color", [c, c, c, 1.0]), g));
@@ -124,12 +118,7 @@ pub(super) fn defs() -> Vec<EffectDef> {
 
     vec![
         // ---------------------------------------------------------------- Blur and Sharpen
-        kc(
-            "k_avgblur",
-            "Average Blur",
-            BLUR,
-            vec![int("size_x", "X Size", 1.0, 0.0, 1024.0), int("size_y", "Y Size", 1.0, 0.0, 1024.0), planes()],
-        ),
+        kc("k_avgblur", "Average Blur", BLUR, vec![int("size_x", "X Size", 1.0, 0.0, 1024.0), int("size_y", "Y Size", 1.0, 0.0, 1024.0), planes()]),
         kc(
             "k_bilateral",
             "Bilateral",

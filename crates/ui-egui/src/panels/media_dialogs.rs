@@ -398,12 +398,10 @@ fn link_media(app: &mut FilmcraftApp, ctx: &egui::Context) {
                 Err(e) => app.ui.status = e.to_string(),
             }
         }
-        Some("removeAll") => {
-            match app.session.execute("media.removeMissing", json!({})) {
-                Ok(_) => keep = false,
-                Err(e) => app.ui.status = e.to_string(),
-            }
-        }
+        Some("removeAll") => match app.session.execute("media.removeMissing", json!({})) {
+            Ok(_) => keep = false,
+            Err(e) => app.ui.status = e.to_string(),
+        },
         Some("offlineAll") | Some("cancel") => {
             let _ = app.session.execute("media.offlineAll", json!({}));
             keep = false;

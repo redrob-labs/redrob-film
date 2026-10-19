@@ -63,7 +63,8 @@ pub fn item_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, id: ItemId, kind: &I
     ui.add_enabled_ui(!uses.is_empty(), |ui| {
         ui.menu_button(tl!("Clip in Timeline"), |ui| {
             for (n, u) in uses.iter().enumerate() {
-                let label = format!("{} · {} · {}", u["sequenceName"].as_str().unwrap_or(""), u["track"].as_str().unwrap_or(""), u["frame"].as_i64().unwrap_or(0));
+                let label =
+                    format!("{} · {} · {}", u["sequenceName"].as_str().unwrap_or(""), u["track"].as_str().unwrap_or(""), u["frame"].as_i64().unwrap_or(0));
                 let r = ui.button(&label);
                 app.auto.add(&format!("project.itemMenu.clipInTimeline.{n}"), r.rect, &label);
                 if r.clicked() {
@@ -74,8 +75,15 @@ pub fn item_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, id: ItemId, kind: &I
         });
     });
     let seq = app.session.state.active_sequence.is_some();
-    let custom: Vec<String> =
-        app.session.execute("clipJobs.list", json!({})).ok().and_then(|v| v.as_array().cloned()).unwrap_or_default().iter().filter_map(|j| j["name"].as_str().map(str::to_string)).collect();
+    let custom: Vec<String> = app
+        .session
+        .execute("clipJobs.list", json!({}))
+        .ok()
+        .and_then(|v| v.as_array().cloned())
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|j| j["name"].as_str().map(str::to_string))
+        .collect();
     let mut entry = |ui: &mut egui::Ui, key: &str, label: &str, cmd: &str, p: Value, enabled: bool| {
         let r = ui.add_enabled(enabled, egui::Button::new(label));
         app.auto.add(&format!("project.itemMenu.{key}"), r.rect, label);
@@ -164,125 +172,135 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
     let profiles: Vec<Value> = app.session.execute("transcode.profiles.list", json!({})).ok().and_then(|v| v.as_array().cloned()).unwrap_or_default();
     let presets: Vec<String> = app.session.export_presets.all().into_iter().map(|p| p.name).collect();
     let jobs: Vec<Value> = app.session.execute("clipJobs.list", json!({})).ok().and_then(|v| v.as_array().cloned()).unwrap_or_default();
-    egui::Window::new(title).id(egui::Id::new("clip-job-dialog")).collapsible(false).resizable(false).anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0]).show(ctx, |ui| {
-        match d.kind.as_str() {
-            "speed" => {
-                ui.horizontal(|ui| {
-                    ui.label(tl!("Speed"));
-                    let r = ui.add(egui::DragValue::new(&mut d.speed).range(1.0..=10_000.0).suffix(" %"));
-                    push(app, "speed", &r, "Speed");
-                });
-                let r = ui.checkbox(&mut d.reverse, tl!("Reverse"));
-                push(app, "reverse", &r, "Reverse");
-                let r = ui.checkbox(&mut d.pitch, tl!("Pitch compensation"));
-                push(app, "pitch", &r, "Pitch compensation");
-                if ui.button(tl!("Create")).clicked() {
-                    run = Some(("clip.speedJob", json!({"items": d.items, "speed": d.speed, "reverse": d.reverse, "pitchCompensation": d.pitch})));
-                }
-            }
-            "transcode" => {
-                ui.label(egui::RichText::new(tl!("Profile")).strong());
-                for (i, p) in profiles.iter().enumerate() {
-                    let name = p["name"].as_str().unwrap_or("").to_string();
+    egui::Window::new(title).id(egui::Id::new("clip-job-dialog")).collapsible(false).resizable(false).anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0]).show(
+        ctx,
+        |ui| {
+            match d.kind.as_str() {
+                "speed" => {
                     ui.horizontal(|ui| {
-                        let r = ui.radio(d.profile == name, crate::i18n::t(&name));
-                        push(app, &format!("profile.{i}"), &r, &name);
-                        if r.clicked() {
-                            d.profile = name.clone();
-                        }
-                        ui.label(egui::RichText::new(format!("{} · ×{}", crate::i18n::t(p["preset"].as_str().unwrap_or("")), p["scale"])).weak());
-                        if !p["builtin"].as_bool().unwrap_or(true) && ui.small_button(tl!("Delete")).clicked() {
-                            run = Some(("transcode.profiles.delete", json!({"name": name})));
-                        }
+                        ui.label(tl!("Speed"));
+                        let r = ui.add(egui::DragValue::new(&mut d.speed).range(1.0..=10_000.0).suffix(" %"));
+                        push(app, "speed", &r, "Speed");
                     });
-                }
-                let r = ui.checkbox(&mut d.add_to_project, tl!("Add the result to the project"));
-                push(app, "addToProject", &r, "Add the result to the project");
-                let r = ui.checkbox(&mut d.replace, tl!("Replace the original clip"));
-                push(app, "replace", &r, "Replace the original clip");
-                if ui.button(tl!("Transcode")).clicked() {
-                    run = Some(("clip.transcode", json!({"items": d.items, "profile": d.profile, "addToProject": d.add_to_project, "replace": d.replace})));
-                }
-                ui.separator();
-                // the profile editor (Settings ▸ Transcode)
-                ui.label(egui::RichText::new(tl!("New or changed profile")).strong());
-                ui.horizontal(|ui| {
-                    ui.label(tl!("Name"));
-                    let r = ui.text_edit_singleline(&mut d.profile_name);
-                    push(app, "profileName", &r, "Name");
-                });
-                ui.horizontal(|ui| {
-                    ui.label(tl!("Export preset"));
-                    egui::ComboBox::from_id_salt("clipJob.profilePreset").selected_text(crate::i18n::t(&d.profile_preset)).width(240.0).show_ui(ui, |ui| {
-                        for p in &presets {
-                            if ui.selectable_label(*p == d.profile_preset, crate::i18n::t(p)).clicked() {
-                                d.profile_preset = p.clone();
-                            }
-                        }
-                    });
-                });
-                ui.horizontal(|ui| {
-                    ui.label(tl!("Scale"));
-                    let r = ui.add(egui::DragValue::new(&mut d.profile_scale).range(0.05..=4.0).speed(0.01));
-                    push(app, "profileScale", &r, "Scale");
-                    if ui.add_enabled(!d.profile_name.trim().is_empty() && !d.profile_preset.is_empty(), egui::Button::new(tl!("Save Profile"))).clicked() {
-                        run = Some(("transcode.profiles.save", json!({"name": d.profile_name, "preset": d.profile_preset, "scale": d.profile_scale})));
+                    let r = ui.checkbox(&mut d.reverse, tl!("Reverse"));
+                    push(app, "reverse", &r, "Reverse");
+                    let r = ui.checkbox(&mut d.pitch, tl!("Pitch compensation"));
+                    push(app, "pitch", &r, "Pitch compensation");
+                    if ui.button(tl!("Create")).clicked() {
+                        run = Some(("clip.speedJob", json!({"items": d.items, "speed": d.speed, "reverse": d.reverse, "pitchCompensation": d.pitch})));
                     }
-                });
-            }
-            _ => {
-                ui.label(egui::RichText::new(tl!("Saved jobs")).strong());
-                if jobs.is_empty() {
-                    ui.label(egui::RichText::new(tl!("No custom clip jobs yet.")).weak());
                 }
-                for j in &jobs {
-                    let name = j["name"].as_str().unwrap_or("").to_string();
+                "transcode" => {
+                    ui.label(egui::RichText::new(tl!("Profile")).strong());
+                    for (i, p) in profiles.iter().enumerate() {
+                        let name = p["name"].as_str().unwrap_or("").to_string();
+                        ui.horizontal(|ui| {
+                            let r = ui.radio(d.profile == name, crate::i18n::t(&name));
+                            push(app, &format!("profile.{i}"), &r, &name);
+                            if r.clicked() {
+                                d.profile = name.clone();
+                            }
+                            ui.label(egui::RichText::new(format!("{} · ×{}", crate::i18n::t(p["preset"].as_str().unwrap_or("")), p["scale"])).weak());
+                            if !p["builtin"].as_bool().unwrap_or(true) && ui.small_button(tl!("Delete")).clicked() {
+                                run = Some(("transcode.profiles.delete", json!({"name": name})));
+                            }
+                        });
+                    }
+                    let r = ui.checkbox(&mut d.add_to_project, tl!("Add the result to the project"));
+                    push(app, "addToProject", &r, "Add the result to the project");
+                    let r = ui.checkbox(&mut d.replace, tl!("Replace the original clip"));
+                    push(app, "replace", &r, "Replace the original clip");
+                    if ui.button(tl!("Transcode")).clicked() {
+                        run = Some(("clip.transcode", json!({"items": d.items, "profile": d.profile, "addToProject": d.add_to_project, "replace": d.replace})));
+                    }
+                    ui.separator();
+                    // the profile editor (Settings ▸ Transcode)
+                    ui.label(egui::RichText::new(tl!("New or changed profile")).strong());
                     ui.horizontal(|ui| {
-                        ui.label(&name);
-                        ui.label(egui::RichText::new(format!("{} {}", j["program"].as_str().unwrap_or(""), j["args"].as_array().map(|a| a.iter().filter_map(Value::as_str).collect::<Vec<_>>().join(" ")).unwrap_or_default())).weak());
-                        if ui.small_button(tl!("Run")).clicked() {
-                            run = Some(("clipJobs.run", json!({"name": name, "items": d.items})));
-                        }
-                        if ui.small_button(tl!("Edit")).clicked() {
-                            d.job_name = name.clone();
-                            d.job_program = j["program"].as_str().unwrap_or("").into();
-                            d.job_args = j["args"].as_array().map(|a| a.iter().filter_map(Value::as_str).collect::<Vec<_>>().join(" ")).unwrap_or_default();
-                            d.job_extension = j["extension"].as_str().unwrap_or("").into();
-                        }
-                        if ui.small_button(tl!("Delete")).clicked() {
-                            run = Some(("clipJobs.delete", json!({"name": name})));
+                        ui.label(tl!("Name"));
+                        let r = ui.text_edit_singleline(&mut d.profile_name);
+                        push(app, "profileName", &r, "Name");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label(tl!("Export preset"));
+                        egui::ComboBox::from_id_salt("clipJob.profilePreset").selected_text(crate::i18n::t(&d.profile_preset)).width(240.0).show_ui(ui, |ui| {
+                            for p in &presets {
+                                if ui.selectable_label(*p == d.profile_preset, crate::i18n::t(p)).clicked() {
+                                    d.profile_preset = p.clone();
+                                }
+                            }
+                        });
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label(tl!("Scale"));
+                        let r = ui.add(egui::DragValue::new(&mut d.profile_scale).range(0.05..=4.0).speed(0.01));
+                        push(app, "profileScale", &r, "Scale");
+                        if ui.add_enabled(!d.profile_name.trim().is_empty() && !d.profile_preset.is_empty(), egui::Button::new(tl!("Save Profile"))).clicked() {
+                            run = Some(("transcode.profiles.save", json!({"name": d.profile_name, "preset": d.profile_preset, "scale": d.profile_scale})));
                         }
                     });
                 }
-                ui.separator();
-                for (key, label, v) in [
-                    ("jobName", tl!("Name"), &mut d.job_name),
-                    ("jobProgram", tl!("Program"), &mut d.job_program),
-                    ("jobArgs", tl!("Arguments ({input}, {output})"), &mut d.job_args),
-                    ("jobExtension", tl!("Output extension"), &mut d.job_extension),
-                ] {
-                    ui.horizontal(|ui| {
-                        ui.label(label);
-                        let r = ui.text_edit_singleline(v);
-                        push(app, key, &r, label);
-                    });
-                }
-                if ui.button(tl!("Save Job")).clicked() {
-                    let args: Vec<&str> = d.job_args.split_whitespace().collect();
-                    run = Some(("clipJobs.save", json!({"name": d.job_name, "program": d.job_program, "args": args, "extension": d.job_extension})));
+                _ => {
+                    ui.label(egui::RichText::new(tl!("Saved jobs")).strong());
+                    if jobs.is_empty() {
+                        ui.label(egui::RichText::new(tl!("No custom clip jobs yet.")).weak());
+                    }
+                    for j in &jobs {
+                        let name = j["name"].as_str().unwrap_or("").to_string();
+                        ui.horizontal(|ui| {
+                            ui.label(&name);
+                            ui.label(
+                                egui::RichText::new(format!(
+                                    "{} {}",
+                                    j["program"].as_str().unwrap_or(""),
+                                    j["args"].as_array().map(|a| a.iter().filter_map(Value::as_str).collect::<Vec<_>>().join(" ")).unwrap_or_default()
+                                ))
+                                .weak(),
+                            );
+                            if ui.small_button(tl!("Run")).clicked() {
+                                run = Some(("clipJobs.run", json!({"name": name, "items": d.items})));
+                            }
+                            if ui.small_button(tl!("Edit")).clicked() {
+                                d.job_name = name.clone();
+                                d.job_program = j["program"].as_str().unwrap_or("").into();
+                                d.job_args = j["args"].as_array().map(|a| a.iter().filter_map(Value::as_str).collect::<Vec<_>>().join(" ")).unwrap_or_default();
+                                d.job_extension = j["extension"].as_str().unwrap_or("").into();
+                            }
+                            if ui.small_button(tl!("Delete")).clicked() {
+                                run = Some(("clipJobs.delete", json!({"name": name})));
+                            }
+                        });
+                    }
+                    ui.separator();
+                    for (key, label, v) in [
+                        ("jobName", tl!("Name"), &mut d.job_name),
+                        ("jobProgram", tl!("Program"), &mut d.job_program),
+                        ("jobArgs", tl!("Arguments ({input}, {output})"), &mut d.job_args),
+                        ("jobExtension", tl!("Output extension"), &mut d.job_extension),
+                    ] {
+                        ui.horizontal(|ui| {
+                            ui.label(label);
+                            let r = ui.text_edit_singleline(v);
+                            push(app, key, &r, label);
+                        });
+                    }
+                    if ui.button(tl!("Save Job")).clicked() {
+                        let args: Vec<&str> = d.job_args.split_whitespace().collect();
+                        run = Some(("clipJobs.save", json!({"name": d.job_name, "program": d.job_program, "args": args, "extension": d.job_extension})));
+                    }
                 }
             }
-        }
-        if !d.message.is_empty() {
-            ui.label(egui::RichText::new(&d.message).weak());
-        }
-        ui.separator();
-        let r = ui.button(tl!("Close"));
-        push(app, "cancel", &r, "Close");
-        if r.clicked() {
-            keep = false;
-        }
-    });
+            if !d.message.is_empty() {
+                ui.label(egui::RichText::new(&d.message).weak());
+            }
+            ui.separator();
+            let r = ui.button(tl!("Close"));
+            push(app, "cancel", &r, "Close");
+            if r.clicked() {
+                keep = false;
+            }
+        },
+    );
     if let Some((cmd, p)) = run {
         match crate::menus::invoke(app, ctx, cmd, p) {
             Ok(v) => {

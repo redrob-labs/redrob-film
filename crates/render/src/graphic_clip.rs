@@ -740,7 +740,8 @@ pub fn apply_typewriter(item: &TrackItem, specs: &mut [LayerSpec], u: Tick, fps:
         _ => 0,
     };
     let frames = u.seconds().max(0.0) * fps.max(1.0);
-    let total: usize = specs.iter().filter_map(|s| if let LayerContent::Text(tp) = &s.content { Some(typewriter_cuts(&tp.text, kind).len()) } else { None }).sum();
+    let total: usize =
+        specs.iter().filter_map(|s| if let LayerContent::Text(tp) = &s.content { Some(typewriter_cuts(&tp.text, kind).len()) } else { None }).sum();
     // how many units have appeared
     let mut shown = 0usize;
     let mut at = 0.0f64;
@@ -791,7 +792,8 @@ fn draw_specs(specs: &[LayerSpec], m: &Affine, out: &mut Image) {
 /// All layers composed into one tight image (for the GPU plan): `(image, x, y)` in output pixels.
 pub fn render_graphic_tight(item: &TrackItem, mt: Tick, canvas: (u32, u32), m: &Affine, w: usize, h: usize) -> Option<(Image, i32, i32)> {
     let specs = drawn_specs(item, mt, canvas);
-    let rasters: Vec<Arc<LayerRaster>> = specs.iter().filter_map(|(_, spec)| raster_layer_cached(spec, &xform(&m.then_apply(&layer_matrix(spec))), w, h)).collect();
+    let rasters: Vec<Arc<LayerRaster>> =
+        specs.iter().filter_map(|(_, spec)| raster_layer_cached(spec, &xform(&m.then_apply(&layer_matrix(spec))), w, h)).collect();
     let x0 = rasters.iter().map(|r| r.x).min()?.max(0);
     let y0 = rasters.iter().map(|r| r.y).min()?.max(0);
     let x1 = rasters.iter().map(|r| r.x + r.img.w as i32).max()?.min(w as i32);

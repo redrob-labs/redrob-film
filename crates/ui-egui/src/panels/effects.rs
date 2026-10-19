@@ -213,11 +213,7 @@ fn transition_preview(app: &mut FilmcraftApp, ctx: &egui::Context, d: &redrob_fi
                 let (u, v) = (x as f32 / PREVIEW_W as f32, y as f32 / PREVIEW_H as f32);
                 // a letter-like block in the middle so motion and shapes read
                 let mark = (0.38..0.62).contains(&u) && (0.25..0.75).contains(&v) && !((0.45..0.55).contains(&u) && (0.4..0.6).contains(&v));
-                let c = if warm {
-                    [0.55 + 0.4 * u, 0.25 + 0.2 * v, 0.08, 1.0]
-                } else {
-                    [0.05, 0.25 + 0.3 * v, 0.45 + 0.45 * u, 1.0]
-                };
+                let c = if warm { [0.55 + 0.4 * u, 0.25 + 0.2 * v, 0.08, 1.0] } else { [0.05, 0.25 + 0.3 * v, 0.45 + 0.45 * u, 1.0] };
                 let c = if mark { [0.95, 0.95, 0.95, 1.0] } else { c };
                 let i = (y * PREVIEW_W + x) * 4;
                 img.px[i..i + 4].copy_from_slice(&c);
@@ -252,7 +248,17 @@ fn filter_toggles(app: &mut FilmcraftApp, ui: &mut egui::Ui, at: egui::Pos2) {
     for (i, (key, label, tip, on)) in rows.into_iter().enumerate() {
         let r = Rect::from_min_size(pos2(at.x + i as f32 * 26.0, at.y), vec2(24.0, 22.0));
         let resp = ui.interact(r, egui::Id::new(("fx-filter", key)), Sense::click()).on_hover_text(tip);
-        ui.painter().rect_filled(r, 3.0, if on { t.pill_active_bg } else if resp.hovered() { t.hover } else { t.panel_bg });
+        ui.painter().rect_filled(
+            r,
+            3.0,
+            if on {
+                t.pill_active_bg
+            } else if resp.hovered() {
+                t.hover
+            } else {
+                t.panel_bg
+            },
+        );
         ui.painter().text(r.center(), Align2::CENTER_CENTER, label, Tokens::ui(10.0), if on { t.text } else { t.text_dim });
         let auto = if key == "describe" { "effects.describe".to_string() } else { format!("effects.filter.{key}") };
         app.auto.add(&auto, r, tip);

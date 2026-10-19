@@ -64,11 +64,8 @@ fn find_step(app: &mut FilmcraftApp, ctx: &egui::Context, query: &str, forward: 
         return;
     }
     let (a, b) = selection(ctx).unwrap_or((0, 0));
-    let hit = if forward {
-        hits.iter().find(|h| h.0 > a || (h.0 == a && b == a)).or(hits.first())
-    } else {
-        hits.iter().rev().find(|h| h.0 < a).or(hits.last())
-    };
+    let hit =
+        if forward { hits.iter().find(|h| h.0 > a || (h.0 == a && b == a)).or(hits.first()) } else { hits.iter().rev().find(|h| h.0 < a).or(hits.last()) };
     if let Some(&(x, y)) = hit {
         select(ctx, x, y);
     }

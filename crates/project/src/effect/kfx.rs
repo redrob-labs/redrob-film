@@ -146,12 +146,7 @@ pub(super) fn defs() -> Vec<EffectDef> {
         ),
         kv("k_binarize", "Binarize", STYLIZE, vec![b("use_alpha", "Use Transparency", false), int("threshold", "Threshold Value", 128.0, 0.0, 255.0)]),
         kv("k_binarize_dynamic", "Binarize Dynamically", STYLIZE, vec![]),
-        kv(
-            "k_burning_tv",
-            "Burning TV",
-            STYLIZE,
-            vec![b("foreground", "Foreground Only", false), int("threshold", "Movement Threshold", 50.0, 0.0, 255.0)],
-        ),
+        kv("k_burning_tv", "Burning TV", STYLIZE, vec![b("foreground", "Foreground Only", false), int("threshold", "Movement Threshold", 50.0, 0.0, 255.0)]),
         kv(
             "k_cartoon",
             "Cartoon",
@@ -285,12 +280,7 @@ pub(super) fn defs() -> Vec<EffectDef> {
             STYLIZE,
             vec![
                 fs("threshold", "Threshold", 0.5, (0.0, 1.0), (0.0, 1.0), "", 2),
-                ch(
-                    "direction",
-                    "Direction",
-                    &["Vertical Top to Bottom", "Vertical Bottom to Top", "Horizontal Left to Right", "Horizontal Right to Left"],
-                    0,
-                ),
+                ch("direction", "Direction", &["Vertical Top to Bottom", "Vertical Bottom to Top", "Horizontal Left to Right", "Horizontal Right to Left"], 0),
                 b("reversed", "Reversed", false),
                 fs("alpha_threshold", "Transparency Threshold", 0.0, (0.0, 1.0), (0.0, 1.0), "", 2),
             ],
@@ -378,7 +368,12 @@ pub(super) fn defs() -> Vec<EffectDef> {
             vec![fs("spatial", "Spatial", 4.0, (0.0, 100.0), (0.0, 30.0), "", 1), fs("temporal", "Temporal", 6.0, (0.0, 100.0), (0.0, 30.0), "", 1)],
         ),
         kv("k_dither", "Dither", GRAIN, vec![int("levels", "Levels", 8.0, 2.0, 255.0), int("matrix", "Matrix ID", 2.0, 0.0, 6.0)]),
-        kv("k_dust", "Dust", GRAIN, vec![fs("diameter", "Maximum Diameter", 2.0, (0.1, 20.0), (0.1, 10.0), "%", 1), int("count", "Maximum Number of Particles", 10.0, 0.0, 200.0)]),
+        kv(
+            "k_dust",
+            "Dust",
+            GRAIN,
+            vec![fs("diameter", "Maximum Diameter", 2.0, (0.1, 20.0), (0.1, 10.0), "%", 1), int("count", "Maximum Number of Particles", 10.0, 0.0, 200.0)],
+        ),
         kv(
             "k_film_grain",
             "Film Grain",
@@ -393,12 +388,7 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 pct("flicker", "Flicker", 10.0),
             ],
         ),
-        kv(
-            "k_gradfun",
-            "Gradfun",
-            GRAIN,
-            vec![fs("strength", "Strength", 1.2, (0.51, 64.0), (0.51, 20.0), "", 2), int("radius", "Radius", 16.0, 4.0, 32.0)],
-        ),
+        kv("k_gradfun", "Gradfun", GRAIN, vec![fs("strength", "Strength", 1.2, (0.51, 64.0), (0.51, 20.0), "", 2), int("radius", "Radius", 16.0, 4.0, 32.0)]),
         kv(
             "k_scratch_lines",
             "Scratch Lines",
@@ -441,7 +431,12 @@ pub(super) fn defs() -> Vec<EffectDef> {
         kv("k_scanline", "Scanline0r", GENERATE, vec![]),
         // ---------------------------------------------------------------- Misc
         kv("k_alphaextract", "Alphaextract", MISC, vec![]),
-        kv("k_deinterlace", "Xine Deinterlacer", MISC, vec![ch("method", "Method", &["Linear Blend", "One Field", "Linear Interpolation"], 0), b("bottom_first", "Bottom Field First", false)]),
+        kv(
+            "k_deinterlace",
+            "Xine Deinterlacer",
+            MISC,
+            vec![ch("method", "Method", &["Linear Blend", "One Field", "Linear Interpolation"], 0), b("bottom_first", "Bottom Field First", false)],
+        ),
         // ---------------------------------------------------------------- Deprecated
         kv(
             "k_box_blur",
@@ -475,10 +470,7 @@ pub(super) fn defs() -> Vec<EffectDef> {
     text_box(&mut timer, 8.0);
     v.push(kv("k_timer", "Timer", GENERATE, timer));
     // GPS Text
-    let mut gps_text = vec![
-        txt("text", "Text"),
-        ch("keyword", "Keyword", GPS_KEYWORDS, 0),
-    ];
+    let mut gps_text = vec![txt("text", "Text"), ch("keyword", "Keyword", GPS_KEYWORDS, 0)];
     gps_common(&mut gps_text);
     gps_text.push(int("updates", "Updates per Second", 1.0, 0.0, 60.0));
     text_box(&mut gps_text, 5.0);

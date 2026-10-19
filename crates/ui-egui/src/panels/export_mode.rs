@@ -22,8 +22,8 @@
 use egui::{Align2, Color32, Rect, Sense, pos2, vec2};
 use redrob_film_engine::export::presets::{DEFAULT_PRESET, preset_key};
 use redrob_film_engine::export::{
-    AudioCodec, BitrateMode, Deinterlace, EncoderSpeed, ExportSettings, FieldOrder, Format, GpuRendering, H264Profile, HardwareEncoding, Multiplexer, MxfVideoCodec,
-    Placement, ScaleFilter, Scaling, TextOverlay, builtin_presets, format_bytes,
+    AudioCodec, BitrateMode, Deinterlace, EncoderSpeed, ExportSettings, FieldOrder, Format, GpuRendering, H264Profile, HardwareEncoding, Multiplexer,
+    MxfVideoCodec, Placement, ScaleFilter, Scaling, TextOverlay, builtin_presets, format_bytes,
 };
 use redrob_film_engine::render_jobs::AfterExport;
 use redrob_film_engine::time::{FrameRate, Tick};
@@ -670,8 +670,15 @@ fn settings_column(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
 
 /// Aspect ratio crop presets: the output keeps the sequence's height or width and crops the
 /// picture to this aspect (Scale To Fill).
-const ASPECTS: [(&str, u32, u32); 7] =
-    [("16:9", 16, 9), ("4:3", 4, 3), ("1:1 (square)", 1, 1), ("4:5 (portrait)", 4, 5), ("9:16 (vertical)", 9, 16), ("2.39:1 (scope)", 239, 100), ("1.85:1 (flat)", 185, 100)];
+const ASPECTS: [(&str, u32, u32); 7] = [
+    ("16:9", 16, 9),
+    ("4:3", 4, 3),
+    ("1:1 (square)", 1, 1),
+    ("4:5 (portrait)", 4, 5),
+    ("9:16 (vertical)", 9, 16),
+    ("2.39:1 (scope)", 239, 100),
+    ("1.85:1 (flat)", 185, 100),
+];
 
 /// The largest frame of aspect `a:b` inside the sequence frame (even sizes).
 fn aspect_frame(seq_w: u32, seq_h: u32, a: u32, b: u32) -> (u32, u32) {
@@ -1068,7 +1075,9 @@ fn effects_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: 
         check(ui, reg, "export.effects.timecodeOverlay", &mut fx.timecode_overlay.enabled, tl!("Timecode Overlay"));
         if fx.timecode_overlay.enabled {
             text_overlay(ui, reg, "timecodeOverlay", &mut fx.timecode_overlay, t, tl!("Prefix"));
-            row(ui, t, "", |ui| check(ui, reg, "export.effects.timecodeOverlay.frameCount", &mut fx.timecode_overlay.frame_count, tl!("Show frame count instead of timecode")));
+            row(ui, t, "", |ui| {
+                check(ui, reg, "export.effects.timecodeOverlay.frameCount", &mut fx.timecode_overlay.frame_count, tl!("Show frame count instead of timecode"))
+            });
         }
         check(ui, reg, "export.effects.videoLimiter", &mut fx.video_limiter.enabled, tl!("Video Limiter"));
         if fx.video_limiter.enabled {

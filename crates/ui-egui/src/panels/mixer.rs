@@ -676,7 +676,9 @@ fn strip(app: &mut FilmcraftApp, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, s
             let pan = shown(app, &tr, LANE_PAN, cx.now);
             let kc = pos2(sr.center().x, y + 20.0);
             let kr = Rect::from_center_size(kc, vec2(38.0, 38.0));
-            let kresp = ui.interact(kr, egui::Id::new((&ap, "pan")), Sense::click_and_drag()).on_hover_text(tl!("Pan / balance (drag; double-, middle- or right-click: centre)"));
+            let kresp = ui
+                .interact(kr, egui::Id::new((&ap, "pan")), Sense::click_and_drag())
+                .on_hover_text(tl!("Pan / balance (drag; double-, middle- or right-click: centre)"));
             let ring = if kresp.hovered() || kresp.dragged() { t.tab_text_active } else { t.control_handle_dim };
             ui.painter().circle_stroke(kc, 16.0, Stroke::new(2.0, ring));
             let ang = (pan / 100.0) as f32 * 135f32.to_radians();

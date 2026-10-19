@@ -181,7 +181,9 @@ fn captions(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let r = Rect::from_min_size(pos2(x, bar.min.y), vec2(24.0, 24.0));
     if r.max.x <= rect.max.x {
         let tip = if split_first { tl!("Split mode: after the first line") } else { tl!("Split mode: duplicate the text") };
-        let b = ui.put(r, egui::Button::new(egui::RichText::new("¶").size(13.0).color(if split_first { t.accent } else { t.text_dim })).frame(false)).on_hover_text(tip);
+        let b = ui
+            .put(r, egui::Button::new(egui::RichText::new("¶").size(13.0).color(if split_first { t.accent } else { t.text_dim })).frame(false))
+            .on_hover_text(tip);
         app.auto.add("text.captions.splitMode", r, tip);
         if b.clicked() {
             actions.push(("captions.splitMode".into(), json!({"afterFirstLine": !split_first})));
@@ -349,8 +351,22 @@ fn transcript(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let tools: [(Icon, &str, &str, bool, &str, Value); 7] = [
         (Icon::Razor, "text.transcript.extract", tl!("Extract selected text"), sel.is_some(), "transcript.extract", range.clone().unwrap_or_default()),
         (Icon::Trash, "text.transcript.lift", tl!("Lift selected text"), sel.is_some(), "transcript.lift", range.clone().unwrap_or_default()),
-        (Icon::Insert, "text.transcript.insert", tl!("Insert selected text at the playhead"), sel.is_some(), "transcript.insertSelection", range.clone().unwrap_or_default()),
-        (Icon::Sequence, "text.transcript.newSequence", tl!("New sequence from selected text"), sel.is_some(), "transcript.selectionToSequence", range.clone().unwrap_or_default()),
+        (
+            Icon::Insert,
+            "text.transcript.insert",
+            tl!("Insert selected text at the playhead"),
+            sel.is_some(),
+            "transcript.insertSelection",
+            range.clone().unwrap_or_default(),
+        ),
+        (
+            Icon::Sequence,
+            "text.transcript.newSequence",
+            tl!("New sequence from selected text"),
+            sel.is_some(),
+            "transcript.selectionToSequence",
+            range.clone().unwrap_or_default(),
+        ),
         (Icon::Marker, "text.transcript.addMarker", tl!("Add marker at selected text"), sel.is_some(), "transcript.addMarker", range.unwrap_or_default()),
         (Icon::Link, "text.transcript.removeFillers", tl!("Remove filler words"), true, "transcript.removeFillers", json!({})),
         (Icon::Captions, "text.transcript.createCaptions", tl!("Create captions"), true, "transcript.createCaptions", json!({})),

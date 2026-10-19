@@ -477,8 +477,14 @@ pub fn rgb_parade(img: &mut Image, _e: &EffectInstance, _cx: &FxCtx) {
 // ------------------------------------------------------------------ Vectorscopes
 
 /// The 75 % colour-bar targets (display RGB) and their names.
-const TARGETS: [([f32; 3], &str); 6] =
-    [([0.75, 0.0, 0.0], "R"), ([0.75, 0.0, 0.75], "Mg"), ([0.0, 0.0, 0.75], "B"), ([0.0, 0.75, 0.75], "Cy"), ([0.0, 0.75, 0.0], "G"), ([0.75, 0.75, 0.0], "Yl")];
+const TARGETS: [([f32; 3], &str); 6] = [
+    ([0.75, 0.0, 0.0], "R"),
+    ([0.75, 0.0, 0.75], "Mg"),
+    ([0.0, 0.0, 0.75], "B"),
+    ([0.0, 0.75, 0.75], "Cy"),
+    ([0.0, 0.75, 0.0], "G"),
+    ([0.75, 0.75, 0.0], "Yl"),
+];
 
 /// The vectorscope square: centred, the frame's height high.
 fn vector_rect(img: &Image) -> [f32; 4] {
@@ -698,7 +704,8 @@ fn rgb_to_xyz(p: [(f32, f32); 3], wp: (f32, f32)) -> [[f32; 3]; 3] {
     let m = [[r[0], g[0], b[0]], [r[1], g[1], b[1]], [r[2], g[2], b[2]]];
     let w = col(wp);
     // solve m · s = w
-    let det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+    let det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+        + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
     let det = if det.abs() < 1e-9 { 1e-9 } else { det };
     let inv = [
         [(m[1][1] * m[2][2] - m[1][2] * m[2][1]) / det, (m[0][2] * m[2][1] - m[0][1] * m[2][2]) / det, (m[0][1] * m[1][2] - m[0][2] * m[1][1]) / det],
@@ -896,7 +903,8 @@ pub fn datascope(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     let opacity = fv(e, "opacity", cx).clamp(0.0, 1.0);
     let mode = pick(e, "mode");
     super::text::fill_rect(img, [0.0, 0.0, img.w as f32, img.h as f32], [0.0, 0.0, 0.0, 1.0], opacity);
-    let fmt = |v: f32| if dec { format!("{:03}", (v.clamp(0.0, 1.0) * 255.0).round() as u32) } else { format!("{:02X}", (v.clamp(0.0, 1.0) * 255.0).round() as u32) };
+    let fmt =
+        |v: f32| if dec { format!("{:03}", (v.clamp(0.0, 1.0) * 255.0).round() as u32) } else { format!("{:02X}", (v.clamp(0.0, 1.0) * 255.0).round() as u32) };
     for row in 0..nrows {
         let sy = oy + row;
         if sy >= src.h {
@@ -958,7 +966,9 @@ fn traces(img: &mut Image, r: [f32; 4], series: &[(Vec<f32>, [f32; 3])], width: 
             continue;
         }
         let c = crate::graphics::premul_linear([col[0], col[1], col[2], k]);
-        let at = |i: usize| redrob_film_geom::Vec2::new((r[0] + (r[2] - r[0]) * i as f32 / (n - 1) as f32) as f64, (r[3] - (r[3] - r[1]) * vals[i].clamp(0.0, 1.0)) as f64);
+        let at = |i: usize| {
+            redrob_film_geom::Vec2::new((r[0] + (r[2] - r[0]) * i as f32 / (n - 1) as f32) as f64, (r[3] - (r[3] - r[1]) * vals[i].clamp(0.0, 1.0)) as f64)
+        };
         for i in 0..n - 1 {
             super::alpha::draw_segment(img, at(i), at(i + 1), width, c);
         }
@@ -981,7 +991,13 @@ pub fn oscilloscope(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     let r = [sx - sw / 2.0, sy - sh / 2.0, sx + sw / 2.0, sy + sh / 2.0];
     if flag(e, "trace_line") {
         let c = crate::graphics::premul_linear([1.0, 1.0, 1.0, 0.8]);
-        super::alpha::draw_segment(img, redrob_film_geom::Vec2::new(line[0] as f64, line[1] as f64), redrob_film_geom::Vec2::new(line[2] as f64, line[3] as f64), 1.0, c);
+        super::alpha::draw_segment(
+            img,
+            redrob_film_geom::Vec2::new(line[0] as f64, line[1] as f64),
+            redrob_film_geom::Vec2::new(line[2] as f64, line[3] as f64),
+            1.0,
+            c,
+        );
     }
     shade(img, r, op * 0.8);
     if flag(e, "grid") {

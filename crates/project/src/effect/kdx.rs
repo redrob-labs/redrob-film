@@ -12,8 +12,8 @@
 //! them change the picture only inside that selection, up to a **Mask Apply** (or the end of the
 //! clip's effects), as the Kdenlive manual describes for its "(Mask)" effects.
 
-use super::*;
 use super::kfx::{MORE_TOP, YUV_PLANES};
+use super::*;
 
 const ALPHA: &[&str] = &[MORE_TOP, "Alpha, Mask and Keying"];
 const UTILITY: &[&str] = &[MORE_TOP, "Utility"];
@@ -150,7 +150,8 @@ fn cap_params(v: &mut Vec<ParamDef>, g: &'static str, p: &'static [&'static str;
     v.push(grp(deg(p[8], "Blur Height at Start", 0.0, 0.0, 90.0), g));
     v.push(grp(deg(p[9], "Blur Height at End", 10.0, 0.0, 90.0), g));
 }
-const CAP_TOP: [&str; 10] = ["top", "top_start", "top_end", "top_blend_in", "top_blend_out", "top_fade_in", "top_bw_start", "top_bw_end", "top_bh_start", "top_bh_end"];
+const CAP_TOP: [&str; 10] =
+    ["top", "top_start", "top_end", "top_blend_in", "top_blend_out", "top_fade_in", "top_bw_start", "top_bw_end", "top_bh_start", "top_bh_end"];
 const CAP_BOTTOM: [&str; 10] = [
     "bottom",
     "bottom_start",
@@ -482,12 +483,7 @@ pub(super) fn defs() -> Vec<EffectDef> {
         ],
     ));
     // ---------------------------------------------------------------- VR360 and 3D
-    v.push(kv(
-        "k_stereo3d",
-        "Stereoscopic 3D",
-        VR,
-        vec![ch("input", "Input Format", STEREO_INPUTS, 0), ch("output", "Output Format", STEREO_OUTPUTS, 11)],
-    ));
+    v.push(kv("k_stereo3d", "Stereoscopic 3D", VR, vec![ch("input", "Input Format", STEREO_INPUTS, 0), ch("output", "Output Format", STEREO_OUTPUTS, 11)]));
     let mut cap = vec![interp()];
     cap_params(&mut cap, "Top", &CAP_TOP, 75.0);
     cap_params(&mut cap, "Bottom", &CAP_BOTTOM, 75.0);

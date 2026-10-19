@@ -128,7 +128,14 @@ fn intermediate(has_video: bool) -> ExportSettings {
 }
 
 /// Start a background job exporting `tasks` (source item, project, sequence, settings).
-fn start_render(s: &mut Session, label: String, tasks: Vec<(ItemId, Arc<Project>, ItemId, ExportSettings)>, add: bool, replace: bool, wait: bool) -> Result<u64> {
+fn start_render(
+    s: &mut Session,
+    label: String,
+    tasks: Vec<(ItemId, Arc<Project>, ItemId, ExportSettings)>,
+    add: bool,
+    replace: bool,
+    wait: bool,
+) -> Result<u64> {
     if tasks.is_empty() {
         return Err(EngineError::Other("nothing to render".into()));
     }
@@ -141,7 +148,11 @@ fn start_render(s: &mut Session, label: String, tasks: Vec<(ItemId, Arc<Project>
     let services = s.services.clone();
     let total: u64 = tasks
         .iter()
-        .map(|(_, p, q, st)| redrob_film_export::export_range(p, *q, st).map_or(1, |r| st.frame_rate.unwrap_or(p.sequence(*q).map_or_else(Default::default, |x| x.settings.frame_rate)).frame_at(r.duration).max(1) as u64))
+        .map(|(_, p, q, st)| {
+            redrob_film_export::export_range(p, *q, st).map_or(1, |r| {
+                st.frame_rate.unwrap_or(p.sequence(*q).map_or_else(Default::default, |x| x.settings.frame_rate)).frame_at(r.duration).max(1) as u64
+            })
+        })
         .sum();
     prog.total.store(total, Ordering::Relaxed);
     let run = move || {
@@ -154,7 +165,8 @@ fn start_render(s: &mut Session, label: String, tasks: Vec<(ItemId, Arc<Project>
                 err = Some("cancelled".to_string());
                 break;
             }
-            *prog.status.lock().unwrap_or_else(|e| e.into_inner()) = format!("{} ({} of {n})", Path::new(&st.path).file_name().map(|f| f.to_string_lossy()).unwrap_or_default(), k + 1);
+            *prog.status.lock().unwrap_or_else(|e| e.into_inner()) =
+                format!("{} ({} of {n})", Path::new(&st.path).file_name().map(|f| f.to_string_lossy()).unwrap_or_default(), k + 1);
             if let Some(d) = Path::new(&st.path).parent() {
                 let _ = std::fs::create_dir_all(d);
             }
@@ -180,7 +192,9 @@ fn start_render(s: &mut Session, label: String, tasks: Vec<(ItemId, Arc<Project>
                 *prog.error.lock().unwrap_or_else(|x| x.into_inner()) = Some(e.clone());
                 Err(e)
             }
-            None => Ok(redrob_film_export::Report { path: last, frames, seconds: secs, bytes, render_fps: frames as f64 / secs.max(1e-6), extra_files: Vec::new() }),
+            None => {
+                Ok(redrob_film_export::Report { path: last, frames, seconds: secs, bytes, render_fps: frames as f64 / secs.max(1e-6), extra_files: Vec::new() })
+            }
         };
         *prog.status.lock().unwrap_or_else(|e| e.into_inner()) = match &r {
             Ok(_) => format!("Done in {secs:.1}s"),
@@ -313,7 +327,8 @@ fn extract_zone(s: &mut Session, p: &Value) -> Result<Value> {
     if range.duration <= Tick::ZERO {
         return Err(bad(cmd, "the zone is empty"));
     }
-    let (proj, seq, _) = clip_project(&s.project, view.media, &|_: &mut redrob_film_project::TrackItem, _: TrackKind| {}).ok_or_else(|| bad(cmd, "not a media clip"))?;
+    let (proj, seq, _) =
+        clip_project(&s.project, view.media, &|_: &mut redrob_film_project::TrackItem, _: TrackKind| {}).ok_or_else(|| bad(cmd, "not a media clip"))?;
     let mut st = intermediate(m.info.video.is_some());
     st.range = Some(range);
     st.path = match str_p(p, "path").map(str::trim).filter(|x| !x.is_empty()) {
@@ -425,7 +440,10 @@ fn profiles_delete(s: &mut Session, p: &Value) -> Result<Value> {
 fn transcode(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "clip.transcode";
     let pname = str_p(p, "profile").unwrap_or("ProRes 422 LT (edit friendly)");
-    let profile = profiles(s).into_iter().find(|x| x.name == pname).ok_or_else(|| bad(cmd, format!("no transcode profile named `{pname}` (see transcode.profiles.list)")))?;
+    let profile = profiles(s)
+        .into_iter()
+        .find(|x| x.name == pname)
+        .ok_or_else(|| bad(cmd, format!("no transcode profile named `{pname}` (see transcode.profiles.list)")))?;
     let preset = s.export_presets.find(&profile.preset).ok_or_else(|| bad(cmd, format!("the profile's export preset `{}` is gone", profile.preset)))?;
     let replace = bool_p(p, "replace").unwrap_or(false);
     let add = bool_p(p, "addToProject").unwrap_or(true);
@@ -433,7 +451,8 @@ fn transcode(s: &mut Session, p: &Value) -> Result<Value> {
     let mut taken = Vec::new();
     for item in items_p(s, p) {
         let Some((m, path, _)) = file_of(&s.project, item) else { continue };
-        let (proj, seq, _) = clip_project(&s.project, item, &|_: &mut redrob_film_project::TrackItem, _: TrackKind| {}).ok_or_else(|| bad(cmd, "not a media clip"))?;
+        let (proj, seq, _) =
+            clip_project(&s.project, item, &|_: &mut redrob_film_project::TrackItem, _: TrackKind| {}).ok_or_else(|| bad(cmd, "not a media clip"))?;
         let mut st = if m.info.video.is_some() && !preset.settings.format.is_audio_only() { preset.settings.clone() } else { intermediate(false) };
         st.frame_size = None;
         st.frame_rate = None;
@@ -483,7 +502,8 @@ fn jobs_list(s: &mut Session, _: &Value) -> Result<Value> {
 
 fn jobs_save(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "clipJobs.save";
-    let mut job: CustomJob = serde_json::from_value(p.clone()).map_err(|e| bad(cmd, format!("{{name, program, args:[str], extension, suffix?, addToProject?}}: {e}")))?;
+    let mut job: CustomJob =
+        serde_json::from_value(p.clone()).map_err(|e| bad(cmd, format!("{{name, program, args:[str], extension, suffix?, addToProject?}}: {e}")))?;
     job.name = job.name.trim().to_string();
     job.extension = job.extension.trim().trim_start_matches('.').to_string();
     if job.name.is_empty() || job.program.trim().is_empty() || job.extension.is_empty() {
@@ -549,7 +569,8 @@ fn jobs_run(s: &mut Session, p: &Value) -> Result<Value> {
                 err = Some("cancelled".to_string());
                 break;
             }
-            *prog.status.lock().unwrap_or_else(|e| e.into_inner()) = format!("{} {}", cj.program, Path::new(&input).file_name().map(|f| f.to_string_lossy()).unwrap_or_default());
+            *prog.status.lock().unwrap_or_else(|e| e.into_inner()) =
+                format!("{} {}", cj.program, Path::new(&input).file_name().map(|f| f.to_string_lossy()).unwrap_or_default());
             let args: Vec<String> = cj.args.iter().map(|a| a.replace("{input}", &input).replace("{output}", &output)).collect();
             match std::process::Command::new(cj.program.trim()).args(&args).stdin(std::process::Stdio::null()).output() {
                 Ok(o) if o.status.success() && Path::new(&output).exists() => {
@@ -602,12 +623,12 @@ fn jobs_run(s: &mut Session, p: &Value) -> Result<Value> {
 /// Every use of `item` in the project's sequences: (sequence, track kind, track index, clip, start).
 pub fn instances(p: &Project, item: ItemId) -> Vec<(ItemId, TrackKind, usize, redrob_film_project::ClipId, Tick)> {
     let mut v = Vec::new();
-    for q in p.sequences().filter_map(|i| p.sequence(i.id)) {
+    for (sid, q) in p.sequences().filter_map(|i| p.sequence(i.id).map(|q| (i.id, q))) {
         for (kind, tracks) in [(TrackKind::Video, &q.video_tracks), (TrackKind::Audio, &q.audio_tracks)] {
             for (ti, t) in tracks.iter().enumerate() {
                 for x in &t.items {
                     if x.item == item {
-                        v.push((q.id, kind, ti, x.id, x.start));
+                        v.push((sid, kind, ti, x.id, x.start));
                     }
                 }
             }
@@ -636,8 +657,8 @@ fn go_to_instance(s: &mut Session, p: &Value) -> Result<Value> {
     let (seq, start) = s
         .project
         .sequences()
-        .filter_map(|i| s.project.sequence(i.id))
-        .find_map(|q| q.find_item(clip).map(|(_, it)| (q.id, it.start)))
+        .filter_map(|i| s.project.sequence(i.id).map(|q| (i.id, q)))
+        .find_map(|(sid, q)| q.find_item(clip).map(|(_, it)| (sid, it.start)))
         .ok_or_else(|| bad(cmd, "no such timeline clip"))?;
     s.state.active_sequence = Some(seq);
     if !s.state.open_sequences.contains(&seq) {
@@ -669,7 +690,12 @@ fn replace_part(s: &mut Session, p: &Value) -> Result<Value> {
     };
     let bin = s.project.root.parent_of(item).filter(|b| *b != s.project.root.id).map(|b| b.0);
     let v = s.execute("file.import", json!({"paths": [path], "bin": bin}))?;
-    let new = v["items"].as_array().and_then(|a| a.first()).and_then(Value::as_u64).map(ItemId).ok_or_else(|| EngineError::Other(format!("{path} could not be imported")))?;
+    let new = v["items"]
+        .as_array()
+        .and_then(|a| a.first())
+        .and_then(Value::as_u64)
+        .map(ItemId)
+        .ok_or_else(|| EngineError::Other(format!("{path} could not be imported")))?;
     let ok = s.project.item(new).and_then(|i| i.as_media()).is_some_and(|m| if kind == TrackKind::Audio { m.info.has_audio() } else { m.info.video.is_some() });
     if !ok {
         return Err(bad(cmd, format!("{path} has no {}", if kind == TrackKind::Audio { "audio" } else { "video" })));
@@ -739,7 +765,14 @@ fn has_items(s: &Session) -> std::result::Result<(), String> {
 
 type Run = fn(&mut Session, &Value) -> Result<Value>;
 
-fn spec(id: &'static str, label: &'static str, params: &'static str, enabled: fn(&Session) -> std::result::Result<(), String>, run: Run, journal: bool) -> CommandSpec {
+fn spec(
+    id: &'static str,
+    label: &'static str,
+    params: &'static str,
+    enabled: fn(&Session) -> std::result::Result<(), String>,
+    run: Run,
+    journal: bool,
+) -> CommandSpec {
     CommandSpec { id, label, menu: &[], shortcut: None, params, enabled, run, journal }
 }
 
@@ -765,7 +798,14 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec("transcode.profiles.list", "List Transcode Profiles", "{}", always, profiles_list, false),
         spec("transcode.profiles.save", "Save Transcode Profile", r#"{"name":str,"preset":exportPresetName,"scale":f32=1}"#, always, profiles_save, true),
         spec("transcode.profiles.delete", "Delete Transcode Profile", r#"{"name":str}"#, always, profiles_delete, true),
-        spec("clip.extractZone", "Extract Zone", r#"{"item":id?,"path":str?,"addToProject":bool=true,"destination":dir?,"wait":bool?}"#, always, extract_zone, true),
+        spec(
+            "clip.extractZone",
+            "Extract Zone",
+            r#"{"item":id?,"path":str?,"addToProject":bool=true,"destination":dir?,"wait":bool?}"#,
+            always,
+            extract_zone,
+            true,
+        ),
         spec("clipJobs.list", "List Clip Jobs", "{}", always, jobs_list, false),
         spec(
             "clipJobs.save",

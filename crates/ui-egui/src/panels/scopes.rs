@@ -178,7 +178,9 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     };
     if !keep {
         match &sf {
-            Some(f) => ctx.data_mut(|d| d.insert_temp(frozen_id(), (from_source, f.clone()))),
+            Some(f) => ctx.data_mut(|d| {
+                d.insert_temp(frozen_id(), (from_source, f.clone()));
+            }),
             // keep asking until the refreshed frame has rendered
             None if refresh => request_refresh(&ctx),
             None => {}
@@ -200,7 +202,13 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         ),
     }
     if !st.auto_refresh {
-        ui.painter().text(area.right_top() + vec2(-6.0, 4.0), Align2::RIGHT_TOP, tl!("Auto Refresh off: click to refresh"), Tokens::ui(9.0), Color32::from_gray(120));
+        ui.painter().text(
+            area.right_top() + vec2(-6.0, 4.0),
+            Align2::RIGHT_TOP,
+            tl!("Auto Refresh off: click to refresh"),
+            Tokens::ui(9.0),
+            Color32::from_gray(120),
+        );
     }
     // right-click anywhere on the scopes: the settings menu; a click refreshes
     let resp = ui.interact(area, egui::Id::new("scopes-area"), Sense::click());
@@ -476,7 +484,23 @@ pub fn apply_menu_id(st: &mut ScopesState, id: &str) -> bool {
         }
         _ => false,
     };
-    if ok && !matches!(group, "colorSpace" | "brightness" | "targets" | "autoRefresh" | "realtime" | "gradientLine" | "iqLines" | "source" | "paintMode" | "colorModel" | "gain" | "histogram") {
+    if ok
+        && !matches!(
+            group,
+            "colorSpace"
+                | "brightness"
+                | "targets"
+                | "autoRefresh"
+                | "realtime"
+                | "gradientLine"
+                | "iqLines"
+                | "source"
+                | "paintMode"
+                | "colorModel"
+                | "gain"
+                | "histogram"
+        )
+    {
         st.preset.clear();
     }
     ok
@@ -687,8 +711,13 @@ fn draw_one(app: &mut FilmcraftApp, ui: &mut egui::Ui, cell: Rect, k: ScopeKind,
             ui.painter().text(plot.left_top() + vec2(4.0, 2.0), Align2::LEFT_TOP, tl!("Histogram"), Tokens::ui(9.0), Color32::from_gray(110));
             // min / max of each component shown (code values, or 0–1 on the Float scale)
             let sum = hist.sum();
-            let rows: [(bool, &str, &[u32], [f32; 3]); 5] =
-                [(comps.y, "Y", &hist.y, WHITE), (comps.sum, "Sum", &sum, SUM), (comps.r, "R", &hist.r, RED), (comps.g, "G", &hist.g, GREEN), (comps.b, "B", &hist.b, BLUE)];
+            let rows: [(bool, &str, &[u32], [f32; 3]); 5] = [
+                (comps.y, "Y", &hist.y, WHITE),
+                (comps.sum, "Sum", &sum, SUM),
+                (comps.r, "R", &hist.r, RED),
+                (comps.g, "G", &hist.g, GREEN),
+                (comps.b, "B", &hist.b, BLUE),
+            ];
             let mut y = plot.min.y + 2.0;
             let mut readout = Vec::new();
             for (on, name, bins, col) in rows {
@@ -723,7 +752,13 @@ fn draw_one(app: &mut FilmcraftApp, ui: &mut egui::Ui, cell: Rect, k: ScopeKind,
                 ui.painter().image(tex.id(), sq, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
             }
             ui.painter().text(cell.left_top() + vec2(6.0, 4.0), Align2::LEFT_TOP, k.label(), Tokens::ui(9.0), Color32::from_gray(110));
-            let model = if hls { String::new() } else if st.analog_yuv { "YUV".into() } else { "YPbPr".into() };
+            let model = if hls {
+                String::new()
+            } else if st.analog_yuv {
+                "YUV".into()
+            } else {
+                "YPbPr".into()
+            };
             let info = if st.vector_gain > 1.0 { format!("{model}  {}×", st.vector_gain) } else { model };
             if !info.is_empty() {
                 ui.painter().text(cell.right_top() + vec2(-6.0, 4.0), Align2::RIGHT_TOP, &info, Tokens::ui(9.0), Color32::from_gray(110));
@@ -772,11 +807,12 @@ const SUM: [f32; 3] = [0.5, 0.5, 0.5];
 fn histogram_image(h: &sc::Histogram, gain: f32, c: HistComps) -> (usize, usize, Vec<u8>) {
     let (w, rows) = (256usize, sc::BINS);
     let sum = h.sum();
-    let layers: Vec<(&[u32], [f32; 3], f32)> = [(c.sum, &sum[..], SUM, 0.6), (c.r, &h.r[..], RED, 0.75), (c.g, &h.g[..], GREEN, 0.75), (c.b, &h.b[..], BLUE, 0.75), (c.y, &h.y[..], WHITE, 0.55)]
-        .into_iter()
-        .filter(|l| l.0)
-        .map(|l| (l.1, l.2, l.3))
-        .collect();
+    let layers: Vec<(&[u32], [f32; 3], f32)> =
+        [(c.sum, &sum[..], SUM, 0.6), (c.r, &h.r[..], RED, 0.75), (c.g, &h.g[..], GREEN, 0.75), (c.b, &h.b[..], BLUE, 0.75), (c.y, &h.y[..], WHITE, 0.55)]
+            .into_iter()
+            .filter(|l| l.0)
+            .map(|l| (l.1, l.2, l.3))
+            .collect();
     // each component scaled to its own peak, so Sum does not flatten the others
     let peaks: Vec<f32> = layers.iter().map(|l| l.0.iter().copied().max().unwrap_or(0).max(1) as f32).collect();
     let mut out = vec![0u8; w * rows * 4];

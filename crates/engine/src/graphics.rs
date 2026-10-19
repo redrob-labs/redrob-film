@@ -681,8 +681,11 @@ fn keep_layers(s: &mut Session, p: &Value, kind: &str) -> Result<Value> {
         "rectangle" => e.effect == graphic::SHAPE_LAYER && shape_of(e) == 0,
         _ => true,
     };
-    let from: Vec<usize> =
-        if kind == "all" || s.state.graphic_layers.is_empty() || s.state.selection.first() != Some(&clip) { (0..idx.len()).collect() } else { s.state.graphic_layers.clone() };
+    let from: Vec<usize> = if kind == "all" || s.state.graphic_layers.is_empty() || s.state.selection.first() != Some(&clip) {
+        (0..idx.len()).collect()
+    } else {
+        s.state.graphic_layers.clone()
+    };
     let keep: Vec<usize> = from.into_iter().filter(|&l| idx.get(l).is_some_and(|&ei| fits(&it.effects[ei]))).collect();
     s.state.selection = vec![clip];
     s.state.graphic_layers = keep.clone();
@@ -721,7 +724,10 @@ fn paste_layers(s: &mut Session, p: &Value) -> Result<Value> {
     if layers.is_empty() {
         return Err(bad("graphics.pasteLayers", "nothing to paste"));
     }
-    let off = p.get("offset").and_then(Value::as_array).map(|a| Vec2::new(a.first().and_then(Value::as_f64).unwrap_or(20.0), a.get(1).and_then(Value::as_f64).unwrap_or(20.0)));
+    let off = p
+        .get("offset")
+        .and_then(Value::as_array)
+        .map(|a| Vec2::new(a.first().and_then(Value::as_f64).unwrap_or(20.0), a.get(1).and_then(Value::as_f64).unwrap_or(20.0)));
     let off = off.unwrap_or(Vec2::new(20.0, 20.0));
     let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let item = seq.find_item(clip).map(|(_, it)| it.item);

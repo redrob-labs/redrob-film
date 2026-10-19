@@ -23,7 +23,15 @@ use crate::{EngineError, Result, Session};
 type Run = fn(&mut Session, &Value) -> Result<Value>;
 type Enabled = fn(&Session) -> std::result::Result<(), String>;
 
-fn spec(id: &'static str, label: &'static str, menu: &'static [&'static str], shortcut: Option<&'static str>, params: &'static str, enabled: Enabled, run: Run) -> CommandSpec {
+fn spec(
+    id: &'static str,
+    label: &'static str,
+    menu: &'static [&'static str],
+    shortcut: Option<&'static str>,
+    params: &'static str,
+    enabled: Enabled,
+    run: Run,
+) -> CommandSpec {
     CommandSpec { id, label, menu, shortcut, params, enabled, run, journal: true }
 }
 
@@ -177,7 +185,8 @@ fn duplicate_clip(s: &mut Session, p: &Value) -> Result<Value> {
     let moves: Vec<(ClipId, TrackId, Tick)> = picked.iter().map(|(c, t, st, _)| (*c, *t, *st + delta)).collect();
     // the space right after the selection must be free on every track used, else the copy is
     // inserted there and what follows moves down
-    let free = picked.iter().all(|(_, t, st, en)| q.track(*t).is_some_and(|tr| edit::track_range_empty(tr, redrob_film_time::TimeRange::new(*st + delta, *en - *st))));
+    let free =
+        picked.iter().all(|(_, t, st, en)| q.track(*t).is_some_and(|tr| edit::track_range_empty(tr, redrob_film_time::TimeRange::new(*st + delta, *en - *st))));
     let ids = s.edit_sequence("Duplicate Clip", |q, ctx, st| {
         let ids = edit::copy_items(q, &moves, !free, ctx)?;
         st.selection = ids.clone();
@@ -215,7 +224,10 @@ fn restore(s: &mut Session, p: &Value, want: TrackKind) -> Result<Value> {
         todo.push((it.clone(), dest.id));
     }
     if todo.is_empty() {
-        return Err(bad(id, if want == TrackKind::Audio { "no selected clip is missing audio its media has" } else { "no selected clip is missing video its media has" }));
+        return Err(bad(
+            id,
+            if want == TrackKind::Audio { "no selected clip is missing audio its media has" } else { "no selected clip is missing video its media has" },
+        ));
     }
     let ids = s.edit_sequence(if want == TrackKind::Audio { "Restore Audio" } else { "Restore Video" }, |q, ctx, _| {
         let mut out = Vec::new();
@@ -233,7 +245,8 @@ fn restore(s: &mut Session, p: &Value, want: TrackKind) -> Result<Value> {
             let mut part = orig.clone();
             part.id = ClipId(ctx.alloc());
             part.link = Some(link);
-            part.effects = if want == TrackKind::Audio { redrob_film_project::effect::intrinsic_audio() } else { redrob_film_project::effect::intrinsic_video() };
+            part.effects =
+                if want == TrackKind::Audio { redrob_film_project::effect::intrinsic_audio() } else { redrob_film_project::effect::intrinsic_video() };
             part.markers.clear();
             out.extend(edit::overwrite(q, vec![(dest, part)], ctx)?);
         }
@@ -253,8 +266,13 @@ fn add_clip_in_gap(s: &mut Session, p: &Value) -> Result<Value> {
     match str_p(p, "kind").unwrap_or("color") {
         "color" => {
             let color = str_p(p, "color").unwrap_or("#000000");
-            let item = s.execute("file.newColorMatte", json!({"color": color, "seconds": seconds}))?["item"].as_u64().ok_or_else(|| bad(id, "no colour clip was made"))?;
-            s.execute("timeline.place", json!({"item": item, "track": gap.track.0, "time": gap.range.start.0, "duration": gap.range.duration.0, "insert": false, "audio": false}))
+            let item = s.execute("file.newColorMatte", json!({"color": color, "seconds": seconds}))?["item"]
+                .as_u64()
+                .ok_or_else(|| bad(id, "no colour clip was made"))?;
+            s.execute(
+                "timeline.place",
+                json!({"item": item, "track": gap.track.0, "time": gap.range.start.0, "duration": gap.range.duration.0, "insert": false, "audio": false}),
+            )
         }
         "title" => {
             let text = str_p(p, "text").unwrap_or("Title");

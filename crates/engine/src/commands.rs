@@ -1366,7 +1366,8 @@ fn build() -> Vec<CommandSpec> {
         // Settings ▸ Playback ▸ Jog Shuttle ▸ Detect: the first ShuttlePRO / ShuttleXpress event
         // device the system lists (Linux /dev/input/by-id) becomes the device, and the shuttle is on
         cmd!("prefs.detectJogShuttle", "Detect Jog Shuttle", [], None, "{}", always, |s, _| {
-            let found = crate::settings::detect_jog_shuttle().ok_or_else(|| EngineError::Other("no ShuttlePRO or ShuttleXpress was found (Linux event devices under /dev/input/by-id)".into()))?;
+            let found = crate::settings::detect_jog_shuttle()
+                .ok_or_else(|| EngineError::Other("no ShuttlePRO or ShuttleXpress was found (Linux event devices under /dev/input/by-id)".into()))?;
             let mut next = s.prefs.clone();
             next.playback.jog_shuttle.device = found.clone();
             next.playback.jog_shuttle.enabled = true;
@@ -1732,44 +1733,36 @@ fn build() -> Vec<CommandSpec> {
         query!("clip.audioPeak", "Audio Clip Peak Amplitude", r#"{"clips":[id]?}"#, |s, p| crate::mixer::audio_peak(s, p)),
         // Kdenlive's Switch Track Target Audio Stream: the selected audio clips play the next audio
         // stream of their media (or `stream`), wrapping around
-        cmd!(
-            "clip.switchAudioStream",
-            "Switch Audio Stream",
-            ["Clip", "Audio Options"],
-            None,
-            r#"{"clips":[id]?,"stream":n?}"#,
-            has_selection,
-            |s, p| {
-                let sel = clips_p(s, p);
-                let want = u64_p(p, "stream").map(|v| v as usize);
-                let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
-                let mut plan: Vec<(ClipId, usize)> = Vec::new();
-                for c in &sel {
-                    let Some((tid, it)) = seq.find_item(*c) else { continue };
-                    if !seq.audio_tracks.iter().any(|t| t.id == tid) {
-                        continue;
-                    }
-                    let n = s.project.item(it.item).and_then(|i| i.as_media()).map_or(1, |m| m.info.audio_streams.len().max(1));
-                    let next = want.map_or((it.audio_stream + 1) % n, |w| w.min(n - 1));
-                    if n > 1 && next != it.audio_stream {
-                        plan.push((*c, next));
-                    }
+        cmd!("clip.switchAudioStream", "Switch Audio Stream", ["Clip", "Audio Options"], None, r#"{"clips":[id]?,"stream":n?}"#, has_selection, |s, p| {
+            let sel = clips_p(s, p);
+            let want = u64_p(p, "stream").map(|v| v as usize);
+            let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
+            let mut plan: Vec<(ClipId, usize)> = Vec::new();
+            for c in &sel {
+                let Some((tid, it)) = seq.find_item(*c) else { continue };
+                if !seq.audio_tracks.iter().any(|t| t.id == tid) {
+                    continue;
                 }
-                if plan.is_empty() {
-                    return Err(bad("clip.switchAudioStream", "no selected audio clip has another audio stream"));
+                let n = s.project.item(it.item).and_then(|i| i.as_media()).map_or(1, |m| m.info.audio_streams.len().max(1));
+                let next = want.map_or((it.audio_stream + 1) % n, |w| w.min(n - 1));
+                if n > 1 && next != it.audio_stream {
+                    plan.push((*c, next));
                 }
-                let out: Vec<Value> = plan.iter().map(|(c, k)| json!({"clip": c.0, "stream": k})).collect();
-                s.edit_sequence("Switch Audio Stream", move |q, _, _| {
-                    for (c, k) in &plan {
-                        if let Some((_, i)) = q.find_item_mut(*c) {
-                            i.audio_stream = *k;
-                        }
-                    }
-                    Ok(())
-                })?;
-                Ok(json!({"clips": out}))
             }
-        ),
+            if plan.is_empty() {
+                return Err(bad("clip.switchAudioStream", "no selected audio clip has another audio stream"));
+            }
+            let out: Vec<Value> = plan.iter().map(|(c, k)| json!({"clip": c.0, "stream": k})).collect();
+            s.edit_sequence("Switch Audio Stream", move |q, _, _| {
+                for (c, k) in &plan {
+                    if let Some((_, i)) = q.find_item_mut(*c) {
+                        i.audio_stream = *k;
+                    }
+                }
+                Ok(())
+            })?;
+            Ok(json!({"clips": out}))
+        }),
         cmd!("clip.frameHold", "Add Frame Hold", ["Clip", "Video Options"], None, r#"{"clips":[id]?,"time":ticks?}"#, has_seq, |s, p| {
             crate::clip_ops::add_frame_hold(s, p)
         }),
@@ -2061,7 +2054,9 @@ fn build() -> Vec<CommandSpec> {
         cmd!("sequence.startPreviewRender", "Start Preview Render", ["Sequence", "Timeline Preview"], None, r#"{"wait":bool=false}"#, has_seq, |s, p| {
             crate::previews::render(s, crate::previews::RenderMode::Zones, p)
         }),
-        cmd!("sequence.stopPreviewRender", "Stop Preview Render", ["Sequence", "Timeline Preview"], None, "{}", preview_rendering, |s, _| crate::previews::stop(s)),
+        cmd!("sequence.stopPreviewRender", "Stop Preview Render", ["Sequence", "Timeline Preview"], None, "{}", preview_rendering, |s, _| {
+            crate::previews::stop(s)
+        }),
         cmd!(
             "sequence.addPreviewZone",
             "Add Preview Zone",
@@ -2629,28 +2624,38 @@ fn build() -> Vec<CommandSpec> {
             let x = s.edit_sequence("Rolling Edit", |q, ctx, _| Ok(edit::roll(q, l, r, d, ctx)?))?;
             Ok(json!({"delta": x.0}))
         }),
-        cmd!("timeline.slip", "Slip", [], None, r#"{"clip":id,"clips":[id]? (several clips slip together),"delta":ticks|"deltaFrames":i64}"#, has_seq, |s, p| {
-            let c = clip_p(p, "clip").or_else(|| p.get("clips").and_then(|v| v.get(0)).and_then(Value::as_u64).map(ClipId)).ok_or_else(|| bad("timeline.slip", "need `clip`"))?;
-            let d = p
-                .get("delta")
-                .and_then(Value::as_i64)
-                .map(Tick)
-                .or_else(|| p.get("deltaFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)))
-                .unwrap_or_default();
-            let listed: Vec<ClipId> = match p.get("clips").and_then(Value::as_array) {
-                Some(a) => a.iter().filter_map(|v| v.as_u64().map(ClipId)).chain([c]).collect(),
-                None => vec![c],
-            };
-            let mut clips = with_links(s, &listed);
-            clips.sort_unstable();
-            clips.dedup();
-            s.edit_sequence("Slip", |q, ctx, _| {
-                // clamp across all linked partners, then slip them by the common delta
-                let deltas: Vec<(ClipId, Tick)> = clips.iter().map(|c| (*c, d)).collect();
-                slip_together(q, ctx, &deltas)
-            })?;
-            Ok(Value::Null)
-        }),
+        cmd!(
+            "timeline.slip",
+            "Slip",
+            [],
+            None,
+            r#"{"clip":id,"clips":[id]? (several clips slip together),"delta":ticks|"deltaFrames":i64}"#,
+            has_seq,
+            |s, p| {
+                let c = clip_p(p, "clip")
+                    .or_else(|| p.get("clips").and_then(|v| v.get(0)).and_then(Value::as_u64).map(ClipId))
+                    .ok_or_else(|| bad("timeline.slip", "need `clip`"))?;
+                let d = p
+                    .get("delta")
+                    .and_then(Value::as_i64)
+                    .map(Tick)
+                    .or_else(|| p.get("deltaFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)))
+                    .unwrap_or_default();
+                let listed: Vec<ClipId> = match p.get("clips").and_then(Value::as_array) {
+                    Some(a) => a.iter().filter_map(|v| v.as_u64().map(ClipId)).chain([c]).collect(),
+                    None => vec![c],
+                };
+                let mut clips = with_links(s, &listed);
+                clips.sort_unstable();
+                clips.dedup();
+                s.edit_sequence("Slip", |q, ctx, _| {
+                    // clamp across all linked partners, then slip them by the common delta
+                    let deltas: Vec<(ClipId, Tick)> = clips.iter().map(|c| (*c, d)).collect();
+                    slip_together(q, ctx, &deltas)
+                })?;
+                Ok(Value::Null)
+            }
+        ),
         cmd!("timeline.slide", "Slide", [], None, r#"{"clip":id,"delta":ticks|"deltaFrames":i64}"#, has_seq, |s, p| {
             let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.slide", "need `clip`"))?;
             let d = p
@@ -2664,31 +2669,39 @@ fn build() -> Vec<CommandSpec> {
             s.edit_sequence("Slide", |q, ctx, _| Ok(edit::slide_items(q, &clips, d, ctx)?))?;
             Ok(Value::Null)
         }),
-        cmd!("timeline.rateStretch", "Rate Stretch", [], None, r#"{"clip":id,"clips":[id]? (several clips stretch together),"edge":"in|out","delta":ticks}"#, has_seq, |s, p| {
-            let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.rateStretch", "need `clip`"))?;
-            let edge = if str_p(p, "edge") == Some("in") { Edge::In } else { Edge::Out };
-            let d = p
-                .get("delta")
-                .and_then(Value::as_i64)
-                .map(Tick)
-                .or_else(|| p.get("deltaFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)))
-                .unwrap_or_default();
-            let listed: Vec<ClipId> = match p.get("clips").and_then(Value::as_array) {
-                Some(a) => a.iter().filter_map(|v| v.as_u64().map(ClipId)).chain([c]).collect(),
-                None => vec![c],
-            };
-            let mut clips = with_links(s, &listed);
-            clips.sort_unstable();
-            clips.dedup();
-            let sp = s.edit_sequence("Rate Stretch", |q, ctx, _| {
-                let mut sp = 1.0;
-                for c in &clips {
-                    sp = edit::rate_stretch(q, *c, edge, d, ctx)?;
-                }
-                Ok(sp)
-            })?;
-            Ok(json!({"speed": sp}))
-        }),
+        cmd!(
+            "timeline.rateStretch",
+            "Rate Stretch",
+            [],
+            None,
+            r#"{"clip":id,"clips":[id]? (several clips stretch together),"edge":"in|out","delta":ticks}"#,
+            has_seq,
+            |s, p| {
+                let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.rateStretch", "need `clip`"))?;
+                let edge = if str_p(p, "edge") == Some("in") { Edge::In } else { Edge::Out };
+                let d = p
+                    .get("delta")
+                    .and_then(Value::as_i64)
+                    .map(Tick)
+                    .or_else(|| p.get("deltaFrames").and_then(Value::as_i64).map(|f| s.sequence_rate().tick_of(f)))
+                    .unwrap_or_default();
+                let listed: Vec<ClipId> = match p.get("clips").and_then(Value::as_array) {
+                    Some(a) => a.iter().filter_map(|v| v.as_u64().map(ClipId)).chain([c]).collect(),
+                    None => vec![c],
+                };
+                let mut clips = with_links(s, &listed);
+                clips.sort_unstable();
+                clips.dedup();
+                let sp = s.edit_sequence("Rate Stretch", |q, ctx, _| {
+                    let mut sp = 1.0;
+                    for c in &clips {
+                        sp = edit::rate_stretch(q, *c, edge, d, ctx)?;
+                    }
+                    Ok(sp)
+                })?;
+                Ok(json!({"speed": sp}))
+            }
+        ),
         cmd!("timeline.razor", "Razor", [], None, r#"{"time":ticks,"track":"V1"|id?,"clip":id?}"#, has_seq, |s, p| {
             let t = time_p(s, p, "").unwrap_or(s.playhead());
             let tr = track_p(s, p, "track", "timeline.razor")?;
@@ -2809,8 +2822,10 @@ fn build() -> Vec<CommandSpec> {
             // monitor then shows the effect (when the playhead is over none of the clips)
             if s.prefs.timeline.seek_to_clip_on_add_effect {
                 let ph = s.playhead();
-                let spans: Vec<(Tick, Tick)> =
-                    s.active_sequence().map(|q| clips.iter().filter_map(|c| q.item(*c)).map(|i| (i.start, i.end())).collect()).unwrap_or_default();
+                let spans: Vec<(Tick, Tick)> = s
+                    .active_sequence()
+                    .map(|q| clips.iter().filter_map(|c| q.find_item(*c).map(|(_, i)| i)).map(|i| (i.start, i.end())).collect())
+                    .unwrap_or_default();
                 if !spans.is_empty() && !spans.iter().any(|(a, b)| ph >= *a && ph < *b) {
                     let first = spans.iter().map(|(a, _)| *a).min().unwrap_or(ph);
                     s.set_playhead(first);

@@ -410,7 +410,10 @@ fn import(s: &mut Session, p: &Value) -> Result<Value> {
     let mut rows: Vec<(i64, i64, String, Label)> = Vec::new();
     if let Ok(Value::Array(a)) = serde_json::from_str::<Value>(text.trim()) {
         for m in a {
-            let f = m.get("position").and_then(Value::as_i64).or_else(|| m.get("seconds").and_then(Value::as_f64).map(|x| (x * rate.num as f64 / rate.den as f64).round() as i64));
+            let f = m
+                .get("position")
+                .and_then(Value::as_i64)
+                .or_else(|| m.get("seconds").and_then(Value::as_f64).map(|x| (x * rate.num as f64 / rate.den as f64).round() as i64));
             let Some(f) = f else { continue };
             let color = str_p(&m, "color")
                 .and_then(Label::from_name)

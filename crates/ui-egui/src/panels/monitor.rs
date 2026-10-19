@@ -282,9 +282,7 @@ fn show_in(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which, 
             // without the selected clips' effects
             let without = if app.ui.fx.compare_effects { without_effects(app, &ctx) } else { None };
             let (rkey, rf, rproject) = match &without {
-                Some((p, salt)) => {
-                    (FrameKey { target: cpu_target, frame, size: size_key, revision: rev ^ salt, draft: false }, frame, p.clone())
-                }
+                Some((p, salt)) => (FrameKey { target: cpu_target, frame, size: size_key, revision: rev ^ salt, draft: false }, frame, p.clone()),
                 None => {
                     let rf = rate.frame_at(Tick(mv.compare_ref.unwrap_or(time.0)));
                     (FrameKey { target: cpu_target, frame: rf, size: size_key, revision: rev, draft: false }, rf, project.clone())
@@ -360,7 +358,8 @@ fn show_in(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which, 
     }
     if show_picture {
         monitor_view::guides(app, ui, which, video_area, pic, frame_size);
-        let pofs = if which == Which::Program { rate.tick_of(app.session.active_sequence().map_or(0, |q| q.start_timecode.max(0))) } else { rate.tick_of(source_tc) };
+        let pofs =
+            if which == Which::Program { rate.tick_of(app.session.active_sequence().map_or(0, |q| q.start_timecode.max(0))) } else { rate.tick_of(source_tc) };
         info_overlays(app, ui, which, pic.intersect(video_area), rate, time, pofs, drop_frame, duration, &mv);
         overlay_toolbar(app, ui, which, pic.intersect(video_area), &mv);
     }
@@ -374,7 +373,8 @@ fn show_in(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which, 
     // the graphics overlay covers the Program picture and takes its clicks; it hands on those
     // that land on no layer
     let (gfx_click, gfx_double) = ctx.data_mut(|d| d.remove_temp::<(bool, bool)>(egui::Id::new("gfx-overlay-click"))).unwrap_or((false, false));
-    let (clicked, double) = (pic_resp.clicked() || (which == Which::Program && gfx_click), pic_resp.double_clicked() || (which == Which::Program && gfx_double));
+    let (clicked, double) =
+        (pic_resp.clicked() || (which == Which::Program && gfx_click), pic_resp.double_clicked() || (which == Which::Program && gfx_double));
     // Kdenlive: a double-click on the picture switches the monitor full screen (and back)
     if show_picture && double {
         toggle_window(&ctx, which, true, None);
@@ -414,7 +414,8 @@ fn show_in(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which, 
     // ---- controls row: timecode | zoom | res | wrench | duration
     let row1 = Rect::from_min_size(pos2(rect.min.x + 14.0, rect.max.y - controls_h + 2.0), vec2(rect.width() - 28.0, 26.0));
     // the Program monitor counts from the sequence's start timecode (Sequence Settings ▸ Start Time)
-    let pofs = if which == Which::Program { rate.tick_of(app.session.active_sequence().map_or(0, |q| q.start_timecode.max(0))) } else { rate.tick_of(source_tc) };
+    let pofs =
+        if which == Which::Program { rate.tick_of(app.session.active_sequence().map_or(0, |q| q.start_timecode.max(0))) } else { rate.tick_of(source_tc) };
     let tc = format_time(time + pofs, rate, drop_frame, TimeDisplay::Timecode, 48000);
     let tc_rect = Rect::from_min_size(row1.min, vec2(110.0, row1.height()));
     let min = if which == Which::Program { Tick::ZERO } else { origin };
@@ -432,11 +433,19 @@ fn show_in(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which, 
     // Kdenlive's timecode spin arrows: one frame forward (up) or back (down) per click
     for (k, up) in [("up", true), ("down", false)] {
         let ar = Rect::from_min_size(pos2(tc_rect.max.x - 12.0, if up { tc_rect.min.y + 1.0 } else { tc_rect.center().y + 1.0 }), vec2(11.0, 11.0));
-        let resp = ui.interact(ar, egui::Id::new((prefix, "timecode-spin", k)), Sense::click()).on_hover_text(if up { tl!("Step Forward 1 Frame (Right)") } else { tl!("Step Back 1 Frame (Left)") });
+        let resp = ui.interact(ar, egui::Id::new((prefix, "timecode-spin", k)), Sense::click()).on_hover_text(if up {
+            tl!("Step Forward 1 Frame (Right)")
+        } else {
+            tl!("Step Back 1 Frame (Left)")
+        });
         app.auto.add(&format!("{prefix}.timecode.{k}"), ar, k);
         let c = if resp.hovered() { t.tab_text_active } else { t.text_faint };
         let (cx, cy) = (ar.center().x, ar.center().y);
-        let tri = if up { vec![pos2(cx - 3.5, cy + 2.0), pos2(cx + 3.5, cy + 2.0), pos2(cx, cy - 2.5)] } else { vec![pos2(cx - 3.5, cy - 2.0), pos2(cx + 3.5, cy - 2.0), pos2(cx, cy + 2.5)] };
+        let tri = if up {
+            vec![pos2(cx - 3.5, cy + 2.0), pos2(cx + 3.5, cy + 2.0), pos2(cx, cy - 2.5)]
+        } else {
+            vec![pos2(cx - 3.5, cy - 2.0), pos2(cx + 3.5, cy - 2.0), pos2(cx, cy + 2.5)]
+        };
         ui.painter().add(egui::Shape::convex_polygon(tri, c, Stroke::NONE));
         if resp.clicked() {
             let cmd = match (which, up) {
@@ -1585,7 +1594,10 @@ fn waveform_strip(app: &mut FilmcraftApp, p: &egui::Painter, area: Rect, item: r
                 let s1 = ((dur * f64::from(f1) / spp) as usize).max(s0 + 1);
                 let (lo, hi) = peaks.iter().skip(s0).take(s1 - s0).fold((0f32, 0f32), |(l, h), (a, b)| (l.min(*a), h.max(*b)));
                 if hi - lo > 0.002 {
-                    mesh.add_colored_rect(Rect::from_min_max(pos2(x as f32, mid - hi.min(1.0) * half), pos2(x as f32 + 1.0, mid - lo.max(-1.0) * half + 1.0)), col);
+                    mesh.add_colored_rect(
+                        Rect::from_min_max(pos2(x as f32, mid - hi.min(1.0) * half), pos2(x as f32 + 1.0, mid - lo.max(-1.0) * half + 1.0)),
+                        col,
+                    );
                 }
             }
             p.add(mesh);
@@ -1815,24 +1827,29 @@ pub fn extract_zone_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
     let Some(mut d) = ctx.data(|m| m.get_temp::<ExtractZoneDraft>(extract_zone_id())) else { return };
     let mut close = ctx.input(|i| i.key_pressed(egui::Key::Escape));
     let mut run = false;
-    egui::Window::new(tl!("Extract Zone")).id(egui::Id::new("Extract Zone")).collapsible(false).resizable(false).anchor(Align2::CENTER_CENTER, [0.0, 0.0]).show(ctx, |ui| {
-        ui.label(tl!("Write the Source Monitor's zone (In to Out) to a new file."));
-        ui.horizontal(|ui| {
-            ui.label(tl!("File:"));
-            let r = ui.add(egui::TextEdit::singleline(&mut d.path).desired_width(360.0));
-            app.auto.add("extractZone.path", r.rect, "File");
+    egui::Window::new(tl!("Extract Zone"))
+        .id(egui::Id::new("Extract Zone"))
+        .collapsible(false)
+        .resizable(false)
+        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .show(ctx, |ui| {
+            ui.label(tl!("Write the Source Monitor's zone (In to Out) to a new file."));
+            ui.horizontal(|ui| {
+                ui.label(tl!("File:"));
+                let r = ui.add(egui::TextEdit::singleline(&mut d.path).desired_width(360.0));
+                app.auto.add("extractZone.path", r.rect, "File");
+            });
+            let r = ui.checkbox(&mut d.add, tl!("Add clip to project"));
+            app.auto.add("extractZone.add", r.rect, "Add clip to project");
+            ui.horizontal(|ui| {
+                let r = ui.button(tl!("Cancel"));
+                app.auto.add("extractZone.cancel", r.rect, "Cancel");
+                close |= r.clicked();
+                let r = ui.button(tl!("OK"));
+                app.auto.add("extractZone.ok", r.rect, "OK");
+                run = r.clicked();
+            });
         });
-        let r = ui.checkbox(&mut d.add, tl!("Add clip to project"));
-        app.auto.add("extractZone.add", r.rect, "Add clip to project");
-        ui.horizontal(|ui| {
-            let r = ui.button(tl!("Cancel"));
-            app.auto.add("extractZone.cancel", r.rect, "Cancel");
-            close |= r.clicked();
-            let r = ui.button(tl!("OK"));
-            app.auto.add("extractZone.ok", r.rect, "OK");
-            run = r.clicked();
-        });
-    });
     if run {
         match app.session.execute("clip.extractZone", json!({"path": d.path, "addToProject": d.add})) {
             Ok(_) => {

@@ -486,8 +486,7 @@ mod tests {
         let moved = item(&s, clip).effect("motion").unwrap().params["scale"].clone();
         assert_eq!(moved.keyframes[0].time, scale.keyframes[0].time + Tick(sec));
         let mts: Vec<i64> = moved.keyframes.iter().map(|k| k.time.0).collect();
-        s.execute("effects.applyValueToKeyframes", json!({"clip": clip, "effect": "motion", "param": "scale", "mediaTimes": mts, "value": 50.0}))
-            .unwrap();
+        s.execute("effects.applyValueToKeyframes", json!({"clip": clip, "effect": "motion", "param": "scale", "mediaTimes": mts, "value": 50.0})).unwrap();
         assert!(item(&s, clip).effect("motion").unwrap().params["scale"].keyframes.iter().all(|k| k.value == ParamValue::Float(50.0)));
     }
 
