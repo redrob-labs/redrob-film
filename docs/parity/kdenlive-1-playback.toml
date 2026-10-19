@@ -1,0 +1,596 @@
+# Kdenlive 26.08 parity inventory, area 1: playback, monitors, scrubbing, JKL, audio playback,
+# audio mixer, meters, waveforms, audio effects, scopes, proxies, timeline preview rendering.
+#
+# Source: the Kdenlive user manual at https://docs.kdenlive.org only (clean room, see
+# film-gap/PARITY-RULES.md). One row per user-facing feature or option the manual lists.
+# `film` rates Redrob Film today: full = the feature works as the manual describes (a different
+# default key or menu location still counts), partial = a related or reduced version exists,
+# none = nothing equivalent. `evidence` is our file:line or command id; `gap` says what is missing.
+
+# ------------------------------------------------------------------ playback / JKL / transport
+
+[[row]]
+id = "K1-001"
+group = "playback"
+feature = "Play / Stop (Space)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:37 playback.toggle (Space); source.playback.toggle for Source"
+gap = ""
+
+[[row]]
+id = "K1-002"
+group = "playback"
+feature = "Forward shuttle L, repeat cycles 1x/1.5x/2x/3x/5.5x/10x"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:350 playback.forward doubles speed up to 8x"
+gap = "speed ladder is 1/2/4/8x; no 1.5x, 3x, 5.5x or 10x steps"
+
+[[row]]
+id = "K1-003"
+group = "playback"
+feature = "Rewind shuttle J, repeat cycles -1x..-10x"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:40 playback.reverse doubles speed down to -8x"
+gap = "speed ladder is -1/-2/-4/-8x; no -1.5x, -3x, -5.5x or -10x steps"
+
+[[row]]
+id = "K1-004"
+group = "playback"
+feature = "Pause (K)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:39 playback.stop (K)"
+gap = ""
+
+[[row]]
+id = "K1-005"
+group = "playback"
+feature = "Play backwards button in monitor toolbar"
+manual = "https://docs.kdenlive.org/en/user_interface/ui_elements.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/monitor.rs:721 transport buttons; reverse only via J"
+gap = "no reverse-play transport button"
+
+[[row]]
+id = "K1-006"
+group = "playback"
+feature = "Fast forward button in monitor toolbar"
+manual = "https://docs.kdenlive.org/en/user_interface/ui_elements.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/monitor.rs:721 transport buttons; fast forward only via L"
+gap = "no fast-forward transport button"
+
+[[row]]
+id = "K1-007"
+group = "playback"
+feature = "Play button drop-down with play options"
+manual = "https://docs.kdenlive.org/en/user_interface/ui_elements.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/monitor.rs:753 separate Loop button; In-to-Out via Alt+K"
+gap = "no options drop-down on the play button (play zone / loop zone / from cursor)"
+
+[[row]]
+id = "K1-008"
+group = "playback"
+feature = "Play Zone (Ctrl+Space)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "full"
+evidence = "crates/ui-egui/src/menus.rs:44 playback.inToOut (Alt+K), Source and Program"
+gap = ""
+
+[[row]]
+id = "K1-009"
+group = "playback"
+feature = "Play Zone From Cursor"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/keyboard.rs:75 playback.toOut (Ctrl+Space)"
+gap = ""
+
+[[row]]
+id = "K1-010"
+group = "playback"
+feature = "Loop Zone (Ctrl+Shift+Space)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "partial"
+evidence = "crates/ui-egui/src/menus.rs:45 playback.loop toggle; source.settings.loop loops the marked range"
+gap = "no one-key Loop Zone command for Program; needs Loop toggle plus Play In to Out"
+
+[[row]]
+id = "K1-011"
+group = "playback"
+feature = "Loop Selected Clip (timeline)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "none"
+evidence = "no command found (grep loopSelect/loop selected clip)"
+gap = "no command to loop playback over the selected timeline clip(s)"
+
+[[row]]
+id = "K1-012"
+group = "playback"
+feature = "Preference: play/pause on monitor click"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/monitor.rs:282 click only focuses / deselects"
+gap = "clicking the monitor never toggles playback; no preference for it"
+
+[[row]]
+id = "K1-013"
+group = "playback"
+feature = "Forward / back one frame (Right / Left)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2117 playhead.stepForward / stepBack; Source routed in menus.rs"
+gap = ""
+
+[[row]]
+id = "K1-014"
+group = "playback"
+feature = "Forward / back one second (Shift+Right / Shift+Left)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:2120 playhead.stepForward5 uses Preferences playback.stepManyFrames (settings.rs:1067)"
+gap = "steps a fixed frame count from preferences, not one second at the sequence rate"
+
+[[row]]
+id = "K1-015"
+group = "playback"
+feature = "Timecode entry: type timecode + Enter to jump"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/project_monitor.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/monitor.rs:319 timecode_field -> playhead.set / source.setPlayhead"
+gap = ""
+
+[[row]]
+id = "K1-016"
+group = "playback"
+feature = "Timecode spin arrows (one frame per click)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/project_monitor.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/monitor.rs:725 Step Back / Step Forward transport buttons"
+gap = "no up/down arrows on the timecode field itself"
+
+[[row]]
+id = "K1-017"
+group = "playback"
+feature = "Focus Timecode (=)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "none"
+evidence = "no focus-timecode command (= is view.zoomIn, menus.rs:46)"
+gap = "no command or shortcut that puts keyboard focus in the active monitor's timecode"
+
+[[row]]
+id = "K1-018"
+group = "playback"
+feature = "Switch Monitor clip/project (T)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/keyboard.rs:65 window.toggleMonitorFocus (no default key)"
+gap = ""
+
+[[row]]
+id = "K1-019"
+group = "playback"
+feature = "Align playhead to mouse position (P)"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html"
+film = "none"
+evidence = "no command found (grep playheadToMouse)"
+gap = "no command to move the timeline playhead to the pointer"
+
+# ------------------------------------------------------------------ navigation (Go To)
+
+[[row]]
+id = "K1-020"
+group = "navigation"
+feature = "Go to Clip Start / End (Home / End)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "full"
+evidence = "crates/engine/src/keyboard.rs:713 playhead.selectedClipStart / selectedClipEnd (Shift+Home/End)"
+gap = ""
+
+[[row]]
+id = "K1-021"
+group = "navigation"
+feature = "Go to Project Start / End (Ctrl+Home / Ctrl+End)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2131 playhead.start / playhead.end"
+gap = ""
+
+[[row]]
+id = "K1-022"
+group = "navigation"
+feature = "Go to Zone Start / End (Shift+I / Shift+O)"
+manual = "https://docs.kdenlive.org/en/user_interface/menu/monitor_menu.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:1934 markers.goToIn / goToOut; Source routed by source_monitor"
+gap = ""
+
+[[row]]
+id = "K1-023"
+group = "navigation"
+feature = "Go to Previous / Next Snap Point (Alt+Left / Alt+Right)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "partial"
+evidence = "crates/engine/src/commands.rs:2129 playhead.nextEdit / prevEdit (edit points only)"
+gap = "snap points also include markers, zone in/out and composition starts; ours visits clip edits only"
+
+[[row]]
+id = "K1-024"
+group = "navigation"
+feature = "Go to Previous / Next Guide or Marker (Ctrl+Left / Ctrl+Right)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "crates/engine/src/commands.rs:2016 markers.goNext / goPrev, target program|source"
+gap = ""
+
+[[row]]
+id = "K1-025"
+group = "navigation"
+feature = "Go to Guide / Go to Marker list menu"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/project_monitor.html"
+film = "partial"
+evidence = "crates/ui-egui/src/dock.rs:52 Markers panel lists markers and jumps on click"
+gap = "no pop-up marker list from the monitor menu"
+
+[[row]]
+id = "K1-026"
+group = "navigation"
+feature = "Seek in clip monitor with Shift + mouse move"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/monitor.rs:286 picture drag starts a source drag, not a seek"
+gap = "no hover-seek with Shift in the clip monitor"
+
+[[row]]
+id = "K1-027"
+group = "navigation"
+feature = "Mouse wheel over monitor seeks"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/monitor_view.rs:361 wheel zooms the picture"
+gap = "wheel never steps frames over the picture"
+
+[[row]]
+id = "K1-028"
+group = "navigation"
+feature = "Ctrl + wheel zooms the monitor"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/monitor_view.rs:361 wheel/pinch zooms about the pointer, middle drag pans"
+gap = ""
+
+[[row]]
+id = "K1-029"
+group = "navigation"
+feature = "Drag the position caret / ruler to scrub"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/project_monitor.html"
+film = "full"
+evidence = "crates/ui-egui/src/scrub.rs:1; automation ids program.scrubBar / source.scrubBar, program.playhead"
+gap = ""
+
+[[row]]
+id = "K1-030"
+group = "navigation"
+feature = "Jog shuttle device support (ShuttlePro / ShuttleXpress)"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_jogshuttle.html"
+film = "none"
+evidence = "no HID / evdev jog-shuttle code (grep shuttle device)"
+gap = "no USB jog/shuttle input device support"
+
+[[row]]
+id = "K1-031"
+group = "navigation"
+feature = "Jog shuttle settings: device select, device path, button-to-action map"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_jogshuttle.html"
+film = "none"
+evidence = "crates/engine/src/settings.rs has no jog shuttle category"
+gap = "no preferences page for a jog/shuttle device and its buttons"
+
+# ------------------------------------------------------------------ audio playback
+
+[[row]]
+id = "K1-040"
+group = "audio-playback"
+feature = "Audio scrubbing on/off"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:835 audio.scrubAudio; crates/engine/src/keyboard.rs:25 audio.toggleScrubbing"
+gap = ""
+
+[[row]]
+id = "K1-041"
+group = "audio-playback"
+feature = "Per-monitor playback volume (hamburger menu Volume)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/monitor.rs wrench menu has no volume; only the Mix fader"
+gap = "no clip/project monitor volume independent of the master level"
+
+[[row]]
+id = "K1-042"
+group = "audio-playback"
+feature = "Audio backend selection"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:858 audioHardware.deviceClass (host API list)"
+gap = ""
+
+[[row]]
+id = "K1-043"
+group = "audio-playback"
+feature = "Audio driver selection"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "partial"
+evidence = "crates/engine/src/settings.rs:858 audioHardware.deviceClass covers host and driver in one list"
+gap = "no separate driver choice under a backend"
+
+[[row]]
+id = "K1-044"
+group = "audio-playback"
+feature = "Audio output device selection"
+manual = "https://docs.kdenlive.org/en/getting_started/configure_kdenlive/configuration_playback.html"
+film = "full"
+evidence = "crates/engine/src/settings.rs:860 audioHardware.defaultOutput"
+gap = ""
+
+[[row]]
+id = "K1-045"
+group = "audio-playback"
+feature = "Audio clips play in the clip monitor with a waveform view"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/clip_monitor.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/monitor_view.rs:586 waveform; docs/monitors.md Source playback"
+gap = ""
+
+[[row]]
+id = "K1-046"
+group = "audio-playback"
+feature = "Show Audio Levels in the monitor (level meter in monitor toolbar)"
+manual = "https://docs.kdenlive.org/en/user_interface/monitors/project_monitor.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/meters.rs:1 separate Audio Meters panel; mixer strip meters"
+gap = "no level meter inside the clip/project monitor; Source playback is not metered"
+
+[[row]]
+id = "K1-047"
+group = "audio-playback"
+feature = "Level meter appearance menu (right-click), shared by both monitors"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/mixer.rs:128 meters have no context menu"
+gap = "no right-click options to change meter appearance"
+
+[[row]]
+id = "K1-048"
+group = "audio-playback"
+feature = "Hover a level meter to read dB per channel"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/mixer.rs:128 meter has scale but no hover readout"
+gap = "no per-channel dB tooltip on meters"
+
+[[row]]
+id = "K1-049"
+group = "audio-playback"
+feature = "Clipping indicator at 0 dB that resets after a few seconds"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/mixer.rs:128 clip light on top of each meter bar"
+gap = "auto-reset after ~4-5 s without overs is not implemented as described (not verified)"
+
+[[row]]
+id = "K1-050"
+group = "audio-playback"
+feature = "Meters for more than two channels (ticks; dB values on hover)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/mixer.rs:17 one bar per channel, six for 5.1"
+gap = "no hover dB values for multichannel meters"
+
+# ------------------------------------------------------------------ audio mixer
+
+[[row]]
+id = "K1-060"
+group = "mixer"
+feature = "Audio Mixer widget: one channel per audio track plus Master"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/mixer.rs:1 Audio Track Mixer (tracks, submixes, Mix)"
+gap = ""
+
+[[row]]
+id = "K1-061"
+group = "mixer"
+feature = "Channel name / number on each strip"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/mixer.rs:10 mixer.<A1>.name; strip_label"
+gap = ""
+
+[[row]]
+id = "K1-062"
+group = "mixer"
+feature = "Mute per channel"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "full"
+evidence = "mixer.A1.mute (crates/ui-egui/src/panels/mixer.rs:10)"
+gap = ""
+
+[[row]]
+id = "K1-063"
+group = "mixer"
+feature = "Solo: single click exclusive solo"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "partial"
+evidence = "mixer.A1.solo toggles that strip only (crates/ui-egui/src/panels/mixer.rs:10)"
+gap = "plain click does not un-solo the other strips"
+
+[[row]]
+id = "K1-064"
+group = "mixer"
+feature = "Solo: Shift+click additive solo"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "full"
+evidence = "mixer.A1.solo is additive (several strips can be soloed)"
+gap = ""
+
+[[row]]
+id = "K1-065"
+group = "mixer"
+feature = "Record button per channel (record onto that track)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "full"
+evidence = "mixer.A1.record; crates/ui-egui/src/panels/voiceover.rs:164"
+gap = ""
+
+[[row]]
+id = "K1-066"
+group = "mixer"
+feature = "Open the channel's effect stack from the mixer"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/mixer.rs:215 effects disclosure; mixer.A1.fx.<slot>.edit"
+gap = ""
+
+[[row]]
+id = "K1-067"
+group = "mixer"
+feature = "Toggle audio track controls on/off"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/mixer.rs:18 Show/Hide Tracks (mixer.menu.showHide)"
+gap = ""
+
+[[row]]
+id = "K1-068"
+group = "mixer"
+feature = "Balance with slider or typed value"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/mixer.rs:583 pan knob; mixer.A1.panValue entry"
+gap = ""
+
+[[row]]
+id = "K1-069"
+group = "mixer"
+feature = "Volume fader with typed value"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "full"
+evidence = "crates/ui-egui/src/panels/mixer.rs:39 fader taper; mixer.A1.value"
+gap = ""
+
+[[row]]
+id = "K1-070"
+group = "mixer"
+feature = "Reset fader / balance to default with middle or right click"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/mixer.rs:456 double-click resets"
+gap = "middle- and right-click do not reset"
+
+[[row]]
+id = "K1-071"
+group = "mixer"
+feature = "Audio mixer button in the timeline toolbar"
+manual = "https://docs.kdenlive.org/en/user_interface/ui_elements.html"
+film = "partial"
+evidence = "Window > Audio Track Mixer (window.panel.*, crates/ui-egui/src/menus.rs:797)"
+gap = "no mixer toggle in the timeline toolbar"
+
+[[row]]
+id = "K1-072"
+group = "mixer"
+feature = "Master channel effects (On Master stack)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "full"
+evidence = "mixer.Mix strip with fx slots (crates/ui-egui/src/panels/mixer.rs:3)"
+gap = ""
+
+# ------------------------------------------------------------------ audio recording
+
+[[row]]
+id = "K1-080"
+group = "recording"
+feature = "Show Record Controls in the track header"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "full"
+evidence = "timeline.track.A1.voiceover button; crates/ui-egui/src/panels/voiceover.rs:164"
+gap = ""
+
+[[row]]
+id = "K1-081"
+group = "recording"
+feature = "Monitoring mode: meter shows mic input, slider sets mic level"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "partial"
+evidence = "crates/ui-egui/src/panels/mixer.rs:87 INPUT_METER; mixer.menu.meterInputOnly"
+gap = "the track volume slider does not become an input-level control while armed"
+
+[[row]]
+id = "K1-082"
+group = "recording"
+feature = "Countdown in the project monitor before recording (can be disabled)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "partial"
+evidence = "crates/engine/src/voiceover.rs:141 pre-roll beeps once a second"
+gap = "beeps only; no visual countdown in the monitor"
+
+[[row]]
+id = "K1-083"
+group = "recording"
+feature = "Pause / resume recording with Space"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "none"
+evidence = "crates/engine/src/voiceover.rs:12 start/stop only"
+gap = "no pause and resume within one recording"
+
+[[row]]
+id = "K1-084"
+group = "recording"
+feature = "Stop recording (Esc); clip added to timeline and bin"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "full"
+evidence = "audio.voiceover.stop (crates/engine/src/voiceover.rs:12)"
+gap = ""
+
+[[row]]
+id = "K1-085"
+group = "recording"
+feature = "Start recording while the timeline plays (r key)"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "partial"
+evidence = "voiceover.recordToggle (crates/ui-egui/src/menus.rs:96) starts from the playhead with pre-roll"
+gap = "no default r key; arming does not punch in on a running playback"
+
+[[row]]
+id = "K1-086"
+group = "recording"
+feature = "Live waveform drawn on the timeline while recording"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "none"
+evidence = "crates/ui-egui/src/panels/timeline.rs:761 waveforms drawn for finished clips only"
+gap = "no live waveform of the take in progress"
+
+# ------------------------------------------------------------------ multiple audio streams
+
+[[row]]
+id = "K1-090"
+group = "audio-playback"
+feature = "Multiple audio streams of a clip, adjustable per stream"
+manual = "https://docs.kdenlive.org/en/effects_and_filters/audio.html"
+film = "partial"
+evidence = "crates/project/src/lib.rs:566 audio_stream; lib.rs:180 audio_channels map (Modify Audio Channels)"
+gap = "no per-stream enable, gain or effects in clip properties"
+
+[[row]]
+id = "K1-091"
+group = "audio-playback"
+feature = "Switch Track Target Audio Stream (')"
+manual = "https://docs.kdenlive.org/en/user_interface/shortcuts.html"
+film = "none"
+evidence = "no command found"
+gap = "no command to cycle which audio stream goes to the target track"
