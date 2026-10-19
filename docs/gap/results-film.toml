@@ -27,9 +27,9 @@ note = "Press at the needle in the empty V2 lane grabs and drags the playhead (s
 
 [PB-01]
 verdict = "slow"
-value = "first new monitor frame 894 / 118 / 115 ms, first audio window > -40 dBFS 88 / 6 / 4 ms after Space (3 runs; Kdenlive 60-87 / 59-88); level -33.1 dBFS = source"
-evidence = "results/film/PB-01/run1..run3/{cap.mkv,aud.mka,keys.log,scan.txt,perf.log}"
-note = "First Space after opening the project: picture frozen for 894 ms while sound already plays, so audio runs ~0.8 s ahead of the picture for the whole 5 s and ends 0.7 s before the stop (14 silent 50 ms windows). Warm runs pass (115-118 ms) but sound still starts ~110 ms before the picture. Frame 51 is the first frame shown (no skip)."
+value = "first new monitor frame 894 / 118 / 115 ms (runs 1-3), 194 / 109 / 115 ms (runs 4-6, sink kept running), 244 ms (run 7, first Space after a fresh launch); first audio window > -40 dBFS 0-88 ms after Space (Kdenlive 60-87 ms picture / 59-88 ms sound); level -33.1 dBFS = source"
+evidence = "results/film/PB-01/run1..run6, run7_cold/{cap.mkv,aud.mka,keys.log,scan.txt,perf.log}"
+note = "The first play after opening a project holds the picture 244-894 ms while sound already plays, and the picture never catches up: sound ends 236 / ~700 ms before the stop key and the picture stops 3 frames short (171 vs 174), i.e. A/V out of sync by the start delay for the whole play. Warm runs pass (109-194 ms). Film's recorded audio ends 13-40 ms before the stop key even when warm (Kdenlive 57-77 ms after), so its audio timestamps read ~0.1 s early (ALSA-plugin buffering); sound onset is therefore close to the picture when warm. First frame shown is 51 (no skip)."
 
 [PB-02]
 verdict = "slow"
