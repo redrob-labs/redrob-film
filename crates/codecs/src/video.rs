@@ -247,15 +247,35 @@ impl H264Decoder {
         let draft = p.draft;
         let (w, h) = (p.width as usize, p.height as usize);
         let (cw, ch) = (p.chroma_width as usize, p.chroma_height as usize);
-        let y = tight_plane(p.y, p.y_stride, w, h);
-        let u = tight_plane(p.u, p.uv_stride, cw, ch);
-        let v = tight_plane(p.v, p.uv_stride, cw, ch);
+        let chroma = if p.chroma_format == 2 { redrob_film_frame::Chroma::C422 } else { redrob_film_frame::Chroma::C420 };
         let color = vui_color(p.width, p.height, p.color.matrix, p.color.transfer, p.color.full_range);
         let par = sar_par(p.sar);
+        let data = if p.bit_depth_luma > 8 || p.bit_depth_chroma > 8 {
+            // High 10 / High 4:2:2: u16 planes. One bit depth per frame: a plane with fewer bits
+            // than the other (bit_depth_luma != bit_depth_chroma, rare) is scaled up to it.
+            let bits = p.bit_depth_luma.max(p.bit_depth_chroma) as u32;
+            let widen = |mut plane: Vec<u16>, depth: u8| {
+                let sh = bits - depth as u32;
+                if sh > 0 {
+                    plane.iter_mut().for_each(|v| *v <<= sh);
+                }
+                plane
+            };
+            let y = widen(tight_plane(p.y_hi, p.y_stride, w, h), p.bit_depth_luma);
+            let u = widen(tight_plane(p.u_hi, p.uv_stride, cw, ch), p.bit_depth_chroma);
+            let v = widen(tight_plane(p.v_hi, p.uv_stride, cw, ch), p.bit_depth_chroma);
+            redrob_film_frame::PixelData::Yuv16 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma, bits, alpha: None }
+        } else {
+            // 8-bit: the planes are moved, as before
+            let y = tight_plane(p.y, p.y_stride, w, h);
+            let u = tight_plane(p.u, p.uv_stride, cw, ch);
+            let v = tight_plane(p.v, p.uv_stride, cw, ch);
+            redrob_film_frame::PixelData::Yuv8 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma, alpha: None }
+        };
         let frame = VideoFrame {
             width: p.width,
             height: p.height,
-            data: redrob_film_frame::PixelData::Yuv8 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma: redrob_film_frame::Chroma::C420, alpha: None },
+            data,
             color,
             par,
             pts: redrob_film_time::Tick::ZERO,
@@ -314,6 +334,7 @@ impl VideoDecoder for H264Decoder {
 /// (`redrob_film_frame::pool`) instead of the allocator.
 fn recycle_h264_planes() {
     redrob_film_h264::set_plane_allocator(redrob_film_frame::pool::take_u8);
+    redrob_film_h264::set_plane_allocator_u16(redrob_film_frame::pool::take_u16);
 }
 
 /// Worker threads each H.264 decoder uses (frame threading; 1 on wasm).

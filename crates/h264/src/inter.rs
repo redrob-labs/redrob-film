@@ -1,4 +1,7 @@
-//! Inter prediction sample interpolation (8.4.2.2) and weighted sample prediction (8.4.2.3).
+//! Inter prediction sample interpolation (8.4.2.2) and weighted sample prediction (8.4.2.3), for
+//! 8-bit (`u8`) and high-bit-depth (`u16`) samples.
+
+use crate::picture::Sample;
 
 /// A reference plane (used by the plane-based helpers in tests).
 #[cfg(test)]
@@ -45,48 +48,49 @@ fn tap6(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32) -> i32 {
     a - 5 * b + 20 * c + 20 * d - 5 * e + f
 }
 
+#[cfg(test)]
 #[inline(always)]
 fn clip1(v: i32) -> u8 {
     v.clamp(0, 255) as u8
 }
 
-/// Copy `n` bytes with a fixed-size move for the common block widths.
+/// Copy `n` samples with a fixed-size move for the common block widths.
 #[inline(always)]
-fn copy_n(dst: &mut [u8], src: &[u8], n: usize) {
-    fn fixed<const N: usize>(dst: &mut [u8], src: &[u8]) {
+fn copy_n<T: Copy>(dst: &mut [T], src: &[T], n: usize) {
+    fn fixed<T: Copy, const N: usize>(dst: &mut [T], src: &[T]) {
         if let (Some(d), Some(s)) = (dst.first_chunk_mut::<N>(), src.first_chunk::<N>()) {
             *d = *s;
         }
     }
     match n {
-        16 => fixed::<16>(dst, src),
-        8 => fixed::<8>(dst, src),
-        4 => fixed::<4>(dst, src),
-        2 => fixed::<2>(dst, src),
+        16 => fixed::<T, 16>(dst, src),
+        8 => fixed::<T, 8>(dst, src),
+        4 => fixed::<T, 4>(dst, src),
+        2 => fixed::<T, 2>(dst, src),
         _ => dst[..n].copy_from_slice(&src[..n]),
     }
 }
 
 #[inline(always)]
-fn avg(a: u8, b: u8) -> u8 {
-    ((a as u16 + b as u16 + 1) >> 1) as u8
+fn avg<T: Sample>(a: T, b: T) -> T {
+    T::avg(a, b)
 }
 
 /// Horizontal 6-tap (unclipped) at every position of `row` for `n` outputs: out[c] uses row[c..c + 6].
 #[inline(always)]
-fn htap_row(row: &[u8], out: &mut [i32], n: usize) {
+fn htap_row<T: Sample>(row: &[T], out: &mut [i32], n: usize) {
     let row = &row[..n + 5];
     for (o, w) in out[..n].iter_mut().zip(row.windows(6)) {
-        *o = tap6(w[0] as i32, w[1] as i32, w[2] as i32, w[3] as i32, w[4] as i32, w[5] as i32);
+        *o = tap6(w[0].to_i32(), w[1].to_i32(), w[2].to_i32(), w[3].to_i32(), w[4].to_i32(), w[5].to_i32());
     }
 }
 
 /// Vertical 6-tap (unclipped) over six rows at columns 0..n.
 #[inline(always)]
-fn vtap_row(rows: [&[u8]; 6], out: &mut [i32], n: usize) {
+fn vtap_row<T: Sample>(rows: [&[T]; 6], out: &mut [i32], n: usize) {
     let [a, b, c, d, e, f] = rows.map(|r| &r[..n]);
     for i in 0..n {
-        out[i] = tap6(a[i] as i32, b[i] as i32, c[i] as i32, d[i] as i32, e[i] as i32, f[i] as i32);
+        out[i] = tap6(a[i].to_i32(), b[i].to_i32(), c[i].to_i32(), d[i].to_i32(), e[i].to_i32(), f[i].to_i32());
     }
 }
 
@@ -104,13 +108,14 @@ pub fn mc_luma(p: PlaneRef, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: usi
         fetch_window(p, x, y, bw, bh, &mut win);
         (&win[..], WIN)
     };
-    mc_luma_win(src, ss, fx, fy, bw, bh, out, os);
+    mc_luma_win(src, ss, fx, fy, bw, bh, out, os, 255);
 }
 
 /// Luma interpolation from a prepared window: `src[0]` is the sample at (x - 2, y - 2) and `ss` the
-/// window stride; the window covers (bw + 5) x (bh + 5) samples.
+/// window stride; the window covers (bw + 5) x (bh + 5) samples. `max` is the largest sample value.
 #[allow(clippy::too_many_arguments)]
-pub fn mc_luma_win(src: &[u8], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [u8], os: usize) {
+pub fn mc_luma_win<T: Sample>(src: &[T], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [T], os: usize, max: i32) {
+    let clip1 = |v: i32| T::clip(v, max);
     // window row r (0..bh+5) starts at src[r * ss]; sample G of block (r, c) is at window (r + 2, c + 2)
     let wrow = |r: usize| &src[r * ss..r * ss + bw + 5];
     let mut t = [0i32; 16];
@@ -242,9 +247,9 @@ pub fn mc_chroma(p: PlaneRef, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: u
 /// Chroma interpolation from a prepared (bw + 1) x (bh + 1) window whose first sample is the integer
 /// position of the block.
 #[allow(clippy::too_many_arguments)]
-pub fn mc_chroma_win(src: &[u8], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [u8], os: usize) {
+pub fn mc_chroma_win<T: Sample>(src: &[T], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [T], os: usize) {
     let (fx, fy) = (fx as u16, fy as u16);
-    let (w00, w10, w01, w11) = ((8 - fx) * (8 - fy), fx * (8 - fy), (8 - fx) * fy, fx * fy);
+    let w = [(8 - fx) * (8 - fy), fx * (8 - fy), (8 - fx) * fy, fx * fy];
     if fx == 0 && fy == 0 {
         for r in 0..bh {
             copy_n(&mut out[r * os..], &src[r * ss..], bw);
@@ -256,8 +261,7 @@ pub fn mc_chroma_win(src: &[u8], ss: usize, fx: u32, fy: u32, bw: usize, bh: usi
         let r1 = &src[(r + 1) * ss..(r + 1) * ss + bw + 1];
         let o = &mut out[r * os..r * os + bw];
         for (c, o) in o.iter_mut().enumerate() {
-            let v = w00 * r0[c] as u16 + w10 * r0[c + 1] as u16 + w01 * r1[c] as u16 + w11 * r1[c + 1] as u16;
-            *o = ((v + 32) >> 6) as u8;
+            *o = T::bilin(w, r0[c], r0[c + 1], r1[c], r1[c + 1]);
         }
     }
 }
@@ -271,9 +275,11 @@ pub enum Weight {
     Weighted { log_wd: i32, w0: i32, w1: i32, o0: i32, o1: i32 },
 }
 
-/// Combine prediction(s) into `dst` (stride `ds`). `p0`/`p1` have stride `ps`.
+/// Combine prediction(s) into `dst` (stride `ds`). `p0`/`p1` have stride `ps`; `max` is the
+/// largest sample value (offsets in `w` are already scaled to the bit depth).
 #[allow(clippy::too_many_arguments)]
-pub fn weighted_store(dst: &mut [u8], ds: usize, p0: Option<&[u8]>, p1: Option<&[u8]>, ps: usize, bw: usize, bh: usize, w: Weight) {
+pub fn weighted_store<T: Sample>(dst: &mut [T], ds: usize, p0: Option<&[T]>, p1: Option<&[T]>, ps: usize, bw: usize, bh: usize, w: Weight, max: i32) {
+    let clip1 = |v: i32| T::clip(v, max);
     match (p0, p1, w) {
         (Some(a), Some(b), Weight::Default) => {
             for r in 0..bh {
@@ -281,7 +287,7 @@ pub fn weighted_store(dst: &mut [u8], ds: usize, p0: Option<&[u8]>, p1: Option<&
                 let ra = &a[r * ps..r * ps + bw];
                 let rb = &b[r * ps..r * ps + bw];
                 for ((d, &x), &y) in d.iter_mut().zip(ra).zip(rb) {
-                    *d = ((x as u32 + y as u32 + 1) >> 1) as u8;
+                    *d = T::avg(x, y);
                 }
             }
         }
@@ -294,7 +300,7 @@ pub fn weighted_store(dst: &mut [u8], ds: usize, p0: Option<&[u8]>, p1: Option<&
                 let ra = &a[r * ps..r * ps + bw];
                 let rb = &b[r * ps..r * ps + bw];
                 for ((d, &x), &y) in d.iter_mut().zip(ra).zip(rb) {
-                    *d = clip1(((x as i32 * w0 + y as i32 * w1 + round) >> sh) + off);
+                    *d = clip1(((x.to_i32() * w0 + y.to_i32() * w1 + round) >> sh) + off);
                 }
             }
         }
@@ -314,7 +320,7 @@ pub fn weighted_store(dst: &mut [u8], ds: usize, p0: Option<&[u8]>, p1: Option<&
                 let d = &mut dst[r * ds..r * ds + bw];
                 let ra = &a[r * ps..r * ps + bw];
                 for (d, &x) in d.iter_mut().zip(ra) {
-                    *d = clip1(((x as i32 * wt + round) >> log_wd) + o);
+                    *d = clip1(((x.to_i32() * wt + round) >> log_wd) + o);
                 }
             }
         }
@@ -505,9 +511,32 @@ mod tests {
         let a = [100u8; 4];
         let b = [50u8; 4];
         let mut d = [0u8; 4];
-        weighted_store(&mut d, 4, Some(&a), Some(&b), 4, 4, 1, Weight::Default);
+        weighted_store(&mut d, 4, Some(&a), Some(&b), 4, 4, 1, Weight::Default, 255);
         assert_eq!(d, [75; 4]);
-        weighted_store(&mut d, 4, Some(&a), None, 4, 4, 1, Weight::Weighted { log_wd: 5, w0: 16, w1: 0, o0: 3, o1: 0 });
+        weighted_store(&mut d, 4, Some(&a), None, 4, 4, 1, Weight::Weighted { log_wd: 5, w0: 16, w1: 0, o0: 3, o1: 0 }, 255);
         assert_eq!(d, [53; 4]);
+    }
+
+    #[test]
+    fn high_bit_depth_interpolation_and_weighting() {
+        // 10-bit: the 6-tap half sample of a ramp is exact and results clip to 1023, not 255
+        let w = 40;
+        let d: Vec<u16> = (0..w * 30).map(|i| (300 + (i % w) * 20) as u16).collect();
+        let mut out = [0u16; 16];
+        mc_luma_win(&d[8 * w + 6..], w, 2, 0, 4, 4, &mut out, 4, 1023);
+        // window starts at x = 6 (x - 2), so sample G of column c is x = 8 + c; b = G + 10
+        assert_eq!(&out[..4], &[300 + 8 * 20 + 10, 300 + 9 * 20 + 10, 300 + 10 * 20 + 10, 300 + 11 * 20 + 10]);
+        let bright = vec![1000u16; w * 30];
+        mc_luma_win(&bright, w, 3, 3, 4, 4, &mut out, 4, 1023);
+        assert!(out.iter().all(|&v| v == 1000));
+        let mut c = [0u16; 4];
+        mc_chroma_win(&[1000u16, 600, 600, 0, 1000, 600, 600, 0, 1000, 600, 600, 0], 4, 4, 0, 2, 2, &mut c, 2);
+        assert_eq!(&c, &[800, 600, 800, 600]);
+        let a = [1000u16; 4];
+        let mut dst = [0u16; 4];
+        weighted_store(&mut dst, 4, Some(&a), None, 4, 4, 1, Weight::Weighted { log_wd: 0, w0: 1, w1: 0, o0: 100, o1: 0 }, 1023);
+        assert_eq!(dst, [1023; 4]);
+        weighted_store(&mut dst, 4, Some(&a), Some(&[0u16; 4][..]), 4, 4, 1, Weight::Default, 1023);
+        assert_eq!(dst, [500; 4]);
     }
 }
