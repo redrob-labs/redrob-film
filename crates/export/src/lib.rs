@@ -17,6 +17,7 @@ use std::io::Write;
 
 mod aac_out;
 mod audio_out;
+mod flac_out;
 mod job;
 mod mxf_out;
 mod pace;
@@ -110,6 +111,12 @@ pub enum Format {
     /// Numbered OpenEXR stills (half-float scene-linear RGB, RGBA with [`ExportSettings::alpha`]).
     #[serde(rename = "exr", alias = "ExrSequence")]
     ExrSequence,
+    /// Numbered PPM stills (binary portable pixmap, 8-bit RGB).
+    #[serde(rename = "ppm", alias = "PpmSequence")]
+    PpmSequence,
+    /// Numbered WebP stills (lossless; RGBA with [`ExportSettings::alpha`]).
+    #[serde(rename = "webp", alias = "WebpSequence")]
+    WebpSequence,
     #[serde(rename = "gif", alias = "Gif")]
     Gif,
     #[serde(rename = "wav", alias = "Wav")]
@@ -120,6 +127,9 @@ pub enum Format {
     /// the path ends in `.aac`.
     #[serde(rename = "aac", alias = "Aac")]
     Aac,
+    /// FLAC Audio: the mix alone, losslessly compressed (`.flac`, 16 or 24-bit).
+    #[serde(rename = "flac", alias = "Flac")]
+    Flac,
     /// MXF OP1a (SMPTE ST 378): frame-wrapped DNxHR, ProRes or H.264 ([`MxfVideoCodec`]) + PCM.
     #[serde(rename = "mxf-op1a", alias = "MxfOp1a")]
     MxfOp1a,
@@ -149,6 +159,9 @@ impl Format {
             "tga" | "targa" | "tgasequence" | "targasequence" => Format::TgaSequence,
             "dpx" | "dpxsequence" => Format::DpxSequence,
             "exr" | "openexr" | "exrsequence" | "openexrsequence" => Format::ExrSequence,
+            "ppm" | "pnm" | "ppmsequence" => Format::PpmSequence,
+            "webp" | "webpsequence" => Format::WebpSequence,
+            "flac" | "flacaudio" => Format::Flac,
             "gif" | "animatedgif" => Format::Gif,
             "wav" | "waveform" | "waveformaudio" => Format::Wav,
             "aif" | "aiff" | "aifc" => Format::Aiff,
@@ -173,10 +186,13 @@ impl Format {
             Format::TgaSequence => "tga",
             Format::DpxSequence => "dpx",
             Format::ExrSequence => "exr",
+            Format::PpmSequence => "ppm",
+            Format::WebpSequence => "webp",
             Format::Gif => "gif",
             Format::Wav => "wav",
             Format::Aiff => "aiff",
             Format::Aac => "aac",
+            Format::Flac => "flac",
             Format::MxfOp1a => "mxf-op1a",
             Format::MxfOpAtom => "mxf-opatom",
         }
@@ -192,10 +208,13 @@ impl Format {
             Format::TgaSequence => "tga",
             Format::DpxSequence => "dpx",
             Format::ExrSequence => "exr",
+            Format::PpmSequence => "ppm",
+            Format::WebpSequence => "webp",
             Format::Gif => "gif",
             Format::Wav => "wav",
             Format::Aiff => "aif",
             Format::Aac => "m4a",
+            Format::Flac => "flac",
             Format::MxfOp1a | Format::MxfOpAtom => "mxf",
         }
     }
@@ -215,10 +234,13 @@ impl Format {
             Format::TgaSequence => "Targa",
             Format::DpxSequence => "DPX",
             Format::ExrSequence => "OpenEXR",
+            Format::PpmSequence => "PPM",
+            Format::WebpSequence => "WebP",
             Format::Gif => "Animated GIF",
             Format::Wav => "Waveform Audio",
             Format::Aiff => "AIFF",
             Format::Aac => "AAC Audio",
+            Format::Flac => "FLAC Audio",
             Format::MxfOp1a => "MXF OP1a",
             Format::MxfOpAtom => "MXF OP-Atom",
         }
@@ -234,6 +256,8 @@ impl Format {
                 | Format::TgaSequence
                 | Format::DpxSequence
                 | Format::ExrSequence
+                | Format::PpmSequence
+                | Format::WebpSequence
         )
     }
     /// An MXF container format.
@@ -245,9 +269,9 @@ impl Format {
     pub fn has_builtin_encoder(self) -> bool {
         !matches!(self, Format::Hevc | Format::Av1)
     }
-    /// Sound without picture: Waveform Audio, AIFF and AAC Audio.
+    /// Sound without picture: Waveform Audio, AIFF, AAC Audio and FLAC Audio.
     pub fn is_audio_only(self) -> bool {
-        matches!(self, Format::Wav | Format::Aiff | Format::Aac)
+        matches!(self, Format::Wav | Format::Aiff | Format::Aac | Format::Flac)
     }
     /// H.264 or H.265: MPEG-4 (or QuickTime) with AAC audio, set up with the same bitrate controls.
     pub fn is_h26x(self) -> bool {
@@ -261,7 +285,7 @@ impl Format {
     pub fn is_mp4_with(self, mux: Multiplexer) -> bool {
         self == Format::Av1 || (self.is_h26x() && mux == Multiplexer::Mp4)
     }
-    pub const ALL: [Format; 20] = [
+    pub const ALL: [Format; 23] = [
         Format::H264,
         Format::Hevc,
         Format::Av1,
@@ -276,10 +300,13 @@ impl Format {
         Format::TgaSequence,
         Format::DpxSequence,
         Format::ExrSequence,
+        Format::PpmSequence,
+        Format::WebpSequence,
         Format::Gif,
         Format::Wav,
         Format::Aiff,
         Format::Aac,
+        Format::Flac,
         Format::MxfOp1a,
         Format::MxfOpAtom,
     ];
@@ -1778,6 +1805,22 @@ pub fn encode_still_with_quality(format: Format, rgba: Vec<u8>, w: u32, h: u32, 
                 image::DynamicImage::ImageRgba8(img).to_rgb8().write_to(&mut out, f).map_err(enc)?
             }
         }
+        Format::PpmSequence => {
+            // binary PPM (P6): an ASCII header, then 8-bit RGB rows
+            let rgb = raster::rgb(&rgba, w, h)?;
+            let mut v = format!("P6\n{w} {h}\n255\n").into_bytes();
+            v.extend_from_slice(&rgb);
+            return Ok(v);
+        }
+        Format::WebpSequence => {
+            let enc_webp = image::codecs::webp::WebPEncoder::new_lossless(&mut out);
+            if alpha {
+                image::ImageEncoder::write_image(enc_webp, &rgba, w, h, image::ExtendedColorType::Rgba8).map_err(enc)?
+            } else {
+                let rgb = raster::rgb(&rgba, w, h)?;
+                image::ImageEncoder::write_image(enc_webp, &rgb, w, h, image::ExtendedColorType::Rgb8).map_err(enc)?
+            }
+        }
         _ => return Err(ExportError::Unsupported(format!("{} is not an image sequence", format.label()))),
     }
     Ok(out.into_inner())
@@ -1819,6 +1862,7 @@ fn export_on_pool(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings
     let batch = rayon::current_num_threads().clamp(2, 16) as i64;
     let (bytes, nframes) = match settings.format {
         Format::Aac => aac_out::export(project, seq, settings, range, sources, progress)?,
+        Format::Flac => flac_out::export(project, seq, settings, range, sources, progress)?,
         Format::Wav | Format::Aiff => {
             let mut a = audio_out::AudioOut::new(project.clone(), seq, settings, range)?;
             let (ch, sr, bits) = (a.channels as u16, a.sr, settings.audio.bits);

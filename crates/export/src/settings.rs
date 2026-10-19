@@ -473,7 +473,7 @@ impl ExportSettings {
     /// Targa and OpenEXR sequences and ProRes 4444 / 4444 XQ QuickTime movies.
     pub fn supports_alpha(&self) -> bool {
         match self.format {
-            Format::PngSequence | Format::TiffSequence | Format::TgaSequence | Format::ExrSequence => true,
+            Format::PngSequence | Format::TiffSequence | Format::TgaSequence | Format::ExrSequence | Format::WebpSequence => true,
             Format::ProRes => crate::prores_profile(&self.prores_profile).chroma() == redrob_film_prores::ChromaFormat::Yuv444,
             _ => false,
         }
@@ -527,7 +527,7 @@ impl ExportSettings {
     /// The audio codec actually used.
     pub fn audio_codec(&self) -> AudioCodec {
         match (self.format, self.audio.codec) {
-            (Format::Wav | Format::Aiff | Format::MxfOp1a | Format::MxfOpAtom, _) => AudioCodec::Pcm,
+            (Format::Wav | Format::Aiff | Format::Flac | Format::MxfOp1a | Format::MxfOpAtom, _) => AudioCodec::Pcm,
             (Format::Aac, _) => AudioCodec::Aac,
             (f, _) if f.is_mp4_with(self.multiplexer) => AudioCodec::Aac,
             (_, AudioCodec::Auto) if self.format.is_mp4_video() => AudioCodec::Aac,
@@ -615,11 +615,16 @@ impl ExportSettings {
             // two bytes per half-float channel
             Format::ExrSequence => px * if self.keeps_alpha() { 8.0 } else { 6.0 } * 8.0 * fps,
             Format::Gif => px * 0.6 * 8.0 * fps,
-            Format::Wav | Format::Aiff | Format::MxfOp1a | Format::MxfOpAtom => 0.0,
+            Format::PpmSequence => px * 3.0 * 8.0 * fps,
+            // lossless WebP: roughly PNG's ratio
+            Format::WebpSequence => px * 4.0 * 0.4 * 8.0 * fps,
+            Format::Wav | Format::Aiff | Format::Flac | Format::MxfOp1a | Format::MxfOpAtom => 0.0,
         };
         let audio_bps = if self.has_audio() || self.format.is_audio_only() {
             match self.audio_codec() {
                 AudioCodec::Aac => self.audio.bitrate_kbps as f64 * 1000.0,
+                // lossless FLAC: about 60 % of the PCM rate for program material
+                _ if self.format == Format::Flac => 0.6 * r.sample_rate as f64 * r.channels as f64 * if self.audio.bits >= 24 { 24.0 } else { 16.0 },
                 _ => r.sample_rate as f64 * r.channels as f64 * if self.audio.bits >= 24 { 24.0 } else { 16.0 },
             }
         } else {
@@ -710,6 +715,7 @@ impl ExportSettings {
             };
             match self.audio_codec() {
                 AudioCodec::Aac => format!("AAC, {} kbps, {} Hz, {ch}", self.audio.bitrate_kbps, r.sample_rate),
+                _ if self.format == Format::Flac => format!("FLAC (lossless) {}-bit, {} Hz, {ch}", if self.audio.bits >= 24 { 24 } else { 16 }, r.sample_rate),
                 _ => format!("Uncompressed {}-bit PCM, {} Hz, {ch}", if self.audio.bits >= 24 { 24 } else { 16 }, r.sample_rate),
             }
         } else {
