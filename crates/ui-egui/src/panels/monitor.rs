@@ -113,7 +113,13 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which)
     if let Some(g) = grid_area {
         crate::panels::multicam::grid(app, ui, g);
     }
-    ui.painter().rect_filled(video_area, 0.0, t.panel_bg);
+    // Settings ▸ Color ▸ Custom monitor background
+    let around = if app.session.prefs.color.custom_monitor_background {
+        redrob_film_engine::settings::parse_hex(&app.session.prefs.color.monitor_background_color).map_or(t.panel_bg, |[r, g, b]| Color32::from_rgb(r, g, b))
+    } else {
+        t.panel_bg
+    };
+    ui.painter().rect_filled(video_area, 0.0, around);
     let has_video = frame_size.0 > 0;
     // Source waveform modes: Audio Waveform (or an audio-only clip) and the video/waveform split.
     let source_item = if which == Which::Source { app.session.state.source_item } else { None };
@@ -270,13 +276,16 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which)
             }
         }
         if mv.safe_margins {
-            for (f, c) in [(0.9, Color32::from_white_alpha(120)), (0.8, Color32::from_white_alpha(90))] {
+            // Settings ▸ Color ▸ Monitor overlay color (white by default)
+            let [or, og, ob] = redrob_film_engine::settings::parse_hex(&app.session.prefs.color.monitor_overlay_color).unwrap_or([255, 255, 255]);
+            let overlay = |a: u8| Color32::from_rgba_unmultiplied(or, og, ob, a);
+            for (f, c) in [(0.9, overlay(120)), (0.8, overlay(90))] {
                 let r = Rect::from_center_size(pic.center(), pic.size() * f);
                 ui.painter().rect_stroke(r, 0.0, Stroke::new(1.0, c), StrokeKind::Middle);
             }
             let c = pic.center();
-            ui.painter().line_segment([c - vec2(8.0, 0.0), c + vec2(8.0, 0.0)], Stroke::new(1.0, Color32::from_white_alpha(120)));
-            ui.painter().line_segment([c - vec2(0.0, 8.0), c + vec2(0.0, 8.0)], Stroke::new(1.0, Color32::from_white_alpha(120)));
+            ui.painter().line_segment([c - vec2(8.0, 0.0), c + vec2(8.0, 0.0)], Stroke::new(1.0, overlay(120)));
+            ui.painter().line_segment([c - vec2(0.0, 8.0), c + vec2(0.0, 8.0)], Stroke::new(1.0, overlay(120)));
         }
         if display != DisplayMode::Composite && !compare {
             let label = match display {
@@ -323,6 +332,18 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which)
     }
     if which == Which::Source && show_picture && pic_resp.drag_started() && app.ui.tool != crate::state::Tool::Hand {
         crate::panels::source_drag::begin(app, ui, true, true);
+    }
+    // Settings ▸ Playback ▸ "Play or pause when clicking a monitor" (Selection tool only: the
+    // other tools use the click on the picture)
+    if show_picture
+        && app.session.prefs.playback.play_pause_on_monitor_click
+        && pic_resp.clicked()
+        && app.ui.tool == crate::state::Tool::Selection
+    {
+        let id = if which == Which::Program { "playback.toggle" } else { "source.playback.toggle" };
+        if let Err(e) = crate::menus::invoke(app, &ctx, id, json!({})) {
+            app.ui.status = e;
+        }
     }
     if pic_resp.double_clicked() && which == Which::Source {
         // (Premiere opens the clip's settings; we show info)
@@ -766,8 +787,11 @@ fn mini_timeline(
     if let Some(tk) = scrub {
         match which {
             Which::Program => {
-                app.stop();
-                app.session.set_playhead(tk);
+                // a drag over the bar while playback carries on (Pause playback when seeking off)
+                // does not restart it every frame
+                if !app.playback.playing || resp.clicked() || resp.drag_started() {
+                    app.seek_program(tk);
+                }
             }
             Which::Source => {
                 let _ = app.session.execute("source.setPlayhead", json!({"time": tk.0}));

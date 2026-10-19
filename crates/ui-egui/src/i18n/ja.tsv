@@ -4387,3 +4387,22 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	キャッシュ
 	ClipJobs	クリップジョブ
+# Kdenlive parity p12: preferences, project notes, menus, workspaces, shortcuts
+	Interface Colors	インターフェイスの色
+	Audio waveform color	オーディオ波形の色
+	Monitor overlay color	モニターオーバーレイの色
+	Custom monitor background	モニターの背景をカスタム
+	Monitor background color	モニターの背景色
+	Pause playback when seeking	シーク時に再生を一時停止
+	Move the playhead to the clip when adding an effect	エフェクトを追加したときに再生ヘッドをクリップへ移動
+	Show clip marker comments on timeline clips	タイムラインのクリップにクリップマーカーのコメントを表示
+	Display Defaults	表示の既定値
+	Show video thumbnails	ビデオサムネールを表示
+	Show audio waveforms	オーディオ波形を表示
+	Separate audio channels	オーディオチャンネルを分離
+	Video track height	ビデオトラックの高さ
+	Audio track height	オーディオトラックの高さ
+	pixels	ピクセル
+	Fixed Centered Playhead	再生ヘッドを中央に固定
+	Disable the parameters of an effect that is switched off	オフにしたエフェクトのパラメーターを無効にする
+	Play or pause when clicking a monitor	モニターをクリックして再生または一時停止

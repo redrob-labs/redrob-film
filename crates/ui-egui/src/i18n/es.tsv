@@ -4399,3 +4399,22 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	Caché
 	ClipJobs	Tareas de clip
+# Kdenlive parity p12: preferences, project notes, menus, workspaces, shortcuts
+	Interface Colors	Colores de la interfaz
+	Audio waveform color	Color de la forma de onda de audio
+	Monitor overlay color	Color de las superposiciones del monitor
+	Custom monitor background	Fondo de monitor personalizado
+	Monitor background color	Color de fondo del monitor
+	Pause playback when seeking	Pausar la reproducción al buscar
+	Move the playhead to the clip when adding an effect	Mover el cabezal al clip al añadir un efecto
+	Show clip marker comments on timeline clips	Mostrar los comentarios de los marcadores de clip en la línea de tiempo
+	Display Defaults	Visualización predeterminada
+	Show video thumbnails	Mostrar miniaturas de video
+	Show audio waveforms	Mostrar formas de onda de audio
+	Separate audio channels	Separar canales de audio
+	Video track height	Altura de las pistas de video
+	Audio track height	Altura de las pistas de audio
+	pixels	píxeles
+	Fixed Centered Playhead	Cabezal fijo centrado
+	Disable the parameters of an effect that is switched off	Desactivar los parámetros de un efecto apagado
+	Play or pause when clicking a monitor	Reproducir o pausar al hacer clic en un monitor

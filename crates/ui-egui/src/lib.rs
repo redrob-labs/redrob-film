@@ -706,6 +706,30 @@ impl FilmcraftApp {
         }
         self.frames.set_cache_budget(p.memory.frame_cache_mb as usize * (1 << 20));
         self.ui.play_after_render = p.timeline.play_after_rendering;
+        // Settings ▸ Timeline ▸ Display Defaults and Settings ▸ Color: the wrench menu's toggles
+        // and the first waveform colour follow the preference when it changes (and at startup);
+        // the wrench menu still changes them for the session.
+        {
+            let (a, v) = (prev.as_ref().map(|q| &q.timeline), &p.timeline);
+            let tv = &mut self.ui.timeline;
+            if a.is_none_or(|a| a.show_video_thumbnails != v.show_video_thumbnails) {
+                tv.show_thumbnails = v.show_video_thumbnails;
+            }
+            if a.is_none_or(|a| a.show_audio_waveforms != v.show_audio_waveforms) {
+                tv.show_waveforms = v.show_audio_waveforms;
+            }
+            if a.is_none_or(|a| a.separate_audio_channels != v.separate_audio_channels) {
+                tv.separate_channels = v.separate_audio_channels;
+            }
+            if prev.as_ref().is_none_or(|q| q.color.audio_waveform_color != p.color.audio_waveform_color)
+                && let Some(c) = redrob_film_engine::settings::parse_hex(&p.color.audio_waveform_color)
+            {
+                if tv.waveform_colors.is_empty() {
+                    tv.waveform_colors = state::default_waveform_colors();
+                }
+                tv.waveform_colors[0] = c;
+            }
+        }
         if prev.as_ref().is_none_or(|q| q.audio_hardware != p.audio_hardware) {
             if let Some(input) = self.session.voiceover.input.as_mut() {
                 input.configure_host(&p.audio_hardware.device_class);
@@ -771,8 +795,10 @@ impl FilmcraftApp {
                     self.timeline_view_last = Some(s);
                 }
                 None => {
-                    let d = state::TimelineView::default();
-                    (v.v_scroll, v.a_scroll, v.video_track_h, v.audio_track_h) = (0.0, 0.0, d.video_track_h, d.audio_track_h);
+                    // Settings ▸ Timeline ▸ Display Defaults ▸ Video / Audio track height
+                    let tp = &self.session.prefs.timeline;
+                    let (vh, ah) = (tp.video_track_height.clamp(8, 600) as f32, tp.audio_track_height.clamp(8, 600) as f32);
+                    (v.v_scroll, v.a_scroll, v.video_track_h, v.audio_track_h) = (0.0, 0.0, vh, ah);
                     (v.fit_pending, v.fit_empty) = (true, None);
                     self.timeline_view_last = None;
                 }
@@ -935,6 +961,19 @@ impl FilmcraftApp {
             a.stop();
         }
         self.playback.audio_clock = false;
+    }
+
+    /// A seek of the Program playhead (a press on the Timeline ruler or the monitor's time bar).
+    /// Settings ▸ Timeline ▸ "Pause playback when seeking" (on by default) stops playback; with it
+    /// off, playback carries on from the new position at the same speed.
+    pub fn seek_program(&mut self, t: Tick) {
+        let resume = self.playback.playing && !self.session.prefs.timeline.pause_on_seek;
+        let speed = self.playback.speed;
+        self.stop();
+        self.session.set_playhead(t);
+        if resume {
+            self.play(speed);
+        }
     }
 
     /// Start the clock (and audio) once the first frames are ready or the preroll timed out.

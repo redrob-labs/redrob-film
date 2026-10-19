@@ -88,6 +88,8 @@ pub struct PlaybackPrefs {
     /// or `off` (always Redrob Film's own decoders). Media already open keeps its decoder until it
     /// is reopened.
     pub hardware_decoding: String,
+    /// A click on a monitor's picture plays or pauses that monitor.
+    pub play_pause_on_monitor_click: bool,
 }
 
 impl Default for PlaybackPrefs {
@@ -101,6 +103,7 @@ impl Default for PlaybackPrefs {
             disable_video_in_background: true,
             draft_decode: false,
             hardware_decoding: "auto".into(),
+            play_pause_on_monitor_click: false,
         }
     }
 }

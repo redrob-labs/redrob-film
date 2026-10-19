@@ -2722,6 +2722,17 @@ fn build() -> Vec<CommandSpec> {
                 }
                 Ok(n)
             })?;
+            // Settings ▸ Timeline ▸ "Move the playhead to the clip when adding an effect": the
+            // monitor then shows the effect (when the playhead is over none of the clips)
+            if s.prefs.timeline.seek_to_clip_on_add_effect {
+                let ph = s.playhead();
+                let spans: Vec<(Tick, Tick)> =
+                    s.active_sequence().map(|q| clips.iter().filter_map(|c| q.item(*c)).map(|i| (i.start, i.end())).collect()).unwrap_or_default();
+                if !spans.is_empty() && !spans.iter().any(|(a, b)| ph >= *a && ph < *b) {
+                    let first = spans.iter().map(|(a, _)| *a).min().unwrap_or(ph);
+                    s.set_playhead(first);
+                }
+            }
             Ok(Value::Null)
         }),
         cmd!("effects.remove", "Remove Effect", [], None, r#"{"clip":id,"index":n}"#, has_seq, |s, p| {

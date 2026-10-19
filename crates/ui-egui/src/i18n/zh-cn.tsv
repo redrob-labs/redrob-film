@@ -4380,3 +4380,22 @@
 # Kdenlive parity p11: shortcut categories
 	Cache	缓存
 	ClipJobs	剪辑任务
+# Kdenlive parity p12: preferences, project notes, menus, workspaces, shortcuts
+	Interface Colors	界面颜色
+	Audio waveform color	音频波形颜色
+	Monitor overlay color	监视器叠加颜色
+	Custom monitor background	自定义监视器背景
+	Monitor background color	监视器背景颜色
+	Pause playback when seeking	定位时暂停播放
+	Move the playhead to the clip when adding an effect	添加效果时将播放指示器移到剪辑
+	Show clip marker comments on timeline clips	在时间轴剪辑上显示剪辑标记注释
+	Display Defaults	默认显示
+	Show video thumbnails	显示视频缩览图
+	Show audio waveforms	显示音频波形
+	Separate audio channels	分离音频声道
+	Video track height	视频轨道高度
+	Audio track height	音频轨道高度
+	pixels	像素
+	Fixed Centered Playhead	固定居中的播放指示器
+	Disable the parameters of an effect that is switched off	停用已关闭效果的参数
+	Play or pause when clicking a monitor	单击监视器时播放或暂停
