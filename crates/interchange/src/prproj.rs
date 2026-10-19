@@ -391,7 +391,7 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
                         self.report.warn(format!("bin \"{name}\" is nested more than {MAX_DEPTH} deep; its contents were not listed"));
                         continue;
                     }
-                    let b = self.b.bin(if name.is_empty() { "Bin" } else { &name }, bin);
+                    let b = self.b.bin(if name.is_empty() { "Bin" } else { name.as_str() }, bin);
                     if label.is_some() {
                         self.report.info("bin labels are not kept (bins have no label here)");
                     }
@@ -448,7 +448,8 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
         let bin = place.as_ref().and_then(|p| p.bin);
         let label = place.as_ref().and_then(|p| p.label);
         let clips = self.g.list(mc, &["Clips"]);
-        let id = if let Some(s) = clips.iter().find_map(|c| self.clip_sequence(*c)) {
+        let seq_source = clips.iter().find_map(|c| self.clip_sequence(*c));
+        let id = if let Some(s) = seq_source {
             let id = self.sequence(s);
             if let Some(id) = id
                 && bin.is_some()
@@ -564,7 +565,8 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
 
     /// An offline placeholder media item.
     fn offline(&mut self, key: &str, name: &str, spec: Option<&MediaSpec>, bin: Option<BinId>) -> ItemId {
-        let spec = spec.cloned().unwrap_or_else(|| MediaSpec { video: Some((1920, 1080, FrameRate::default())), audio: Some((48_000, 2)), ..Default::default() });
+        let spec =
+            spec.cloned().unwrap_or_else(|| MediaSpec { video: Some((1920, 1080, FrameRate::default())), audio: Some((48_000, 2)), ..Default::default() });
         let p = resolve_path(name, self.base_dir.as_deref());
         let id = self.b.file_media(key, name, &p, &spec, bin);
         if let Some(m) = self.b.p.item_mut(id).and_then(|i| i.as_media_mut()) {
@@ -625,13 +627,14 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
 
     fn sequence(&mut self, n: Node<'a, 'i>) -> Option<ItemId> {
         let key = object_key(n);
-        if let Some(id) = self.seqs.get(&key) {
-            return Some(*id);
-        }
         let name = child_text(n, "Name").filter(|s| !s.is_empty()).unwrap_or("Sequence").to_string();
+        // Checked before the finished-sequence lookup: a sequence being built is already listed.
         if self.in_progress.contains(&key) {
             self.report.warn(format!("sequence \"{name}\" contains itself; the recursive clip was skipped"));
             return None;
+        }
+        if let Some(id) = self.seqs.get(&key) {
+            return Some(*id);
         }
         if self.in_progress.len() >= MAX_DEPTH {
             self.report.warn(format!("sequences are nested more than {MAX_DEPTH} deep; \"{name}\" was skipped"));
@@ -671,7 +674,8 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
             }
         }
         if let Some(dg) = dg {
-            let captions: usize = self.g.list(dg, &["TrackGroup", "Tracks"]).into_iter().map(|t| self.g.list(t, &["ClipTrack", "ClipItems", "TrackItems"]).len()).sum();
+            let captions: usize =
+                self.g.list(dg, &["TrackGroup", "Tracks"]).into_iter().map(|t| self.g.list(t, &["ClipTrack", "ClipItems", "TrackItems"]).len()).sum();
             if captions > 0 {
                 self.report.warn(format!("{captions} caption clip(s) in sequence \"{name}\" were not imported"));
             }
@@ -684,7 +688,8 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
         }
         // Linked clips (video with its audio).
         for link in self.g.list(n, &["PersistentGroupContainer", "LinkContainer", "Links"]) {
-            let members: Vec<ClipId> = self.g.list(link, &["TrackItemGroup", "TrackItems"]).into_iter().filter_map(|t| clip_ids.get(&object_key(t)).copied()).collect();
+            let members: Vec<ClipId> =
+                self.g.list(link, &["TrackItemGroup", "TrackItems"]).into_iter().filter_map(|t| clip_ids.get(&object_key(t)).copied()).collect();
             if members.len() < 2 {
                 continue;
             }
@@ -741,7 +746,10 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
         let master = sub.and_then(|s| self.g.at(s, &["MasterClip"]));
         let resolved = match master {
             Some(m) => self.master(m),
-            None => clip.and_then(|c| self.clip_sequence(c)).and_then(|s| self.sequence(s)),
+            None => match clip.and_then(|c| self.clip_sequence(c)) {
+                Some(s) => self.sequence(s),
+                None => None,
+            },
         };
         let item = match resolved {
             Some(i) => i,
@@ -753,10 +761,9 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
         if self.b.p.item(item).is_some_and(|i| i.as_sequence().is_some()) {
             self.nested.insert(item);
         }
-        let ctext = |path: &[&str]| clip.and_then(|c| self.g.text_at(c, path));
-        let in_pt = ctext(&["Clip", "InPoint"]).and_then(int).unwrap_or(0);
-        let raw_speed = ctext(&["Clip", "PlaybackSpeed"]).and_then(float).unwrap_or(1.0);
-        let label = ctext(&["Clip", "Node", "Properties", "asl.clip.label.name"]).and_then(label_of);
+        let in_pt = self.opt_text(clip, &["Clip", "InPoint"]).and_then(int).unwrap_or(0);
+        let raw_speed = self.opt_text(clip, &["Clip", "PlaybackSpeed"]).and_then(float).unwrap_or(1.0);
+        let label = self.opt_text(clip, &["Clip", "Node", "Properties", "asl.clip.label.name"]).and_then(label_of);
         let remap = clip.and_then(|c| self.g.at(c, &["Clip", "TimeRemapping"])).and_then(|r| self.g.at(r, &["Keyframes"]));
         let gain = clip.and_then(|c| child_text(c, "Gain")).and_then(float);
         let shift = if self.is_still(item) { in_pt } else { 0 };
@@ -785,6 +792,10 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
             self.component(&mut ti, c, frame, src_frame, shift);
         }
         Some(ti)
+    }
+
+    fn opt_text(&self, n: Option<Node<'a, 'i>>, path: &[&str]) -> Option<&'a str> {
+        self.g.text_at(n?, path)
     }
 
     fn source_frame(&self, item: ItemId) -> Option<(u32, u32)> {
@@ -935,7 +946,8 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
         let has_in = child_text(tt, "HasIncomingClip") != Some("false");
         let Some(track) = seq.tracks_mut(kind).get_mut(ti) else { return };
         let near = |t: Tick| t.0.saturating_sub(cut).saturating_abs();
-        let from = if has_out { track.items.iter().filter(|i| i.end() >= s && i.end() <= e).min_by_key(|i| near(i.end())).map(|i| (i.id, i.end())) } else { None };
+        let from =
+            if has_out { track.items.iter().filter(|i| i.end() >= s && i.end() <= e).min_by_key(|i| near(i.end())).map(|i| (i.id, i.end())) } else { None };
         let to = if has_in { track.items.iter().filter(|i| i.start >= s && i.start <= e).min_by_key(|i| near(i.start)).map(|i| (i.id, i.start)) } else { None };
         if from.is_none() && to.is_none() {
             self.report.warn(format!("transition \"{raw}\" has no adjacent clip; skipped"));
