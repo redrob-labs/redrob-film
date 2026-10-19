@@ -104,6 +104,8 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("view.theme.medium", "Dark", ["View", "Appearance"], None),
     uic!("view.theme.light", "Light", ["View", "Appearance"], None),
     uic!("view.appearanceMode.next", "Next Appearance Mode", ["View", "Appearance"], None),
+    uic!("window.showMenuBar", "Show Menu Bar", ["Window"], None),
+    uic!("window.showStatusBar", "Show Status Bar", ["Window"], None),
     uic!("window.workspace.editing", "Editing", ["Window", "Workspaces"], Some("Alt+Shift+1")),
     uic!("window.workspace.assembly", "Assembly", ["Window", "Workspaces"], Some("Alt+Shift+2")),
     uic!("window.workspace.color", "Color", ["Window", "Workspaces"], Some("Alt+Shift+3")),
@@ -242,6 +244,21 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
     if id == "perf.stats" {
         // the engine's counters plus playback, frame workers and UI timings
         return Ok(crate::perf::stats(app));
+    }
+    // Window ▸ Show Menu Bar / Show Status Bar (`{"on": bool}`, else toggle). On macOS the menu
+    // bar is the system's and stays.
+    if id == "window.showMenuBar" {
+        if cfg!(target_os = "macos") {
+            return Err("on macOS the menus are in the system menu bar".into());
+        }
+        let on = params.get("on").and_then(Value::as_bool).unwrap_or(!app.ui.show_menu_bar);
+        app.ui.show_menu_bar = on;
+        return Ok(json!({"menuBar": on}));
+    }
+    if id == "window.showStatusBar" {
+        let on = params.get("on").and_then(Value::as_bool).unwrap_or(!app.ui.show_status_bar);
+        app.ui.show_status_bar = on;
+        return Ok(json!({"statusBar": on}));
     }
     if let Some(rest) = id.strip_prefix("window.panel.") {
         let p = PanelKind::from_name(rest).ok_or_else(|| format!("unknown panel `{rest}`"))?;
@@ -680,6 +697,11 @@ pub fn menu_items(app: &FilmcraftApp) -> Vec<MenuItem> {
             "sequence.useTimelineZone" => it.checked = Some(!app.session.state.ignore_timeline_zone),
             "sequence.trackCompositing" => it.checked = Some(app.session.active_sequence().is_none_or(|q| !q.timeline_options.no_track_compositing)),
             "sequence.disableTimelineEffects" => it.checked = Some(app.session.active_sequence().is_some_and(|q| q.timeline_options.effects_disabled)),
+            "window.showMenuBar" => {
+                it.checked = Some(app.ui.show_menu_bar);
+                it.enabled = !cfg!(target_os = "macos");
+            }
+            "window.showStatusBar" => it.checked = Some(app.ui.show_status_bar),
             // Tool ▸ <tool>: the current tool is checked
             id if id.starts_with("tool.") => it.checked = Some(Tool::from_name(&id["tool.".len()..]) == Some(app.ui.tool)),
             _ => {}

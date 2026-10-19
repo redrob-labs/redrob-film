@@ -4423,3 +4423,24 @@
 	Move Up	Monter
 	Move Down	Descendre
 	Workspace	Espace de travail
+	Configuration Information	Informations de configuration
+	Supported Media Types	Types de médias pris en charge
+	Show in File Manager	Afficher dans le gestionnaire de fichiers
+	Data folder	Dossier des données
+	Preferences file	Fichier des préférences
+	Workspaces file	Fichier des espaces de travail
+	Media cache	Cache des médias
+	Auto-saves	Enregistrements automatiques
+	This session keeps no files on disk.	Cette session ne conserve aucun fichier sur le disque.
+	Still images	Images fixes
+	Timelines and captions also import from EDL, FCP XML, FCPXML, OTIO, AAF, OMF, SRT, WebVTT and SCC files.	Les timelines et les sous-titres s'importent aussi depuis des fichiers EDL, FCP XML, FCPXML, OTIO, AAF, OMF, SRT, WebVTT et SCC.
+	Panel tab position	Position des onglets des panneaux
+	Print…	Imprimer…
+	Opened {path} to print	{path} ouvert pour l'impression
+	Print: no file chosen (agents: shortcuts.print {path})	Imprimer : aucun fichier choisi (agents : shortcuts.print {path})
+	Splitting a caption	Scinder un sous-titre
+	Both parts keep the text	Les deux parties gardent le texte
+	First line stays, the other lines move to the second part	La première ligne reste, les autres passent dans la seconde partie
+	Proxy and transcode jobs: clips at the same time	Tâches de proxy et de transcodage : clips en même temps
+	Show Menu Bar	Afficher la barre de menus
+	Show Status Bar	Afficher la barre d'état

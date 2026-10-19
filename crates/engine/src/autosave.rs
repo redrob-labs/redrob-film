@@ -260,6 +260,8 @@ pub struct MediaPrefs {
     pub growing_refresh_seconds: u32,
     pub hardware_decoding: bool,
     pub prores_hardware_encoding: bool,
+    /// How many clips a proxy / transcode job works on at the same time (1 = one after another).
+    pub proxy_job_threads: u32,
 }
 
 impl Default for MediaPrefs {
@@ -286,6 +288,7 @@ impl Default for MediaPrefs {
             growing_refresh_seconds: 60,
             hardware_decoding: true,
             prores_hardware_encoding: true,
+            proxy_job_threads: 1,
         }
     }
 }

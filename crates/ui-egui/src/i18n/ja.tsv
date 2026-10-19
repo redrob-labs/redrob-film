@@ -4422,3 +4422,24 @@
 	Move Up	上へ移動
 	Move Down	下へ移動
 	Workspace	ワークスペース
+	Configuration Information	構成情報
+	Supported Media Types	対応メディアの種類
+	Show in File Manager	ファイルマネージャーで表示
+	Data folder	データフォルダー
+	Preferences file	環境設定ファイル
+	Workspaces file	ワークスペースファイル
+	Media cache	メディアキャッシュ
+	Auto-saves	自動保存
+	This session keeps no files on disk.	このセッションはディスクにファイルを保存しません。
+	Still images	静止画
+	Timelines and captions also import from EDL, FCP XML, FCPXML, OTIO, AAF, OMF, SRT, WebVTT and SCC files.	タイムラインとキャプションは EDL、FCP XML、FCPXML、OTIO、AAF、OMF、SRT、WebVTT、SCC ファイルからも読み込めます。
+	Panel tab position	パネルタブの位置
+	Print…	印刷…
+	Opened {path} to print	印刷用に {path} を開きました
+	Print: no file chosen (agents: shortcuts.print {path})	印刷: ファイルが選択されていません (エージェント: shortcuts.print {path})
+	Splitting a caption	キャプションの分割
+	Both parts keep the text	両方の部分がテキストを保持
+	First line stays, the other lines move to the second part	1 行目は残り、ほかの行は 2 番目の部分に移動
+	Proxy and transcode jobs: clips at the same time	プロキシとトランスコードのジョブ: 同時に処理するクリップ数
+	Show Menu Bar	メニューバーを表示
+	Show Status Bar	ステータスバーを表示

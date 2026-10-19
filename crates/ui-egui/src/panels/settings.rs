@@ -606,6 +606,68 @@ fn custom(app: &mut FilmcraftApp, ui: &mut Ui, d: &mut SettingsDraft, name: &str
             let size = mb(d.cache_info["bytes"].as_u64().unwrap_or(0));
             let files = d.cache_info["files"].as_u64().unwrap_or(0);
             note(ui, &t, &tlf!("Currently: {loc} — {files} file(s), {size}", loc, files, size));
+            // open the cache folder in the file manager
+            if let Some(dir) = d.cache_info["location"].as_str().map(str::to_string) {
+                let r = ui.button(tl!("Show in File Manager"));
+                app.auto.add("settings.mediaCache.reveal", r.rect, "Show in File Manager");
+                if r.clicked() {
+                    let ctx = ui.ctx().clone();
+                    if let Err(e) = std::fs::create_dir_all(&dir).map_err(|e| e.to_string()).and_then(|_| crate::panels::menu_dialogs::open_path(app, &ctx, &dir, false)) {
+                        d.message = e;
+                    }
+                }
+            }
+        }
+        // Settings ▸ General ▸ Configuration Information: where Redrob Film keeps its files
+        "configPaths" => {
+            let prefs = app.session.prefs_path.clone();
+            let data = prefs.as_ref().and_then(|p| p.parent()).map(|p| p.to_path_buf());
+            if d.cache_info.is_null() {
+                d.cache_info = app.session.execute("mediaCache.info", json!({})).unwrap_or(json!({}));
+            }
+            let status = app.session.execute("file.autoSaveStatus", json!({})).unwrap_or_default();
+            let mut rows: Vec<(&str, &str, Option<String>)> = vec![
+                ("data", tl!("Data folder"), data.as_ref().map(|p| p.display().to_string())),
+                ("preferences", tl!("Preferences file"), prefs.as_ref().map(|p| p.display().to_string())),
+                ("workspaces", tl!("Workspaces file"), data.as_ref().map(|p| p.join(crate::dock::WORKSPACES_FILE).display().to_string())),
+                ("mediaCache", tl!("Media cache"), d.cache_info["location"].as_str().map(str::to_string)),
+                ("autoSave", tl!("Auto-saves"), status["autoSaveDir"].as_str().map(str::to_string)),
+            ];
+            rows.retain(|r| r.2.is_some());
+            if rows.is_empty() {
+                note(ui, &t, tl!("This session keeps no files on disk."));
+            }
+            let ctx = ui.ctx().clone();
+            egui::Grid::new("settings-config-paths").num_columns(3).spacing(vec2(10.0, 4.0)).show(ui, |ui| {
+                for (id, label, path) in rows {
+                    let path = path.unwrap_or_default();
+                    field_label(ui, label);
+                    ui.add(egui::Label::new(RichText::new(&path).monospace().size(11.0)).truncate());
+                    let r = ui.small_button(tl!("Show"));
+                    app.auto.add(&format!("settings.configPaths.{id}"), r.rect, label);
+                    if r.clicked() {
+                        let file = std::path::Path::new(&path).is_file();
+                        if let Err(e) = crate::panels::menu_dialogs::open_path(app, &ctx, &path, file) {
+                            d.message = e;
+                        }
+                    }
+                    ui.end_row();
+                }
+            });
+        }
+        // Settings ▸ Media ▸ Supported Media Types: the file types import and the Media Browser take
+        "mediaTypes" => {
+            for (label, exts) in [
+                (tl!("Video"), redrob_film_media::VIDEO_EXTENSIONS),
+                (tl!("Audio"), redrob_film_media::AUDIO_EXTENSIONS),
+                (tl!("Still images"), redrob_film_media::STILL_EXTENSIONS),
+            ] {
+                ui.horizontal_wrapped(|ui| {
+                    field_label(ui, label);
+                    ui.label(RichText::new(exts.iter().map(|e| format!("*.{e}")).collect::<Vec<_>>().join(" ")).size(11.0).color(t.text_dim));
+                });
+            }
+            note(ui, &t, tl!("Timelines and captions also import from EDL, FCP XML, FCPXML, OTIO, AAF, OMF, SRT, WebVTT and SCC files."));
         }
         // Manage Cached Data: the current project's and every project's cached files by kind
         "cacheManager" => {

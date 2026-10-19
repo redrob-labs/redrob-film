@@ -1954,6 +1954,8 @@ impl FilmcraftApp {
 
     fn dock_area(&mut self, ui: &mut egui::Ui, body: egui::Rect) {
         let t = self.tokens;
+        let bottom = self.session.prefs.general.panel_tab_position == "bottom";
+        ui.ctx().data_mut(|d| d.insert_temp(egui::Id::new("dock-tabs-bottom"), bottom));
         // Maximize or Restore Frame (` / Shift+`): the maximized panel fills the dock area.
         let maximized = self.ui.keys.maximized.filter(|p| self.ui.dock.contains(*p));
         let mut dock = match maximized {

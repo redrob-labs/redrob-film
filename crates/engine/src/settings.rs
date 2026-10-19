@@ -58,6 +58,8 @@ pub struct GeneralPrefs {
     pub show_mask_tracker_preview: bool,
     /// Effect Controls greys out the parameters of an effect that is switched off.
     pub disable_params_of_disabled_effects: bool,
+    /// Where a panel group's tabs are: `top` (default) | `bottom`.
+    pub panel_tab_position: String,
     /// Most recently opened / saved projects (newest first; not shown in the dialog).
     pub recent_projects: Vec<String>,
 }
@@ -82,6 +84,7 @@ impl Default for GeneralPrefs {
             show_project_bin_in_tab: true,
             show_mask_tracker_preview: true,
             disable_params_of_disabled_effects: false,
+            panel_tab_position: "top".into(),
             recent_projects: Vec::new(),
         }
     }
@@ -540,6 +543,9 @@ pub struct TimelinePrefs {
     /// Default heights (points) of video and audio tracks of a sequence shown for the first time.
     pub video_track_height: u32,
     pub audio_track_height: u32,
+    /// Split Caption: `duplicate` (both halves keep the text) | `splitLines` (the first line stays,
+    /// the other lines go to the second half).
+    pub caption_split_mode: String,
 }
 
 impl Default for TimelinePrefs {
@@ -577,6 +583,7 @@ impl Default for TimelinePrefs {
             separate_audio_channels: false,
             video_track_height: 60,
             audio_track_height: 56,
+            caption_split_mode: "duplicate".into(),
         }
     }
 }
@@ -864,6 +871,8 @@ static CATEGORIES: &[Category] = &[
             b("general.showProjectBinInTab", "Show \"Project:\" and \"Bin:\" in Project panel tab", false),
             b("general.showMaskTrackerPreview", "Show Mask Tracker Preview", false),
             b("general.disableParamsOfDisabledEffects", "Disable the parameters of an effect that is switched off", true),
+            f("general.panelTabPosition", "Panel tab position", Kind::Choice(&[("top", "Top"), ("bottom", "Bottom")]), true),
+            Row::Group("Configuration Information", &[Row::Custom("configPaths")]),
         ],
     },
     Category {
@@ -1067,6 +1076,8 @@ static CATEGORIES: &[Category] = &[
             ),
             b("media.hardwareDecoding", "Enable hardware accelerated decoding (requires restart)", false),
             b("media.proresHardwareEncoding", "Enable ProRes hardware accelerated encoding, if available", false),
+            f("media.proxyJobThreads", "Proxy and transcode jobs: clips at the same time", int(1.0, 16.0, ""), true),
+            Row::Group("Supported Media Types", &[Row::Custom("mediaTypes")]),
         ],
     },
     Category {
@@ -1195,6 +1206,12 @@ static CATEGORIES: &[Category] = &[
             b("timeline.pauseOnSeek", "Pause playback when seeking", true),
             b("timeline.seekToClipOnAddEffect", "Move the playhead to the clip when adding an effect", true),
             b("timeline.showClipMarkerComments", "Show clip marker comments on timeline clips", true),
+            f(
+                "timeline.captionSplitMode",
+                "Splitting a caption",
+                Kind::Choice(&[("duplicate", "Both parts keep the text"), ("splitLines", "First line stays, the other lines move to the second part")]),
+                true,
+            ),
             Row::Group(
                 "Display Defaults",
                 &[

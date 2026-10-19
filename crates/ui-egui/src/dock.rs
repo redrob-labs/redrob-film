@@ -559,12 +559,22 @@ fn split_first(size: SplitSize, avail: f32) -> f32 {
     want.clamp(lo, hi)
 }
 
+/// Settings ▸ General ▸ Panel tab position: whether the tab strips are under the panels this
+/// frame (set by the app from the preference before the dock is laid out).
+pub fn tabs_at_bottom(ctx: &egui::Context) -> bool {
+    ctx.data(|d| d.get_temp::<bool>(egui::Id::new("dock-tabs-bottom"))).unwrap_or(false)
+}
+
 /// Lay out the tree into group rects (with `gap` gutters) and handle gutter dragging.
 pub fn layout(ui: &mut egui::Ui, node: &mut DockNode, rect: Rect, t: &Tokens, path: &str, out: &mut Vec<Group>, reg: &mut crate::automation::Registry) {
     match node {
         DockNode::Tabs { panels, active } => {
             let tab_h = if panels.len() == 1 && panels[0].compact() { 8.0 } else { t.tab_h };
-            let content = Rect::from_min_max(pos2(rect.min.x, rect.min.y + tab_h), rect.max);
+            let content = if tabs_at_bottom(ui.ctx()) && tab_h == t.tab_h {
+                Rect::from_min_max(rect.min, pos2(rect.max.x, rect.max.y - tab_h))
+            } else {
+                Rect::from_min_max(pos2(rect.min.x, rect.min.y + tab_h), rect.max)
+            };
             out.push(Group { path: path.to_string(), rect, content, panels: panels.clone(), active: *active });
         }
         DockNode::Split { vertical, size, a, b } => {
@@ -639,7 +649,11 @@ pub fn draw_group_chrome(
             painter.circle_filled(c + vec2(dx, 0.0), 1.0, t.text_faint);
         }
     } else {
-        let strip = Rect::from_min_size(g.rect.min, vec2(g.rect.width(), t.tab_h));
+        let strip = if tabs_at_bottom(ui.ctx()) {
+            Rect::from_min_size(pos2(g.rect.min.x, g.rect.max.y - t.tab_h), vec2(g.rect.width(), t.tab_h))
+        } else {
+            Rect::from_min_size(g.rect.min, vec2(g.rect.width(), t.tab_h))
+        };
         // the Timeline panel shows one tab per open sequence (its own tab names the sequence)
         struct Tab {
             panel: PanelKind,

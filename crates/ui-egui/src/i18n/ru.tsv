@@ -1021,3 +1021,5 @@
 # Kdenlive parity p12: preferences, project notes, menus, workspaces, shortcuts
 	Monitor	Монитор
 	Tool	Инструмент
+	Show Menu Bar	Показать строку меню
+	Show Status Bar	Показать строку состояния

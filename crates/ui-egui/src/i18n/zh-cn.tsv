@@ -4415,3 +4415,24 @@
 	Move Up	上移
 	Move Down	下移
 	Workspace	工作区
+	Configuration Information	配置信息
+	Supported Media Types	支持的媒体类型
+	Show in File Manager	在文件管理器中显示
+	Data folder	数据文件夹
+	Preferences file	首选项文件
+	Workspaces file	工作区文件
+	Media cache	媒体缓存
+	Auto-saves	自动保存
+	This session keeps no files on disk.	此会话不在磁盘上保存文件。
+	Still images	静态图像
+	Timelines and captions also import from EDL, FCP XML, FCPXML, OTIO, AAF, OMF, SRT, WebVTT and SCC files.	时间轴和字幕也可从 EDL、FCP XML、FCPXML、OTIO、AAF、OMF、SRT、WebVTT 和 SCC 文件导入。
+	Panel tab position	面板选项卡位置
+	Print…	打印…
+	Opened {path} to print	已打开 {path} 以便打印
+	Print: no file chosen (agents: shortcuts.print {path})	打印：未选择文件（代理：shortcuts.print {path}）
+	Splitting a caption	拆分字幕
+	Both parts keep the text	两部分都保留文本
+	First line stays, the other lines move to the second part	第一行保留，其余行移到第二部分
+	Proxy and transcode jobs: clips at the same time	代理和转码任务：同时处理的剪辑数
+	Show Menu Bar	显示菜单栏
+	Show Status Bar	显示状态栏

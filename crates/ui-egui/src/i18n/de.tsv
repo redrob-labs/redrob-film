@@ -1048,3 +1048,5 @@
 # Kdenlive parity p12: preferences, project notes, menus, workspaces, shortcuts
 	Monitor	Monitor
 	Tool	Werkzeug
+	Show Menu Bar	Menüleiste einblenden
+	Show Status Bar	Statusleiste einblenden
