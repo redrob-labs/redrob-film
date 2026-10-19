@@ -2,8 +2,10 @@
 # boundary, packaging and the release-target matrix. `rust` runs formatting, clippy and the tests of
 # OUR crates (the shell `filmcraft`, the engine and the egui UI) with `--profile ci` (root
 # Cargo.toml: every dependency at opt-level 0, no incremental); the effectcraft subtree is compiled
-# only as a dependency, and `rust` is skipped when no Rust input changed. The release workflow does
-# not repeat any of this; PR policy is the org-wide workflow.
+# only as a dependency, and `rust` is skipped when no Rust input changed. `rust-desktop` runs the
+# same clippy and tests on macOS and Windows (formatting is the same on every OS, so only Linux
+# checks it), with the same skip. The release workflow does not repeat any of this; PR policy is the
+# org-wide workflow.
 name: CI
 
 on:
@@ -98,6 +100,53 @@ jobs:
       - name: Formatting
         if: steps.rs.outputs.changed == 'true'
         run: cargo fmt --all --check
+      - name: Clippy
+        if: steps.rs.outputs.changed == 'true'
+        run: |
+          # shellcheck disable=SC2086 # OUR_CRATES is a list of flags on purpose
+          cargo clippy $OUR_CRATES --all-targets --locked --profile ci -- -D warnings
+      - name: Tests
+        if: steps.rs.outputs.changed == 'true'
+        run: |
+          # shellcheck disable=SC2086
+          cargo test $OUR_CRATES --locked --profile ci
+
+  rust-desktop:
+    name: clippy, test (profile ci) on ${{ matrix.os }}
+    # Same gate as `rust`: start-up crashes on macOS 12 and Windows 11 (docs/gaps.md G4) reached
+    # users because only Linux ran the tests.
+    if: github.base_ref != 'main'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, windows-2022]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # the PR merge commit and its first parent (the base branch tip)
+      - name: Did any Rust input change?
+        id: rs
+        run: |
+          # The same test as the `rust` job: HEAD^1..HEAD is exactly the PR's change.
+          if [ "${{ github.event_name }}" != pull_request ]; then
+            echo changed=true >> "$GITHUB_OUTPUT"
+          elif git diff --quiet HEAD^1 HEAD -- '*.rs' '*.toml' Cargo.lock '*.js' '*.json' '*.tsv' '*.wgsl' '*.ttf' assets .github/workflows/ci.yml; then
+            echo changed=false >> "$GITHUB_OUTPUT"
+          else
+            echo changed=true >> "$GITHUB_OUTPUT"
+          fi
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.rs.outputs.changed == 'true'
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        if: steps.rs.outputs.changed == 'true'
+        with:
+          key: ci-profile
       - name: Clippy
         if: steps.rs.outputs.changed == 'true'
         run: |
