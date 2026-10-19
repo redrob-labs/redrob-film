@@ -66,12 +66,21 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # the PR merge commit and its first parent (the base branch tip)
       - name: Did any Rust input change?
         id: rs
         run: |
-          git fetch -q origin "${{ github.base_ref }}" --depth=1
-          if git diff --quiet "origin/${{ github.base_ref }}"...HEAD -- '*.rs' '*.toml' Cargo.lock '*.js' '*.json' '*.tsv' '*.wgsl' '*.ttf' assets .github/workflows/ci.yml; then
-            echo changed=false >> "$GITHUB_OUTPUT"; else echo changed=true >> "$GITHUB_OUTPUT"; fi
+          # HEAD is GitHub's merge of the PR into its base, so HEAD^1..HEAD is exactly the PR's
+          # change. A three-dot diff against the base needs a merge base, which a shallow clone
+          # lacks: git exits 128 and every PR, docs-only included, ran the full suite.
+          if [ "${{ github.event_name }}" != pull_request ]; then
+            echo changed=true >> "$GITHUB_OUTPUT"
+          elif git diff --quiet HEAD^1 HEAD -- '*.rs' '*.toml' Cargo.lock '*.js' '*.json' '*.tsv' '*.wgsl' '*.ttf' assets .github/workflows/ci.yml; then
+            echo changed=false >> "$GITHUB_OUTPUT"
+          else
+            echo changed=true >> "$GITHUB_OUTPUT"
+          fi
       - name: Install the system headers winit, cpal and rfd need
         if: steps.rs.outputs.changed == 'true'
         run: |
