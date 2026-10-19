@@ -1,8 +1,8 @@
-# Where FilmCraft falls short of Premiere Pro
+# Where Redrob Film falls short of Premiere Pro
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** major (new file: ROADMAP's "Where we are lacking" re-measured against Premiere Pro 26.5.2 and the open issue list) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** minor (0.4.0: G16 / G17 idle repaint and audio fixes measured, G20 closed in the table, product name) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
-Every known shortfall, one entry each, ranked by what most stops an editor using FilmCraft for real
+Every known shortfall, one entry each, ranked by what most stops an editor using Redrob Film for real
 work. This is the work list: agents should prefer it over adding checklist items. Numbers are in
 [target-app-parity.md](target-app-parity.md); estimates are Opus 5.5 agent-hours, calibrated there.
 When you close or shrink a gap, update its entry, its parity doc and the revision history.
@@ -10,7 +10,7 @@ When you close or shrink a gap, update its entry, its parity doc and the revisio
 Summary by kind: **feature gaps** G1, G2, G12, G13, G18, G19; **UI / UX** G8; **file formats**
 G2, G10, G13, G15; **codecs** G3, G10; **hardware** G5; **localization** G14; **stability and
 platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement** G1, G6, G7;
-**web** G20.
+**web** G20 (closed).
 
 | # | Gap | Kind | Blocks beta | Estimate |
 |---|---|---|---|---|
@@ -33,13 +33,13 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | G17 | Audio device and playback reliability | stability | partly | 20–40 h |
 | G18 | Effects depth: approximations and missing behaviour | feature | no | 60–110 h |
 | G19 | Speech to text off in release builds | feature, AI | no | 5–10 h |
-| G20 | The web app shell | platforms | no | 40–80 h |
+| G20 | The web app shell (closed 2026-10-15: no browser build) | platforms | no | – |
 
 ## G1. Nothing compares our output with Premiere's
 
 - **Missing:** a fidelity harness. Every effect, transition, Lumetri control, blend mode, keyframe
   interpolation and audio effect counts once it exists; nothing renders the same project in
-  Premiere and FilmCraft and compares frames or samples. Effects described as approximations
+  Premiere and Redrob Film and compares frames or samples. Effects described as approximations
   count the same as exact ones.
 - **Evidence:** catalogue tests check names and folders only. EffectCraft's live After Effects
   comparison (its gaps.md G1) found real bugs in features marked done on its first run.
@@ -224,12 +224,20 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Done:** Render (Effects) In to Out renders only the frames between In and Out, as partial
   previews named by segment hash and relative frames, instead of every segment In/Out touches
   (#424); Render Audio still renders whole audio segments.
+- **Done (0.4.0, measured on Linux, llvmpipe):** the window no longer repaints while idle (an
+  empty X11/Wayland title was re-sent every frame): idle CPU 638–661 % → 0–18 %; 1080p30 playback
+  317 → 597 of 600 frames, 0 dropped; playhead drag 68 / 104 → 63 / 82 ms p50 / p95
+  ([gap/kdenlive-report.md](gap/kdenlive-report.md)). Not yet measured on Windows or macOS.
 - **Estimate:** 30–60 h. Doc: [performance.md](performance.md).
 
 ## G17. Audio device and playback reliability
 
 - **Evidence:** Asus Xonar DX output broken (#605), no audio (#602), audio cuts out with
   overlapping clips (#336), buggy audio (#410), Linux stutter (#617). No ASIO; cpal only.
+- **Done (0.4.0):** a lost or stalled output is reopened during playback (up to 4 tries per play);
+  a silent keep-alive stream stops the sound server from suspending the output between plays
+  (first picture after Space 865–890 → 197 ms on a suspended PulseAudio sink); live playback
+  dropouts 2 → 0 in 30 s. Measured on Linux only.
 - **Estimate:** 20–40 h.
 
 ## G18. Effects depth: approximations and missing behaviour
@@ -261,3 +269,4 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-10 | major | Created from ROADMAP.md's "Where we are lacking" (2026-10-05); re-ranked against Premiere 26.5.2 and the 188 open issues; added `.prproj`, 10-bit / 4:2:2 camera decode, launch crashes and missing PR CI, localization, delivery formats |
+| 2026-10-19 | minor | 0.4.0: G16 idle repaint fix and G17 audio reopen / keep-alive recorded with measured numbers (Linux); G20 marked closed in the table; FilmCraft → Redrob Film in the prose |
