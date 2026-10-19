@@ -500,6 +500,11 @@ pub struct TimelinePrefs {
     pub add_tracks_automatically: bool,
     /// Files dropped onto the Timeline are placed directly on it.
     pub drop_import_to_timeline: bool,
+    /// The bin new sequences go into (created in the project's root when missing); empty = the
+    /// root (Kdenlive's default folder for new sequences).
+    pub sequences_bin: String,
+    /// Stopping playback puts the playhead back where playback started.
+    pub return_to_start_on_stop: bool,
 }
 
 impl Default for TimelinePrefs {
@@ -527,6 +532,8 @@ impl Default for TimelinePrefs {
             restore_open_sequences: true,
             add_tracks_automatically: true,
             drop_import_to_timeline: true,
+            sequences_bin: String::new(),
+            return_to_start_on_stop: false,
         }
     }
 }
@@ -1119,6 +1126,8 @@ static CATEGORIES: &[Category] = &[
             b("timeline.restoreOpenSequences", "Restore open sequences when opening projects", false),
             b("timeline.addTracksAutomatically", "Add tracks automatically when editing source clips onto the Timeline", false),
             b("timeline.dropImportToTimeline", "Place files dropped onto the Timeline directly on the Timeline", true),
+            f("timeline.sequencesBin", "Default bin for new sequences", Kind::Text, true),
+            b("timeline.returnToStartOnStop", "Return the playhead to its start position when playback stops", true),
         ],
     },
     Category {

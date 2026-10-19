@@ -998,6 +998,28 @@ pub struct Sequence {
     /// Split In/Out points (Markers ▸ Mark Split): per-channel overrides of `mark_in`/`mark_out`.
     #[serde(default, skip_serializing_if = "SplitMarks::is_empty")]
     pub split: SplitMarks,
+    /// Timeline compositing and effect switches (Sequence ▸ Track Compositing / Disable Timeline
+    /// Effects). Older files have none (serde default: both as before).
+    #[serde(default, skip_serializing_if = "TimelineOptions::is_default")]
+    pub timeline_options: TimelineOptions,
+}
+
+/// Sequence-wide render switches set from the Timeline.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct TimelineOptions {
+    /// Track compositing off: only the topmost video track showing something at a time is drawn
+    /// (no automatic alpha compositing of the tracks below it).
+    pub no_track_compositing: bool,
+    /// Every clip effect is bypassed (intrinsic Motion / Opacity / Volume still apply), in the
+    /// monitors and in exports.
+    pub effects_disabled: bool,
+}
+
+impl TimelineOptions {
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
 }
 
 /// Split edit points: separate video and audio In/Out points (Markers ▸ Mark Split). `None` means
@@ -1522,6 +1544,7 @@ impl Project {
             multicam: None,
             merged: None,
             split: SplitMarks::default(),
+            timeline_options: TimelineOptions::default(),
         };
         for i in 0..v {
             let id = TrackId(self.alloc_id());

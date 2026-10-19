@@ -177,12 +177,19 @@ pub(crate) fn render_seq_tracks(project: &Project, seq: &Sequence, t: Tick, opts
         return canvas.into_image();
     }
     let tc = format_time(t, seq.settings.frame_rate, seq.settings.drop_frame, TimeDisplay::Timecode, seq.settings.sample_rate as i64);
+    // Disable Timeline Effects: every clip effect of this sequence is bypassed
+    let opts = if seq.timeline_options.effects_disabled { RenderOptions { effects: false, ..opts } } else { opts };
+    // Track compositing off: only the topmost track that shows something at `t` is drawn
+    let top = if seq.timeline_options.no_track_compositing && only.is_none() { topmost_track_at(seq, t) } else { None };
     for (ti, track) in seq.video_tracks.iter().enumerate() {
         // A cancelled frame job (playback moved on) stops here; its result is discarded.
         if redrob_film_media::cancel::cancelled() {
             return canvas.into_image();
         }
         if only.is_some_and(|o| o != ti) || (!track.enabled && only.is_none()) {
+            continue;
+        }
+        if top.is_some_and(|k| k != ti) {
             continue;
         }
         // transition covering t?
@@ -277,6 +284,15 @@ pub(crate) fn render_seq_tracks(project: &Project, seq: &Sequence, t: Tick, opts
         }
     }
     canvas
+}
+
+/// The index of the topmost enabled video track that shows an enabled clip (or a transition) at
+/// `t`: with track compositing off, the only track drawn.
+pub fn topmost_track_at(seq: &Sequence, t: Tick) -> Option<usize> {
+    seq.video_tracks.iter().enumerate().rev().find_map(|(i, tr)| {
+        let shows = tr.enabled && (tr.transitions.iter().any(|x| x.range().contains(t)) || tr.item_at(t).is_some_and(|it| it.enabled));
+        shows.then_some(i)
+    })
 }
 
 /// Coverage of an adjustment layer's (Motion-transformed) frame in output pixels, or `None` when
