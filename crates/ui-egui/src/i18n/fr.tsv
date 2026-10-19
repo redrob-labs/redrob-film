@@ -4407,3 +4407,13 @@
 	Fixed Centered Playhead	Tête de lecture fixe au centre
 	Disable the parameters of an effect that is switched off	Désactiver les paramètres d'un effet désactivé
 	Play or pause when clicking a monitor	Lire ou mettre en pause en cliquant sur un moniteur
+	Insert Timecode	Insérer un timecode
+	Write the playhead's timecode at the caret	Écrit le timecode de la tête de lecture à l'emplacement du curseur
+	Create Markers	Créer des marqueurs
+	Add a sequence marker at each timecode of the selected text (or of all the notes)	Ajoute un marqueur de séquence à chaque timecode du texte sélectionné (ou de toutes les notes)
+	Find in notes	Rechercher dans les notes
+	Find Previous (Shift+F3)	Rechercher le précédent (Maj+F3)
+	Find Next (F3)	Rechercher le suivant (F3)
+	Not found in the project notes	Introuvable dans les notes du projet
+	Timecodes:	Timecodes :
+	{n} marker(s) created from the notes	{n} marqueur(s) créé(s) à partir des notes

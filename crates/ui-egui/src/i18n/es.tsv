@@ -4418,3 +4418,13 @@
 	Fixed Centered Playhead	Cabezal fijo centrado
 	Disable the parameters of an effect that is switched off	Desactivar los parámetros de un efecto apagado
 	Play or pause when clicking a monitor	Reproducir o pausar al hacer clic en un monitor
+	Insert Timecode	Insertar código de tiempo
+	Write the playhead's timecode at the caret	Escribe el código de tiempo del cabezal en el cursor de texto
+	Create Markers	Crear marcadores
+	Add a sequence marker at each timecode of the selected text (or of all the notes)	Añade un marcador de secuencia en cada código de tiempo del texto seleccionado (o de todas las notas)
+	Find in notes	Buscar en las notas
+	Find Previous (Shift+F3)	Buscar anterior (Mayús+F3)
+	Find Next (F3)	Buscar siguiente (F3)
+	Not found in the project notes	No se encontró en las notas del proyecto
+	Timecodes:	Códigos de tiempo:
+	{n} marker(s) created from the notes	{n} marcador(es) creado(s) a partir de las notas

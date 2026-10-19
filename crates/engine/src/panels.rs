@@ -5,6 +5,7 @@
 //! | `events.list` / `events.clear` | the Events panel: warnings and errors of commands, background jobs and the auto-save worker ([`EventLog`]) |
 //! | `metadata.get` / `metadata.set` | the Metadata panel: an item's clip and file properties; editable log fields (undoable) |
 //! | `project.notes` / `project.setNotes` | the Project Notes panel: free plain text saved in the project (undoable) |
+//! | `project.notesTimecodes` / `project.notesInsertTimecode` / `project.notesMarkers` | timecodes written in the notes: list them, write the playhead's, make sequence markers of them |
 //!
 //! The Progress panel uses `jobs.list` / `jobs.cancel`; the Timecode panel and the Reference
 //! Monitor are frontend state only.
@@ -372,6 +373,134 @@ fn notes_set(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"text": s.project.notes, "changed": changed}))
 }
 
+/// A timecode written in the project notes (`01:00:12:05`, `00:02:30;10`, `00:00:42`): its place
+/// in the text (character offsets, end exclusive), the text, the sequence time it names and the
+/// rest of its line (what the note says about that moment).
+#[derive(Clone, Debug, PartialEq)]
+pub struct NoteTimecode {
+    pub start: usize,
+    pub end: usize,
+    pub text: String,
+    pub time: Tick,
+    pub rest: String,
+}
+
+/// The timecodes in `notes` (three or four fields of one to three digits joined by `:` or `;`,
+/// not part of a longer run of digits), as times of a sequence at `rate` whose timecode starts at
+/// frame `start_frame`. Times before the sequence's start are left out.
+pub fn note_timecodes(notes: &str, rate: redrob_film_time::FrameRate, drop_frame: bool, start_frame: i64) -> Vec<NoteTimecode> {
+    let chars: Vec<char> = notes.chars().collect();
+    let tc_char = |c: char| c.is_ascii_digit() || c == ':' || c == ';';
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < chars.len() {
+        if !chars[i].is_ascii_digit() || (i > 0 && (tc_char(chars[i - 1]) || chars[i - 1] == '.')) {
+            i += 1;
+            continue;
+        }
+        let mut j = i;
+        while j < chars.len() && tc_char(chars[j]) {
+            j += 1;
+        }
+        // a trailing separator belongs to the sentence, not the timecode
+        while j > i && !chars[j - 1].is_ascii_digit() {
+            j -= 1;
+        }
+        let text: String = chars[i..j].iter().collect();
+        let fields: Vec<&str> = text.split([':', ';']).collect();
+        let ok = (3..=4).contains(&fields.len()) && fields.iter().all(|f| (1..=3).contains(&f.len()));
+        if ok {
+            let full = if fields.len() == 3 { format!("{text}:00") } else { text.clone() };
+            if let Ok(frame) = redrob_film_time::parse_timecode(&full, rate, drop_frame, 0) {
+                let frame = frame - start_frame;
+                if frame >= 0 {
+                    let rest: String = chars[j..].iter().take_while(|c| **c != '\n').collect();
+                    let rest = rest.trim_start_matches([' ', '\t', '-', ':', '–', '—']).trim().to_string();
+                    out.push(NoteTimecode { start: i, end: j, text, time: rate.tick_of(frame), rest });
+                }
+            }
+        }
+        i = j.max(i + 1);
+    }
+    out
+}
+
+/// The timecodes of the notes against the active sequence (none without one).
+pub fn active_note_timecodes(s: &Session) -> Vec<NoteTimecode> {
+    let Some(q) = s.active_sequence() else { return Vec::new() };
+    note_timecodes(&s.project.notes, q.settings.frame_rate, q.settings.drop_frame, q.start_timecode.max(0))
+}
+
+/// `project.notesTimecodes`: the timecodes written in the notes, with the sequence times they name.
+fn notes_timecodes(s: &mut Session, _: &Value) -> Result<Value> {
+    let list: Vec<Value> = active_note_timecodes(s)
+        .into_iter()
+        .map(|t| json!({"text": t.text, "start": t.start, "end": t.end, "time": t.time.0, "rest": t.rest}))
+        .collect();
+    Ok(json!({"timecodes": list}))
+}
+
+/// `project.notesInsertTimecode {at?}`: write the playhead's timecode into the notes at character
+/// offset `at` (default: the end), as one undo step. The written timecode is a link the panel
+/// seeks to. Returns the text and the offset just after the timecode.
+fn notes_insert_timecode(s: &mut Session, p: &Value) -> Result<Value> {
+    let q = s.active_sequence().ok_or(crate::EngineError::NoSequence)?;
+    let (rate, drop_frame, start) = (q.settings.frame_rate, q.settings.drop_frame, q.start_timecode.max(0));
+    let ph = s.playhead();
+    let tc = redrob_film_time::format_timecode_frames(rate.frame_at(ph) + start, rate, drop_frame);
+    let chars: Vec<char> = s.project.notes.chars().collect();
+    let at = p.get("at").and_then(Value::as_u64).map_or(chars.len(), |a| (a as usize).min(chars.len()));
+    // a space keeps the timecode apart from the word before and after it
+    let before = if at > 0 && !chars[at - 1].is_whitespace() { " " } else { "" };
+    let after = if chars.get(at).is_some_and(|c| c.is_whitespace()) { "" } else { " " };
+    let insert = format!("{before}{tc}{after}");
+    let text: String = chars[..at].iter().collect::<String>() + &insert + &chars[at..].iter().collect::<String>();
+    if text.len() > MAX_NOTES_BYTES {
+        return Err(bad("project.notesInsertTimecode", "the notes are too long"));
+    }
+    s.edit("Insert Timecode in Notes", |pr, _| {
+        pr.notes = text.clone();
+        Ok(())
+    })?;
+    Ok(json!({"text": s.project.notes, "timecode": tc, "cursor": at + insert.chars().count()}))
+}
+
+/// `project.notesMarkers {from?, to?}`: a sequence marker at each timecode of the notes whose
+/// text lies in the character range [from, to) (default: all of them), named after the rest of
+/// its line. One undo step; timecodes that already have a marker at their time are skipped.
+fn notes_markers(s: &mut Session, p: &Value) -> Result<Value> {
+    s.active_sequence().ok_or(crate::EngineError::NoSequence)?;
+    let from = p.get("from").and_then(Value::as_u64).map_or(0, |v| v as usize);
+    let to = p.get("to").and_then(Value::as_u64).map_or(usize::MAX, |v| v as usize);
+    let (from, to) = (from.min(to), from.max(to));
+    let wanted: Vec<NoteTimecode> = active_note_timecodes(s).into_iter().filter(|t| t.end > from && t.start < to.max(from + 1)).collect();
+    if wanted.is_empty() {
+        return Err(bad("project.notesMarkers", "no timecode in the notes (or in the selected text)"));
+    }
+    let n = s.edit_sequence("Create Markers from Notes", |q, ctx, _| {
+        let mut n = 0;
+        for t in &wanted {
+            if q.markers.iter().any(|m| m.start == t.time) {
+                continue;
+            }
+            let id = redrob_film_project::MarkerId(ctx.alloc());
+            q.markers.push(redrob_film_project::Marker {
+                id,
+                start: t.time,
+                duration: Tick::ZERO,
+                name: t.rest.chars().take(200).collect(),
+                comment: String::new(),
+                kind: redrob_film_project::MarkerKind::Comment,
+                color: Label::Green,
+            });
+            n += 1;
+        }
+        q.markers.sort_by_key(|m| m.start);
+        Ok(n)
+    })?;
+    Ok(json!({"markers": n}))
+}
+
 // ------------------------------------------------------------------------------------ registry
 
 pub(crate) fn commands() -> Vec<CommandSpec> {
@@ -412,6 +541,27 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             params: r#"{"text":str,"merge":str?}"#,
             enabled: always,
             run: notes_set,
+            journal: true,
+        },
+        q("project.notesTimecodes", "List Timecodes in Project Notes", "{}", notes_timecodes),
+        CommandSpec {
+            id: "project.notesInsertTimecode",
+            label: "Insert Timecode in Project Notes",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"at":charOffset?}"#,
+            enabled: always,
+            run: notes_insert_timecode,
+            journal: true,
+        },
+        CommandSpec {
+            id: "project.notesMarkers",
+            label: "Create Markers from Project Notes",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"from":charOffset?,"to":charOffset?}"#,
+            enabled: always,
+            run: notes_markers,
             journal: true,
         },
     ]
