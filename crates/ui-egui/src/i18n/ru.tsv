@@ -738,3 +738,110 @@
 	Background Scale	Масштаб фона
 	Background Opacity	Непрозрачность фона
 	GPS Graphic	GPS-график
+	Filter	Фильтр
+	Description:	Описание:
+	Color:	Цвет:
+	Video Only	Только видео
+	Audio Only	Только аудио
+	Image	Изображение
+	Image Sequence	Последовательность изображений
+	Title	Титр
+	Tags	Теги
+	{count} (filtered)	{count} (отфильтровано)
+	Rating	Оценка
+	Not Rated	Без оценки
+	Usage	Использование
+	Clear Filters	Сбросить фильтры
+	Click to tag the selected items; right-click to edit; drag to reorder	Щелчок — пометить выбранные элементы; правый щелчок — изменить; перетаскивание — изменить порядок
+	Select items to tag	Выберите элементы для пометки
+	Edit Tag…	Изменить тег…
+	Filter by This Tag	Фильтровать по этому тегу
+	Delete Tag	Удалить тег
+	Add Tag	Добавить тег
+	No Rating	Без оценки
+	1 Star	1 звезда
+	{n} Stars	Звёзд: {n}
+	Default Folder for Sequences	Папка по умолчанию для эпизодов
+	Default Folder for Audio Captures	Папка по умолчанию для аудиозаписей
+	Used {n} times	Использовано раз: {n}
+	Edit Tag	Изменить тег
+	Audio and Video	Аудио и видео
+	Color and Generators	Цвет и генераторы
+	Subclip	Фрагмент клипа
+	Adjustment Layer	Корректирующий слой
+	Used	Используемые
+	Unused	Неиспользуемые
+	Insert Order	Порядок добавления
+	Ignore subfolder structure on import	Игнорировать структуру подпапок при импорте
+	Color Bars…	Цветные полосы…
+	Counter…	Счётчик…
+	White Noise…	Белый шум…
+	Counter	Счётчик
+	Color Bars	Цветные полосы
+	Counter Style:	Стиль счётчика:
+	Sound:	Звук:
+	Bar Type:	Тип полос:
+	Count up	Считать вверх
+	No Background	Без фона
+	PAL color bars	Цветные полосы PAL
+	PAL color bars with red	Цветные полосы PAL с красным
+	BBC color bars	Цветные полосы BBC
+	EBU color bars	Цветные полосы EBU
+	SMPTE color bars	Цветные полосы SMPTE
+	Philips PM5544	Philips PM5544
+	FuBK	FuBK
+	Simplified FuBK	Упрощённая FuBK
+	Seconds to 1	Секунды до 1
+	Seconds to 0	Секунды до 0
+	Frames	Кадры
+	Clock	Часы
+	Silent	Без звука
+	1 kHz before end	1 кГц перед концом
+	1 kHz each second	1 кГц каждую секунду
+	Duration:	Длительность:
+	Delete Proxies	Удалить прокси
+	Slideshow…	Слайд-шоу…
+	Slideshow	Слайд-шоу
+	Play as a slideshow	Воспроизводить как слайд-шоу
+	Frame duration:	Длительность кадра:
+	 frames	 кадров
+	Dissolve:	Растворение:
+	Wipe:	Шторка:
+	Softness:	Мягкость:
+	Loop	Повтор
+	Center crop	Обрезать по центру
+	Animation (pan and zoom)	Анимация (панорама и масштаб)
+	Low pass filter	Фильтр нижних частот
+	Dissolve	Растворение
+	Wipe from left	Шторка слева
+	Wipe from right	Шторка справа
+	Wipe from top	Шторка сверху
+	Wipe from bottom	Шторка снизу
+	Radial wipe	Радиальная шторка
+	Audio Sync Offset…	Смещение синхронизации звука…
+	Audio Sync Offset	Смещение синхронизации звука
+	Audio sync offset:	Смещение синхронизации звука:
+	Positive values play the audio later than the picture.	Положительные значения запускают звук позже изображения.
+	Duration…	Длительность…
+	Color Range	Цветовой диапазон
+	As the File Says	Как указано в файле
+	Full Range	Полный диапазон
+	Limited Range	Ограниченный диапазон
+	Add Timeline Selection to Library	Добавить выделенное на таймлайне в библиотеку
+	Add Folder	Добавить папку
+	Add Clip to Project	Добавить клип в проект
+	Rename Library Clip	Переименовать клип библиотеки
+	Library Clip	Клип библиотеки
+	New Folder	Новая папка
+	Select clips in the timeline and add them to the library	Выделите клипы на таймлайне и добавьте их в библиотеку
+	Added to the project bin	Добавлено в корзину проекта
+	Expand Clip	Развернуть клип
+	Library folder	Папка библиотеки
+	Open in Separate Window	Открыть в отдельном окне
+	Delete	Удалить
+	OK	OK
+	Capture volume:	Громкость записи:
+	Sample format:	Формат сэмплов:
+	32-bit float	32-бит с плавающей точкой
+	24-bit	24 бита
+	16-bit	16 бит

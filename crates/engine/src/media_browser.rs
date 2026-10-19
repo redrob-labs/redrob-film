@@ -484,6 +484,21 @@ fn import_folder(s: &mut Session, folder: &Folder, parent: Option<u64>, out: &mu
     let name = folder.name.clone();
     let bin = s.edit("New Bin", |pr, _| Ok(pr.add_bin(&name, parent.map(redrob_film_project::BinId))))?;
     merge_import(out, json!({"bins": [bin.0]}));
+    if s.prefs.media.ignore_subfolder_structure {
+        // Settings ▸ Media ▸ Ignore subfolder structure: the whole tree's files in this one bin
+        fn files_of(f: &Folder, out: &mut Vec<String>) {
+            out.extend(f.files.iter().cloned());
+            for sub in &f.subs {
+                files_of(sub, out);
+            }
+        }
+        let mut files = Vec::new();
+        files_of(folder, &mut files);
+        if !files.is_empty() {
+            import_into(s, &files, Some(bin.0), out);
+        }
+        return Ok(());
+    }
     if !folder.files.is_empty() {
         import_into(s, &folder.files, Some(bin.0), out);
     }

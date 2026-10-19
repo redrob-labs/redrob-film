@@ -932,9 +932,13 @@ fn build() -> Vec<CommandSpec> {
                 let seq_label = s.prefs.labels.defaults.sequence;
                 let seq_bin = s.prefs.timeline.sequences_bin.trim().to_string();
                 let id = s.edit("New Sequence", |pr, st2| {
-                    // Settings ▸ Timeline ▸ Default bin for new sequences (made in the root when missing)
-                    let bin = (!seq_bin.is_empty()).then(|| crate::timeline_ops::root_bin_named(pr, &seq_bin));
-                    let id = pr.new_sequence(&name, st, nv as usize, na as usize, bin);
+                    // Project Settings ▸ default folder for new sequences; else Settings ▸ Timeline ▸
+                    // Default bin for new sequences (made in the root when missing)
+                    let folder = match pr.default_bin(pr.settings.sequence_bin) {
+                        Some(b) => Some(b),
+                        None => (!seq_bin.is_empty()).then(|| crate::timeline_ops::root_bin_named(pr, &seq_bin)),
+                    };
+                    let id = pr.new_sequence(&name, st, nv as usize, na as usize, folder);
                     if let Some(it) = pr.item_mut(id) {
                         it.label = seq_label;
                     }
@@ -1000,6 +1004,61 @@ fn build() -> Vec<CommandSpec> {
             s,
             Generator::CountingLeader,
             "Universal Counting Leader",
+            Label::Lavender,
+            p
+        )),
+        cmd!(
+            "file.newColorBars",
+            "Color Bars…",
+            ["File", "New"],
+            None,
+            r#"{"pattern":"pal|palRed|bbc|ebu|smpte|pm5544|fubk|fubkSimple"=smpte,"seconds":f64=5}"#,
+            always,
+            |s, p| {
+                let pattern = match str_p(p, "pattern") {
+                    Some(n) => redrob_film_media::BarsPattern::from_name(n).ok_or_else(|| bad("file.newColorBars", format!("unknown pattern `{n}`")))?,
+                    None => redrob_film_media::BarsPattern::default(),
+                };
+                new_generator(s, Generator::ColorBars { pattern }, pattern.label(), Label::Lavender, p)
+            }
+        ),
+        cmd!(
+            "file.newCounter",
+            "Counter…",
+            ["File", "New"],
+            None,
+            r#"{"countUp":bool=false,"noBackground":bool=false,"style":"secondsTo1|secondsTo0|frames|timecode|clock"=secondsTo1,"sound":"silent|beforeEnd|eachSecond"=silent,"seconds":f64=10}"#,
+            always,
+            |s, p| {
+                const CMD: &str = "file.newCounter";
+                let style = match str_p(p, "style") {
+                    Some(n) => redrob_film_media::CounterStyle::from_name(n).ok_or_else(|| bad(CMD, format!("unknown style `{n}`")))?,
+                    None => Default::default(),
+                };
+                let sound = match str_p(p, "sound") {
+                    Some(n) => redrob_film_media::CounterSound::from_name(n).ok_or_else(|| bad(CMD, format!("unknown sound `{n}`")))?,
+                    None => Default::default(),
+                };
+                let secs = f64_p(p, "seconds").unwrap_or(10.0);
+                if !(1.0..=3600.0).contains(&secs) {
+                    return Err(bad(CMD, "`seconds` is 1–3600"));
+                }
+                let g = Generator::Counter {
+                    count_up: bool_p(p, "countUp").unwrap_or(false),
+                    no_background: bool_p(p, "noBackground").unwrap_or(false),
+                    style,
+                    sound,
+                    seconds: secs.round() as u32,
+                };
+                let mut q = p.clone();
+                q["seconds"] = json!(secs.round());
+                new_generator(s, g, "Counter", Label::Lavender, &q)
+            }
+        ),
+        cmd!("file.newWhiteNoise", "White Noise…", ["File", "New"], None, r#"{"seconds":f64=5}"#, always, |s, p| new_generator(
+            s,
+            Generator::WhiteNoise,
+            "White Noise",
             Label::Lavender,
             p
         )),
@@ -3036,6 +3095,9 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::narration::commands());
     v.extend(crate::keyboard::commands());
     v.extend(crate::project_panel::commands());
+    v.extend(crate::bin_tags::commands());
+    v.extend(crate::clip_props::commands());
+    v.extend(crate::library::commands());
     v.extend(crate::media_browser::commands());
     v.extend(crate::paste_media::commands());
     // Kdenlive-parity timeline commands: edit modes, current track, spaces, snap points…

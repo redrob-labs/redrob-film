@@ -12,8 +12,10 @@
 
 pub mod aaf_omf;
 pub mod autosave;
+pub mod bin_tags;
 pub mod captions;
 pub mod clip_ops;
+pub mod clip_props;
 pub mod color;
 pub mod commands;
 pub mod demo;
@@ -23,6 +25,7 @@ pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;
 pub mod keyboard;
+pub mod library;
 mod marker_export;
 pub mod masks;
 pub mod media_browser;

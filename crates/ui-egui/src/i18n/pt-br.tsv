@@ -738,3 +738,110 @@
 	Background Scale	Escala do fundo
 	Background Opacity	Opacidade do fundo
 	GPS Graphic	Gráfico GPS
+	Filter	Filtro
+	Description:	Descrição:
+	Color:	Cor:
+	Video Only	Somente vídeo
+	Audio Only	Somente áudio
+	Image	Imagem
+	Image Sequence	Sequência de imagens
+	Title	Título
+	Tags	Etiquetas
+	{count} (filtered)	{count} (filtrado)
+	Rating	Classificação
+	Not Rated	Sem classificação
+	Usage	Uso
+	Clear Filters	Limpar filtros
+	Click to tag the selected items; right-click to edit; drag to reorder	Clique para etiquetar os itens selecionados; clique com o botão direito para editar; arraste para reordenar
+	Select items to tag	Selecione itens para etiquetar
+	Edit Tag…	Editar etiqueta…
+	Filter by This Tag	Filtrar por esta etiqueta
+	Delete Tag	Excluir etiqueta
+	Add Tag	Adicionar etiqueta
+	No Rating	Sem classificação
+	1 Star	1 estrela
+	{n} Stars	{n} estrelas
+	Default Folder for Sequences	Pasta padrão para sequências
+	Default Folder for Audio Captures	Pasta padrão para capturas de áudio
+	Used {n} times	Usado {n} vezes
+	Edit Tag	Editar etiqueta
+	Audio and Video	Áudio e vídeo
+	Color and Generators	Cor e geradores
+	Subclip	Subclipe
+	Adjustment Layer	Camada de ajuste
+	Used	Usados
+	Unused	Não usados
+	Insert Order	Ordem de inserção
+	Ignore subfolder structure on import	Ignorar a estrutura de subpastas ao importar
+	Color Bars…	Barras de cores…
+	Counter…	Contador…
+	White Noise…	Ruído branco…
+	Counter	Contador
+	Color Bars	Barras de cores
+	Counter Style:	Estilo do contador:
+	Sound:	Som:
+	Bar Type:	Tipo de barras:
+	Count up	Contagem progressiva
+	No Background	Sem fundo
+	PAL color bars	Barras de cores PAL
+	PAL color bars with red	Barras de cores PAL com vermelho
+	BBC color bars	Barras de cores BBC
+	EBU color bars	Barras de cores EBU
+	SMPTE color bars	Barras de cores SMPTE
+	Philips PM5544	Philips PM5544
+	FuBK	FuBK
+	Simplified FuBK	FuBK simplificado
+	Seconds to 1	Segundos até 1
+	Seconds to 0	Segundos até 0
+	Frames	Quadros
+	Clock	Relógio
+	Silent	Silencioso
+	1 kHz before end	1 kHz antes do fim
+	1 kHz each second	1 kHz a cada segundo
+	Duration:	Duração:
+	Delete Proxies	Excluir proxies
+	Slideshow…	Apresentação de slides…
+	Slideshow	Apresentação de slides
+	Play as a slideshow	Reproduzir como apresentação de slides
+	Frame duration:	Duração por imagem:
+	 frames	 quadros
+	Dissolve:	Dissolver:
+	Wipe:	Transição de cortina:
+	Softness:	Suavidade:
+	Loop	Repetir
+	Center crop	Corte centralizado
+	Animation (pan and zoom)	Animação (pan e zoom)
+	Low pass filter	Filtro passa-baixa
+	Dissolve	Dissolver
+	Wipe from left	Cortina da esquerda
+	Wipe from right	Cortina da direita
+	Wipe from top	Cortina de cima
+	Wipe from bottom	Cortina de baixo
+	Radial wipe	Cortina radial
+	Audio Sync Offset…	Deslocamento de sincronia do áudio…
+	Audio Sync Offset	Deslocamento de sincronia do áudio
+	Audio sync offset:	Deslocamento de sincronia do áudio:
+	Positive values play the audio later than the picture.	Valores positivos tocam o áudio depois da imagem.
+	Duration…	Duração…
+	Color Range	Faixa de cores
+	As the File Says	Conforme o arquivo
+	Full Range	Faixa completa
+	Limited Range	Faixa limitada
+	Add Timeline Selection to Library	Adicionar a seleção da linha do tempo à biblioteca
+	Add Folder	Adicionar pasta
+	Add Clip to Project	Adicionar clipe ao projeto
+	Rename Library Clip	Renomear clipe da biblioteca
+	Library Clip	Clipe da biblioteca
+	New Folder	Nova pasta
+	Select clips in the timeline and add them to the library	Selecione clipes na linha do tempo e adicione-os à biblioteca
+	Added to the project bin	Adicionado ao compartimento do projeto
+	Expand Clip	Expandir clipe
+	Library folder	Pasta da biblioteca
+	Open in Separate Window	Abrir em janela separada
+	Delete	Excluir
+	OK	OK
+	Capture volume:	Volume de captura:
+	Sample format:	Formato de amostra:
+	32-bit float	Ponto flutuante de 32 bits
+	24-bit	24 bits
+	16-bit	16 bits

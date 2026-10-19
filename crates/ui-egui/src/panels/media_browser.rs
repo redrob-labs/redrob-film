@@ -605,6 +605,8 @@ fn preview_item(
                     metadata: Default::default(),
                     created: 0,
                     split: Default::default(),
+                    rating: 0,
+                    tags: Vec::new(),
                 },
             );
             c.preview = Arc::new(p);

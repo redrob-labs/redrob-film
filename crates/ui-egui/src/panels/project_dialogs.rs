@@ -23,6 +23,12 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
         ProjectDialog::ManagePresets { .. } => tl!("Manage Saved View Presets"),
         ProjectDialog::FreeformOptions { .. } => tl!("Freeform View Options"),
         ProjectDialog::SaveArrangement { .. } => tl!("Save Arrangement"),
+        ProjectDialog::EditTag { .. } => tl!("Edit Tag"),
+        ProjectDialog::NewGenerator { command, .. } if command == "file.newCounter" => tl!("Counter"),
+        ProjectDialog::NewGenerator { .. } => tl!("Color Bars"),
+        ProjectDialog::Slideshow { .. } => tl!("Slideshow"),
+        ProjectDialog::AudioOffset { .. } => tl!("Audio Sync Offset"),
+        ProjectDialog::SetDuration { .. } => tl!("Duration"),
     };
     let mut win = egui::Window::new(title).id(egui::Id::new("project-dialog")).collapsible(false).resizable(false).anchor(Align2::CENTER_CENTER, [0.0, 0.0]);
     // a fixed size keeps the two-list dialog from shifting while its lists settle
@@ -78,6 +84,154 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                 });
                 if ok_cancel(app, ui, &mut close) && !name.trim().is_empty() {
                     run = Some(("project.freeform.saveArrangement".into(), json!({"name": name, "bin": bin})));
+                }
+            }
+            ProjectDialog::NewGenerator { command, pattern, count_up, no_background, style, sound, seconds } => {
+                use redrob_film_media::{BarsPattern, CounterSound, CounterStyle};
+                fn key<T: serde::Serialize>(v: T) -> String {
+                    serde_json::to_value(v).ok().and_then(|v| v.as_str().map(str::to_string)).unwrap_or_default()
+                }
+                let counter = command == "file.newCounter";
+                egui::Grid::new("new-generator").num_columns(2).spacing([12.0, 6.0]).show(ui, |ui| {
+                    if counter {
+                        ui.label(tl!("Counter Style:"));
+                        let cur = CounterStyle::from_name(style).unwrap_or_default();
+                        let r = egui::ComboBox::from_id_salt("counter-style").selected_text(crate::i18n::t(cur.label())).show_ui(ui, |ui| {
+                            for st in CounterStyle::ALL {
+                                if ui.selectable_label(st == cur, crate::i18n::t(st.label())).clicked() {
+                                    *style = key(st);
+                                }
+                            }
+                        });
+                        push(app, "projectDialog.style", &r.response, "Counter Style");
+                        ui.end_row();
+                        ui.label(tl!("Sound:"));
+                        let cur = CounterSound::from_name(sound).unwrap_or_default();
+                        let r = egui::ComboBox::from_id_salt("counter-sound").selected_text(crate::i18n::t(cur.label())).show_ui(ui, |ui| {
+                            for so in CounterSound::ALL {
+                                if ui.selectable_label(so == cur, crate::i18n::t(so.label())).clicked() {
+                                    *sound = key(so);
+                                }
+                            }
+                        });
+                        push(app, "projectDialog.sound", &r.response, "Sound");
+                        ui.end_row();
+                    } else {
+                        ui.label(tl!("Bar Type:"));
+                        let cur = BarsPattern::from_name(pattern).unwrap_or_default();
+                        let r = egui::ComboBox::from_id_salt("bars-pattern").selected_text(crate::i18n::t(cur.label())).show_ui(ui, |ui| {
+                            for pa in BarsPattern::ALL {
+                                if ui.selectable_label(pa == cur, crate::i18n::t(pa.label())).clicked() {
+                                    *pattern = key(pa);
+                                }
+                            }
+                        });
+                        push(app, "projectDialog.pattern", &r.response, "Bar Type");
+                        ui.end_row();
+                    }
+                    ui.label(tl!("Duration:"));
+                    let r = ui.add(egui::DragValue::new(seconds).range(1.0..=3600.0).suffix(" s"));
+                    push(app, "projectDialog.seconds", &r, "Duration");
+                    ui.end_row();
+                });
+                if counter {
+                    let r = ui.checkbox(count_up, tl!("Count up"));
+                    push(app, "projectDialog.countUp", &r, "Count up");
+                    let r = ui.checkbox(no_background, tl!("No Background"));
+                    push(app, "projectDialog.noBackground", &r, "No Background");
+                }
+                if ok_cancel(app, ui, &mut close) {
+                    let p = if counter {
+                        json!({"countUp": count_up, "noBackground": no_background, "style": style, "sound": sound, "seconds": seconds})
+                    } else {
+                        json!({"pattern": pattern, "seconds": seconds})
+                    };
+                    run = Some((command.clone(), p));
+                }
+            }
+            ProjectDialog::Slideshow { item, on, opts } => {
+                use redrob_film_media::slideshow::SlideWipe;
+                let r = ui.checkbox(on, tl!("Play as a slideshow"));
+                push(app, "projectDialog.slideshow", &r, "Play as a slideshow");
+                ui.add_enabled_ui(*on, |ui| {
+                    egui::Grid::new("slideshow").num_columns(2).spacing([12.0, 6.0]).show(ui, |ui| {
+                        ui.label(tl!("Frame duration:"));
+                        let r = ui.add(egui::DragValue::new(&mut opts.image_frames).range(1..=100_000).suffix(tl!(" frames")));
+                        push(app, "projectDialog.imageFrames", &r, "Frame duration");
+                        ui.end_row();
+                        ui.label(tl!("Dissolve:"));
+                        let r = ui.add(egui::DragValue::new(&mut opts.dissolve_frames).range(0..=100_000).suffix(tl!(" frames")));
+                        push(app, "projectDialog.dissolveFrames", &r, "Dissolve");
+                        ui.end_row();
+                        ui.label(tl!("Wipe:"));
+                        let r = egui::ComboBox::from_id_salt("slide-wipe").selected_text(crate::i18n::t(opts.wipe.label())).show_ui(ui, |ui| {
+                            for w in SlideWipe::ALL {
+                                if ui.selectable_label(w == opts.wipe, crate::i18n::t(w.label())).clicked() {
+                                    opts.wipe = w;
+                                }
+                            }
+                        });
+                        push(app, "projectDialog.wipe", &r.response, "Wipe");
+                        ui.end_row();
+                        ui.label(tl!("Softness:"));
+                        let r = ui.add(egui::Slider::new(&mut opts.softness, 0.0..=1.0));
+                        push(app, "projectDialog.softness", &r, "Softness");
+                        ui.end_row();
+                    });
+                    for (id, label, v) in [
+                        ("loop", tl!("Loop"), &mut opts.looped),
+                        ("crop", tl!("Center crop"), &mut opts.crop),
+                        ("kenBurns", tl!("Animation (pan and zoom)"), &mut opts.ken_burns),
+                        ("lowPass", tl!("Low pass filter"), &mut opts.low_pass),
+                    ] {
+                        let r = ui.checkbox(v, label);
+                        push(app, &format!("projectDialog.{id}"), &r, label);
+                    }
+                });
+                if ok_cancel(app, ui, &mut close) {
+                    let p = if *on {
+                        json!({"item": item, "imageFrames": opts.image_frames, "loop": opts.looped, "crop": opts.crop, "dissolveFrames": opts.dissolve_frames, "wipe": opts.wipe, "softness": opts.softness, "kenBurns": opts.ken_burns, "lowPass": opts.low_pass})
+                    } else {
+                        json!({"item": item, "off": true})
+                    };
+                    run = Some(("clip.slideshow".into(), p));
+                }
+            }
+            ProjectDialog::AudioOffset { items, ms } => {
+                ui.horizontal(|ui| {
+                    ui.label(tl!("Audio sync offset:"));
+                    let r = ui.add(egui::DragValue::new(ms).range(-10_000..=10_000).speed(1.0).suffix(" ms"));
+                    push(app, "projectDialog.ms", &r, "Audio sync offset");
+                });
+                ui.label(egui::RichText::new(tl!("Positive values play the audio later than the picture.")).weak().size(11.0));
+                if ok_cancel(app, ui, &mut close) {
+                    run = Some(("clip.audioOffset".into(), json!({"items": items, "ms": ms})));
+                }
+            }
+            ProjectDialog::SetDuration { item, seconds } => {
+                ui.horizontal(|ui| {
+                    ui.label(tl!("Duration:"));
+                    let r = ui.add(egui::DragValue::new(seconds).range(0.04..=36_000.0).speed(0.1).suffix(" s"));
+                    push(app, "projectDialog.seconds", &r, "Duration");
+                });
+                if ok_cancel(app, ui, &mut close) {
+                    run = Some(("clip.setDuration".into(), json!({"item": item, "seconds": seconds})));
+                }
+            }
+            ProjectDialog::EditTag { tag, name, color } => {
+                ui.horizontal(|ui| {
+                    ui.label(tl!("Description:"));
+                    let r = ui.add(egui::TextEdit::singleline(name).desired_width(220.0));
+                    push(app, "projectDialog.name", &r, "Description");
+                });
+                ui.horizontal(|ui| {
+                    ui.label(tl!("Color:"));
+                    let r = ui.color_edit_button_srgb(color);
+                    push(app, "projectDialog.color", &r, "Color");
+                });
+                if ok_cancel(app, ui, &mut close) && !name.trim().is_empty() {
+                    let hex = redrob_film_engine::bin_tags::color_hex(*color);
+                    run = Some(("project.tags.edit".into(), json!({"tag": tag, "name": name.trim(), "color": hex})));
                 }
             }
         }
