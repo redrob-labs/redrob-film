@@ -202,7 +202,9 @@ fn main() -> eframe::Result {
             }
             // voice-over recording reads the microphone through cpal
             session.voiceover.input = Some(Box::new(audio_in::CpalIn::new(&session.prefs.audio_hardware.device_class)));
-            let project = files.iter().find(|f| f.ends_with(".rfilm") || f.ends_with(".fcproj")).cloned(); // legacy: .fcproj still opens
+            // a Premiere Pro project (.prproj) opens as a new project too (G2)
+            let is_project = |f: &str| f.ends_with(".rfilm") || f.ends_with(".fcproj") || f.to_ascii_lowercase().ends_with(".prproj"); // legacy: .fcproj still opens
+            let project = files.iter().find(|f| is_project(f)).cloned();
             let project_given = project.clone();
             if let Some(p) = project {
                 if let Err(e) = session.execute("file.open", json!({"path": p})) {
@@ -225,7 +227,7 @@ fn main() -> eframe::Result {
             } else if demo {
                 let _ = session.execute("file.openDemoProject", json!({}));
             }
-            let media: Vec<String> = files.iter().filter(|f| !(f.ends_with(".rfilm") || f.ends_with(".fcproj"))).cloned().collect(); // legacy: .fcproj
+            let media: Vec<String> = files.iter().filter(|f| !is_project(f)).cloned().collect();
             if !media.is_empty() {
                 let _ = session.execute("file.import", json!({"paths": media}));
             }
@@ -330,6 +332,7 @@ fn main() -> eframe::Result {
             app.hooks.pick_open_project = Some(Box::new(|| {
                 rfd::FileDialog::new()
                     .add_filter(redrob_film_ui_egui::i18n::t("Redrob Film Project"), &file_filters::extensions(&["rfilm", "fcproj"])) // legacy: .fcproj still opens
+                    .add_filter(redrob_film_ui_egui::i18n::t("Premiere Pro Project"), &file_filters::extensions(&["prproj"]))
                     .pick_file()
                     .map(|p| p.to_string_lossy().to_string())
             }));

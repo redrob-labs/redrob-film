@@ -5815,6 +5815,7 @@ dependencies = [
 name = "redrob-film-interchange"
 version = "0.4.0"
 dependencies = [
+ "flate2",
  "proptest",
  "redrob-film-cfb",
  "redrob-film-color",

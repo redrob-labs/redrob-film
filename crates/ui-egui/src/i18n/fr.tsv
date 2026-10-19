@@ -5216,3 +5216,6 @@
 	Redrob Film closed unexpectedly last time. The crash report is in {path}; please attach it when you report the problem.	Redrob Film s'est fermé de façon inattendue la dernière fois. Le rapport de plantage se trouve dans {path} ; joignez-le lorsque vous signalez le problème.
 	The previous start stopped before the window opened, so this start uses safe mode: the preview, effects and export render on the CPU and hardware decoding is off. The next start uses the graphics hardware again.	Le démarrage précédent s'est arrêté avant l'ouverture de la fenêtre ; ce démarrage utilise donc le mode sans échec : l'aperçu, les effets et l'exportation sont rendus par le CPU et le décodage matériel est désactivé. Le prochain démarrage utilisera de nouveau le matériel graphique.
 	Safe mode: the preview, effects and export render on the CPU and hardware decoding is off.	Mode sans échec : l'aperçu, les effets et l'exportation sont rendus par le CPU et le décodage matériel est désactivé.
+	Premiere Pro Project	Projet Premiere Pro
+	Premiere Pro project imported	Projet Premiere Pro importé
+	Premiere Pro project imported; {count} thing(s) did not carry over (listed in the Events panel)	Projet Premiere Pro importé ; {count} élément(s) n'ont pas été repris (liste dans le panneau Événements)

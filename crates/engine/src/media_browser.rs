@@ -73,7 +73,7 @@ pub const ALL_COLUMNS: [&str; 10] =
     ["Name", "Media Type", "Size", "Date Modified", "Frame Rate", "Media Duration", "Video Info", "Audio Info", "Video Codec", "Audio Codec"];
 pub const DEFAULT_COLUMNS: [&str; 5] = ["Name", "Frame Rate", "Media Duration", "Video Info", "Size"];
 
-const PROJECT_EXTENSIONS: [&str; 7] = ["rfilm", "fcproj", "edl", "xml", "fcpxml", "otio", "ale"]; // legacy: .fcproj still opens
+const PROJECT_EXTENSIONS: [&str; 8] = ["rfilm", "fcproj", "prproj", "edl", "xml", "fcpxml", "otio", "ale"]; // legacy: .fcproj still opens
 const CAPTION_EXTENSIONS: [&str; 3] = ["srt", "vtt", "scc"];
 const RECENT_MAX: usize = 10;
 

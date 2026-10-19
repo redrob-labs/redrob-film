@@ -5208,3 +5208,6 @@
 	Redrob Film closed unexpectedly last time. The crash report is in {path}; please attach it when you report the problem.	Redrob Film 上次意外关闭。崩溃报告位于 {path}；报告问题时请附上该文件。
 	The previous start stopped before the window opened, so this start uses safe mode: the preview, effects and export render on the CPU and hardware decoding is off. The next start uses the graphics hardware again.	上次启动在窗口打开前就已停止，因此本次以安全模式启动：预览、效果和导出均在 CPU 上渲染，硬件解码已关闭。下次启动将重新使用图形硬件。
 	Safe mode: the preview, effects and export render on the CPU and hardware decoding is off.	安全模式：预览、效果和导出均在 CPU 上渲染，硬件解码已关闭。
+	Premiere Pro Project	Premiere Pro 项目
+	Premiere Pro project imported	已导入 Premiere Pro 项目
+	Premiere Pro project imported; {count} thing(s) did not carry over (listed in the Events panel)	已导入 Premiere Pro 项目；{count} 项未能转入（列于“事件”面板）

@@ -1,4 +1,5 @@
-//! Interchange documents (CMX 3600 EDL, FCP7 XML, FCPXML, OTIO, AAF, OMF) ↔ the session's project.
+//! Interchange documents (CMX 3600 EDL, FCP7 XML, FCPXML, OTIO, AAF, OMF; Premiere Pro projects,
+//! import only) ↔ the session's project.
 
 use serde_json::{Value, json};
 
@@ -10,7 +11,7 @@ use crate::{EngineError, Result, Session};
 /// The interchange format of a file, if it is one (by content, with the extension as a hint).
 pub fn detect(path: &str, bytes: &[u8]) -> Option<Format> {
     let ext = std::path::Path::new(path).extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase);
-    if !matches!(ext.as_deref(), Some("edl" | "xml" | "fcpxml" | "otio" | "aaf" | "omf" | "omfi")) {
+    if !matches!(ext.as_deref(), Some("edl" | "xml" | "fcpxml" | "otio" | "aaf" | "omf" | "omfi" | "prproj")) {
         return None;
     }
     redrob_film_interchange::detect(bytes, ext.as_deref())
@@ -104,6 +105,18 @@ pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format) -> Resu
             None => offline.push(mpath),
         }
     }
+    // What did not carry over goes to the Events panel, one line per kind (the frontend says how
+    // many there were): an opened Premiere project must never lose things silently.
+    let doc_name = p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| path.to_string());
+    for e in &report.entries {
+        let level = match e.level {
+            redrob_film_interchange::Level::Warning => crate::panels::Level::Warning,
+            redrob_film_interchange::Level::Info => crate::panels::Level::Info,
+        };
+        let msg = if e.count > 1 { format!("{} (×{})", e.message, e.count) } else { e.message.clone() };
+        s.log.push(level, "import", format!("{doc_name}: {msg}"));
+    }
+    let warnings: u64 = report.warnings().map(|e| u64::from(e.count)).sum();
     if let Some(&first) = seqs.first() {
         s.state.active_sequence = Some(first);
         if !s.state.open_sequences.contains(&first) {
@@ -116,7 +129,25 @@ pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format) -> Resu
         "linkedMedia": linked,
         "offlineMedia": offline,
         "report": report_json(&report),
+        "warnings": warnings,
     }))
+}
+
+/// File ▸ Open of a Premiere Pro project: a new, unsaved project holding everything the `.prproj`
+/// carries (saving asks for a `.rfilm` path; the Premiere file is never written).
+pub fn open_premiere(s: &mut Session, path: &str, bytes: &[u8]) -> Result<Value> {
+    let name = std::path::Path::new(path).file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "Premiere Project".into());
+    s.execute("file.newProject", json!({ "name": name }))?;
+    let mut r = import(s, path, bytes, Format::Prproj)?;
+    // the import's merge is not something to undo back to an empty project
+    s.history = Default::default();
+    s.history.limit = 200;
+    if let Some(seq) = s.state.active_sequence {
+        s.events.push(crate::Event::OpenSequence(seq));
+    }
+    r["path"] = Value::Null;
+    r["importedFrom"] = json!(path);
+    Ok(r)
 }
 
 /// `file.exportInterchange {format: "edl"|"xml"|"fcpxml"|"otio"|"aaf"|"omf" = "xml", path, sequence?}`

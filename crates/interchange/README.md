@@ -1,7 +1,7 @@
 # redrob-film-interchange
 
 Timeline interchange for FilmCraft: CMX 3600 EDL, Final Cut Pro 7 XML (xmeml), FCPXML,
-OpenTimelineIO, AAF and OMF import and export, plus Avid ALE. Layer L2: no file I/O; media
+OpenTimelineIO, AAF and OMF import and export, plus Avid ALE and Premiere Pro project import. Layer L2: no file I/O; media
 references are strings and audio essence is supplied by the caller (the engine).
 
 ## Specifications
@@ -23,6 +23,12 @@ read off files it exports, never from the application itself.
 | WAVE / AIFF | Microsoft RIFF WAVE; Apple AIFF 1.3 | — | embedded and separate audio files |
 
 The other formats' editions are listed in the module docs (`edl`, `fcp7`, `fcpxml`, `otio`, `ale`).
+
+**Premiere Pro projects (`.prproj`, import only).** Adobe publishes no specification. The format
+(gzip-compressed XML: a flat pool of `ObjectID` / `ObjectUID` objects joined by `ObjectRef` /
+`ObjectURef`) was learned only by reading sample projects as XML (project versions 22 to 45). No
+`.prproj` reader, converter or downgrader, and no code or write-up about the format, was
+consulted. What is mapped and what goes to the report is in the `prproj` module docs.
 
 ## AAF and OMF
 
