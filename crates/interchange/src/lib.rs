@@ -7,7 +7,8 @@
 //! - **FCPXML** 1.9–1.11 ([`fcpxml`]);
 //! - **OpenTimelineIO** JSON (`.otio`) ([`otio`]);
 //! - **AAF** (`.aaf`, Edit Protocol, structured storage) ([`aaf`]);
-//! - **OMF Interchange 2.0** (`.omf`, Bento) for audio post ([`omf`]).
+//! - **OMF Interchange 2.0** (`.omf`, Bento) for audio post ([`omf`]);
+//! - **Premiere Pro projects** (`.prproj`, gzip-compressed XML), import only ([`prproj`]).
 //!
 //! AAF and OMF can embed or consolidate audio: [`essence::audio_needs`] lists what the caller
 //! (the engine) has to render, and [`essence::MediaOptions`] passes the result back in.
@@ -33,6 +34,7 @@ pub mod fcp7;
 pub mod fcpxml;
 pub mod omf;
 pub mod otio;
+pub mod prproj;
 
 mod common;
 mod comp;
@@ -63,6 +65,9 @@ pub enum Format {
     Aaf,
     /// OMF Interchange 2.0 (Bento container).
     Omf,
+    /// Adobe Premiere Pro project (gzip-compressed XML). Import only: not in [`Format::ALL`],
+    /// which lists the formats that also export.
+    Prproj,
 }
 
 impl Format {
@@ -76,6 +81,7 @@ impl Format {
             Format::Otio => "OpenTimelineIO",
             Format::Aaf => "AAF",
             Format::Omf => "OMF",
+            Format::Prproj => "Premiere Pro project",
         }
     }
 
@@ -88,6 +94,7 @@ impl Format {
             Format::Otio => "otio",
             Format::Aaf => "aaf",
             Format::Omf => "omf",
+            Format::Prproj => "prproj",
         }
     }
 
@@ -101,6 +108,7 @@ impl Format {
             "otio" => Some(Format::Otio),
             "aaf" => Some(Format::Aaf),
             "omf" | "omfi" => Some(Format::Omf),
+            "prproj" => Some(Format::Prproj),
             _ => None,
         }
     }
@@ -108,6 +116,9 @@ impl Format {
 
 /// Sniff the format of a document from its bytes, using the file extension as a hint.
 pub fn detect(bytes: &[u8], extension: Option<&str>) -> Option<Format> {
+    if prproj::sniff(bytes) {
+        return Some(Format::Prproj);
+    }
     if aaf::sniff(bytes) {
         return Some(Format::Aaf);
     }
@@ -266,6 +277,11 @@ pub fn import_with(bytes: &[u8], format: Format, opts: &ImportOptions) -> Result
         }
         return Ok((imported, report));
     }
+    if format == Format::Prproj {
+        let mut report = Report::default();
+        let imported = prproj::import(bytes, opts, &mut report)?;
+        return Ok((imported, report));
+    }
     let text = decode_text(bytes);
     let mut report = Report::default();
     let imported = match format {
@@ -273,7 +289,7 @@ pub fn import_with(bytes: &[u8], format: Format, opts: &ImportOptions) -> Result
         Format::Fcp7Xml => fcp7::import(&text, opts, &mut report)?,
         Format::Fcpxml => fcpxml::import(&text, opts, &mut report)?,
         Format::Otio => otio::import(&text, opts, &mut report)?,
-        Format::Aaf | Format::Omf => return Err(Error::Other("AAF / OMF are binary documents".into())),
+        Format::Aaf | Format::Omf | Format::Prproj => return Err(Error::Other("AAF / OMF / Premiere projects are binary documents".into())),
     };
     Ok((imported, report))
 }
@@ -378,6 +394,9 @@ pub fn export(project: &Project, sequence: ItemId, format: Format, opts: &Export
     if project.sequence(sequence).is_none() {
         return Err(Error::NoSequence(sequence));
     }
+    if format == Format::Prproj {
+        return Err(Error::Other("Premiere Pro projects (.prproj) can be opened and imported, not exported".into()));
+    }
     if format == Format::Aaf {
         return aaf::export(project, sequence, &aaf::AafOptions { name: opts.name.clone(), ..Default::default() });
     }
@@ -390,7 +409,7 @@ pub fn export(project: &Project, sequence: ItemId, format: Format, opts: &Export
         Format::Fcp7Xml => fcp7::export(project, sequence, opts, &mut report)?,
         Format::Fcpxml => fcpxml::export(project, sequence, opts, &mut report)?,
         Format::Otio => otio::export(project, sequence, opts, &mut report)?,
-        Format::Aaf | Format::Omf => return Err(Error::Other("AAF / OMF are binary documents".into())),
+        Format::Aaf | Format::Omf | Format::Prproj => return Err(Error::Other("AAF / OMF / Premiere projects are binary documents".into())),
     };
     Ok((text.into_bytes(), report))
 }
