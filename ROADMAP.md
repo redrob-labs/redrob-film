@@ -2,6 +2,19 @@
 
 ## Changes
 
+## 0.5.0
+
+Premiere projects open, camera 10-bit plays, and the needle follows at once.
+
+- **Premiere Pro projects.** `.prproj` files from CS6 to Premiere 2026 open directly: sequences,
+  clips, speed, markers, bins, transitions and basic Motion / Opacity / Volume; what does not carry
+  over is listed.
+- **10-bit and 4:2:2 cameras.** H.264 High 10 / High 4:2:2 and HEVC Main 4:2:2 10 decode in
+  software on every system.
+- **No first-drag freeze on Windows, faster Space.** Scrub audio no longer opens a device on the
+  first press; play starts on the picture and the sound joins.
+- **Starts on more machines.** CPU fallback, `--safe-mode`, crash notice.
+
 ## 0.4.0
 
 Kdenlive parity, and an editor that goes idle.
