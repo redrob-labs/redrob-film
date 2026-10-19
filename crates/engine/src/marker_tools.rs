@@ -333,7 +333,7 @@ pub fn chapters(s: &Session, p: &Value) -> Result<(String, Vec<String>)> {
     let rate = q.settings.frame_rate;
     let offset = p.get("offsetFrames").and_then(Value::as_i64).unwrap_or(0);
     let filter = str_p(p, "color").and_then(Label::from_name);
-    let mut ms: Vec<&Marker> = q.markers.iter().filter(|m| filter.is_none_or(|c| m.color == c)).collect();
+    let mut ms: Vec<Marker> = q.markers.iter().filter(|m| filter.is_none_or(|c| m.color == c)).cloned().collect();
     ms.sort_by_key(|m| (m.start, m.id));
     let frame = |m: &Marker| rate.frame_at(m.start) + offset;
     let secs = |f: i64| f * rate.den / rate.num.max(1);
@@ -368,7 +368,7 @@ pub fn chapters(s: &Session, p: &Value) -> Result<(String, Vec<String>)> {
         if ms.len() < 3 {
             warnings.push("At least 3 chapters are needed.".to_string());
         }
-        if ms.windows(2).any(|w| secs(frame(w[1])) - secs(frame(w[0])) < 10) {
+        if ms.windows(2).any(|w| secs(frame(&w[1])) - secs(frame(&w[0])) < 10) {
             warnings.push("Each chapter must be at least 10 seconds long.".to_string());
         }
     }

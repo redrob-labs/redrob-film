@@ -385,7 +385,7 @@ fn edit_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
             cancel = r.clicked();
             let r = ui.button(tl!("OK"));
             app.auto.add("editMarker.ok", r.rect, "OK");
-            ok = r.clicked() || ui.input(|i| i.key_pressed(egui::Key::Enter) && !i.modifiers.shift);
+            ok = r.clicked();
         });
     });
     if ok {
