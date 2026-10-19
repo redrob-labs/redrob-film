@@ -395,3 +395,71 @@
 	Unused	Невикористані
 	Insert Order	Порядок додавання
 	Ignore subfolder structure on import	Ігнорувати структуру підтек під час імпорту
+	Color Bars…	Кольорові смуги…
+	Counter…	Лічильник…
+	White Noise…	Білий шум…
+	Counter	Лічильник
+	Color Bars	Кольорові смуги
+	Counter Style:	Стиль лічильника:
+	Sound:	Звук:
+	Bar Type:	Тип смуг:
+	Count up	Лічити вгору
+	No Background	Без тла
+	PAL color bars	Кольорові смуги PAL
+	PAL color bars with red	Кольорові смуги PAL з червоним
+	BBC color bars	Кольорові смуги BBC
+	EBU color bars	Кольорові смуги EBU
+	SMPTE color bars	Кольорові смуги SMPTE
+	Philips PM5544	Philips PM5544
+	FuBK	FuBK
+	Simplified FuBK	Спрощена FuBK
+	Seconds to 1	Секунди до 1
+	Seconds to 0	Секунди до 0
+	Frames	Кадри
+	Clock	Годинник
+	Silent	Без звуку
+	1 kHz before end	1 кГц перед кінцем
+	1 kHz each second	1 кГц щосекунди
+	Duration:	Тривалість:
+	Delete Proxies	Видалити проксі
+	Slideshow…	Слайд-шоу…
+	Slideshow	Слайд-шоу
+	Play as a slideshow	Відтворювати як слайд-шоу
+	Frame duration:	Тривалість кадру:
+	 frames	 кадрів
+	Dissolve:	Розчинення:
+	Wipe:	Шторка:
+	Softness:	М'якість:
+	Loop	Повтор
+	Center crop	Обрізати по центру
+	Animation (pan and zoom)	Анімація (панорама і масштаб)
+	Low pass filter	Фільтр нижніх частот
+	Dissolve	Розчинення
+	Wipe from left	Шторка зліва
+	Wipe from right	Шторка справа
+	Wipe from top	Шторка згори
+	Wipe from bottom	Шторка знизу
+	Radial wipe	Радіальна шторка
+	Audio Sync Offset…	Зсув синхронізації звуку…
+	Audio Sync Offset	Зсув синхронізації звуку
+	Audio sync offset:	Зсув синхронізації звуку:
+	Positive values play the audio later than the picture.	Додатні значення відтворюють звук пізніше за зображення.
+	Duration…	Тривалість…
+	Duration	Тривалість
+	Color Range	Колірний діапазон
+	As the File Says	Як зазначено у файлі
+	Full Range	Повний діапазон
+	Limited Range	Обмежений діапазон
+	Add Timeline Selection to Library	Додати виділене на монтажному столі до бібліотеки
+	Add Folder	Додати теку
+	Add Clip to Project	Додати кліп до проєкту
+	Rename Library Clip	Перейменувати кліп бібліотеки
+	Library Clip	Кліп бібліотеки
+	New Folder	Нова тека
+	Select clips in the timeline and add them to the library	Виділіть кліпи на монтажному столі та додайте їх до бібліотеки
+	Added to the project bin	Додано до кошика проєкту
+	Expand Clip	Розгорнути кліп
+	Library folder	Тека бібліотеки
+	Open in Separate Window	Відкрити в окремому вікні
+	Delete	Видалити
+	OK	OK

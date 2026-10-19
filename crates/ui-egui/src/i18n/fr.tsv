@@ -3602,3 +3602,63 @@
 	Unused	Inutilisés
 	Insert Order	Ordre d'insertion
 	Ignore subfolder structure on import	Ignorer la structure des sous-dossiers à l'importation
+	Color Bars…	Mires de couleur…
+	Counter…	Compteur…
+	White Noise…	Bruit blanc…
+	Counter	Compteur
+	Color Bars	Mires de couleur
+	Counter Style:	Style du compteur :
+	Sound:	Son :
+	Bar Type:	Type de mire :
+	Count up	Compter vers le haut
+	No Background	Sans arrière-plan
+	PAL color bars	Mire de couleur PAL
+	PAL color bars with red	Mire de couleur PAL avec rouge
+	BBC color bars	Mire de couleur BBC
+	EBU color bars	Mire de couleur UER
+	SMPTE color bars	Mire de couleur SMPTE
+	Philips PM5544	Philips PM5544
+	FuBK	FuBK
+	Simplified FuBK	FuBK simplifiée
+	Seconds to 1	Secondes jusqu'à 1
+	Seconds to 0	Secondes jusqu'à 0
+	Clock	Horloge
+	Silent	Muet
+	1 kHz before end	1 kHz avant la fin
+	1 kHz each second	1 kHz chaque seconde
+	Delete Proxies	Supprimer les proxys
+	Slideshow…	Diaporama…
+	Slideshow	Diaporama
+	Play as a slideshow	Lire comme un diaporama
+	Frame duration:	Durée par image :
+	Dissolve:	Fondu :
+	Wipe:	Volet :
+	Softness:	Douceur :
+	Center crop	Recadrage centré
+	Animation (pan and zoom)	Animation (panoramique et zoom)
+	Low pass filter	Filtre passe-bas
+	Wipe from left	Volet depuis la gauche
+	Wipe from right	Volet depuis la droite
+	Wipe from top	Volet depuis le haut
+	Wipe from bottom	Volet depuis le bas
+	Radial wipe	Volet radial
+	Audio Sync Offset…	Décalage de synchronisation audio…
+	Audio Sync Offset	Décalage de synchronisation audio
+	Audio sync offset:	Décalage de synchronisation audio :
+	Positive values play the audio later than the picture.	Les valeurs positives lisent l'audio après l'image.
+	Duration…	Durée…
+	Color Range	Plage de couleurs
+	As the File Says	Selon le fichier
+	Full Range	Plage complète
+	Limited Range	Plage limitée
+	Add Timeline Selection to Library	Ajouter la sélection de la timeline à la bibliothèque
+	Add Folder	Ajouter un dossier
+	Add Clip to Project	Ajouter le clip au projet
+	Rename Library Clip	Renommer le clip de bibliothèque
+	Library Clip	Clip de bibliothèque
+	New Folder	Nouveau dossier
+	Select clips in the timeline and add them to the library	Sélectionnez des clips dans la timeline et ajoutez-les à la bibliothèque
+	Added to the project bin	Ajouté au chutier du projet
+	Expand Clip	Développer le clip
+	Library folder	Dossier de la bibliothèque
+	Open in Separate Window	Ouvrir dans une fenêtre séparée

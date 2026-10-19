@@ -285,6 +285,55 @@ fn item_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, id: ItemId, kind: &ItemK
         actions.push(("clip.interpretFootage".into(), json!({"items": [id.0]})));
         ui.close();
     }
+    let fixed_length = match kind {
+        ItemKind::Media(m) => {
+            matches!(m.info.kind, redrob_film_media::MediaKind::Still | redrob_film_media::MediaKind::Synthetic)
+                || matches!(m.media, redrob_film_project::MediaRef::Generator(_))
+        }
+        ItemKind::AdjustmentLayer { .. } => true,
+        _ => false,
+    };
+    if fixed_length {
+        let b = ui.button(tl!("Duration…"));
+        app.auto.add("project.itemMenu.duration", b.rect, "Duration…");
+        if b.clicked() {
+            let secs = app.session.project.item(id).map(|i| i.duration().seconds()).unwrap_or(5.0);
+            app.ui.project_panel.dialog = Some(crate::panels::project::ProjectDialog::SetDuration { item: id.0, seconds: secs });
+            ui.close();
+        }
+    }
+    if let ItemKind::Media(m) = kind
+        && m.info.has_video()
+    {
+        let cur = match m.interpret.color_range {
+            None => "auto",
+            Some(redrob_film_color::Range::Full) => "full",
+            Some(redrob_film_color::Range::Limited) => "limited",
+        };
+        let targets = menu_targets(app, id);
+        let cr = ui.menu_button(tl!("Color Range"), |ui| {
+            for (key, label) in [("auto", tl!("As the File Says")), ("full", tl!("Full Range")), ("limited", tl!("Limited Range"))] {
+                let b = ui.add(egui::Button::selectable(cur == key, label));
+                app.auto.add(&format!("project.itemMenu.colorRange.{key}"), b.rect, label);
+                if b.clicked() {
+                    actions.push(("clip.colorRange".into(), json!({"items": targets, "range": key})));
+                    ui.close();
+                }
+            }
+        });
+        app.auto.add("project.itemMenu.colorRange", cr.response.rect, "Color Range");
+    }
+    if let ItemKind::Media(m) = kind
+        && m.info.has_audio()
+    {
+        let b = ui.button(tl!("Audio Sync Offset…"));
+        app.auto.add("project.itemMenu.audioOffset", b.rect, "Audio Sync Offset…");
+        if b.clicked() {
+            app.ui.project_panel.dialog =
+                Some(crate::panels::project::ProjectDialog::AudioOffset { items: menu_targets(app, id), ms: m.interpret.audio_offset_ms });
+            ui.close();
+        }
+    }
     if let ItemKind::Media(m) = kind
         && m.info.kind == redrob_film_media::MediaKind::ImageSequence
     {
@@ -392,7 +441,12 @@ fn item_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, id: ItemId, kind: &ItemK
 }
 
 fn bin_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, v: &View, bin: u64, actions: &mut Actions) {
-    for (label, how) in [(tl!("Open in Place"), "inPlace"), (tl!("Open in New Tab"), "newTab"), (tl!("Open in New Window"), "newWindow")] {
+    for (label, how) in [
+        (tl!("Open in Place"), "inPlace"),
+        (tl!("Open in New Tab"), "newTab"),
+        (tl!("Open in New Window"), "newWindow"),
+        (tl!("Open in Separate Window"), "separateWindow"),
+    ] {
         let b = ui.button(label);
         app.auto.add(&format!("{}.binMenu.{how}", v.prefix), b.rect, label);
         if b.clicked() {

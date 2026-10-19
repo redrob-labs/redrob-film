@@ -3601,3 +3601,63 @@
 	Unused	未使用
 	Insert Order	追加順
 	Ignore subfolder structure on import	読み込み時にサブフォルダー構造を無視
+	Color Bars…	カラーバー…
+	Counter…	カウンター…
+	White Noise…	ホワイトノイズ…
+	Counter	カウンター
+	Color Bars	カラーバー
+	Counter Style:	カウンターのスタイル：
+	Sound:	サウンド：
+	Bar Type:	バーの種類：
+	Count up	カウントアップ
+	No Background	背景なし
+	PAL color bars	PAL カラーバー
+	PAL color bars with red	PAL カラーバー（赤付き）
+	BBC color bars	BBC カラーバー
+	EBU color bars	EBU カラーバー
+	SMPTE color bars	SMPTE カラーバー
+	Philips PM5544	Philips PM5544
+	FuBK	FuBK
+	Simplified FuBK	簡易 FuBK
+	Seconds to 1	1 までの秒数
+	Seconds to 0	0 までの秒数
+	Clock	時計
+	Silent	無音
+	1 kHz before end	終了前に 1 kHz
+	1 kHz each second	毎秒 1 kHz
+	Delete Proxies	プロキシを削除
+	Slideshow…	スライドショー…
+	Slideshow	スライドショー
+	Play as a slideshow	スライドショーとして再生
+	Frame duration:	1 枚の表示時間：
+	Dissolve:	ディゾルブ：
+	Wipe:	ワイプ：
+	Softness:	柔らかさ：
+	Center crop	中央で切り抜き
+	Animation (pan and zoom)	アニメーション（パンとズーム）
+	Low pass filter	ローパスフィルター
+	Wipe from left	左からワイプ
+	Wipe from right	右からワイプ
+	Wipe from top	上からワイプ
+	Wipe from bottom	下からワイプ
+	Radial wipe	放射状ワイプ
+	Audio Sync Offset…	オーディオ同期オフセット…
+	Audio Sync Offset	オーディオ同期オフセット
+	Audio sync offset:	オーディオ同期オフセット：
+	Positive values play the audio later than the picture.	正の値ではオーディオが映像より後に再生されます。
+	Duration…	デュレーション…
+	Color Range	カラー範囲
+	As the File Says	ファイルの指定どおり
+	Full Range	フルレンジ
+	Limited Range	リミテッドレンジ
+	Add Timeline Selection to Library	タイムラインの選択範囲をライブラリに追加
+	Add Folder	フォルダーを追加
+	Add Clip to Project	クリップをプロジェクトに追加
+	Rename Library Clip	ライブラリクリップの名前を変更
+	Library Clip	ライブラリクリップ
+	New Folder	新規フォルダー
+	Select clips in the timeline and add them to the library	タイムラインでクリップを選択してライブラリに追加します
+	Added to the project bin	プロジェクトビンに追加しました
+	Expand Clip	クリップを展開
+	Library folder	ライブラリフォルダー
+	Open in Separate Window	別のウィンドウで開く

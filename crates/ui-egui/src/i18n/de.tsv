@@ -423,3 +423,71 @@
 	Unused	Unbenutzt
 	Insert Order	Einfügereihenfolge
 	Ignore subfolder structure on import	Unterordnerstruktur beim Import ignorieren
+	Color Bars…	Farbbalken…
+	Counter…	Zähler…
+	White Noise…	Weißes Rauschen…
+	Counter	Zähler
+	Color Bars	Farbbalken
+	Counter Style:	Zählerstil:
+	Sound:	Ton:
+	Bar Type:	Balkentyp:
+	Count up	Aufwärts zählen
+	No Background	Kein Hintergrund
+	PAL color bars	PAL-Farbbalken
+	PAL color bars with red	PAL-Farbbalken mit Rot
+	BBC color bars	BBC-Farbbalken
+	EBU color bars	EBU-Farbbalken
+	SMPTE color bars	SMPTE-Farbbalken
+	Philips PM5544	Philips PM5544
+	FuBK	FuBK
+	Simplified FuBK	Vereinfachtes FuBK
+	Seconds to 1	Sekunden bis 1
+	Seconds to 0	Sekunden bis 0
+	Frames	Frames
+	Clock	Uhr
+	Silent	Stumm
+	1 kHz before end	1 kHz vor dem Ende
+	1 kHz each second	1 kHz jede Sekunde
+	Duration:	Dauer:
+	Delete Proxies	Proxys löschen
+	Slideshow…	Diashow…
+	Slideshow	Diashow
+	Play as a slideshow	Als Diashow abspielen
+	Frame duration:	Dauer pro Bild:
+	 frames	 Frames
+	Dissolve:	Überblendung:
+	Wipe:	Wischblende:
+	Softness:	Weichheit:
+	Loop	Schleife
+	Center crop	Mittig beschneiden
+	Animation (pan and zoom)	Animation (Schwenk und Zoom)
+	Low pass filter	Tiefpassfilter
+	Dissolve	Überblendung
+	Wipe from left	Wischen von links
+	Wipe from right	Wischen von rechts
+	Wipe from top	Wischen von oben
+	Wipe from bottom	Wischen von unten
+	Radial wipe	Radiales Wischen
+	Audio Sync Offset…	Audio-Synchronversatz…
+	Audio Sync Offset	Audio-Synchronversatz
+	Audio sync offset:	Audio-Synchronversatz:
+	Positive values play the audio later than the picture.	Positive Werte spielen den Ton später als das Bild ab.
+	Duration…	Dauer…
+	Duration	Dauer
+	Color Range	Farbbereich
+	As the File Says	Laut Datei
+	Full Range	Voller Bereich
+	Limited Range	Begrenzter Bereich
+	Add Timeline Selection to Library	Timeline-Auswahl zur Bibliothek hinzufügen
+	Add Folder	Ordner hinzufügen
+	Add Clip to Project	Clip zum Projekt hinzufügen
+	Rename Library Clip	Bibliotheksclip umbenennen
+	Library Clip	Bibliotheksclip
+	New Folder	Neuer Ordner
+	Select clips in the timeline and add them to the library	Clips in der Timeline auswählen und zur Bibliothek hinzufügen
+	Added to the project bin	Zum Projektordner hinzugefügt
+	Expand Clip	Clip erweitern
+	Library folder	Bibliotheksordner
+	Open in Separate Window	In separatem Fenster öffnen
+	Delete	Löschen
+	OK	OK

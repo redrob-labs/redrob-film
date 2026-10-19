@@ -395,3 +395,71 @@
 	Unused	Неиспользуемые
 	Insert Order	Порядок добавления
 	Ignore subfolder structure on import	Игнорировать структуру подпапок при импорте
+	Color Bars…	Цветные полосы…
+	Counter…	Счётчик…
+	White Noise…	Белый шум…
+	Counter	Счётчик
+	Color Bars	Цветные полосы
+	Counter Style:	Стиль счётчика:
+	Sound:	Звук:
+	Bar Type:	Тип полос:
+	Count up	Считать вверх
+	No Background	Без фона
+	PAL color bars	Цветные полосы PAL
+	PAL color bars with red	Цветные полосы PAL с красным
+	BBC color bars	Цветные полосы BBC
+	EBU color bars	Цветные полосы EBU
+	SMPTE color bars	Цветные полосы SMPTE
+	Philips PM5544	Philips PM5544
+	FuBK	FuBK
+	Simplified FuBK	Упрощённая FuBK
+	Seconds to 1	Секунды до 1
+	Seconds to 0	Секунды до 0
+	Frames	Кадры
+	Clock	Часы
+	Silent	Без звука
+	1 kHz before end	1 кГц перед концом
+	1 kHz each second	1 кГц каждую секунду
+	Duration:	Длительность:
+	Delete Proxies	Удалить прокси
+	Slideshow…	Слайд-шоу…
+	Slideshow	Слайд-шоу
+	Play as a slideshow	Воспроизводить как слайд-шоу
+	Frame duration:	Длительность кадра:
+	 frames	 кадров
+	Dissolve:	Растворение:
+	Wipe:	Шторка:
+	Softness:	Мягкость:
+	Loop	Повтор
+	Center crop	Обрезать по центру
+	Animation (pan and zoom)	Анимация (панорама и масштаб)
+	Low pass filter	Фильтр нижних частот
+	Dissolve	Растворение
+	Wipe from left	Шторка слева
+	Wipe from right	Шторка справа
+	Wipe from top	Шторка сверху
+	Wipe from bottom	Шторка снизу
+	Radial wipe	Радиальная шторка
+	Audio Sync Offset…	Смещение синхронизации звука…
+	Audio Sync Offset	Смещение синхронизации звука
+	Audio sync offset:	Смещение синхронизации звука:
+	Positive values play the audio later than the picture.	Положительные значения запускают звук позже изображения.
+	Duration…	Длительность…
+	Duration	Длительность
+	Color Range	Цветовой диапазон
+	As the File Says	Как указано в файле
+	Full Range	Полный диапазон
+	Limited Range	Ограниченный диапазон
+	Add Timeline Selection to Library	Добавить выделенное на таймлайне в библиотеку
+	Add Folder	Добавить папку
+	Add Clip to Project	Добавить клип в проект
+	Rename Library Clip	Переименовать клип библиотеки
+	Library Clip	Клип библиотеки
+	New Folder	Новая папка
+	Select clips in the timeline and add them to the library	Выделите клипы на таймлайне и добавьте их в библиотеку
+	Added to the project bin	Добавлено в корзину проекта
+	Expand Clip	Развернуть клип
+	Library folder	Папка библиотеки
+	Open in Separate Window	Открыть в отдельном окне
+	Delete	Удалить
+	OK	OK

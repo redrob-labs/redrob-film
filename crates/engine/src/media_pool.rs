@@ -66,11 +66,21 @@ pub fn media_key(m: &MediaClip) -> String {
     match &m.media {
         MediaRef::File { path } if m.offline => format!("offline:{path}"),
         // slideshow options change what the source shows
-        MediaRef::File { path } => match &m.interpret.slideshow {
-            Some(sl) => format!("file:{path}#slideshow:{sl:?}"),
-            None => format!("file:{path}"),
-        },
-        MediaRef::Generator(g) => format!("generator:{g:?}"),
+        MediaRef::File { path } => {
+            let mut k = format!("file:{path}");
+            if let Some(sl) = &m.interpret.slideshow {
+                k.push_str(&format!("#slideshow:{sl:?}"));
+            }
+            if m.interpret.audio_offset_ms != 0 {
+                k.push_str(&format!("#audioOffset:{}", m.interpret.audio_offset_ms));
+            }
+            if let Some(r) = m.interpret.color_range {
+                k.push_str(&format!("#range:{r:?}"));
+            }
+            k
+        }
+        // the length too: a generator's audio stops at its duration (Clip Properties ▸ Duration)
+        MediaRef::Generator(g) => format!("generator:{g:?}:{}", m.info.duration.0),
     }
 }
 
@@ -121,6 +131,102 @@ pub fn image_sequence_frames(first: &str, services: &dyn Services) -> Result<Vec
             }
             Ok(sequence_frames(&n, &names))
         }
+    }
+}
+
+/// A source whose audio is moved `ms` milliseconds later (negative: earlier) against its picture
+/// (Clip Properties ▸ Audio ▸ sync offset). Audio before the start is silence.
+struct AudioOffsetSource {
+    inner: SharedSource,
+    ms: i32,
+}
+
+fn with_audio_offset(src: SharedSource, ms: i32) -> SharedSource {
+    if ms == 0 || !src.info().has_audio() { src } else { Arc::new(AudioOffsetSource { inner: src, ms }) }
+}
+
+/// The item's Clip Properties overrides around its source: colour range, then audio offset.
+fn with_overrides(src: SharedSource, m: &MediaClip) -> SharedSource {
+    let src = match m.interpret.color_range {
+        Some(range) if src.info().video.is_some() => {
+            let mut info = src.info().clone();
+            if let Some(v) = info.video.as_mut() {
+                v.color.range = range;
+            }
+            Arc::new(ColorRangeSource { inner: src, range, info }) as SharedSource
+        }
+        _ => src,
+    };
+    with_audio_offset(src, m.interpret.audio_offset_ms)
+}
+
+/// A source whose frames are read as full or limited range (Clip Properties ▸ Color range).
+struct ColorRangeSource {
+    inner: SharedSource,
+    range: redrob_film_color::Range,
+    info: MediaInfo,
+}
+
+impl MediaSource for ColorRangeSource {
+    fn info(&self) -> &MediaInfo {
+        &self.info
+    }
+    fn video_frame(&self, req: FrameRequest) -> redrob_film_media::Result<Arc<VideoFrame>> {
+        let f = self.inner.video_frame(req)?;
+        if f.color.range == self.range {
+            return Ok(f);
+        }
+        // the pixels are shared; only the frame's range flag changes
+        let mut g = (*f).clone();
+        g.color.range = self.range;
+        Ok(Arc::new(g))
+    }
+    fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> redrob_film_media::Result<AudioBuffer> {
+        self.inner.audio(start, frames, sample_rate)
+    }
+    fn audio_stream(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> redrob_film_media::Result<AudioBuffer> {
+        self.inner.audio_stream(stream, start, frames, sample_rate)
+    }
+}
+
+impl AudioOffsetSource {
+    fn shifted(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> redrob_film_media::Result<AudioBuffer> {
+        let off = self.ms as i64 * sample_rate as i64 / 1000;
+        let at = start - off;
+        if at >= 0 {
+            return self.inner.audio_stream(stream, at, frames, sample_rate);
+        }
+        let lead = usize::try_from(-at).unwrap_or(usize::MAX).min(frames);
+        let channels = self.inner.info().audio_streams.get(stream).map(|a| a.channels as usize).unwrap_or(2).max(1);
+        let mut out = AudioBuffer::silence(sample_rate, channels, frames);
+        if lead < frames {
+            let rest = self.inner.audio_stream(stream, 0, frames - lead, sample_rate)?;
+            out.channels = rest
+                .channels
+                .iter()
+                .map(|c| {
+                    let mut v = vec![0.0; lead];
+                    v.extend_from_slice(c);
+                    v
+                })
+                .collect();
+        }
+        Ok(out)
+    }
+}
+
+impl MediaSource for AudioOffsetSource {
+    fn info(&self) -> &MediaInfo {
+        self.inner.info()
+    }
+    fn video_frame(&self, req: FrameRequest) -> redrob_film_media::Result<Arc<VideoFrame>> {
+        self.inner.video_frame(req)
+    }
+    fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> redrob_film_media::Result<AudioBuffer> {
+        self.shifted(0, start, frames, sample_rate)
+    }
+    fn audio_stream(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> redrob_film_media::Result<AudioBuffer> {
+        self.shifted(stream, start, frames, sample_rate)
     }
 }
 
@@ -238,7 +344,7 @@ impl MediaPool {
             && let Some(MediaRef::File { path }) = &m.proxy
             && let Some(s) = self.proxy_source(item, path, m, services)
         {
-            return Some(s);
+            return Some(with_overrides(s, m));
         }
         let key = media_key(m);
         if let Some((k, s)) = self.sources.read().unwrap_or_else(|e| e.into_inner()).get(&item)
@@ -284,6 +390,7 @@ impl MediaPool {
                 }
             },
         };
+        let src = with_overrides(src, m);
         self.sources.write().unwrap_or_else(|e| e.into_inner()).insert(item, (key, src.clone()));
         Some(src)
     }

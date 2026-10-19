@@ -34,11 +34,14 @@ pub struct BinTab {
     pub icon_size: f32,
     /// A sub-bin opened in place inside this tab.
     pub nav: Option<u64>,
+    /// A floating panel in its own native window (Open in Separate Window), so it can go to
+    /// another screen; else it floats inside the main window.
+    pub detached: bool,
 }
 
 impl Default for BinTab {
     fn default() -> Self {
-        BinTab { bin: 0, floating: false, view: ViewMode::List, icon_size: 110.0, nav: None }
+        BinTab { bin: 0, floating: false, view: ViewMode::List, icon_size: 110.0, nav: None, detached: false }
     }
 }
 
@@ -84,6 +87,10 @@ pub enum ProjectDialog {
     NewGenerator { command: String, pattern: String, count_up: bool, no_background: bool, style: String, sound: String, seconds: f64 },
     /// Image sequence ▸ Slideshow…: `clip.slideshow` options (`on` false = one image per frame).
     Slideshow { item: u64, on: bool, opts: redrob_film_media::slideshow::Slideshow },
+    /// Audio Sync Offset…: `clip.audioOffset` in milliseconds.
+    AudioOffset { items: Vec<u64>, ms: i32 },
+    /// Duration… of a still, colour clip, generator or adjustment layer (`clip.setDuration`).
+    SetDuration { item: u64, seconds: f64 },
 }
 
 /// Frontend state of the Project panel (`UiState::project_panel`).
@@ -221,16 +228,17 @@ pub fn open_bin(app: &mut FilmcraftApp, inst: Inst, bin: u64, how: Option<&str>,
             navigate(app, inst, Some(bin));
             Ok(json!({"opened": "inPlace", "bin": bin}))
         }
-        "openNewTab" | "openNewWindow" => {
-            let floating = how == "openNewWindow";
+        "openNewTab" | "openNewWindow" | "openSeparateWindow" => {
+            let floating = how != "openNewTab";
+            let detached = how == "openSeparateWindow";
             // an already open tab is brought forward
-            if let Some(k) = pp.tabs.iter().position(|t| t.bin == bin && t.floating == floating) {
+            if let Some(k) = pp.tabs.iter().position(|t| t.bin == bin && t.floating == floating && t.detached == detached) {
                 if !floating {
                     pp.active_tab = Some(k);
                 }
                 return Ok(json!({"opened": if floating { "window" } else { "tab" }, "bin": bin, "tab": k}));
             }
-            pp.tabs.push(BinTab { bin, floating, view, icon_size, nav: None });
+            pp.tabs.push(BinTab { bin, floating, view, icon_size, nav: None, detached });
             let k = pp.tabs.len() - 1;
             if !floating {
                 pp.active_tab = Some(k);
@@ -354,8 +362,32 @@ pub fn floating(app: &mut FilmcraftApp, ctx: &egui::Context) {
             close = Some(k);
             continue;
         };
-        let mut open = true;
         let root = app.ui.project_panel.tabs[k].bin == app.session.project.root.id.0;
+        if app.ui.project_panel.tabs[k].detached {
+            // its own native window (another screen); egui embeds it when the platform can't
+            let title = if root { tlf!("Project: {name}", name = app.session.project.name) } else { tlf!("Bin: {name}", name) };
+            let vid = egui::ViewportId::from_hash_of(("bin-viewport", app.ui.project_panel.tabs[k].bin));
+            let builder = egui::ViewportBuilder::default().with_title(title).with_inner_size([560.0, 400.0]).with_min_inner_size([320.0, 220.0]);
+            let mut closed = false;
+            ctx.show_viewport_immediate(vid, builder, |ui, _class| {
+                let r = ui.available_rect_before_wrap();
+                let r = Rect::from_min_size(r.min, vec2(r.width().max(320.0), r.height().max(220.0)));
+                ui.allocate_rect(r, Sense::hover());
+                let v = view_of(app, Inst::Tab(k));
+                app.auto.add(&format!("projectBin.{k}.window"), r, &name);
+                let mut child = ui.new_child(egui::UiBuilder::new().max_rect(r).id_salt(("bin-viewport-body", k)));
+                child.set_clip_rect(r);
+                body(app, &mut child, r, &v, &mut actions);
+                if ui.ctx().input(|i| i.viewport().close_requested()) {
+                    closed = true;
+                }
+            });
+            if closed {
+                close = Some(k);
+            }
+            continue;
+        }
+        let mut open = true;
         egui::Window::new(if root { tlf!("Project: {name}", name = app.session.project.name) } else { tlf!("Bin: {name}", name) })
             .id(egui::Id::new(("bin-window", k)))
             .open(&mut open)
@@ -1081,6 +1113,7 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, op: &str, params: &Val
                 "inPlace" => "openInPlace",
                 "newTab" | "tab" => "openNewTab",
                 "newWindow" | "window" => "openNewWindow",
+                "separateWindow" | "screen" => "openSeparateWindow",
                 other => other,
             });
             // no `how`: as a double-click with these modifiers (Settings ▸ General ▸ Bins)
@@ -1139,7 +1172,7 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, op: &str, params: &Val
             // a second Project panel: the project's root in a floating panel
             let root = app.session.project.root.id.0;
             let pp = &mut app.ui.project_panel;
-            pp.tabs.push(BinTab { bin: root, floating: true, view: app.session.prefs.project_panel.view.mode, icon_size: 110.0, nav: None });
+            pp.tabs.push(BinTab { bin: root, floating: true, view: app.session.prefs.project_panel.view.mode, icon_size: 110.0, nav: None, detached: false });
             Ok(json!({"tab": pp.tabs.len() - 1}))
         }
         _ => return None,

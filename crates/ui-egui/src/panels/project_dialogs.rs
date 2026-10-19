@@ -27,6 +27,8 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
         ProjectDialog::NewGenerator { command, .. } if command == "file.newCounter" => tl!("Counter"),
         ProjectDialog::NewGenerator { .. } => tl!("Color Bars"),
         ProjectDialog::Slideshow { .. } => tl!("Slideshow"),
+        ProjectDialog::AudioOffset { .. } => tl!("Audio Sync Offset"),
+        ProjectDialog::SetDuration { .. } => tl!("Duration"),
     };
     let mut win = egui::Window::new(title).id(egui::Id::new("project-dialog")).collapsible(false).resizable(false).anchor(Align2::CENTER_CENTER, [0.0, 0.0]);
     // a fixed size keeps the two-list dialog from shifting while its lists settle
@@ -193,6 +195,27 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                         json!({"item": item, "off": true})
                     };
                     run = Some(("clip.slideshow".into(), p));
+                }
+            }
+            ProjectDialog::AudioOffset { items, ms } => {
+                ui.horizontal(|ui| {
+                    ui.label(tl!("Audio sync offset:"));
+                    let r = ui.add(egui::DragValue::new(ms).range(-10_000..=10_000).speed(1.0).suffix(" ms"));
+                    push(app, "projectDialog.ms", &r, "Audio sync offset");
+                });
+                ui.label(egui::RichText::new(tl!("Positive values play the audio later than the picture.")).weak().size(11.0));
+                if ok_cancel(app, ui, &mut close) {
+                    run = Some(("clip.audioOffset".into(), json!({"items": items, "ms": ms})));
+                }
+            }
+            ProjectDialog::SetDuration { item, seconds } => {
+                ui.horizontal(|ui| {
+                    ui.label(tl!("Duration:"));
+                    let r = ui.add(egui::DragValue::new(seconds).range(0.04..=36_000.0).speed(0.1).suffix(" s"));
+                    push(app, "projectDialog.seconds", &r, "Duration");
+                });
+                if ok_cancel(app, ui, &mut close) {
+                    run = Some(("clip.setDuration".into(), json!({"item": item, "seconds": seconds})));
                 }
             }
             ProjectDialog::EditTag { tag, name, color } => {

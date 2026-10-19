@@ -182,6 +182,18 @@ pub struct Interpretation {
     /// pan and zoom, low-pass). None = one image per frame.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub slideshow: Option<redrob_film_media::slideshow::Slideshow>,
+    /// Clip Properties ▸ Audio ▸ sync offset in milliseconds: the source's audio plays this much
+    /// later (negative: earlier) against its picture.
+    #[serde(default, skip_serializing_if = "is_zero_i32")]
+    pub audio_offset_ms: i32,
+    /// Clip Properties ▸ Color range: read the picture as full or limited range instead of what
+    /// the file says (None = the file's).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color_range: Option<redrob_film_color::Range>,
+}
+
+fn is_zero_i32(v: &i32) -> bool {
+    *v == 0
 }
 
 /// Modify ▸ Audio Channels: the clip channel format and, per audio clip, the source channels it

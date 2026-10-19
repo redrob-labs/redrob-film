@@ -250,6 +250,8 @@ pub struct MediaPrefs {
     /// Importing a folder puts every file of its sub-folders into the one bin named after it,
     /// instead of a bin per sub-folder.
     pub ignore_subfolder_structure: bool,
+    /// Library folder (Library panel items); empty = `Library` in the data directory.
+    pub library_folder: String,
     pub refresh_growing_files: bool,
     pub resume_growing_playback: bool,
     pub growing_refresh_seconds: u32,
@@ -275,6 +277,7 @@ impl Default for MediaPrefs {
             auto_hide_dependent_clips: false,
             import_image_sequences: false,
             ignore_subfolder_structure: false,
+            library_folder: String::new(),
             refresh_growing_files: true,
             resume_growing_playback: false,
             growing_refresh_seconds: 60,

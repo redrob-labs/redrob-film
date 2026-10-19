@@ -3010,6 +3010,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::project_panel::commands());
     v.extend(crate::bin_tags::commands());
     v.extend(crate::clip_props::commands());
+    v.extend(crate::library::commands());
     v.extend(crate::media_browser::commands());
     v.extend(crate::paste_media::commands());
     // Edit ▸ Label ▸ <colour>, Paste Attributes, subclips, Video / Audio Options, Replace With Clip…

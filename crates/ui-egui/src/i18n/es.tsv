@@ -3613,3 +3613,63 @@
 	Unused	Sin usar
 	Insert Order	Orden de inserción
 	Ignore subfolder structure on import	Ignorar la estructura de subcarpetas al importar
+	Color Bars…	Barras de color…
+	Counter…	Contador…
+	White Noise…	Ruido blanco…
+	Counter	Contador
+	Color Bars	Barras de color
+	Counter Style:	Estilo del contador:
+	Sound:	Sonido:
+	Bar Type:	Tipo de barras:
+	Count up	Contar hacia arriba
+	No Background	Sin fondo
+	PAL color bars	Barras de color PAL
+	PAL color bars with red	Barras de color PAL con rojo
+	BBC color bars	Barras de color BBC
+	EBU color bars	Barras de color EBU
+	SMPTE color bars	Barras de color SMPTE
+	Philips PM5544	Philips PM5544
+	FuBK	FuBK
+	Simplified FuBK	FuBK simplificada
+	Seconds to 1	Segundos hasta 1
+	Seconds to 0	Segundos hasta 0
+	Clock	Reloj
+	Silent	Silencio
+	1 kHz before end	1 kHz antes del final
+	1 kHz each second	1 kHz cada segundo
+	Delete Proxies	Eliminar proxies
+	Slideshow…	Presentación…
+	Slideshow	Presentación
+	Play as a slideshow	Reproducir como presentación
+	Frame duration:	Duración por imagen:
+	Dissolve:	Disolución:
+	Wipe:	Barrido:
+	Softness:	Suavidad:
+	Center crop	Recorte centrado
+	Animation (pan and zoom)	Animación (panorámica y zoom)
+	Low pass filter	Filtro de paso bajo
+	Wipe from left	Barrido desde la izquierda
+	Wipe from right	Barrido desde la derecha
+	Wipe from top	Barrido desde arriba
+	Wipe from bottom	Barrido desde abajo
+	Radial wipe	Barrido radial
+	Audio Sync Offset…	Desfase de sincronización de audio…
+	Audio Sync Offset	Desfase de sincronización de audio
+	Audio sync offset:	Desfase de sincronización de audio:
+	Positive values play the audio later than the picture.	Los valores positivos reproducen el audio después de la imagen.
+	Duration…	Duración…
+	Color Range	Rango de color
+	As the File Says	Según el archivo
+	Full Range	Rango completo
+	Limited Range	Rango limitado
+	Add Timeline Selection to Library	Añadir la selección de la línea de tiempo a la biblioteca
+	Add Folder	Añadir carpeta
+	Add Clip to Project	Añadir clip al proyecto
+	Rename Library Clip	Cambiar nombre del clip de biblioteca
+	Library Clip	Clip de biblioteca
+	New Folder	Carpeta nueva
+	Select clips in the timeline and add them to the library	Selecciona clips en la línea de tiempo y añádelos a la biblioteca
+	Added to the project bin	Añadido a la bandeja del proyecto
+	Expand Clip	Expandir clip
+	Library folder	Carpeta de la biblioteca
+	Open in Separate Window	Abrir en una ventana independiente

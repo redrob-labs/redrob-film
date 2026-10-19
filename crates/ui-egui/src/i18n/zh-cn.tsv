@@ -3594,3 +3594,63 @@
 	Unused	未使用
 	Insert Order	添加顺序
 	Ignore subfolder structure on import	导入时忽略子文件夹结构
+	Color Bars…	彩条…
+	Counter…	计数器…
+	White Noise…	白噪声…
+	Counter	计数器
+	Color Bars	彩条
+	Counter Style:	计数器样式：
+	Sound:	声音：
+	Bar Type:	彩条类型：
+	Count up	正向计数
+	No Background	无背景
+	PAL color bars	PAL 彩条
+	PAL color bars with red	带红色的 PAL 彩条
+	BBC color bars	BBC 彩条
+	EBU color bars	EBU 彩条
+	SMPTE color bars	SMPTE 彩条
+	Philips PM5544	Philips PM5544
+	FuBK	FuBK
+	Simplified FuBK	简化 FuBK
+	Seconds to 1	秒数至 1
+	Seconds to 0	秒数至 0
+	Clock	时钟
+	Silent	静音
+	1 kHz before end	结束前 1 kHz
+	1 kHz each second	每秒 1 kHz
+	Delete Proxies	删除代理
+	Slideshow…	幻灯片…
+	Slideshow	幻灯片
+	Play as a slideshow	作为幻灯片播放
+	Frame duration:	每张时长：
+	Dissolve:	溶解：
+	Wipe:	擦除：
+	Softness:	柔和度：
+	Center crop	居中裁剪
+	Animation (pan and zoom)	动画（平移和缩放）
+	Low pass filter	低通滤波器
+	Wipe from left	从左擦除
+	Wipe from right	从右擦除
+	Wipe from top	从上擦除
+	Wipe from bottom	从下擦除
+	Radial wipe	径向擦除
+	Audio Sync Offset…	音频同步偏移…
+	Audio Sync Offset	音频同步偏移
+	Audio sync offset:	音频同步偏移：
+	Positive values play the audio later than the picture.	正值使音频比画面更晚播放。
+	Duration…	持续时间…
+	Color Range	色彩范围
+	As the File Says	按文件
+	Full Range	全范围
+	Limited Range	有限范围
+	Add Timeline Selection to Library	将时间轴所选内容添加到库
+	Add Folder	添加文件夹
+	Add Clip to Project	将剪辑添加到项目
+	Rename Library Clip	重命名库剪辑
+	Library Clip	库剪辑
+	New Folder	新建文件夹
+	Select clips in the timeline and add them to the library	在时间轴中选择剪辑并将其添加到库
+	Added to the project bin	已添加到项目素材箱
+	Expand Clip	展开剪辑
+	Library folder	库文件夹
+	Open in Separate Window	在单独的窗口中打开
