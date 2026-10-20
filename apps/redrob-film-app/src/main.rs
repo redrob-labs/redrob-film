@@ -71,9 +71,9 @@ use serde_json::json;
 /// Reverse-DNS app id: Linux `.desktop` file, hicolor icon name and Wayland app id.
 const APP_ID: &str = "ai.redrob.film";
 
-/// The window, Dock, taskbar and app-switcher icon: the Redrob tile (`assets/app-icon/`, derived
-/// from the design system's files by `packaging/brand-assets.sh`). One design on every OS: the
-/// design system forbids adding a margin or a second radius to the tile.
+/// The window, Dock, taskbar and app-switcher icon: the Redrob Film rounded tile (`assets/app-icon/`,
+/// derived from `@redrob-labs/ui`'s `icon-web` by `packaging/brand-assets.sh`). One design on every
+/// OS: the corners are transparent, so no OS mask or added margin is needed.
 fn app_icon() -> egui::IconData {
     #[cfg(target_os = "macos")]
     let png: &[u8] = include_bytes!("../../../assets/app-icon/redrob-film-512.png");

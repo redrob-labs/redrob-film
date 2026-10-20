@@ -640,8 +640,8 @@ fn ws_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui) {
     }
 }
 
-/// The Redrob mark from the design system (`assets/brand/`, shipped file, never recoloured).
-static REDROB_MARK: &[u8] = include_bytes!("../../../../../assets/brand/icon-512.png");
+/// The Redrob Film app icon (`assets/app-icon/`, derived from the shipped file, never recoloured).
+static REDROB_MARK: &[u8] = include_bytes!("../../../../../assets/app-icon/redrob-film-512.png");
 
 /// The Redrob mark in `r` (decoded once into a mipmapped texture, so it stays crisp from the
 /// 24 px Tools bar to the About dialog). Nothing is drawn if it can't be decoded.

@@ -7,7 +7,7 @@ use redrob_effects_engine::project::ItemKind;
 use serde_json::json;
 
 fn icon() -> Vec<u8> {
-    std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../assets/brand/favicon-16x16.png")).unwrap()
+    std::fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../assets/app-icon/hicolor/16x16/apps/ai.redrob.film.png")).unwrap()
 }
 
 fn footage_paths(s: &redrob_effects_engine::Session) -> Vec<(u64, String, bool)> {

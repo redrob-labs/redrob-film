@@ -113,36 +113,31 @@ carry each font's licence as `OFL-<family>.txt`.
 
 The Redrob name, symbol, tile and lockup are trademarks of Redrob (McKinley Rice, Inc.). They are not
 open source and not covered by the project licence. The sources in `assets/brand/` are verbatim
-copies of the Redrob design system's files, pinned by `assets/brand/SHA256SUMS`; every app icon and
-favicon is derived from them by `packaging/brand-assets.sh` (`assets/brand/README.md`). A fork that is
+copies of Redrob's shipped files (the app icon from `@redrob-labs/ui` 1.8.0, the lockups from the
+design system), pinned by `assets/brand/SHA256SUMS`; every app icon is derived from them by
+`packaging/brand-assets.sh` (`assets/brand/README.md`). A fork that is
 not Redrob's must remove them. Upstream's ArtCraft marks (`docs/brand/`) were removed, as upstream's
 NOTICE requires of forks.
 
 | File | Author | Source | Licence |
 |---|---|---|---|
-| `assets/brand/favicon-16x16.png` | Redrob (McKinley Rice, Inc.) | Redrob favicon, 16 px tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/brand/favicon-32x32.png` | Redrob (McKinley Rice, Inc.) | Redrob favicon, 32 px tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/brand/favicon-48x48.png` | Redrob (McKinley Rice, Inc.) | Redrob favicon, 48 px tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/brand/favicon-64x64.png` | Redrob (McKinley Rice, Inc.) | Redrob favicon, 64 px tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/brand/favicon.ico` | Redrob (McKinley Rice, Inc.) | Redrob favicon, .ico (16, 32, 48) | Redrob trademark (`assets/brand/README.md`) |
-| `assets/brand/favicon.svg` | Redrob (McKinley Rice, Inc.) | Redrob favicon, vector tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/brand/icon-192.png` | Redrob (McKinley Rice, Inc.) | Redrob app icon, 192 px tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/brand/icon-512.png` | Redrob (McKinley Rice, Inc.) | Redrob app icon, 512 px tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/brand/redrob-film-icon-web.svg` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon, rounded tile (icon-web), vector | Redrob trademark (`assets/brand/README.md`) |
+| `assets/brand/redrob-film-icon-web-1024.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon, rounded tile (icon-web), 1024 px Chromium render | Redrob trademark (`assets/brand/README.md`) |
 | `assets/brand/redrob-logo-primary.png` | Redrob (McKinley Rice, Inc.) | Redrob primary lockup, for light grounds | Redrob trademark (`assets/brand/README.md`) |
 | `assets/brand/redrob-logo-primary-white.png` | Redrob (McKinley Rice, Inc.) | Redrob primary lockup, white wordmark for dark grounds | Redrob trademark (`assets/brand/README.md`) |
-| `assets/app-icon/hicolor/128x128/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/128x128/apps/ai.redrob.film.png), derived from the Redrob tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/app-icon/hicolor/16x16/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/16x16/apps/ai.redrob.film.png), derived from the Redrob tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/app-icon/hicolor/24x24/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/24x24/apps/ai.redrob.film.png), derived from the Redrob tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/app-icon/hicolor/256x256/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/256x256/apps/ai.redrob.film.png), derived from the Redrob tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/app-icon/hicolor/32x32/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/32x32/apps/ai.redrob.film.png), derived from the Redrob tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/app-icon/hicolor/48x48/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/48x48/apps/ai.redrob.film.png), derived from the Redrob tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/app-icon/hicolor/512x512/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/512x512/apps/ai.redrob.film.png), derived from the Redrob tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/app-icon/hicolor/64x64/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/64x64/apps/ai.redrob.film.png), derived from the Redrob tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/app-icon/hicolor/scalable/apps/ai.redrob.film.svg` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/scalable/apps/ai.redrob.film.svg), derived from the Redrob tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/app-icon/redrob-film-256.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (redrob-film-256.png), derived from the Redrob tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/app-icon/redrob-film-512.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (redrob-film-512.png), derived from the Redrob tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/app-icon/redrob-film.icns` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (redrob-film.icns), derived from the Redrob tile | Redrob trademark (`assets/brand/README.md`) |
-| `assets/app-icon/redrob-film.ico` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (redrob-film.ico), derived from the Redrob tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/app-icon/hicolor/128x128/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/128x128/apps/ai.redrob.film.png), derived from the Redrob Film icon-web tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/app-icon/hicolor/16x16/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/16x16/apps/ai.redrob.film.png), derived from the Redrob Film icon-web tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/app-icon/hicolor/24x24/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/24x24/apps/ai.redrob.film.png), derived from the Redrob Film icon-web tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/app-icon/hicolor/256x256/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/256x256/apps/ai.redrob.film.png), derived from the Redrob Film icon-web tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/app-icon/hicolor/32x32/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/32x32/apps/ai.redrob.film.png), derived from the Redrob Film icon-web tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/app-icon/hicolor/48x48/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/48x48/apps/ai.redrob.film.png), derived from the Redrob Film icon-web tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/app-icon/hicolor/512x512/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/512x512/apps/ai.redrob.film.png), derived from the Redrob Film icon-web tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/app-icon/hicolor/64x64/apps/ai.redrob.film.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/64x64/apps/ai.redrob.film.png), derived from the Redrob Film icon-web tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/app-icon/hicolor/scalable/apps/ai.redrob.film.svg` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (hicolor/scalable/apps/ai.redrob.film.svg), derived from the Redrob Film icon-web tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/app-icon/redrob-film-256.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (redrob-film-256.png), derived from the Redrob Film icon-web tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/app-icon/redrob-film-512.png` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (redrob-film-512.png), derived from the Redrob Film icon-web tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/app-icon/redrob-film.icns` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (redrob-film.icns), derived from the Redrob Film icon-web tile | Redrob trademark (`assets/brand/README.md`) |
+| `assets/app-icon/redrob-film.ico` | Redrob (McKinley Rice, Inc.) | Redrob Film app icon (redrob-film.ico), derived from the Redrob Film icon-web tile | Redrob trademark (`assets/brand/README.md`) |
 | `packaging/macos/dmg/background-source.svg` | Redrob (McKinley Rice, Inc.) | Original layout: the Redrob primary lockup and the name Cut, after the design system's product lockup | Redrob trademark (the lockup); layout MIT OR Apache-2.0 |
 | `packaging/macos/dmg/background.svg` | Redrob (McKinley Rice, Inc.) | `background-source.svg` with its text outlined (Pretendard SemiBold, OFL-1.1) and the lockup embedded | Redrob trademark (the lockup); layout MIT OR Apache-2.0 |
 | `packaging/macos/dmg/background.tiff` | Redrob (McKinley Rice, Inc.) | Rendered from `packaging/macos/dmg/background.svg` by `packaging/macos/dmg/generate.py` | Redrob trademark (the lockup); layout MIT OR Apache-2.0 |
