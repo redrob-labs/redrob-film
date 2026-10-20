@@ -1,7 +1,7 @@
 asset:        ai.redrob.film.svg
-title:        Redrob Film app icon (hicolor/scalable/apps/ai.redrob.film.svg), derived from the Redrob tile
+title:        Redrob Film app icon (hicolor/scalable/apps/ai.redrob.film.svg), derived from the Redrob Film icon-web tile
 author:       Redrob (McKinley Rice, Inc.)
 source:       derived by packaging/brand-assets.sh from assets/brand/ (copied as is, or resized down)
 license:      Redrob trademark; not covered by the repository's MIT OR Apache-2.0 licence (assets/brand/README.md)
-added:        2026-10-12 for Janghoon Lee (Redrob)
+added:        2026-10-20 for Janghoon Lee (Redrob)
 notes:        Regenerate with packaging/brand-assets.sh; do not edit by hand.
