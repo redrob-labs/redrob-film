@@ -105,9 +105,8 @@ jobs:
   macos:
     name: macOS universal
     needs: validate
-    # Standard hosted runner: redrob-labs has no larger macOS runners configured, and a job that
-    # names one waits in the queue forever.
-    runs-on: macos-latest
+    # Larger hosted runner (5-core M2 Pro, billed per minute); the Team plan offers it without setup.
+    runs-on: macos-15-xlarge
     environment: release
     env:
       REDROB_FILM_VERSION: ${{ needs.validate.outputs.version }}
@@ -154,7 +153,8 @@ jobs:
   windows:
     name: Windows x64
     needs: validate
-    runs-on: windows-latest
+    # The organization's 16-core larger runner (Windows Server 2025 image, billed per minute).
+    runs-on: redrob-windows-16
     # `release` is the environment the organization's federated credential names
     # (repo:redrob-labs@<org id>/<repo>@<id>:environment:release); any other name is refused.
     environment: release

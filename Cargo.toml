@@ -179,7 +179,8 @@ opt-level = 3
 
 [profile.release]
 lto = "thin"
-codegen-units = 1
+# 16, not 1: the release legs compile the last big crates on every core instead of one.
+codegen-units = 16
 
 # Pull-request CI (`.github/workflows/ci.yml`): clippy and tests of our crates only, with every
 # dependency at opt-level 0. `dev` compiles the dependency graph (egui, wgpu, both craft trees) at
