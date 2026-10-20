@@ -1,10 +1,12 @@
 # The one pull-request workflow. `checks` (seconds) runs the repository scripts: brand, upstream
-# boundary, packaging and the release-target matrix. `rust` runs formatting, clippy and the tests of
-# OUR crates (the shell `filmcraft`, the engine and the egui UI) with `--profile ci` (root
-# Cargo.toml: every dependency at opt-level 0, no incremental); the effectcraft subtree is compiled
-# only as a dependency, and `rust` is skipped when no Rust input changed. `rust-desktop` runs the
-# same clippy and tests on macOS and Windows, only when started by hand (workflow_dispatch). The release workflow does not repeat any of this; PR policy is the
-# org-wide workflow.
+# boundary, packaging and the release-target matrix. `changes` decides whether the PR touches any
+# Rust input at all; `rust` runs formatting, clippy and the FAST tests of OUR crates (the shell
+# `filmcraft`, the engine and the egui UI): library and binary unit tests with `--profile ci` (root
+# Cargo.toml: every dependency at opt-level 0, no incremental), minus the slow ffprobe export and
+# multicam suites. The full suite (the ~60 egui_kittest UI binaries in crates/ui-egui/tests and the
+# skipped modules) runs when CI is started by hand (Actions > CI > Run workflow), on Linux in `rust`
+# and on macOS and Windows in `rust-desktop`: run it once before a release. The release workflow
+# does not repeat any of this; PR policy is the org-wide workflow.
 name: CI
 
 on:
@@ -60,11 +62,11 @@ jobs:
             echo "::error::a removed release target is back (see docs/releasing.md)"; exit 1
           fi
 
-  rust:
-    name: fmt, clippy, test (profile ci)
-    # A release PR into main carries code that already passed here on its way into develop.
-    if: github.base_ref != 'main'
-    runs-on: ubuntu-22.04
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    outputs:
+      heavy: ${{ steps.rs.outputs.heavy }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,49 +77,66 @@ jobs:
           # HEAD is GitHub's merge of the PR into its base, so HEAD^1..HEAD is exactly the PR's
           # change. A three-dot diff against the base needs a merge base, which a shallow clone
           # lacks: git exits 128 and every PR, docs-only included, ran the full suite.
+          paths=('*.rs' '*.toml' Cargo.lock '*.js' '*.json' '*.tsv' '*.wgsl' '*.ttf' assets .github/workflows/ci.yml)
           if [ "${{ github.event_name }}" != pull_request ]; then
-            echo changed=true >> "$GITHUB_OUTPUT"
-          elif git diff --quiet HEAD^1 HEAD -- '*.rs' '*.toml' Cargo.lock '*.js' '*.json' '*.tsv' '*.wgsl' '*.ttf' assets .github/workflows/ci.yml; then
-            echo changed=false >> "$GITHUB_OUTPUT"
+            heavy=true
+          # A release PR into main carries code that already passed here on its way into develop.
+          elif [ "${{ github.base_ref }}" = main ]; then
+            heavy=false
+          # Docs, packaging or anything else that is not a Rust input.
+          elif git diff --quiet HEAD^1 HEAD -- "${paths[@]}"; then
+            heavy=false
           # Only `version = "x.y.z"`, a build profile's `codegen-units` / `lto`, or `# ` comment
           # lines: a release bump or a profile tweak, no code the tests see.
-          elif ! git diff -U0 HEAD^1 HEAD -- '*.rs' '*.toml' Cargo.lock '*.js' '*.json' '*.tsv' '*.wgsl' '*.ttf' assets .github/workflows/ci.yml | grep -E '^[-+][^-+]' | grep -qvE '^[-+](version = "[0-9.]+"|codegen-units = [0-9]+|lto = ("[a-z]+"|true|false)|#( .*)?)$'; then
-            echo changed=false >> "$GITHUB_OUTPUT"
+          elif ! git diff -U0 HEAD^1 HEAD -- "${paths[@]}" | grep -E '^[-+][^-+]' | grep -qvE '^[-+](version = "[0-9.]+"|codegen-units = [0-9]+|lto = ("[a-z]+"|true|false)|#( .*)?)$'; then
+            heavy=false
           else
-            echo changed=true >> "$GITHUB_OUTPUT"
+            heavy=true
           fi
+          echo "heavy=$heavy" >> "$GITHUB_OUTPUT"
+
+  rust:
+    # Required check: keep this name. Skipped (counts as passing) when `changes` says no Rust input changed.
+    name: fmt, clippy, test (profile ci)
+    needs: changes
+    if: needs.changes.outputs.heavy == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
       - name: Install the system headers winit, cpal and rfd need
-        if: steps.rs.outputs.changed == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libasound2-dev libgtk-3-dev fonts-noto-cjk
       - uses: dtolnay/rust-toolchain@stable
-        if: steps.rs.outputs.changed == 'true'
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
-        if: steps.rs.outputs.changed == 'true'
         with:
           key: ci-profile
       - name: Formatting
-        if: steps.rs.outputs.changed == 'true'
         run: cargo fmt --all --check
       - name: Clippy
-        if: steps.rs.outputs.changed == 'true'
         run: |
           # shellcheck disable=SC2086 # OUR_CRATES is a list of flags on purpose
           cargo clippy $OUR_CRATES --all-targets --locked --profile ci -- -D warnings
-      - name: Tests
-        if: steps.rs.outputs.changed == 'true'
+      - name: Fast tests (pull request)
+        # Unit tests only: the ~60 UI integration binaries cost ~8 min to link and ~8 min to run,
+        # and the ffprobe export / multicam modules ~4 min. They run in the by-hand full suite below.
+        if: github.event_name == 'pull_request'
+        run: |
+          # shellcheck disable=SC2086
+          cargo test $OUR_CRATES --lib --bins --locked --profile ci -- --skip export_tests --skip multicam_tests
+      - name: Full tests (by hand)
+        if: github.event_name != 'pull_request'
         run: |
           # shellcheck disable=SC2086
           cargo test $OUR_CRATES --locked --profile ci
 
   rust-desktop:
     name: clippy, test (profile ci) on ${{ matrix.os }}
-    # Same gate as `rust`, by hand only (Actions > CI > Run workflow): ~40 min of macOS/Windows
-    # runners is too slow for every PR. Run it once before a release.
+    # The full suite on macOS and Windows, by hand only (Actions > CI > Run workflow): ~40 min of
+    # macOS/Windows runners is too slow for every PR. Run it once before a release.
     if: github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
@@ -129,38 +148,17 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2 # the PR merge commit and its first parent (the base branch tip)
-      - name: Did any Rust input change?
-        id: rs
-        run: |
-          # The same test as the `rust` job: HEAD^1..HEAD is exactly the PR's change.
-          if [ "${{ github.event_name }}" != pull_request ]; then
-            echo changed=true >> "$GITHUB_OUTPUT"
-          elif git diff --quiet HEAD^1 HEAD -- '*.rs' '*.toml' Cargo.lock '*.js' '*.json' '*.tsv' '*.wgsl' '*.ttf' assets .github/workflows/ci.yml; then
-            echo changed=false >> "$GITHUB_OUTPUT"
-          # Only `version = "x.y.z"`, a build profile's `codegen-units` / `lto`, or `# ` comment
-          # lines: a release bump or a profile tweak, no code the tests see.
-          elif ! git diff -U0 HEAD^1 HEAD -- '*.rs' '*.toml' Cargo.lock '*.js' '*.json' '*.tsv' '*.wgsl' '*.ttf' assets .github/workflows/ci.yml | grep -E '^[-+][^-+]' | grep -qvE '^[-+](version = "[0-9.]+"|codegen-units = [0-9]+|lto = ("[a-z]+"|true|false)|#( .*)?)$'; then
-            echo changed=false >> "$GITHUB_OUTPUT"
-          else
-            echo changed=true >> "$GITHUB_OUTPUT"
-          fi
       - uses: dtolnay/rust-toolchain@stable
-        if: steps.rs.outputs.changed == 'true'
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-        if: steps.rs.outputs.changed == 'true'
         with:
           key: ci-profile
       - name: Clippy
-        if: steps.rs.outputs.changed == 'true'
         run: |
           # shellcheck disable=SC2086 # OUR_CRATES is a list of flags on purpose
           cargo clippy $OUR_CRATES --all-targets --locked --profile ci -- -D warnings
       - name: Tests
-        if: steps.rs.outputs.changed == 'true'
         run: |
           # shellcheck disable=SC2086
           cargo test $OUR_CRATES --locked --profile ci
