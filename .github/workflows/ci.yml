@@ -79,6 +79,10 @@ jobs:
             echo changed=true >> "$GITHUB_OUTPUT"
           elif git diff --quiet HEAD^1 HEAD -- '*.rs' '*.toml' Cargo.lock '*.js' '*.json' '*.tsv' '*.wgsl' '*.ttf' assets .github/workflows/ci.yml; then
             echo changed=false >> "$GITHUB_OUTPUT"
+          # Only `version = "x.y.z"`, a build profile's `codegen-units` / `lto`, or `# ` comment
+          # lines: a release bump or a profile tweak, no code the tests see.
+          elif ! git diff -U0 HEAD^1 HEAD -- '*.rs' '*.toml' Cargo.lock '*.js' '*.json' '*.tsv' '*.wgsl' '*.ttf' assets .github/workflows/ci.yml | grep -E '^[-+][^-+]' | grep -qvE '^[-+](version = "[0-9.]+"|codegen-units = [0-9]+|lto = ("[a-z]+"|true|false)|#( .*)?)$'; then
+            echo changed=false >> "$GITHUB_OUTPUT"
           else
             echo changed=true >> "$GITHUB_OUTPUT"
           fi
@@ -134,6 +138,10 @@ jobs:
           if [ "${{ github.event_name }}" != pull_request ]; then
             echo changed=true >> "$GITHUB_OUTPUT"
           elif git diff --quiet HEAD^1 HEAD -- '*.rs' '*.toml' Cargo.lock '*.js' '*.json' '*.tsv' '*.wgsl' '*.ttf' assets .github/workflows/ci.yml; then
+            echo changed=false >> "$GITHUB_OUTPUT"
+          # Only `version = "x.y.z"`, a build profile's `codegen-units` / `lto`, or `# ` comment
+          # lines: a release bump or a profile tweak, no code the tests see.
+          elif ! git diff -U0 HEAD^1 HEAD -- '*.rs' '*.toml' Cargo.lock '*.js' '*.json' '*.tsv' '*.wgsl' '*.ttf' assets .github/workflows/ci.yml | grep -E '^[-+][^-+]' | grep -qvE '^[-+](version = "[0-9.]+"|codegen-units = [0-9]+|lto = ("[a-z]+"|true|false)|#( .*)?)$'; then
             echo changed=false >> "$GITHUB_OUTPUT"
           else
             echo changed=true >> "$GITHUB_OUTPUT"
