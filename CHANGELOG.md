@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0 -- 2026-10-20
+
+### Changed
+
+- App icon: the 2026 Redrob Film icon from `@redrob-labs/ui` 1.8.0 (rounded tile, transparent
+  corners) on the window, Dock, taskbar, `.ico`, `.icns`, the Linux icon theme and the
+  `redrob-film.png` release asset that Redrob Launcher shows.
+- Release builds run on larger runners with `codegen-units = 16`; pull-request CI skips the Rust
+  jobs on docs-, version- and profile-only changes.
+
 ## 0.5.0 -- 2026-10-19
 
 ### Fixed

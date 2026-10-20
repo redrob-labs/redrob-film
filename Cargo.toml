@@ -4,7 +4,7 @@ members = ["crates/*", "apps/*", "xtask", "crafts/effectcraft/crates/*"]
 default-members = ["crates/*", "apps/*", "xtask"]
 
 [workspace.package]
-version = "0.5.0"
+version = "0.6.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.95"
@@ -179,7 +179,8 @@ opt-level = 3
 
 [profile.release]
 lto = "thin"
-codegen-units = 1
+# 16, not 1: the release legs compile the last big crates on every core instead of one.
+codegen-units = 16
 
 # Pull-request CI (`.github/workflows/ci.yml`): clippy and tests of our crates only, with every
 # dependency at opt-level 0. `dev` compiles the dependency graph (egui, wgpu, both craft trees) at

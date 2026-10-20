@@ -1,0 +1,7 @@
+asset:        redrob-film-icon-web-1024.png
+title:        Redrob Film app icon, rounded tile (icon-web), 1024 px Chromium render
+author:       Redrob (McKinley Rice, Inc.)
+source:       @redrob-labs/ui 1.8.0, dist/brand/app-icons/redrob-film/redrob-film-icon-web.svg, rendered at 1024 px by Chromium (keeps the gradients)
+license:      Redrob trademark; not covered by the repository's MIT OR Apache-2.0 licence (assets/brand/README.md)
+added:        2026-10-20 for Janghoon Lee (Redrob)
+notes:        Pinned by assets/brand/SHA256SUMS. Never redrawn or recolored.

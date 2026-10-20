@@ -2,6 +2,13 @@
 
 ## Changes
 
+## 0.6.0
+
+The 2026 Redrob Film icon.
+
+- **New app icon.** The window, Dock, taskbar, installers and Redrob Launcher show the 2026 Redrob
+  Film icon.
+
 ## 0.5.0
 
 Premiere projects open, camera 10-bit plays, and the needle follows at once.

@@ -1,7 +1,6 @@
-Redrob Film app icon (every file in this directory, and apps/filmcraft-web/web/favicon.png and
-favicon.svg).
+Redrob Film app icon (every file in this directory).
 
-Derived from the Redrob design system's favicon files (assets/brand/). The Redrob name, symbol,
-tile and lockup are trademarks of Redrob (McKinley Rice, Inc.). They are NOT covered by this
+Derived from the Redrob Film app icon in @redrob-labs/ui 1.8.0 (assets/brand/). The Redrob name,
+symbol, tile and lockup are trademarks of Redrob (McKinley Rice, Inc.). They are NOT covered by this
 repository's MIT OR Apache-2.0 licence: a fork or modified version that is not Redrob's must remove
 them and use its own name and icon.
