@@ -47,7 +47,11 @@ def main() -> int:
     else:
         if git_ok("rev-parse", "-q", "--verify", f"refs/tags/{tag}"):
             tag_sha = git("rev-parse", f"{tag}^{{commit}}")
-            if tag_sha != base:
+            if tag_sha != base and git_ok("merge-base", "--is-ancestor", base, tag_sha):
+                # Our own release tags share upstream's vX.Y.Z namespace; a tag
+                # cut after the fork point is ours, not upstream's base tag.
+                notes.append(f"tag {tag} is our own release tag ({tag_sha}), not upstream's; skipped tag/base equality")
+            elif tag_sha != base:
                 errors.append(f"tag {tag} resolves to {tag_sha}, but base is {base}")
         else:
             notes.append(f"tag {tag} not fetched locally; skipped tag/base equality")
