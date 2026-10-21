@@ -2,6 +2,13 @@
 
 ## Changes
 
+## 0.6.1
+
+The window opens where you can reach it.
+
+- **Fits the screen.** A window bigger than the screen is maximized into it in every mode, and
+  dragging the title bar no longer stops scrolling.
+
 ## 0.6.0
 
 The 2026 Redrob Film icon.
