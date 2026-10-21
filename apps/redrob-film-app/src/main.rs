@@ -179,6 +179,10 @@ fn main() -> eframe::Result {
             // Wayland matches the window to `packaging/linux/ai.redrob.film.desktop`.
             .with_app_id(APP_ID),
         event_loop_builder: agent_event_loop(control_port.is_some()),
+        // Centre the window: its position is never saved (no eframe persistence), so there is no
+        // earlier place to restore. A window bigger than the screen is maximized into the work area
+        // on the first frame (`redrob_effects_ui_egui::fit_window`, called by the shell).
+        centered: true,
         ..Default::default()
     };
     // Before eframe creates the wgpu instance: leave OpenGL out on Windows, choose the adapter and

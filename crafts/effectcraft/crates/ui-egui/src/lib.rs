@@ -1950,23 +1950,42 @@ fn copy_image(ctx: &egui::Context, width: u32, height: u32, rgba: &[u8]) -> Resu
     Ok(())
 }
 
-/// Maximize a first window that doesn't fit the screen, which fits it to the space beside the
-/// taskbar or dock. The 1680 × 1020 window on a smaller screen is only shrunk to the monitor's
-/// size, so with its title bar it ran under the taskbar and cut menus off at the bottom of the
-/// screen (#269).
-fn fit_window(ctx: &egui::Context) {
-    let (monitor, window) = ctx.input(|i| (i.viewport().monitor_size, i.viewport().outer_rect.or(i.viewport().inner_rect)));
-    if let (Some(monitor), Some(window)) = (monitor, window)
-        && overflows_screen(window.size(), monitor)
-    {
+/// Once, as soon as the monitor is known: maximize a window that doesn't fit its monitor's work
+/// area, which puts it beside the taskbar or dock. A window bigger than the screen is only shrunk
+/// to the monitor's size, so its title bar ran above the top edge or under the taskbar and menus
+/// were cut off at the bottom (#269). The film shell calls this on its first frame in every mode;
+/// the Effects editor's own call is then a no-op.
+pub fn fit_window(ctx: &egui::Context) {
+    let fitted = egui::Id::new("film-window-fitted");
+    if ctx.data(|d| d.get_temp::<bool>(fitted)).is_some() {
+        return;
+    }
+    // macOS keeps new windows inside the screen's visible frame itself.
+    if cfg!(target_os = "macos") {
+        return;
+    }
+    let content = ctx.content_rect();
+    let (monitor, outer, maximized, fullscreen) = ctx.input(|i| {
+        let v = i.viewport();
+        (v.monitor_size, v.outer_rect, v.maximized, v.fullscreen)
+    });
+    let Some(monitor) = monitor else { return };
+    ctx.data_mut(|d| d.insert_temp(fitted, true));
+    // Wayland never reports the window's position, so no outer rect: the content is the least it takes up.
+    let window = outer.unwrap_or(content);
+    if maximized == Some(true) || fullscreen == Some(true) || !monitor.is_finite() || !window.is_finite() {
+        return;
+    }
+    if overflows_screen(window.size(), monitor) {
         ctx.send_viewport_cmd(egui::ViewportCommand::Maximized(true));
     }
 }
 
-/// Whether a window `size` leaves no room on a `monitor` for a taskbar or dock (points).
+/// Whether a window `size` doesn't fit a `monitor`'s work area: the monitor less the taskbar or
+/// dock, which egui can't see (the Windows taskbar is 40–48 pt tall).
 fn overflows_screen(size: egui::Vec2, monitor: egui::Vec2) -> bool {
-    const TASKBAR: f32 = 64.0;
-    size.x > monitor.x || size.y > monitor.y - TASKBAR
+    const TASKBAR: f32 = 48.0;
+    size.x > monitor.x + 0.5 || size.y > monitor.y - TASKBAR + 0.5
 }
 
 #[cfg(test)]

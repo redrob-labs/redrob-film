@@ -793,6 +793,9 @@ impl eframe::App for ShellApp {
             ctx.request_repaint();
         }
         self.service_control();
+        // Once, in every mode: a window bigger than its monitor's work area is maximized into it,
+        // so its title bar can be reached.
+        redrob_effects_ui_egui::fit_window(ctx);
         // The Edit editor's logic runs every frame, whichever mode is on screen: it drains the
         // control channel (the agent's commands), polls the agent and keeps auto-save going
         // (crates/ui-egui/src/lib.rs L1924). Its `ui` runs only while it is on screen.
