@@ -122,23 +122,21 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ci-profile
-      - name: Formatting
-        run: cargo fmt --all --check
-      - name: Clippy
-        run: |
-          # shellcheck disable=SC2086 # OUR_CRATES is a list of flags on purpose
-          cargo clippy $OUR_CRATES --all-targets --locked --profile ci -- -D warnings
-      - name: Fast tests (pull request)
-        # Unit tests only: the ~60 UI integration binaries cost ~8 min to link and ~8 min to run,
-        # and the ffprobe export / multicam modules ~4 min. They run in the by-hand full suite below.
+      # Pull requests compile once (the release build compiles again, on every target). Formatting,
+      # test-code lint and the tests run by hand (Actions > CI > Run workflow) before a release.
+      - name: Compile (pull request)
         if: github.event_name == 'pull_request'
         run: |
-          # shellcheck disable=SC2086
-          cargo test $OUR_CRATES --lib --bins --locked --profile ci -- --skip export_tests --skip multicam_tests
-      - name: Full tests (by hand)
+          # shellcheck disable=SC2086 # OUR_CRATES is a list of flags on purpose
+          cargo clippy $OUR_CRATES --locked --profile ci -- -D warnings
+      - name: Formatting (by hand)
+        if: github.event_name != 'pull_request'
+        run: cargo fmt --all --check
+      - name: Clippy and full tests (by hand)
         if: github.event_name != 'pull_request'
         run: |
           # shellcheck disable=SC2086
+          cargo clippy $OUR_CRATES --all-targets --locked --profile ci -- -D warnings
           cargo test $OUR_CRATES --locked --profile ci
 
   rust-desktop:
