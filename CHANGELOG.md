@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.1 -- 2026-10-21
+
+### Fixed
+
+- Window placement (Windows, Linux): a window bigger than its screen's work area is maximized into
+  it on the first frame in Edit and Effects alike, so its title bar can be reached; it opened at
+  1600 × 980 and was fitted only once the Effects editor was shown. The window opens centred.
+- Dragging the title bar no longer leaves the window stuck dragging (scrolling stopped until the
+  next click); only the primary button moves the window.
+
 ## 0.6.0 -- 2026-10-20
 
 ### Changed

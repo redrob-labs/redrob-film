@@ -41,6 +41,14 @@ jobs:
           python3 scripts/check_upstream_boundary.py
           python3 scripts/check_no_upstream_services.py
           python3 tools/rebrand_crafts.py --check
+          # A version bump that leaves Cargo.lock behind passes every PR check and only fails the
+          # release build (`--locked`). Resolving the lock here takes seconds and runs on every PR.
+          cargo metadata --locked --format-version 1 >/dev/null
+          # release.yml refuses a version with no ROADMAP section; catch it on the release PR.
+          if [ "${{ github.base_ref }}" = "main" ]; then
+            . packaging/env.sh
+            grep -Fq "## $VERSION" ROADMAP.md || { echo "::error::ROADMAP.md has no '## $VERSION' section"; exit 1; }
+          fi
       - name: Packaging
         run: |
           sudo apt-get install -y --no-install-recommends shellcheck desktop-file-utils libxml2-utils >/dev/null
