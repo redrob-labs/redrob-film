@@ -16,8 +16,11 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     p.rect_filled(rect, 0.0, t.header_bg);
     p.line_segment([rect.left_bottom(), rect.right_bottom()], Stroke::new(1.0, Color32::BLACK));
     let drag = ui.interact(rect, egui::Id::new("header-drag"), Sense::click_and_drag());
-    if drag.drag_started() {
+    if drag.drag_started_by(egui::PointerButton::Primary) {
         ui.ctx().send_viewport_cmd(egui::ViewportCommand::StartDrag);
+        // The OS move loop takes the button release (egui#1245, winit#2192): end egui's drag now,
+        // or it stays "dragging" after the move and the mouse wheel stops scrolling.
+        ui.ctx().stop_dragging();
     }
     if drag.double_clicked() {
         let max = ui.ctx().input(|i| i.viewport().maximized.unwrap_or(false));
