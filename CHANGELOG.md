@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0 -- 2026-10-28
+
+### Changed
+
+- Redrob Film and Redrob Effects are our own code now: the upstream sync is gone, the Effects editor
+  lives in `editors/effects`, and the upstream names are gone from the app, the docs and the
+  environment variables (`REDROB_FILM_*`, `REDROB_EFFECTS_*`). Projects saved before still open.
+- The web build is removed.
+
 ## 0.6.1 -- 2026-10-21
 
 ### Fixed

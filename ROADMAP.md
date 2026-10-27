@@ -2,6 +2,14 @@
 
 ## Changes
 
+## 0.7.0
+
+Redrob Film is its own code now.
+
+- **No more upstream.** The Effects editor lives in `editors/effects`; the upstream names are gone
+  from the app, the docs and the environment variables. Projects saved before still open.
+- **No web build.**
+
 ## 0.6.1
 
 The window opens where you can reach it.
