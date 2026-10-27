@@ -1947,9 +1947,8 @@ fn arrow_keys_nudge_the_selected_layer_at_the_viewer_magnification() {
     let at = screen(&h, [100.0, 100.0]);
     click(&mut h, at);
     assert_eq!(h.state().session.state.selected_layers, vec![box_id]);
-    let pos = |h: &Harness<'_, EffectsApp>| {
-        h.state().session.active_comp().unwrap().layer(box_id).unwrap().props.prop("transform/position").unwrap().value.as_vec3()
-    };
+    let pos =
+        |h: &Harness<'_, EffectsApp>| h.state().session.active_comp().unwrap().layer(box_id).unwrap().props.prop("transform/position").unwrap().value.as_vec3();
     let ppp = h.ctx.pixels_per_point();
     h.state_mut().ui.viewer.zoom = Some(1.0 / ppp);
     h.run_steps(2);
@@ -2038,9 +2037,8 @@ fn vertex_tools_edit_motion_path_keyframes() {
     s.execute("prop.addKey", json!({"layer": box_id.0, "path": "transform/position", "time": 2.0, "value": [500, 100, 0]})).unwrap();
     s.execute("view.snapping", json!({"value": false})).unwrap();
     s.set_time(redrob_effects_engine::time::Tick::from_seconds_f64(3.0));
-    let keys = |h: &Harness<'_, EffectsApp>| {
-        h.state().session.active_comp().unwrap().layer(box_id).unwrap().props.prop("transform/position").unwrap().keys.clone()
-    };
+    let keys =
+        |h: &Harness<'_, EffectsApp>| h.state().session.active_comp().unwrap().layer(box_id).unwrap().props.prop("transform/position").unwrap().keys.clone();
     h.state_mut().ui.tool = Tool::PenAdd;
     h.run_steps(3);
     let mid = screen(&h, [300.0, 100.0]);
@@ -2146,9 +2144,8 @@ fn rotate_tool_counts_revolutions_both_ways() {
     h.state_mut().session.execute("layer.select", json!({"layers": [box_id.0]})).unwrap();
     h.state_mut().ui.tool = Tool::Rotate;
     h.run_steps(2);
-    let rotation = |h: &Harness<'_, EffectsApp>| {
-        h.state().session.active_comp().unwrap().layer(box_id).unwrap().props.prop("transform/rotation").unwrap().value.as_f64()
-    };
+    let rotation =
+        |h: &Harness<'_, EffectsApp>| h.state().session.active_comp().unwrap().layer(box_id).unwrap().props.prop("transform/rotation").unwrap().value.as_f64();
     let center = screen(&h, [320.0, 180.0]);
     // Inside the 80 px box, so the drag starts on it (not on the Plate behind).
     let r = (screen(&h, [350.0, 180.0]) - center).x;

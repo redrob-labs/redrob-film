@@ -175,15 +175,7 @@ fn typing_key(ui: &egui::Ui, bump: bool) -> String {
 
 /// Viewer hook: draws the edit overlay and handles text pointer and keyboard input. Returns
 /// true when it owns this frame's pointer interaction (the viewer then skips its own gestures).
-pub fn hook(
-    app: &mut EffectsApp,
-    ui: &mut egui::Ui,
-    painter: &egui::Painter,
-    map: &ViewerMap,
-    ectx: &EvalCtx,
-    resp: &egui::Response,
-    space_pan: bool,
-) -> bool {
+pub fn hook(app: &mut EffectsApp, ui: &mut egui::Ui, painter: &egui::Painter, map: &ViewerMap, ectx: &EvalCtx, resp: &egui::Response, space_pan: bool) -> bool {
     let tool = app.ui.tool;
     let type_tool = matches!(tool, Tool::Type | Tool::TypeVertical);
     let last_tool_id = egui::Id::new("viewer-text-last-tool");

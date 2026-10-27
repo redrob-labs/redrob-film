@@ -205,9 +205,8 @@ fn deleting_items_in_use_asks_first() {
     let solid = items[1];
     let usage = h.state_mut().session.execute("project.usage", json!({"items": [solid.0]})).unwrap();
     assert_eq!(usage, json!({"items": 1, "layers": 1, "comps": 1}));
-    let uses = |h: &Harness<'_, EffectsApp>| {
-        h.state().session.project.comps().flat_map(|(_, c)| c.layers.iter()).filter(|l| l.source.item() == Some(solid)).count()
-    };
+    let uses =
+        |h: &Harness<'_, EffectsApp>| h.state().session.project.comps().flat_map(|(_, c)| c.layers.iter()).filter(|l| l.source.item() == Some(solid)).count();
     click(&mut h, &format!("project.item.{}.name", solid.0), Modifiers::NONE);
     for cancel in ["button", "escape"] {
         key(&mut h, Key::Delete, Modifiers::NONE);

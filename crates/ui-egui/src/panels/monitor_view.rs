@@ -716,16 +716,7 @@ pub fn guides(app: &mut FilmApp, ui: &mut egui::Ui, w: Which, area: Rect, pic: R
 /// Ctrl / Cmd + the wheel zooms the waveform about the pointer, the wheel scrolls a zoomed one, and
 /// the minimap's window is dragged to scroll, its ends to zoom; a double-click on it shows all.
 #[allow(clippy::too_many_arguments)]
-pub fn waveform(
-    app: &mut FilmApp,
-    ui: &mut egui::Ui,
-    area: Rect,
-    item: ItemId,
-    time: Tick,
-    duration: Tick,
-    mark_in: Option<Tick>,
-    mark_out: Option<Tick>,
-) {
+pub fn waveform(app: &mut FilmApp, ui: &mut egui::Ui, area: Rect, item: ItemId, time: Tick, duration: Tick, mark_in: Option<Tick>, mark_out: Option<Tick>) {
     let zoom_id = egui::Id::new(("source-waveform-zoom", item.0));
     let (mut za, mut zb) = ui.data(|d| d.get_temp::<(f64, f64)>(zoom_id)).unwrap_or((0.0, 1.0));
     let strip_h = if area.height() > 60.0 { 14.0 } else { 0.0 };

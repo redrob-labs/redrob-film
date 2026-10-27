@@ -139,16 +139,7 @@ fn triangle(p: &egui::Painter, c: egui::Pos2, left: bool, col: Color32) {
 }
 
 /// ◀ ◆ ▶ at the right end of an animated parameter's row.
-fn key_navigator(
-    app: &mut EffectsApp,
-    ui: &mut egui::Ui,
-    p: &egui::Painter,
-    layer: &Layer,
-    prop: &Property,
-    ectx: &EvalCtx,
-    r: Rect,
-    actions: &mut Actions,
-) {
+fn key_navigator(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, prop: &Property, ectx: &EvalCtx, r: Rect, actions: &mut Actions) {
     let t = app.tokens;
     let cy = r.center().y;
     let uid = prop.uid;

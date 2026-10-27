@@ -155,14 +155,7 @@ fn run(app: &mut EffectsApp, ctx: &egui::Context, cmd: &str, p: serde_json::Valu
 
 /// The viewer overlay and its interaction (call after the viewer's own gestures so it takes
 /// the clicks while a 3D Camera Tracker is selected).
-pub fn viewer_hook(
-    app: &mut EffectsApp,
-    ui: &mut egui::Ui,
-    painter: &egui::Painter,
-    map: &ViewerMap,
-    ectx: &EvalCtx,
-    l2c: &dyn Fn(&EvalCtx, &Layer) -> Mat3,
-) {
+pub fn viewer_hook(app: &mut EffectsApp, ui: &mut egui::Ui, painter: &egui::Painter, map: &ViewerMap, ectx: &EvalCtx, l2c: &dyn Fn(&EvalCtx, &Layer) -> Mat3) {
     let ctx = ui.ctx().clone();
     let comp = ectx.comp;
     banner(app, painter, map, ectx, l2c);

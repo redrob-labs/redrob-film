@@ -35,9 +35,8 @@ fn project_panel_scrolls_and_reveals_the_selection() {
     h.run_steps(3);
     // Far more rows than fit: a scroll bar, and the bottom rows aren't drawn yet.
     assert!(h.state().auto.find("project.vscroll").is_some());
-    let drawn = |h: &Harness<'_, EffectsApp>| {
-        h.state().auto.previous.iter().filter(|e| e.id.starts_with("project.item.") && e.id.matches('.').count() == 2).count()
-    };
+    let drawn =
+        |h: &Harness<'_, EffectsApp>| h.state().auto.previous.iter().filter(|e| e.id.starts_with("project.item.") && e.id.matches('.').count() == 2).count();
     let rows = drawn(&h);
     assert!(rows > 5 && rows < 80, "only the rows in view are drawn: {rows}");
     // Selecting an item (a command, an agent) scrolls it into view.

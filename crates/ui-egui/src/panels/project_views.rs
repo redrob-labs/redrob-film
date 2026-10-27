@@ -207,16 +207,7 @@ pub fn click_modifiers(ui: &egui::Ui) -> egui::Modifiers {
 }
 
 /// Click / double-click / drag / context menu of an item (row, card).
-pub fn item_interactions(
-    app: &mut FilmApp,
-    ui: &egui::Ui,
-    resp: &egui::Response,
-    id: ItemId,
-    kind: &ItemKind,
-    actions: &mut Actions,
-    drag: bool,
-    menu: bool,
-) {
+pub fn item_interactions(app: &mut FilmApp, ui: &egui::Ui, resp: &egui::Response, id: ItemId, kind: &ItemKind, actions: &mut Actions, drag: bool, menu: bool) {
     if resp.clicked() {
         let mods = click_modifiers(ui);
         let mut sel = app.session.state.project_selection.clone();

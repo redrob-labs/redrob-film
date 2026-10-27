@@ -233,17 +233,7 @@ impl ButtonBar {
     }
 }
 
-fn text_button(
-    app: &mut EffectsApp,
-    ui: &mut egui::Ui,
-    p: &egui::Painter,
-    bar: &mut ButtonBar,
-    y: f32,
-    label: &str,
-    on: bool,
-    id: &str,
-    tip: &str,
-) -> bool {
+fn text_button(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, bar: &mut ButtonBar, y: f32, label: &str, on: bool, id: &str, tip: &str) -> bool {
     let t = app.tokens;
     let w = p.layout_no_wrap(label.to_string(), Tokens::ui(11.0), t.text).size().x + 14.0;
     // Once one button overflows, the rest follow it into the menu (they keep their order).

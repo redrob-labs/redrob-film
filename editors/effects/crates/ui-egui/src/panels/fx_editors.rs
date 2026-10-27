@@ -66,17 +66,7 @@ fn register_points(app: &mut EffectsApp, prefix: &str, gr: Rect, pts: &[[f32; 2]
 }
 
 /// Small coloured tabs (`names[i]`, swatch `cols[i]`); returns the clicked one.
-fn tabs(
-    app: &mut EffectsApp,
-    ui: &mut egui::Ui,
-    p: &egui::Painter,
-    x0: f32,
-    cy: f32,
-    cur: usize,
-    names: &[&str],
-    cols: &[Color32],
-    id: &str,
-) -> Option<usize> {
+fn tabs(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, x0: f32, cy: f32, cur: usize, names: &[&str], cols: &[Color32], id: &str) -> Option<usize> {
     let t = app.tokens;
     let mut x = x0;
     let mut out = None;
@@ -770,16 +760,7 @@ pub fn add_pair(v: &[(f64, f64)]) -> (f64, f64) {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn reshape_buttons(
-    app: &mut EffectsApp,
-    ui: &mut egui::Ui,
-    p: &egui::Painter,
-    layer: &Layer,
-    g: &PropGroup,
-    ectx: &EvalCtx,
-    r: Rect,
-    actions: &mut Actions,
-) {
+fn reshape_buttons(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, ectx: &EvalCtx, r: Rect, actions: &mut Actions) {
     let t = app.tokens;
     let euid = g.uid;
     let pairs = parse_pairs(&str_value(layer, ectx, g, "correspondencePoints"));
@@ -835,16 +816,7 @@ fn extractor_layer(vals: &[String; 4]) -> Option<&str> {
 /// (`diffuse`, `ViewLayer.Combined`, …) shows its channels in red, green, blue and alpha in one
 /// undo step, as After Effects' EXtractoR dialog does.
 #[allow(clippy::too_many_arguments)]
-fn extractor_layers(
-    app: &mut EffectsApp,
-    ui: &mut egui::Ui,
-    p: &egui::Painter,
-    layer: &Layer,
-    g: &PropGroup,
-    ectx: &EvalCtx,
-    r: Rect,
-    actions: &mut Actions,
-) {
+fn extractor_layers(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, ectx: &EvalCtx, r: Rect, actions: &mut Actions) {
     let t = app.tokens;
     let euid = g.uid;
     let vals = EXTRACTOR_CHANNELS.map(|id| str_value(layer, ectx, g, id));

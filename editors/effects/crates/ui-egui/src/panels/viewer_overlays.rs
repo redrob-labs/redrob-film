@@ -434,13 +434,7 @@ impl FtBox {
 }
 
 /// Draw the free-transform box of the target path (if any) and return it for hit tests.
-pub(crate) fn draw_free_transform(
-    app: &mut EffectsApp,
-    ctx: &egui::Context,
-    painter: &egui::Painter,
-    map: &ViewerMap,
-    paths: &[PathInfo],
-) -> Option<FtBox> {
+pub(crate) fn draw_free_transform(app: &mut EffectsApp, ctx: &egui::Context, painter: &egui::Painter, map: &ViewerMap, paths: &[PathInfo]) -> Option<FtBox> {
     let (layer, uid) = free_transform_target(ctx)?;
     let Some(p) = paths.iter().find(|p| p.layer == layer && p.uid == uid) else {
         end_free_transform(ctx);
