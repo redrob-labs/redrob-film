@@ -666,7 +666,7 @@ mod tests {
     #[cfg(any(unix, windows))]
     #[test]
     fn fs_services_open_media_through_a_file_reader() {
-        let dir = std::env::temp_dir().join(format!("filmcraft-pool-reader-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("redrob-film-pool-reader-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("a.wav");
         let wav = redrob_film_media::wav::write_wav16(&[0.0, 0.5, -0.5, 0.25], 2, 48_000);

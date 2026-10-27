@@ -1025,7 +1025,7 @@ group = "markers"
 feature = "Markers view: thumbnails, show markers of all clips, default category"
 manual = "https://docs.kdenlive.org/en/cutting_and_assembling/guides.html#markers-view"
 film = "full"
-evidence = "crates/ui-egui/src/panels/marker_ui.rs:799 panel: Thumbnails toggle (FilmcraftApp::thumbnail per marker), All Clips (bin clip markers), default category combo (markers.categories default; ProjectSettings.default_marker_category)"
+evidence = "crates/ui-egui/src/panels/marker_ui.rs:799 panel: Thumbnails toggle (FilmApp::thumbnail per marker), All Clips (bin clip markers), default category combo (markers.categories default; ProjectSettings.default_marker_category)"
 gap = ""
 
 [[row]]

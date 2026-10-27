@@ -12,11 +12,11 @@
 use egui::{Align2, Color32, Rect, Sense, pos2, vec2};
 use serde_json::json;
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     // the search field, then the filter toggles (accelerated / 32-bit / YUV) and the description
     // pane's toggle at its right
@@ -144,7 +144,7 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
 /// One effect or transition row: icon, name, badges (accelerated / 32-bit / YUV, a star for a
 /// favourite). Drag it onto a clip; double-click applies it to the selection (returned); a click
 /// shows it in the description pane; right-click for favourites.
-fn effect_row(app: &mut FilmcraftApp, ui: &mut egui::Ui, d: &redrob_film_project::EffectDef) -> Option<String> {
+fn effect_row(app: &mut FilmApp, ui: &mut egui::Ui, d: &redrob_film_project::EffectDef) -> Option<String> {
     let t = app.tokens;
     let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 20.0), Sense::click_and_drag());
     let described = app.ui.fx.show_description && app.ui.fx.described.as_deref() == Some(d.id);
@@ -199,7 +199,7 @@ const PREVIEW_FRAMES: usize = 16;
 
 /// One frame of a transition's animated preview: the transition from a warm "A" picture to a cool
 /// "B" picture, at the progress the clock gives (a 1.6 s cycle with a short hold at each end).
-fn transition_preview(app: &mut FilmcraftApp, ctx: &egui::Context, d: &redrob_film_project::EffectDef, time: f64) -> egui::TextureId {
+fn transition_preview(app: &mut FilmApp, ctx: &egui::Context, d: &redrob_film_project::EffectDef, time: f64) -> egui::TextureId {
     let phase = (time / 1.6).fract();
     let frame = ((phase * (PREVIEW_FRAMES + 4) as f64) as usize).saturating_sub(2).min(PREVIEW_FRAMES - 1);
     let name = format!("transition-preview-{}-{frame}", d.id);
@@ -236,7 +236,7 @@ fn transition_preview(app: &mut FilmcraftApp, ctx: &egui::Context, d: &redrob_fi
 
 /// The Effects panel's filter toggles: only accelerated / 32-bit / YUV effects, and the
 /// description pane. Automation ids `effects.filter.accelerated|float32|yuv`, `effects.describe`.
-fn filter_toggles(app: &mut FilmcraftApp, ui: &mut egui::Ui, at: egui::Pos2) {
+fn filter_toggles(app: &mut FilmApp, ui: &mut egui::Ui, at: egui::Pos2) {
     let t = app.tokens;
     let fx = &app.ui.fx;
     let rows = [
@@ -274,7 +274,7 @@ fn filter_toggles(app: &mut FilmcraftApp, ui: &mut egui::Ui, at: egui::Pos2) {
     }
 }
 
-fn folder_row(app: &mut FilmcraftApp, ui: &mut egui::Ui, key: &str, depth: usize, filter: &str) -> bool {
+fn folder_row(app: &mut FilmApp, ui: &mut egui::Ui, key: &str, depth: usize, filter: &str) -> bool {
     let t = app.tokens;
     let open = !filter.is_empty() || app.ui.expanded_fx.iter().any(|k| k == key);
     let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 20.0), Sense::click());
@@ -304,7 +304,7 @@ fn folder_row(app: &mut FilmcraftApp, ui: &mut egui::Ui, key: &str, depth: usize
 
 /// Right-click menu of a Lumetri preset: Apply to Selected Clips (automation id
 /// `effects.presetMenu.apply`). True when chosen.
-fn apply_menu(app: &mut FilmcraftApp, resp: &egui::Response) -> bool {
+fn apply_menu(app: &mut FilmApp, resp: &egui::Response) -> bool {
     let mut chosen = false;
     resp.context_menu(|ui| {
         let b = ui.button(tl!("Apply to Selected Clips"));
@@ -318,7 +318,7 @@ fn apply_menu(app: &mut FilmcraftApp, resp: &egui::Response) -> bool {
 }
 
 /// A preset's thumbnail texture (rendered once per size, cached by name).
-fn preset_texture(app: &mut FilmcraftApp, ctx: &egui::Context, p: &redrob_film_render::lumetri_presets::LumetriPreset, w: usize) -> egui::TextureId {
+fn preset_texture(app: &mut FilmApp, ctx: &egui::Context, p: &redrob_film_render::lumetri_presets::LumetriPreset, w: usize) -> egui::TextureId {
     let name = format!("lumetri-preset-{}-{w}", p.name);
     if let Some((id, _)) = app.texture_existing(&name) {
         return id;
@@ -338,7 +338,7 @@ fn preset_texture(app: &mut FilmcraftApp, ctx: &egui::Context, p: &redrob_film_r
 
 /// The Lumetri Presets folder of the tree: sub-folders and preset rows with thumbnails. Returns
 /// the preset to apply (double-click).
-fn lumetri_rows(app: &mut FilmcraftApp, ui: &mut egui::Ui, filter: &str) -> Option<String> {
+fn lumetri_rows(app: &mut FilmApp, ui: &mut egui::Ui, filter: &str) -> Option<String> {
     use redrob_film_render::lumetri_presets as lp;
     let t = app.tokens;
     let top = "Lumetri Presets";
@@ -394,7 +394,7 @@ fn lumetri_rows(app: &mut FilmcraftApp, ui: &mut egui::Ui, filter: &str) -> Opti
 
 /// The wide Effects panel's thumbnail grid of the selected Lumetri Presets folder. Returns the
 /// preset to apply (double-click).
-fn preset_grid(app: &mut FilmcraftApp, ui: &mut egui::Ui, area: Rect) -> Option<String> {
+fn preset_grid(app: &mut FilmApp, ui: &mut egui::Ui, area: Rect) -> Option<String> {
     use redrob_film_render::lumetri_presets as lp;
     let t = app.tokens;
     let folder = app.ui.lumetri_grid_folder.clone()?;

@@ -6,7 +6,7 @@
 //!
 //! The UI crate stays platform-neutral (it also runs in the browser): the agent process and its
 //! protocol live behind [`AgentHost`], supplied by the desktop app through
-//! [`crate::FilmcraftApp::agent_services`]. Without one (the web build) the panel says so.
+//! [`crate::FilmApp::agent_services`]. Without one (the web build) the panel says so.
 //!
 //! The agent's model calls are billed to the connected Redrob workspace, so the first message
 //! passes [`crate::account::require`]: without a workspace the Connect dialog opens and nothing
@@ -19,7 +19,7 @@
 use egui::{Rect, RichText, vec2};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 
 /// One choice in a permission request, as the agent offered it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -217,7 +217,7 @@ impl AgentPanel {
 
 /// Send what is in the composer: the account gate first (it opens the Connect dialog and keeps
 /// the text when there is no workspace), then the agent.
-fn submit(app: &mut FilmcraftApp) {
+fn submit(app: &mut FilmApp) {
     if app.agent.input.trim().is_empty() || app.agent.busy {
         return;
     }
@@ -227,7 +227,7 @@ fn submit(app: &mut FilmcraftApp) {
     app.agent.send(&mut app.agent_services.factory);
 }
 
-fn add_to_redrob_code(app: &mut FilmcraftApp) -> Result<Value, String> {
+fn add_to_redrob_code(app: &mut FilmApp) -> Result<Value, String> {
     let Some(f) = app.agent_services.add_to_redrob_code.as_mut() else {
         return Err(tl!("The agent runs in the desktop app only.").to_string());
     };
@@ -237,7 +237,7 @@ fn add_to_redrob_code(app: &mut FilmcraftApp) -> Result<Value, String> {
 }
 
 /// `agent.*` commands (menu, control channel). `None` for any other id.
-pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
+pub fn route(app: &mut FilmApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
     match id {
         "agent.status" => Some(Ok(json!({
             "available": app.agent_services.factory.is_some(),
@@ -273,7 +273,7 @@ const GAP: f32 = 8.0;
 const BUBBLE_SHARE: f32 = 0.85;
 
 /// The panel body.
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     if let Some(g) = app.account.as_ref().map(|a| a.generation()) {
         app.agent.account_changed(g);
@@ -321,7 +321,7 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     chat(app, ui);
 }
 
-fn chat(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
+fn chat(app: &mut FilmApp, ui: &mut egui::Ui) {
     let t = app.tokens;
     let error_color = egui::Color32::from_rgb(0xff, 0x8a, 0x80);
     let composer_h = 92.0 + if app.agent.pending.is_some() { 52.0 } else { 0.0 };
@@ -536,8 +536,8 @@ mod tests {
         }
     }
 
-    fn app_with(connected: bool, sent: Rc<RefCell<Vec<String>>>) -> FilmcraftApp {
-        let mut app = FilmcraftApp::new(redrob_film_engine::Session::default());
+    fn app_with(connected: bool, sent: Rc<RefCell<Vec<String>>>) -> FilmApp {
+        let mut app = FilmApp::new(redrob_film_engine::Session::default());
         app.account = Some(Box::new(Account(connected)));
         app.agent_services.factory = Some(Box::new(move || Ok(Box::new(Echo(sent.clone())) as Box<dyn AgentHost>)));
         app
@@ -570,7 +570,7 @@ mod tests {
 
     #[test]
     fn add_to_redrob_code_needs_the_desktop() {
-        let mut app = FilmcraftApp::new(redrob_film_engine::Session::default());
+        let mut app = FilmApp::new(redrob_film_engine::Session::default());
         assert!(route(&mut app, "agent.addToRedrobCode", &json!({})).unwrap().is_err());
         app.agent_services.add_to_redrob_code = Some(Box::new(|| Ok("/x/redrob.json".into())));
         assert_eq!(route(&mut app, "agent.addToRedrobCode", &json!({})).unwrap(), Ok(json!({"path": "/x/redrob.json"})));

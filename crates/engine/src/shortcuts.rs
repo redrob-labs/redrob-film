@@ -64,6 +64,7 @@ pub const AVID_PRESET: &str = "Avid Media Composer Compatible";
 pub const KDENLIVE_PRESET: &str = "Kdenlive Compatible";
 pub const BUILTIN_PRESETS: [&str; 5] = [DEFAULT_PRESET, PREMIERE_PRESET, FCP_PRESET, AVID_PRESET, KDENLIVE_PRESET];
 
+// legacy: the format id in saved keyboard-shortcut files
 const FILE_FORMAT: &str = "filmcraft-keyboard-shortcuts";
 const DIR_NAME: &str = "Keyboard Shortcuts";
 const ACTIVE_FILE: &str = "active.json";

@@ -1,4 +1,4 @@
-// FilmCraft GPU effect stage: the standard effects of `redrob_film_render::gpufx::FxOp`, one
+// Redrob Film GPU effect stage: the standard effects of `redrob_film_render::gpufx::FxOp`, one
 // compute pass each, reading the working image (`src`, linear premultiplied RGBA f32) and writing
 // the next one (`dst`). The math mirrors `FxOp::apply` (the CPU reference) operation by
 // operation; parameters arrive evaluated (keyframes, defaults and clamps applied on the CPU).

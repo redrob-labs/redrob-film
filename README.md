@@ -6,11 +6,10 @@ AI dock beside whichever one is active.
 
 한국어: [README.ko.md](./README.ko.md)
 
-> **Fork notice.** This repository is a hard fork of [storytold/filmcraft](https://github.com/storytold/filmcraft)
-> at tag `v0.6.0`. Where it was cut, what it does not own and how upstream is absorbed are in
-> [UPSTREAM.md](./UPSTREAM.md); the machine-readable pin is [`upstream-base.json`](./upstream-base.json).
-> Upstream's copyright is retained in [NOTICE](./NOTICE) with ours added below it. Upstream's ArtCraft
-> marks are removed; the Redrob marks in `assets/brand/` are Redrob's trademarks.
+> **Origins.** Redrob Film started from open-source code and is developed here on its own; it is not
+> synced with that code any more. Where it came from, and which old names are still read from existing
+> files, is in [SOURCE_ORIGINS.md](./SOURCE_ORIGINS.md). The original copyright is retained in
+> [NOTICE](./NOTICE) with ours added below it. The Redrob marks in `assets/brand/` are Redrob's trademarks.
 
 ## What it is
 
@@ -56,8 +55,9 @@ cargo run --release -p redrob-film-cli -- commands     # every engine command (r
 cargo run --release -p redrob-film-cli -- mcp          # MCP server (headless)
 ```
 
-Cargo packages keep upstream's `filmcraft*` names so upstream syncs merge cleanly; the executables,
-app id (`ai.redrob.film`), installers and everything a person sees are Redrob Film's.
+The Cargo packages are `redrob-film-*` (Edit mode, the app and the CLI) and `redrob-effects-*` (the
+Effects editor, `editors/effects/`). There is one product executable, `redrob-film`, plus the
+`redrob-film-cli` command-line tool; the app id is `ai.redrob.film`.
 
 ## Control from Redrob Code
 
@@ -78,15 +78,13 @@ The tools run against the live editor, exactly as the menus do; the app works as
 
 - Default branch `develop`, release branch `main`. Branch names follow the `feat/ fix/ chore/ docs/
   test/ refactor/ perf/ sync/ hotfix/ release/` prefixes, checked by the shared redrob-labs gitflow workflow (one type list for every repository: `feat fix chore docs test refactor perf ci build sync hotfix release`).
-- Upstream syncs land on `sync/upstream-<tag>` branches and merge with a merge commit only.
 - Organisation conventions: CONTRIBUTING.md and FORKS.md in [redrob-labs/.github](https://github.com/redrob-labs/.github).
-- Gates: `python3 scripts/check_upstream_boundary.py`, `scripts/check_no_upstream_services.py`,
-  `scripts/check_brand.py`, and `cargo xtask ci`.
+- Gates: `python3 scripts/check_brand.py` and `cargo xtask ci`.
 
 ## License
 
 MIT or Apache-2.0, at your option ([LICENSE-MIT](./LICENSE-MIT), [LICENSE-APACHE](./LICENSE-APACHE)).
-Copyright notices are in [NOTICE](./NOTICE); ours is added below upstream's:
+Copyright notices are in [NOTICE](./NOTICE); ours is added below the original authors':
 
 ```
 Copyright (c) 2026 ArtCraft Team and the FilmCraft contributors.

@@ -52,6 +52,7 @@ const BLEND_XML: &[(&str, u32)] = &[
 ];
 
 fn generator_from(name: &str, id: &str, report: &mut Report) -> Generator {
+    // legacy: effect ids in FCP 7 XML written by older versions
     if let Some(json) = id.strip_prefix("filmcraft:")
         && let Ok(g) = serde_json::from_str::<Generator>(json)
     {
@@ -1046,6 +1047,7 @@ impl Exp<'_, '_> {
             other => {
                 self.report.info(format!("generator \"{}\" is written with a Redrob Film effect id", other.label()));
                 self.w.text("name", other.label());
+                // legacy: effect id prefix this module reads back
                 self.w.text("effectid", format!("filmcraft:{}", serde_json::to_string(other).unwrap_or_default()));
             }
         }

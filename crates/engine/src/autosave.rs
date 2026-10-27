@@ -893,7 +893,7 @@ impl Persistence {
             meta: JournalMeta { pid, started_unix: started, generator: redrob_film_format::generator(), ..Default::default() },
         };
         w.next_autosave = Instant::now() + w.autosave_interval();
-        let thread = std::thread::Builder::new().name("filmcraft-autosave".into()).spawn(move || w.run(rx))?;
+        let thread = std::thread::Builder::new().name("redrob-film-autosave".into()).spawn(move || w.run(rx))?;
         Ok(Self {
             data_dir: cfg.data_dir.clone(),
             session_dir,

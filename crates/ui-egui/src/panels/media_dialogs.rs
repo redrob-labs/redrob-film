@@ -18,7 +18,7 @@ use egui::{Color32, RichText};
 use serde_json::{Value, json};
 
 use crate::state::{LinkMediaDraft, ProjectManagerDraft, ProxyDraft};
-use crate::{FilmcraftApp, RelinkHint};
+use crate::{FilmApp, RelinkHint};
 
 type Elems = Vec<(String, egui::Rect, String)>;
 
@@ -31,7 +31,7 @@ fn mb(b: u64) -> String {
 }
 
 /// Draw whichever media dialogs are open; open Link Media when a project needs it.
-pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
+pub fn show(app: &mut FilmApp, ctx: &egui::Context) {
     if app.session.offline.prompt && app.ui.link_media.is_none() {
         app.ui.link_media = Some(LinkMediaDraft::default());
     }
@@ -50,12 +50,12 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
 }
 
 /// Menu / shortcut entry points without params open a dialog. Returns None for other ids.
-pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
+pub fn route(app: &mut FilmApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
     let empty = params.as_object().is_none_or(|m| m.is_empty());
     if !empty {
         return None;
     }
-    let enabled = |app: &FilmcraftApp, id: &str| redrob_film_engine::find_command(id).map_or(Ok(()), |c| (c.enabled)(&app.session));
+    let enabled = |app: &FilmApp, id: &str| redrob_film_engine::find_command(id).map_or(Ok(()), |c| (c.enabled)(&app.session));
     match id {
         "media.linkMedia" => {
             let r = app.session.execute("media.linkMedia", json!({})).map_err(|e| e.to_string());
@@ -110,7 +110,7 @@ pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<
     }
 }
 
-fn missing_list(app: &FilmcraftApp) -> Vec<(u64, String, String, String, &'static str)> {
+fn missing_list(app: &FilmApp) -> Vec<(u64, String, String, String, &'static str)> {
     app.session
         .offline
         .missing
@@ -133,7 +133,7 @@ fn match_params(d: &LinkMediaDraft) -> Value {
     })
 }
 
-fn preview_texture(app: &FilmcraftApp, ctx: &egui::Context, path: &str) -> Option<egui::TextureHandle> {
+fn preview_texture(app: &FilmApp, ctx: &egui::Context, path: &str) -> Option<egui::TextureHandle> {
     let key = egui::Id::new(("link-preview", path));
     if let Some(t) = ctx.data(|d| d.get_temp::<Option<egui::TextureHandle>>(key)) {
         return t;
@@ -148,7 +148,7 @@ fn preview_texture(app: &FilmcraftApp, ctx: &egui::Context, path: &str) -> Optio
     tex
 }
 
-fn link_media(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn link_media(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut d) = app.ui.link_media.clone() else { return };
     let rows: Vec<_> = missing_list(app).into_iter().filter(|r| !d.skipped.contains(&r.0)).collect();
     if rows.is_empty() {
@@ -311,7 +311,7 @@ fn link_media(app: &mut FilmcraftApp, ctx: &egui::Context) {
         action = Some("cancel");
     }
     let (item, ..) = rows[d.row].clone();
-    let relink = |app: &mut FilmcraftApp, d: &mut LinkMediaDraft, path: String| {
+    let relink = |app: &mut FilmApp, d: &mut LinkMediaDraft, path: String| {
         let mut p = match_params(d);
         p["item"] = json!(item);
         p["path"] = json!(path);
@@ -411,7 +411,7 @@ fn link_media(app: &mut FilmcraftApp, ctx: &egui::Context) {
     app.ui.link_media = keep.then_some(d);
 }
 
-fn make_offline(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn make_offline(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut delete) = app.ui.make_offline else { return };
     let mut elems: Elems = Vec::new();
     let mut keep = true;
@@ -455,7 +455,7 @@ fn make_offline(app: &mut FilmcraftApp, ctx: &egui::Context) {
     app.ui.make_offline = (keep && !ctx.input(|i| i.key_pressed(egui::Key::Escape))).then_some(delete);
 }
 
-fn create_proxies(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn create_proxies(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut d) = app.ui.create_proxies.clone() else { return };
     let mut elems: Elems = Vec::new();
     let mut keep = true;
@@ -544,7 +544,7 @@ fn pm_params(d: &ProjectManagerDraft, dry: bool) -> Value {
     })
 }
 
-fn project_manager(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn project_manager(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut d) = app.ui.project_manager.clone() else { return };
     let before = d.clone();
     let mut elems: Elems = Vec::new();

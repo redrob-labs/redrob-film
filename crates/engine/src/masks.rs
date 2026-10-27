@@ -693,7 +693,7 @@ fn track(s: &mut Session, p: &Value) -> Result<Value> {
         run();
         poll(s);
     } else {
-        std::thread::Builder::new().name("filmcraft-mask-track".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+        std::thread::Builder::new().name("redrob-film-mask-track".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
     }
     let st = s.jobs.iter().find(|j| j.id == id).map(crate::Job::to_json).unwrap_or(Value::Null);
     Ok(json!({"job": id, "frames": steps, "status": st}))

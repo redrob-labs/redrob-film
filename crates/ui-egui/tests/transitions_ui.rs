@@ -1,6 +1,6 @@
 //! Headless UI tests of applied transitions in the Timeline (#430, #224): click one to select it
 //! and see it in Effect Controls, Delete it, drag its end or its middle, double-click it for Set
-//! Transition Duration. The real `FilmcraftApp` under `egui_kittest`, driven over the control
+//! Transition Duration. The real `FilmApp` under `egui_kittest`, driven over the control
 //! channel by automation id.
 //!
 //! Set `REDROB_FILM_UI_SNAPSHOT_DIR=<dir>` to also render the window offscreen with wgpu and write
@@ -10,12 +10,12 @@ use std::sync::mpsc::{Sender, channel};
 
 use egui_kittest::Harness;
 use redrob_film_engine::Session;
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
     snapshots: Option<std::path::PathBuf>,
 }
@@ -34,7 +34,7 @@ impl Driver {
         let mut session = Session::default();
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = FilmApp::new(session).with_control(rx);
         let snapshots = std::env::var_os("REDROB_FILM_UI_SNAPSHOT_DIR").map(std::path::PathBuf::from);
         // 60 fps steps, so a double-click's two clicks fall within egui's double-click time
         let mut b = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_step_dt(1.0 / 60.0).with_max_steps(10_000);

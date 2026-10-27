@@ -72,6 +72,7 @@ fn schema_name(v: &Value) -> &str {
 }
 
 fn fc(v: &Value) -> Option<&Value> {
+    // legacy: the OTIO metadata namespace in files already written; kept on read and write
     v.get("metadata").and_then(|m| m.get("filmcraft"))
 }
 
@@ -231,6 +232,7 @@ impl Exp<'_, '_> {
             MediaRef::Generator(g) => json!({
                 "OTIO_SCHEMA": "GeneratorReference.1",
                 "name": name,
+                // legacy: FilmCraftGenerator kinds are read back from OTIO files
                 "generator_kind": match g { Generator::ColorMatte { .. } => "SolidColor", Generator::BlackVideo => "black", Generator::BarsAndTone => "SMPTEBars", _ => "FilmCraftGenerator" },
                 "parameters": match g { Generator::ColorMatte { color } => json!({"color": color}), _ => json!({}) },
                 "available_range": avail,

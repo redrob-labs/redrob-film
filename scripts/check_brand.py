@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Brand gate: Redrob Film shows Redrob's name and marks, and nothing of upstream's.
 
-1. No file under a proprietary upstream prefix (upstream-base.json `proprietaryPrefixes`).
+1. No upstream trademark file (`docs/brand/`, removed as upstream's NOTICE requires).
 2. The brand sources in assets/brand/ match assets/brand/SHA256SUMS byte for byte, and every app
    icon is one the brand script makes (no stray upstream icon left behind).
 3. No upstream product name, company, app id or community link on a user-facing surface: string
    literals in the UI, the apps and the engine's messages, the translation catalogs, the packaging
    and the CI that builds it. Comments are not surfaces. What is kept on purpose (stored in files,
-   or read back as an identifier) is listed in KEEP and in UPSTREAM.md.
+   or read back as an identifier) is listed in KEEP and in SOURCE_ORIGINS.md.
 4. No upstream IDENTIFIER anywhere in the tree: crate names (`filmcraft-*`, `effectcraft-*`), the
    `.fcproj`/`.ecproj` extensions, `FILMCRAFT_*`/`EFFECTCRAFT_*` variables, `filmcraft://` URIs, the
    old MIME types and the `<EffectCraftProject>` root -- except on a line marked `// legacy:`, which
@@ -16,7 +16,6 @@
     python3 scripts/check_brand.py
 """
 import hashlib
-import json
 import pathlib
 import re
 import subprocess
@@ -32,36 +31,37 @@ FORBIDDEN = re.compile(
     r"|Redrob Cut|redrob-cut|redrob_cut|ai\.redrob\.cut|REDROB_CUT|RedrobCut"
 )
 SURFACES = (
-    "crates/ui-egui/src/", "apps/filmcraft/src/", "apps/filmcraft-cli/src/",
+    "crates/ui-egui/src/", "apps/redrob-film-app/src/", "apps/redrob-film-cli/src/",
     "crates/engine/src/", "crates/automation/src/", "packaging/", ".github/workflows/",
-    "crafts/effectcraft/crates/",
+    "editors/effects/crates/",
 )
 # Kept on purpose: written into or read back from files, so changing them breaks existing projects
-# and interchange round trips. UPSTREAM.md lists them.
+# and interchange round trips. SOURCE_ORIGINS.md lists them.
 KEEP = re.compile(
     r"GPU Acceleration \(wgpu\)|Software Only \(CPU\)|CreatorTool|\"generator\""
     r"|filmcraft_|filmcraft-(target|install-|sign-|signing|logging-|web|speech|engine|ui-egui)"
     r"|/run/build/filmcraft/|FilmcraftApp|Filmcraft(Icon|Files|App|Exe|Cli|CliExe|Output)\b"
     # internal plist keys; the copyright credit upstream's licence requires; a negative test
-    r"|FilmCraft(Version|BuildCommit)\b|the (FilmCraft|EffectCraft) contributors|desktop_file_exec_is_ours|effectcraft_|EffectCraftProject"
+    r"|the (FilmCraft|EffectCraft) contributors|EffectCraft contributors|desktop_file_exec_is_ours|EffectCraftProject"
+    r"|FilmCraft (Frame Size|Audio Sample Rate|Effect\b|MXF writer|test\b)|FilmCraft:(SCLP|EFFE):|FilmCraftGenerat|rendered by FilmCraft"
 )
 COMMENT = re.compile(r"^\s*(//|#|<!--|\*|/\*|;|REM\b)")
 
 # 4. Upstream IDENTIFIERS (not names): crate names, file extensions, env-var prefixes, URI schemes,
-# MIME types and the XML root. tools/rename_crates.py and the de-upstream change renamed them; the
+# MIME types and the XML root. the de-upstream changes renamed them; the
 # only place an old one may still appear is an explicit legacy READ path, whose line (or the line
 # before or after it) carries a `// legacy:` (`# legacy:`, `<!-- legacy:`) marker, plus the
 # attribution files and the scripts that know them.
 IDENT_SKIP_FILES = (
-    "NOTICE", "ATTRIBUTION.md", "LICENSE-APACHE", "LICENSE-MIT", "UPSTREAM.md", "UPSTREAM.ko.md", "upstream-base.json",
-    "CHANGELOG.md", "crafts/effectcraft/NOTICE", "crafts/effectcraft/ATTRIBUTION.md", "crafts/effectcraft/LICENSE-APACHE",
-    "crafts/effectcraft/LICENSE-MIT", "scripts/check_brand.py", "tools/rename_crates.py", "tools/rebrand_crafts.py",
+    "NOTICE", "ATTRIBUTION.md", "LICENSE-APACHE", "LICENSE-MIT", "SOURCE_ORIGINS.md",
+    "CHANGELOG.md", "editors/effects/NOTICE", "editors/effects/ATTRIBUTION.md", "editors/effects/LICENSE-APACHE",
+    "editors/effects/LICENSE-MIT", "scripts/check_brand.py",
 )
 IDENT_SKIP_SUFFIXES = (".png", ".jpg", ".ico", ".icns", ".tiff", ".svg", ".ttf", ".otf", ".attribution", ".lock", ".fcproj", ".ecproj")
 LEGACY = re.compile(r"(//|#|<!--)\s*legacy:")
 # the versioned old-format fixtures the format crate's tests decode: inputs, not writers
 LEGACY_FIXTURE = re.compile(r'fixture\("v\d+-[a-z-]+\.fcproj"\)')
-# Identifiers stored in files and read back, kept on purpose (UPSTREAM.md lists them): the JSON
+# Identifiers stored in files and read back, kept on purpose (SOURCE_ORIGINS.md lists them): the JSON
 # `format` ids and the OTIO metadata namespace.
 IDENT_KEEP = re.compile(r"filmcraft\.(project|graphicsTemplate|export-presets)|\"filmcraft\"")
 
@@ -69,7 +69,7 @@ IDENT_KEEP = re.compile(r"filmcraft\.(project|graphicsTemplate|export-presets)|\
 def old_crate_names():
     """The upstream names of every crate in the tree, derived from the Redrob names in place."""
     out = set()
-    for pat in ("crates/*/Cargo.toml", "apps/*/Cargo.toml", "crafts/effectcraft/crates/*/Cargo.toml"):
+    for pat in ("crates/*/Cargo.toml", "apps/*/Cargo.toml", "editors/effects/crates/*/Cargo.toml"):
         for m in ROOT.glob(pat):
             name = re.search(r'^name\s*=\s*"([^"]+)"', m.read_text(), re.M)
             if not name:
@@ -131,9 +131,8 @@ def files():
 
 def main() -> int:
     errors = []
-    base = json.loads((ROOT / "upstream-base.json").read_text())
     tracked = files()
-    for prefix in base.get("proprietaryPrefixes", []):
+    for prefix in ("docs/brand/",):
         for f in tracked:
             if f.startswith(prefix):
                 errors.append(f"{f}: under the proprietary upstream prefix {prefix} (must be removed)")

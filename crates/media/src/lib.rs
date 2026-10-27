@@ -1,4 +1,4 @@
-//! Media sources for FilmCraft.
+//! Media sources for Redrob Film.
 //!
 //! A [`MediaSource`] is anything that yields video frames and/or audio for a media time: decoded
 //! files (containers + codecs), stills, image sequences and synthetic generators (bars & tone,

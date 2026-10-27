@@ -274,7 +274,7 @@ mod tests {
     /// A reader takes the RF64 sizes: ffprobe reports the duration from `ds64` (skipped without it).
     #[test]
     fn ffprobe_reads_rf64_duration() {
-        let dir = std::env::temp_dir().join(format!("filmcraft-rf64-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("redrob-film-rf64-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("long.wav");
         let frames = 48_000u64 * 60 * 60 * 5; // 5 hours of 24-bit stereo: 5.2 GB

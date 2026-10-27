@@ -1,6 +1,6 @@
 //! Source and Program In/Out handles and range translation. Preview is transient; release is one engine edit.
 use super::monitor::Which;
-use crate::{FilmcraftApp, dock::PanelKind};
+use crate::{FilmApp, dock::PanelKind};
 use egui::{Rect, Sense, Stroke, pos2, vec2};
 use redrob_film_engine::{
     clip_ops::source_view,
@@ -24,7 +24,7 @@ struct Drag {
 fn key(which: Which) -> egui::Id {
     egui::Id::new(("monitor-range-edit", which as u8))
 }
-fn self_item(app: &FilmcraftApp, which: Which) -> Option<ItemId> {
+fn self_item(app: &FilmApp, which: Which) -> Option<ItemId> {
     if which == Which::Source { app.session.state.source_item } else { app.session.state.active_sequence }
 }
 fn drag(ctx: &egui::Context, which: Which) -> Option<Drag> {
@@ -34,10 +34,10 @@ fn clear(ctx: &egui::Context, which: Which) {
     ctx.data_mut(|d| d.remove::<Drag>(key(which)));
 }
 
-pub fn preview(app: &FilmcraftApp, ctx: &egui::Context) -> Option<TimeRange> {
+pub fn preview(app: &FilmApp, ctx: &egui::Context) -> Option<TimeRange> {
     preview_for(app, ctx, Which::Source)
 }
-pub fn preview_for(app: &FilmcraftApp, ctx: &egui::Context, which: Which) -> Option<TimeRange> {
+pub fn preview_for(app: &FilmApp, ctx: &egui::Context, which: Which) -> Option<TimeRange> {
     drag(ctx, which).filter(|d| Some(d.item) == self_item(app, which) && d.revision == app.session.revision).map(|d| d.preview)
 }
 
@@ -50,7 +50,7 @@ pub struct Interaction {
     pub scrub: Option<Tick>,
 }
 
-pub fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, bar: Rect, which: Which) -> Interaction {
+pub fn interact(app: &mut FilmApp, ui: &mut egui::Ui, bar: Rect, which: Which) -> Interaction {
     let ctx = ui.ctx().clone();
     let Some(item) = self_item(app, which) else {
         clear(&ctx, which);

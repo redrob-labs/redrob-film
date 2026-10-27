@@ -168,10 +168,10 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("fc-crash-{}", std::process::id()));
         super::install(Some(dir.clone()));
         let _ = super::take_last();
-        let r = std::thread::Builder::new().name("filmcraft-test-worker".into()).spawn(|| panic!("boom in a worker")).unwrap().join();
+        let r = std::thread::Builder::new().name("redrob-film-test-worker".into()).spawn(|| panic!("boom in a worker")).unwrap().join();
         assert!(r.is_err());
         let last = super::take_last().expect("recorded");
-        assert!(last.contains("boom in a worker") && last.contains("filmcraft-test-worker"), "{last}");
+        assert!(last.contains("boom in a worker") && last.contains("redrob-film-test-worker"), "{last}");
         let log = std::fs::read_to_string(super::log_path().unwrap()).unwrap();
         assert!(log.contains("boom in a worker"));
         assert!(log.contains("\nOS: ") && log.contains("\nGPU: "), "{log}");

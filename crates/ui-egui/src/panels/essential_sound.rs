@@ -17,7 +17,7 @@ use redrob_film_project::TrackItem;
 use redrob_film_project::essential::{self as es, AudioType, EssentialSound, Section, Slot};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
 
@@ -46,7 +46,7 @@ impl Ctx<'_> {
     }
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let clip_ids = redrob_film_engine::essential_sound::targets(&app.session, &Value::Null);
     let items: Vec<TrackItem> =

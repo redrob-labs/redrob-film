@@ -17,7 +17,7 @@ use redrob_film_project::{ClipId, ItemId, Sequence, TrackId, TrackItem, TrackKin
 use redrob_film_time::{FrameRate, TICKS_PER_SECOND, Tick, TimeDisplay, format_time};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::icons::{self, Icon};
 use crate::state::{ThumbnailMode, TimelineView, Tool};
 use crate::theme::Tokens;
@@ -254,11 +254,11 @@ pub fn zoom_about(v: &mut TimelineView, factor: f64, anchor_secs: f64, width: f3
     v.target_scroll = (anchor_secs - x as f64 / new).max(0.0);
 }
 
-fn label_color(app: &FilmcraftApp, l: redrob_film_project::Label) -> Color32 {
+fn label_color(app: &FilmApp, l: redrob_film_project::Label) -> Color32 {
     crate::panels::settings::label_color(app, l)
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let Some(seq_id) = app.session.state.active_sequence else {
@@ -651,7 +651,7 @@ fn needle_shape(px: f32, content: Rect, ruler: Rect, color: Color32) -> egui::Sh
     ])
 }
 
-fn empty_state(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+fn empty_state(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     ui.painter().text(rect.center() - vec2(0.0, 12.0), Align2::CENTER_CENTER, tl!("Drop media here to create sequence."), Tokens::ui(13.0), t.text_dim);
     if app.session.project.items.values().any(|i| matches!(i.kind, redrob_film_project::ItemKind::Sequence(_))) {
@@ -697,7 +697,7 @@ fn lighten(c: Color32, f: f32) -> Color32 {
 }
 
 /// Whether a clip lies inside the sequence In/Out range (Premiere brightens those).
-fn in_range(app: &FilmcraftApp, it: &TrackItem) -> bool {
+fn in_range(app: &FilmApp, it: &TrackItem) -> bool {
     let Some(q) = app.session.active_sequence() else { return false };
     if q.mark_in.is_none() && q.mark_out.is_none() {
         return false;
@@ -739,7 +739,7 @@ pub fn thumbnail_tiles(mode: ThumbnailMode, x0: f32, x1: f32, tile_w: f32, visib
 
 #[allow(clippy::too_many_arguments)]
 fn draw_clip(
-    app: &mut FilmcraftApp,
+    app: &mut FilmApp,
     ctx: &egui::Context,
     p: &egui::Painter,
     body: Rect,
@@ -946,7 +946,7 @@ fn draw_clip(
     }
 }
 
-fn draw_waveform(app: &mut FilmcraftApp, p: &egui::Painter, body: Rect, it: &TrackItem, inr: bool) {
+fn draw_waveform(app: &mut FilmApp, p: &egui::Painter, body: Rect, it: &TrackItem, inr: bool) {
     let Some(peaks) = request_peaks(app, it.item, it.audio_stream) else { return };
     let pkey = (it.item, it.audio_stream);
     let key = Arc::as_ptr(&peaks) as usize;
@@ -1052,7 +1052,7 @@ fn waveform_lane(p: &egui::Painter, body: Rect, area: Rect, it: &TrackItem, peak
 /// The live waveform of the voice-over take being recorded (Kdenlive draws it on the timeline
 /// as the take grows): a red clip from the record point to the playhead on the record track,
 /// with the captured samples rectified like a clip waveform.
-pub(crate) fn draw_recording(app: &FilmcraftApp, p: &egui::Painter, lane: Rect, x_of: &dyn Fn(Tick) -> f32, now: Tick) {
+pub(crate) fn draw_recording(app: &FilmApp, p: &egui::Painter, lane: Rect, x_of: &dyn Fn(Tick) -> f32, now: Tick) {
     let Some(rec) = app.session.voiceover.rec.as_ref() else { return };
     if now <= rec.record_start {
         return;
@@ -1089,7 +1089,7 @@ pub(crate) fn draw_recording(app: &FilmcraftApp, p: &egui::Painter, lane: Rect, 
 
 /// Waveform peaks of every channel of audio stream `stream` of media `item` (computed in the
 /// background on first use, like [`request_peaks`]).
-fn request_channel_peaks(app: &mut FilmcraftApp, item: ItemId, stream: usize) -> Option<Arc<Vec<Vec<(f32, f32)>>>> {
+fn request_channel_peaks(app: &mut FilmApp, item: ItemId, stream: usize) -> Option<Arc<Vec<Vec<(f32, f32)>>>> {
     let pkey = (item, stream);
     if let Some(p) = app.tl.channel_peaks.lock().unwrap_or_else(|e| e.into_inner()).get(&pkey) {
         return Some(p.clone());
@@ -1162,7 +1162,7 @@ fn sequence_audio_key(project: &redrob_film_project::Project, item: ItemId) -> u
 /// Waveform peaks of a nested sequence's mix, in the same form as a media item's (min, max per
 /// 256 samples at 48 kHz). They are mixed in the background, and again whenever the sequence's
 /// sound changes; until the new ones are ready the old ones stay on show.
-fn request_sequence_peaks(app: &mut FilmcraftApp, item: ItemId) -> Option<Arc<Vec<(f32, f32)>>> {
+fn request_sequence_peaks(app: &mut FilmApp, item: ItemId) -> Option<Arc<Vec<(f32, f32)>>> {
     let revision = app.session.revision;
     let key = match app.tl.seq_keys_seen.get(&item) {
         Some(&(rev, key)) if rev == revision => key,
@@ -1249,7 +1249,7 @@ fn source_peaks(src: &dyn redrob_film_media::MediaSource, stream: usize, dur: Ti
 }
 
 /// Waveform peaks of audio stream `stream` of `item` (a clip's `audio_stream`).
-pub(crate) fn request_peaks(app: &mut FilmcraftApp, item: ItemId, stream: usize) -> Option<Arc<Vec<(f32, f32)>>> {
+pub(crate) fn request_peaks(app: &mut FilmApp, item: ItemId, stream: usize) -> Option<Arc<Vec<(f32, f32)>>> {
     if app.session.project.sequence(item).is_some() {
         return request_sequence_peaks(app, item);
     }
@@ -1344,7 +1344,7 @@ fn patch_button(ui: &mut egui::Ui, r: Rect, clip: Rect, label: &str, on: bool, s
 }
 
 #[allow(clippy::too_many_arguments)]
-fn draw_headers(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, rows: &[Row], rect: Rect, vclip: Rect, aclip: Rect, t: &Tokens) {
+fn draw_headers(app: &mut FilmApp, ui: &mut egui::Ui, seq: &Sequence, rows: &[Row], rect: Rect, vclip: Rect, aclip: Rect, t: &Tokens) {
     let hw = app.ui.timeline.header_w;
     let tg = app.session.targeting();
     let mut actions: Vec<(String, Value)> = Vec::new();
@@ -1620,7 +1620,7 @@ fn draw_headers(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, rows:
 
 /// Fit Tracks to View: every video track shares the video area and every audio track the audio
 /// area (single-track heights are dropped), scrolled to the top.
-pub fn fit_tracks(app: &mut FilmcraftApp) -> Value {
+pub fn fit_tracks(app: &mut FilmApp) -> Value {
     let Some(q) = app.session.active_sequence() else { return Value::Null };
     let (nv, na) = (q.video_tracks.len().max(1) as f32, q.audio_tracks.len().max(1) as f32);
     let (va, aa) = app.tl.fit_areas;
@@ -1639,7 +1639,7 @@ pub fn fit_tracks(app: &mut FilmcraftApp) -> Value {
 
 /// The timeline toolbar's Timeline Preview menu (Kdenlive): the Sequence ▸ Timeline Preview
 /// commands plus the render-files ones.
-fn preview_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
+fn preview_menu(app: &mut FilmApp, ui: &mut egui::Ui) {
     ui.set_min_width(220.0);
     let auto = app.session.active_sequence().is_some_and(|q| q.auto_preview);
     let items: [(&str, &str); 8] = [
@@ -1677,7 +1677,7 @@ fn preview_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
     }
 }
 
-fn draw_top(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequence, layout: &Layout, t: &Tokens, seq_id: ItemId) {
+fn draw_top(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect, seq: &Sequence, layout: &Layout, t: &Tokens, seq_id: ItemId) {
     let p = ui.painter().clone();
     let rate = seq.settings.frame_rate;
     let hw = app.ui.timeline.header_w;
@@ -2044,7 +2044,7 @@ fn zoom_thumb(bar: Rect, seq_seconds: f64, scroll: f64, pps: f64) -> (f32, f32, 
     (bar.min.x + at, w, if travel > 0.5 { range / travel as f64 } else { 0.0 })
 }
 
-fn zoom_scrollbar(app: &mut FilmcraftApp, ui: &mut egui::Ui, bar: Rect, seq_seconds: f64, t: &Tokens) {
+fn zoom_scrollbar(app: &mut FilmApp, ui: &mut egui::Ui, bar: Rect, seq_seconds: f64, t: &Tokens) {
     let p = ui.painter();
     p.rect_filled(bar, bar.height() / 2.0, t.separator);
     let v = &mut app.ui.timeline;
@@ -2145,17 +2145,17 @@ fn vertical_scrollbar(ui: &mut egui::Ui, bar: Rect, value: &mut f32, max: f32, i
 }
 
 /// Snap `t` to nearby candidates (edits, playhead, markers, in/out). Returns snapped tick.
-fn snap(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, t: Tick, exclude: &[ClipId]) -> Tick {
+fn snap(app: &mut FilmApp, seq: &Sequence, layout: &Layout, t: Tick, exclude: &[ClipId]) -> Tick {
     snap_to(app, seq, layout, t, exclude, true)
 }
 
 /// Where a dragged playhead lands: [`snap`], but not onto itself, or it would stick where it is
 /// and only move in jumps of `SNAP_PX` (#164).
-fn snap_playhead(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, t: Tick) -> Tick {
+fn snap_playhead(app: &mut FilmApp, seq: &Sequence, layout: &Layout, t: Tick) -> Tick {
     snap_to(app, seq, layout, t, &[], false)
 }
 
-fn snap_to(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, t: Tick, exclude: &[ClipId], to_playhead: bool) -> Tick {
+fn snap_to(app: &mut FilmApp, seq: &Sequence, layout: &Layout, t: Tick, exclude: &[ClipId], to_playhead: bool) -> Tick {
     if !app.session.state.snapping {
         return t;
     }
@@ -2194,7 +2194,7 @@ fn snap_to(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, t: Tick, exc
 
 /// What the Timeline shows at `pos` for the control channel's `ui.timeline.hit`, with `kind`: the
 /// trim a press of the current tool with `mods` starts there (null when it would not trim).
-pub fn hit_json(app: &FilmcraftApp, pos: Pos2, mods: egui::Modifiers) -> Value {
+pub fn hit_json(app: &FilmApp, pos: Pos2, mods: egui::Modifiers) -> Value {
     let (Some(layout), Some(seq)) = (app.tl.layout.as_ref(), app.session.active_sequence()) else { return json!({"hit": "none"}) };
     let t = layout.tick_at(pos.x);
     let grab = grab_at(seq, layout, pos, app.ui.tool, mods, app.session.prefs.trim.selection_tool_roll_ripple);
@@ -2216,7 +2216,7 @@ pub fn hit_json(app: &FilmcraftApp, pos: Pos2, mods: egui::Modifiers) -> Value {
 }
 
 /// Screen point of a clip (centre, or its in/out edge).
-pub fn locate(app: &FilmcraftApp, clip: u64, edge: Option<&str>) -> Option<(f32, f32)> {
+pub fn locate(app: &FilmApp, clip: u64, edge: Option<&str>) -> Option<(f32, f32)> {
     let layout = app.tl.layout.as_ref()?;
     let seq = app.session.active_sequence()?;
     let (tid, it) = seq.find_item(ClipId(clip))?;
@@ -2230,7 +2230,7 @@ pub fn locate(app: &FilmcraftApp, clip: u64, edge: Option<&str>) -> Option<(f32,
     Some((x, y))
 }
 
-fn preview_drag(app: &FilmcraftApp, seq: &Sequence, out: &mut HashMap<ClipId, (Tick, Tick, Option<TrackId>)>, edited: &mut HashMap<ClipId, TrackItem>) {
+fn preview_drag(app: &FilmApp, seq: &Sequence, out: &mut HashMap<ClipId, (Tick, Tick, Option<TrackId>)>, edited: &mut HashMap<ClipId, TrackItem>) {
     // the item as the edge move leaves it, and its place in the preview
     let mut moved = |it: &TrackItem, edge: redrob_film_edit::Edge, delta: Tick| {
         let mut e = it.clone();
@@ -2319,7 +2319,7 @@ fn fx_badge_hit(seq: &Sequence, layout: &Layout, track: TrackId, clip: ClipId, p
 
 /// The markers of a timeline clip's bin clip that fall inside the clip, as fractions of the
 /// clip's width: (marker, start, end); end == start for a point marker.
-pub(crate) fn clip_marker_spans(app: &FilmcraftApp, it: &TrackItem) -> Vec<(redrob_film_project::Marker, f32, f32)> {
+pub(crate) fn clip_marker_spans(app: &FilmApp, it: &TrackItem) -> Vec<(redrob_film_project::Marker, f32, f32)> {
     let Some(redrob_film_project::ItemKind::Media(mc)) = app.session.project.item(it.item).map(|i| &i.kind) else { return Vec::new() };
     let dur = it.duration.0.max(1) as f64;
     let speed = it.speed.abs().max(1e-6);
@@ -2340,7 +2340,7 @@ pub(crate) fn clip_marker_spans(app: &FilmcraftApp, it: &TrackItem) -> Vec<(redr
 /// The keyframe strip at the bottom of a timeline clip (Effect Controls ▸ Show Keyframes in
 /// Timeline): the clip under `p` when `p` is on its strip, the media time there, and the media
 /// time of the keyframe diamond under `p` (if any).
-fn clip_keyframe_at(app: &FilmcraftApp, seq: &Sequence, layout: &Layout, p: Pos2) -> Option<(ClipId, Tick, Option<Tick>)> {
+fn clip_keyframe_at(app: &FilmApp, seq: &Sequence, layout: &Layout, p: Pos2) -> Option<(ClipId, Tick, Option<Tick>)> {
     if !app.ui.fx.show_clip_keyframes {
         return None;
     }
@@ -2372,7 +2372,7 @@ fn clip_keyframe_at(app: &FilmcraftApp, seq: &Sequence, layout: &Layout, p: Pos2
 }
 
 /// The (effect index, param id) of the shown effects of `it` with a keyframe at media time `m`.
-fn keyframes_at(app: &FilmcraftApp, it: &TrackItem, m: Tick) -> Vec<(usize, String)> {
+fn keyframes_at(app: &FilmApp, it: &TrackItem, m: Tick) -> Vec<(usize, String)> {
     let hidden = &app.ui.kp.hidden_timeline_keyframes;
     it.effects
         .iter()
@@ -2384,7 +2384,7 @@ fn keyframes_at(app: &FilmcraftApp, it: &TrackItem, m: Tick) -> Vec<(usize, Stri
 
 /// A press on a clip marker flag (or the right end of its range bar) on a timeline clip: the
 /// bin item, the marker and whether the press resizes the range.
-fn clip_marker_hit(app: &FilmcraftApp, seq: &Sequence, layout: &Layout, p: Pos2) -> Option<(ClipId, redrob_film_project::ItemId, u64, bool)> {
+fn clip_marker_hit(app: &FilmApp, seq: &Sequence, layout: &Layout, p: Pos2) -> Option<(ClipId, redrob_film_project::ItemId, u64, bool)> {
     let Hit::Clip { track, clip, .. } = hit(seq, layout, p) else { return None };
     let row = layout.rows.iter().find(|r| r.track == track)?;
     if p.y > row.rect.min.y + 9.0 {
@@ -2405,7 +2405,7 @@ fn clip_marker_hit(app: &FilmcraftApp, seq: &Sequence, layout: &Layout, p: Pos2)
     })
 }
 
-fn marker_menu(app: &mut FilmcraftApp, ctx: &egui::Context, ui: &mut egui::Ui) {
+fn marker_menu(app: &mut FilmApp, ctx: &egui::Context, ui: &mut egui::Ui) {
     for (label, cmd) in [("Clear Selected Marker", "markers.clearCurrent"), ("Clear Markers", "markers.clearAll")] {
         let label = crate::i18n::t(label);
         let r = ui.button(label);
@@ -2489,7 +2489,7 @@ pub(crate) const EDIT_POINT_TYPES: &[(&str, &str, &str, redrob_film_edit::Edge)]
 ];
 
 /// The edit point context menu (#219).
-fn edit_point_menu(app: &mut FilmcraftApp, ctx: &egui::Context, ui: &mut egui::Ui, seq: &Sequence, target: EditPointTarget) {
+fn edit_point_menu(app: &mut FilmApp, ctx: &egui::Context, ui: &mut egui::Ui, seq: &Sequence, target: EditPointTarget) {
     let selected = app.session.state.edit_points.first().copied();
     for &(label, id, kind, edge) in EDIT_POINT_TYPES {
         let clip = match edge {
@@ -2540,7 +2540,7 @@ fn edit_point_menu(app: &mut FilmcraftApp, ctx: &egui::Context, ui: &mut egui::U
 }
 
 /// The menu of a right-clicked gap: Ripple Delete closes it.
-fn gap_menu(app: &mut FilmcraftApp, ctx: &egui::Context, ui: &mut egui::Ui) {
+fn gap_menu(app: &mut FilmApp, ctx: &egui::Context, ui: &mut egui::Ui) {
     let label = tl!("Ripple Delete");
     let r = ui.add_enabled(app.session.state.gap_selection.is_some(), egui::Button::new(label));
     app.auto.add("timeline.gapMenu.edit.rippleDelete", r.rect, label);
@@ -2572,7 +2572,7 @@ fn gap_menu(app: &mut FilmcraftApp, ctx: &egui::Context, ui: &mut egui::Ui) {
 
 /// The clip menu's Multi-Camera submenu: Enable, Flatten, and the cameras of the selected nested
 /// sequence clips (greyed out when none of the selected clips is a nested sequence).
-fn multicam_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, picked: &[&TrackItem]) {
+fn multicam_menu(app: &mut FilmApp, ui: &mut egui::Ui, picked: &[&TrackItem]) {
     let nests: Vec<&TrackItem> = picked.iter().copied().filter(|it| app.session.project.sequence(it.item).is_some()).collect();
     let enabled = !nests.is_empty() && nests.iter().all(|it| it.multicam.is_some_and(|m| m.enabled));
     // camera names of the first selected nest, and the angle it shows
@@ -2656,7 +2656,7 @@ pub(crate) fn wheel_input(ctx: &egui::Context) -> WheelInput {
 
 /// A press on the ruler or the playhead handle: playback stops and the playhead goes to the press
 /// (onto the marker pressed, if any, #695).
-fn start_scrub(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, p: Pos2, mods: egui::Modifiers) {
+fn start_scrub(app: &mut FilmApp, seq: &Sequence, layout: &Layout, p: Pos2, mods: egui::Modifiers) {
     let rate = seq.settings.frame_rate;
     let mut tt = rate.snap_nearest(layout.tick_at(p.x).max(Tick::ZERO));
     if mods.shift || app.session.prefs.timeline.snap_playhead {
@@ -2672,7 +2672,7 @@ fn start_scrub(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, p: Pos2,
 
 /// The playhead follows a drag to screen `x`. Shift snaps; so does Settings ▸ Timeline ▸ "Snap
 /// playhead in Timeline when Snap is enabled".
-fn scrub_to(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, x: f32, mods: egui::Modifiers) {
+fn scrub_to(app: &mut FilmApp, seq: &Sequence, layout: &Layout, x: f32, mods: egui::Modifiers) {
     // playback that carried on after the press keeps playing from the pressed position
     if app.playback.playing {
         return;
@@ -2687,7 +2687,7 @@ fn scrub_to(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, x: f32, mod
     }
 }
 
-fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &Layout, rect: Rect) {
+fn interact(app: &mut FilmApp, ui: &mut egui::Ui, seq: &Sequence, layout: &Layout, rect: Rect) {
     let ctx = ui.ctx().clone();
     let area = Rect::from_min_max(pos2(layout.content.min.x, layout.ruler.min.y), layout.content.max);
     let resp = ui.interact(area, egui::Id::new("timeline-area"), Sense::click_and_drag());
@@ -3706,11 +3706,11 @@ pub(crate) fn chain_starts(start: Tick, durations: &[Tick]) -> Vec<Tick> {
 mod trim_preview_tests {
     use super::*;
 
-    fn demo() -> (FilmcraftApp, Sequence) {
+    fn demo() -> (FilmApp, Sequence) {
         let mut s = redrob_film_engine::Session::default();
         s.execute("file.openDemoProject", serde_json::json!({})).unwrap();
         let seq = s.active_sequence().unwrap().clone();
-        (FilmcraftApp::new(s), seq)
+        (FilmApp::new(s), seq)
     }
 
     fn assert_same_media(before: &TrackItem, after: &TrackItem) {

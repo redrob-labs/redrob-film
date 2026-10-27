@@ -15,7 +15,7 @@ use redrob_film_time::{Tick, TimeDisplay, format_time, parse_timecode};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::dock::PanelKind;
 use crate::theme::Tokens;
 
@@ -103,18 +103,18 @@ fn rgb(l: Label) -> Color32 {
     Color32::from_rgb(c[0], c[1], c[2])
 }
 
-fn tc(app: &FilmcraftApp, t: Tick) -> String {
+fn tc(app: &FilmApp, t: Tick) -> String {
     let Some(q) = app.session.active_sequence() else { return String::new() };
     format_time(t, q.settings.frame_rate, q.settings.drop_frame, TimeDisplay::Timecode, 48_000)
 }
 
 /// Parse a timecode typed in a dialog (frames) for the active sequence.
-fn parse(app: &FilmcraftApp, s: &str) -> Option<i64> {
+fn parse(app: &FilmApp, s: &str) -> Option<i64> {
     let q = app.session.active_sequence()?;
     parse_timecode(s, q.settings.frame_rate, q.settings.drop_frame, 0).ok()
 }
 
-fn run(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, p: Value) -> Option<Value> {
+fn run(app: &mut FilmApp, ctx: &egui::Context, id: &str, p: Value) -> Option<Value> {
     match crate::menus::invoke(app, ctx, id, p) {
         Ok(v) => Some(v),
         Err(e) => {
@@ -125,7 +125,7 @@ fn run(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, p: Value) -> Optio
 }
 
 /// Menu items routed here (they open a dialog when invoked without parameters).
-pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
+pub fn route(app: &mut FilmApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
     let empty = params.as_object().is_none_or(|m| m.is_empty());
     match id {
         "markers.exportChapters" if empty => {
@@ -166,17 +166,17 @@ pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<
 }
 
 /// Checkmark of Markers ▸ Timeline Markers Locked.
-pub fn checked(app: &FilmcraftApp, id: &str) -> Option<bool> {
+pub fn checked(app: &FilmApp, id: &str) -> Option<bool> {
     (id == "markers.lock").then(|| redrob_film_engine::marker_tools::markers_locked(&app.session))
 }
 
 /// Open the Edit Marker dialog on sequence marker `id`.
-pub fn open_edit(app: &mut FilmcraftApp, id: u64) {
+pub fn open_edit(app: &mut FilmApp, id: u64) {
     let Some(m) = app.session.active_sequence().and_then(|q| q.markers.iter().find(|m| m.id.0 == id)).cloned() else { return };
     app.ui.markers.edit = Some(draft_of(app, &m, None));
 }
 
-fn draft_of(app: &FilmcraftApp, m: &Marker, item: Option<ItemId>) -> EditDraft {
+fn draft_of(app: &FilmApp, m: &Marker, item: Option<ItemId>) -> EditDraft {
     EditDraft {
         marker: m.id.0,
         item,
@@ -189,14 +189,14 @@ fn draft_of(app: &FilmcraftApp, m: &Marker, item: Option<ItemId>) -> EditDraft {
     }
 }
 
-fn open_categories(app: &mut FilmcraftApp) {
+fn open_categories(app: &mut FilmApp) {
     app.ui.markers.categories = Some(app.session.project.settings.marker_categories().into_iter().map(|c| (c.color, c.name)).collect());
 }
 
 // ------------------------------------------------------------------ ruler
 
 /// A double-click on the ruler: on a marker, edit it; elsewhere, add one there.
-pub fn ruler_double_click(app: &mut FilmcraftApp, ctx: &egui::Context, marker: Option<u64>, t: Tick) {
+pub fn ruler_double_click(app: &mut FilmApp, ctx: &egui::Context, marker: Option<u64>, t: Tick) {
     match marker {
         Some(m) => open_edit(app, m),
         None => {
@@ -207,7 +207,7 @@ pub fn ruler_double_click(app: &mut FilmcraftApp, ctx: &egui::Context, marker: O
 
 /// Dragging a marker on the ruler: press on it starts, the pointer moves it, release commits
 /// one `markers.edit` (locked markers do not drag). Returns true while a drag is in progress.
-pub fn ruler_drag(app: &mut FilmcraftApp, ctx: &egui::Context, press_marker: Option<u64>, pointer_t: Option<Tick>) -> bool {
+pub fn ruler_drag(app: &mut FilmApp, ctx: &egui::Context, press_marker: Option<u64>, pointer_t: Option<Tick>) -> bool {
     if let Some(m) = press_marker
         && app.ui.markers.drag.is_none()
         && !redrob_film_engine::marker_tools::markers_locked(&app.session)
@@ -231,15 +231,15 @@ pub fn ruler_drag(app: &mut FilmcraftApp, ctx: &egui::Context, press_marker: Opt
 }
 
 /// The marker being dragged and where it would land (drawn as a ghost on the ruler).
-pub fn drag_ghost(app: &FilmcraftApp) -> Option<u64> {
+pub fn drag_ghost(app: &FilmApp) -> Option<u64> {
     app.ui.markers.drag.map(|d| d.0)
 }
 
 /// The ruler's right-click menu (automation ids `rulerMenu.<key>`): `t` is the time clicked and
 /// `marker` the marker under the pointer, if any.
-pub fn ruler_menu(app: &mut FilmcraftApp, ctx: &egui::Context, ui: &mut egui::Ui, t: Tick, marker: Option<u64>) {
+pub fn ruler_menu(app: &mut FilmApp, ctx: &egui::Context, ui: &mut egui::Ui, t: Tick, marker: Option<u64>) {
     let t = t.max(Tick::ZERO);
-    let item = |app: &mut FilmcraftApp, ui: &mut egui::Ui, key: &str, label: &str, enabled: bool| -> bool {
+    let item = |app: &mut FilmApp, ui: &mut egui::Ui, key: &str, label: &str, enabled: bool| -> bool {
         let r = ui.add_enabled(enabled, egui::Button::new(label));
         app.auto.add(&format!("rulerMenu.{key}"), r.rect, label);
         let c = r.clicked();
@@ -329,14 +329,14 @@ pub fn ruler_menu(app: &mut FilmcraftApp, ctx: &egui::Context, ui: &mut egui::Ui
 
 // ------------------------------------------------------------------ dialogs
 
-pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
+pub fn show(app: &mut FilmApp, ctx: &egui::Context) {
     edit_dialog(app, ctx);
     export_dialog(app, ctx);
     interval_dialog(app, ctx);
     categories_dialog(app, ctx);
 }
 
-fn category_combo(app: &mut FilmcraftApp, ui: &mut egui::Ui, id: &str, color: &mut Label) {
+fn category_combo(app: &mut FilmApp, ui: &mut egui::Ui, id: &str, color: &mut Label) {
     let cats = app.session.project.settings.marker_categories();
     let name = app.session.project.settings.marker_category_name(*color);
     let r = egui::ComboBox::from_id_salt(id).selected_text(egui::RichText::new(name).color(rgb(*color))).show_ui(ui, |ui| {
@@ -347,7 +347,7 @@ fn category_combo(app: &mut FilmcraftApp, ui: &mut egui::Ui, id: &str, color: &m
     app.auto.add(id, r.response.rect, "Category");
 }
 
-fn edit_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn edit_dialog(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut d) = app.ui.markers.edit.clone() else { return };
     let mut open = true;
     let mut ok = false;
@@ -420,7 +420,7 @@ fn edit_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
     app.ui.markers.edit = if !open || cancel || ctx.input(|i| i.key_pressed(egui::Key::Escape)) { None } else { Some(d) };
 }
 
-fn export_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn export_dialog(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut d) = app.ui.markers.export.clone() else { return };
     let mut open = true;
     let mut close = false;
@@ -518,7 +518,7 @@ fn export_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
     app.ui.markers.export = if !open || close { None } else { Some(d) };
 }
 
-fn interval_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn interval_dialog(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut d) = app.ui.markers.interval.clone() else { return };
     let mut open = true;
     let mut done = false;
@@ -559,7 +559,7 @@ fn interval_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
     app.ui.markers.interval = if !open || done { None } else { Some(d) };
 }
 
-fn categories_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn categories_dialog(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut cats) = app.ui.markers.categories.clone() else { return };
     let mut open = true;
     let mut done = false;
@@ -630,7 +630,7 @@ fn categories_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
 }
 
 /// Deleting a category its markers still use: reassign them to another category, or delete them.
-fn delete_category_dialog(app: &mut FilmcraftApp, ctx: &egui::Context, cats: &mut Vec<(Label, String)>) {
+fn delete_category_dialog(app: &mut FilmApp, ctx: &egui::Context, cats: &mut Vec<(Label, String)>) {
     let Some((color, mut to, used)) = app.ui.markers.delete_category else { return };
     let mut close = false;
     egui::Window::new(tl!("Delete Category")).id(egui::Id::new("Delete Marker Category dialog")).collapsible(false).resizable(false).show(ctx, |ui| {
@@ -664,7 +664,7 @@ fn delete_category_dialog(app: &mut FilmcraftApp, ctx: &egui::Context, cats: &mu
     app.ui.markers.delete_category = if close { None } else { Some((color, to, used)) };
 }
 
-fn finish_delete<E: std::fmt::Display>(app: &mut FilmcraftApp, cats: &mut Vec<(Label, String)>, color: Label, r: Result<Value, E>) {
+fn finish_delete<E: std::fmt::Display>(app: &mut FilmApp, cats: &mut Vec<(Label, String)>, color: Label, r: Result<Value, E>) {
     match r {
         Ok(_) => cats.retain(|c| c.0 != color),
         Err(e) => app.ui.status = e.to_string(),
@@ -682,7 +682,7 @@ struct Row {
     m: Marker,
 }
 
-fn rows(app: &FilmcraftApp) -> Vec<Row> {
+fn rows(app: &FilmApp) -> Vec<Row> {
     let mu = &app.ui.markers;
     let hidden = &app.session.state.hidden_marker_colors;
     let q = mu.search.to_lowercase();
@@ -716,7 +716,7 @@ fn rows(app: &FilmcraftApp) -> Vec<Row> {
 
 /// Keys of the focused Markers panel: F2 edits the selected marker, Delete removes the selection,
 /// Cmd+A selects every row, Up / Down move the selection. Returns true when a key was used.
-pub fn panel_keys(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool {
+pub fn panel_keys(app: &mut FilmApp, ctx: &egui::Context) -> bool {
     if app.ui.focused != PanelKind::Markers || ctx.egui_wants_keyboard_input() {
         return false;
     }
@@ -753,7 +753,7 @@ pub fn panel_keys(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool {
     f2 || del || all || up || down
 }
 
-fn delete_selected(app: &mut FilmcraftApp, ctx: &egui::Context, list: &[Row]) {
+fn delete_selected(app: &mut FilmApp, ctx: &egui::Context, list: &[Row]) {
     let sel = app.ui.markers.selected.clone();
     let seq: Vec<u64> = list.iter().filter(|r| r.item.is_none() && sel.contains(&r.m.id.0)).map(|r| r.m.id.0).collect();
     if !seq.is_empty() {
@@ -768,7 +768,7 @@ fn delete_selected(app: &mut FilmcraftApp, ctx: &egui::Context, list: &[Row]) {
     app.ui.markers.selected.clear();
 }
 
-fn select_row(app: &mut FilmcraftApp, r: &Row, ctrl: bool, shift: bool, list: &[Row]) {
+fn select_row(app: &mut FilmApp, r: &Row, ctrl: bool, shift: bool, list: &[Row]) {
     let id = r.m.id.0;
     let mu = &mut app.ui.markers;
     if shift && let Some(a) = mu.anchor {
@@ -802,7 +802,7 @@ fn select_row(app: &mut FilmcraftApp, r: &Row, ctrl: bool, shift: bool, list: &[
 }
 
 /// The Markers panel.
-pub fn panel(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn panel(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     if app.session.active_sequence().is_none() && !app.ui.markers.all_clips {
         crate::dock::placeholder(ui, rect, &t, tl!("(no sequence)"));

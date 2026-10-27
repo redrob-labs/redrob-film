@@ -11,13 +11,13 @@ use std::sync::mpsc::{Sender, channel};
 
 use egui_kittest::Harness;
 use redrob_film_engine::Session;
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use redrob_film_ui_egui::dock::PanelKind;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
     snapshots: Option<PathBuf>,
 }
@@ -29,7 +29,7 @@ impl Driver {
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         session.prefs_path = Some(data.join("preferences.json"));
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = FilmApp::new(session).with_control(rx);
         let snapshots = std::env::var_os("REDROB_FILM_UI_SNAPSHOT_DIR").map(PathBuf::from);
         let mut b = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000);
         if snapshots.is_some() {
@@ -97,7 +97,7 @@ impl Driver {
         v.as_array().unwrap().iter().any(|e| e["id"] == json!(id))
     }
 
-    fn app(&mut self) -> &mut FilmcraftApp {
+    fn app(&mut self) -> &mut FilmApp {
         self.harness.state_mut()
     }
 
@@ -135,7 +135,7 @@ impl Driver {
 }
 
 fn data_dir(name: &str) -> PathBuf {
-    let d = std::env::temp_dir().join(format!("filmcraft-workspaces-{name}-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("redrob-film-workspaces-{name}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     std::fs::create_dir_all(&d).unwrap();
     d

@@ -4,7 +4,7 @@
 
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::dock::PanelKind;
 use crate::state::{Mode, Tool};
 
@@ -218,7 +218,7 @@ pub fn shuttle_step(playing: bool, speed: f64, dir: f64) -> f64 {
 }
 
 /// Explicit monitor parameters override keyboard focus.
-pub fn targets_source(app: &FilmcraftApp, params: &Value) -> bool {
+pub fn targets_source(app: &FilmApp, params: &Value) -> bool {
     match params.get("monitor").and_then(Value::as_str) {
         Some("source") => true,
         Some(_) => false,
@@ -227,7 +227,7 @@ pub fn targets_source(app: &FilmcraftApp, params: &Value) -> bool {
 }
 
 /// Execute a UI or engine command by id.
-pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params: Value) -> Result<Value, String> {
+pub fn invoke(app: &mut FilmApp, ctx: &egui::Context, id: &str, mut params: Value) -> Result<Value, String> {
     // the window layout goes into the project file's view (restored when it opens)
     if matches!(id, "file.save" | "file.saveAs" | "file.saveCopy") {
         app.session.ui_layout = Some(json!({"workspace": app.ui.workspace, "dock": serde_json::to_value(&app.ui.dock).unwrap_or_default()}));
@@ -752,7 +752,7 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
 /// system clipboard holds text (an empty clipboard sends no paste at all, #199). Put the copied
 /// clip names there, like other editors put their own data on the clipboard, so Ctrl+V pastes the
 /// clips right after a copy.
-fn put_clip_names_on_system_clipboard(app: &FilmcraftApp, ctx: &egui::Context) {
+fn put_clip_names_on_system_clipboard(app: &FilmApp, ctx: &egui::Context) {
     let names: Vec<&str> = app.session.state.clipboard.iter().map(|(_, _, c)| c.name.as_str()).collect();
     if names.is_empty() {
         return;
@@ -763,7 +763,7 @@ fn put_clip_names_on_system_clipboard(app: &FilmcraftApp, ctx: &egui::Context) {
 
 /// Paste the files or the image on the system clipboard: placed on the Timeline when it has focus,
 /// imported into the shown bin in the Project panel. None when the clipboard holds neither.
-fn paste_clipboard_media(app: &mut FilmcraftApp, insert: bool) -> Option<Result<Value, String>> {
+fn paste_clipboard_media(app: &mut FilmApp, insert: bool) -> Option<Result<Value, String>> {
     let media = (app.hooks.clipboard_media.as_mut()?)()?;
     let paths = match media {
         crate::ClipboardMedia::Files(paths) => paths,
@@ -788,7 +788,7 @@ fn encode_png(width: usize, height: usize, rgba: Vec<u8>) -> Result<Vec<u8>, Str
 }
 
 /// Play `a`..`b` (sequence ticks, `b` exclusive) over and over from `a` until playback stops.
-fn start_loop(app: &mut FilmcraftApp, a: redrob_film_time::Tick, b: redrob_film_time::Tick) -> Result<Value, String> {
+fn start_loop(app: &mut FilmApp, a: redrob_film_time::Tick, b: redrob_film_time::Tick) -> Result<Value, String> {
     if b <= a {
         return Err("the range to loop is empty".into());
     }
@@ -816,7 +816,7 @@ pub struct MenuItem {
 /// those names; the rest is Premiere's layout.
 pub const MENUS: [&str; 11] = ["File", "Edit", "Clip", "Sequence", "Markers", "Graphics and Titles", "View", "Monitor", "Tool", "Window", "Help"];
 
-pub fn menu_items(app: &FilmcraftApp) -> Vec<MenuItem> {
+pub fn menu_items(app: &FilmApp) -> Vec<MenuItem> {
     let mut v = menu_items_for(&app.session);
     for it in &mut v {
         it.label = app.ui.language.tr(&it.label).to_string();
@@ -986,7 +986,7 @@ pub type KeyBinding = (egui::Modifiers, egui::Key, String, Option<String>);
 
 /// The active key bindings (from the engine's shortcut set), most specific first so Shift+I
 /// doesn't also fire I.
-pub fn bindings(app: &FilmcraftApp) -> Vec<KeyBinding> {
+pub fn bindings(app: &FilmApp) -> Vec<KeyBinding> {
     let mut v: Vec<KeyBinding> =
         app.session.shortcuts.bindings.iter().filter_map(|b| parse_shortcut(&b.keys).map(|(m, k)| (m, k, b.command.clone(), b.panel.clone()))).collect();
     // With Shift held, a punctuation key arrives as its shifted glyph (Shift+; is `:` on US layouts).
@@ -1031,7 +1031,7 @@ pub fn external_commands() -> Vec<redrob_film_engine::shortcuts::CommandInfo> {
 }
 
 /// Draw the in-window menu bar.
-pub fn menu_bar(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
+pub fn menu_bar(app: &mut FilmApp, ui: &mut egui::Ui) {
     ui.ctx().data_mut(|d| d.insert_temp(egui::Id::new("interface-language"), app.ui.language));
     let items = menu_items(app);
     // Draw Edit ▸ Label with the user's live palette, not the baked-in label colours.

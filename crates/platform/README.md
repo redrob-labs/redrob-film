@@ -1,6 +1,6 @@
 # redrob-film-platform
 
-OS media integration for FilmCraft (layer L5): hardware video decoding through the operating
+OS media integration for Redrob Film (layer L5): hardware video decoding through the operating
 system's codecs, behind `redrob_film_codecs::VideoDecoder`, and hardware H.264 and H.265 (HEVC)
 encoding, behind `redrob_film_export::VideoEncoder`. It holds OS media FFI and nothing else.
 It is the one crate of the workspace allowed to contain `unsafe`, under the rules of
@@ -27,7 +27,7 @@ let availability = redrob_film_platform::register(); // Available("VideoToolbox"
   10-bit 4:2:0 (HEVC Main 10, VP9 profile 2, AV1 main 10)
   (`media_foundation/`). A Direct3D-aware decoder MFT (Microsoft's H.264 decoder, the HEVC Video
   Extensions' decoder, or a vendor's synchronous hardware MFT) is driven at the level of single
-  access units, so there is no Source Reader and no second demuxer: the container samples FilmCraft
+  access units, so there is no Source Reader and no second demuxer: the container samples Redrob Film
   already read go in as Annex B (`annexb.rs`; parameter sets are put in front of the first sample of
   a run). The process-wide Direct3D 11 device (`D3D11_CREATE_DEVICE_VIDEO_SUPPORT`, multithread
   protected) is handed to the MFT through an `IMFDXGIDeviceManager`, which makes it decode with DXVA
@@ -57,7 +57,7 @@ let availability = redrob_film_platform::register(); // Available("VideoToolbox"
     `av1_color` are shared with them). A VP9 key frame of another size or format, or an AV1 sequence
     header unlike `av1C`'s, hands the stream to the software decoder (`HybridDecoder`).
   - `mfplat.dll` is loaded at run time (`mft.rs`), not linked: Windows "N" editions without the Media
-    Feature Pack still start FilmCraft, which then decodes in software.
+    Feature Pack still start Redrob Film, which then decodes in software.
   - After a `flush` (which drains the MFT) the MFT only restarts at an IDR picture; the GOP cache
     always seeks after a flush, and a caller that continues from the middle of a GOP gets an error
     that `HybridDecoder` answers by replaying the run in software.

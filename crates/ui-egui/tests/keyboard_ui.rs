@@ -7,12 +7,12 @@ use egui_kittest::Harness;
 use redrob_film_engine::Session;
 use redrob_film_engine::shortcut_presets as presets;
 use redrob_film_engine::shortcuts::{PREMIERE_PRESET, Platform};
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
 }
 
@@ -21,7 +21,7 @@ impl Driver {
         let mut s = Session::default();
         s.execute("file.openDemoProject", json!({})).unwrap();
         let (tx, rx) = channel();
-        let mut app = FilmcraftApp::new(s).with_control(rx);
+        let mut app = FilmApp::new(s).with_control(rx);
         app.hooks.open_path = Some(Box::new(|_, _| Ok(())));
         let harness = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000).build_eframe(move |_cc| app);
         let mut d = Driver { harness, tx };
@@ -66,7 +66,7 @@ impl Driver {
         self.frames(2);
     }
 
-    fn app(&self) -> &FilmcraftApp {
+    fn app(&self) -> &FilmApp {
         self.harness.state()
     }
 }

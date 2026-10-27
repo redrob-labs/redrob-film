@@ -262,7 +262,7 @@ mod tests {
     #[cfg(any(unix, windows))]
     #[test]
     fn file_reader_reads_ranges_in_place() {
-        let dir = std::env::temp_dir().join(format!("filmcraft-file-reader-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("redrob-film-file-reader-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("bytes.bin");
         std::fs::write(&path, b"0123456789").unwrap();
@@ -286,7 +286,7 @@ mod tests {
     #[cfg(any(unix, windows))]
     #[test]
     fn more_file_readers_than_the_pool_holds_stay_readable() {
-        let dir = std::env::temp_dir().join(format!("filmcraft-file-pool-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("redrob-film-file-pool-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let pool = Arc::new(FilePool::new(2));
         let paths: Vec<_> = (0..5).map(|i| dir.join(format!("{i}.bin"))).collect();

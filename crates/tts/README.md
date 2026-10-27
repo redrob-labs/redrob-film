@@ -1,6 +1,6 @@
 # redrob-film-tts
 
-Text to speech for FilmCraft's Text to Speech panel (narrations, L2). Engine commands (`tts.*`) and
+Text to speech for Redrob Film's Text to Speech panel (narrations, L2). Engine commands (`tts.*`) and
 clip behaviour: `crates/engine/src/narration.rs`.
 
 - `Voice` trait (script in, mono 24 kHz `f32` out), the voice catalogue (`voices`, `voice`), and
@@ -31,7 +31,7 @@ only on `serde` and `thiserror` (and checks for wasm).
 
 50 original sentences (`tests/data/sentences.txt`: numbers, money, times, dates, phone numbers,
 acronyms, names) spoken by each voice through the full pipeline, transcribed by Whisper-base
-(FilmCraft's own, `redrob-film-speech`), word error rate after lowercasing and removing punctuation
+(Redrob Film's own, `redrob-film-speech`), word error rate after lowercasing and removing punctuation
 (number formatting such as "six" vs "6" still counts as an error):
 
 | Voice | WER | | Voice | WER |

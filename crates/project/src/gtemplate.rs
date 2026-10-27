@@ -44,6 +44,7 @@ use crate::graphic::{self, new_shape_layer, new_text_layer};
 use crate::graphic_design::{GraphicMeta, LayerExtra, Pin, PinTarget, Roll, RollMode};
 use crate::keyframe::{Param, ParamValue};
 
+// legacy: the format id in saved graphics templates
 pub const TEMPLATE_FORMAT: &str = "filmcraft.graphicsTemplate";
 pub const TEMPLATE_VERSION: u32 = 1;
 pub const TEMPLATE_EXTENSION: &str = "fcgt";

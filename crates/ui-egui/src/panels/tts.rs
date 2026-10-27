@@ -17,7 +17,7 @@ use redrob_film_project::{ClipId, VocalPitch};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
 
@@ -84,7 +84,7 @@ fn natural_installed() -> bool {
 }
 
 /// State of job `id`: `None` while running, else its result.
-fn job_outcome(app: &FilmcraftApp, id: u64) -> Option<Result<(), String>> {
+fn job_outcome(app: &FilmApp, id: u64) -> Option<Result<(), String>> {
     use std::sync::atomic::Ordering;
     let Some(j) = app.session.jobs.iter().find(|j| j.id == id) else { return Some(Err("the job disappeared".into())) };
     if !j.progress.finished.load(Ordering::Relaxed) {
@@ -98,7 +98,7 @@ fn job_outcome(app: &FilmcraftApp, id: u64) -> Option<Result<(), String>> {
 }
 
 /// Start an action: synthesize in the background (or reuse the cache), then run `cmd`.
-fn start(app: &mut FilmcraftApp, cmd: &str, params: serde_json::Value, play: bool) {
+fn start(app: &mut FilmApp, cmd: &str, params: serde_json::Value, play: bool) {
     let mut render = params.clone();
     if let Some(o) = render.as_object_mut() {
         o.remove("dir");
@@ -116,7 +116,7 @@ fn start(app: &mut FilmcraftApp, cmd: &str, params: serde_json::Value, play: boo
     }
 }
 
-fn run_now(app: &mut FilmcraftApp, cmd: &str, params: serde_json::Value, play: bool) {
+fn run_now(app: &mut FilmApp, cmd: &str, params: serde_json::Value, play: bool) {
     match app.session.execute(cmd, params) {
         Ok(r) => {
             if play {
@@ -135,7 +135,7 @@ fn run_now(app: &mut FilmcraftApp, cmd: &str, params: serde_json::Value, play: b
 }
 
 /// Finish a pending action whose synthesis job is done.
-fn poll(app: &mut FilmcraftApp) {
+fn poll(app: &mut FilmApp) {
     if let Some(p) = app.ui.tts.pending.clone() {
         match job_outcome(app, p.job) {
             None => {}
@@ -161,7 +161,7 @@ fn poll(app: &mut FilmcraftApp) {
 }
 
 /// The selected narration clip and its item, if any.
-fn selected_narration(app: &FilmcraftApp) -> Option<(ClipId, u64)> {
+fn selected_narration(app: &FilmApp) -> Option<(ClipId, u64)> {
     let clip = redrob_film_engine::narration::target_clip(&app.session, &serde_json::Value::Null)?;
     let item = app.session.active_sequence()?.find_item(clip)?.1.item;
     Some((clip, item.0))
@@ -169,7 +169,7 @@ fn selected_narration(app: &FilmcraftApp) -> Option<(ClipId, u64)> {
 
 /// Load the selected narration clip into the draft when the selection moves to a different one,
 /// and bring the panel forward. Runs every frame, also when the panel is hidden.
-pub fn follow_selection(app: &mut FilmcraftApp) {
+pub fn follow_selection(app: &mut FilmApp) {
     poll(app);
     let sel = selected_narration(app);
     match sel {
@@ -203,7 +203,7 @@ enum Action {
     CancelDownload,
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let painter = ui.painter().clone();
     painter.rect_filled(rect, 0.0, t.panel_bg);

@@ -1,4 +1,4 @@
-//! Paste files and images from the system clipboard (#611): the real `FilmcraftApp` under
+//! Paste files and images from the system clipboard (#611): the real `FilmApp` under
 //! `egui_kittest`, with a stand-in for the desktop app's clipboard hook.
 
 use std::cell::Cell;
@@ -8,11 +8,11 @@ use std::sync::mpsc::{Sender, channel};
 use egui_kittest::Harness;
 use redrob_film_engine::Session;
 use redrob_film_ui_egui::control::ControlRequest;
-use redrob_film_ui_egui::{ClipboardMedia, FilmcraftApp};
+use redrob_film_ui_egui::{ClipboardMedia, FilmApp};
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
     dir: std::path::PathBuf,
 }
@@ -20,14 +20,14 @@ struct Driver {
 impl Driver {
     /// The demo project saved (in name) in a fresh folder, so pasted images are written there.
     fn demo(name: &str) -> Self {
-        let dir = std::env::temp_dir().join(format!("filmcraft-clipboard-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("redrob-film-clipboard-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let mut session = Session::default();
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         session.path = Some(dir.join("film.rfilm").to_string_lossy().into_owned());
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = FilmApp::new(session).with_control(rx);
         let harness = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000).build_eframe(move |_cc| app);
         let mut d = Driver { harness, tx, dir };
         d.frames(4);
@@ -57,7 +57,7 @@ impl Driver {
         panic!("no reply to {method} {params}");
     }
 
-    fn app(&mut self) -> &mut FilmcraftApp {
+    fn app(&mut self) -> &mut FilmApp {
         self.harness.state_mut()
     }
 

@@ -30,7 +30,7 @@ use redrob_film_engine::time::{FrameRate, Tick};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::frames::{FrameKey, Target};
 use crate::theme::Tokens;
 
@@ -112,7 +112,7 @@ impl Reg {
     fn add(&mut self, id: impl Into<String>, r: Rect, label: impl Into<String>) {
         self.0.push((id.into(), r, label.into()));
     }
-    fn flush(self, app: &mut FilmcraftApp) {
+    fn flush(self, app: &mut FilmApp) {
         for (id, r, l) in self.0 {
             app.auto.add(&id, r, &l);
         }
@@ -124,7 +124,7 @@ fn settings_json(s: &ExportSettings) -> Value {
 }
 
 /// Apply a preset by name (from the engine's library).
-pub fn apply_preset(app: &mut FilmcraftApp, name: &str) -> bool {
+pub fn apply_preset(app: &mut FilmApp, name: &str) -> bool {
     match app.session.export_presets.find(name) {
         Some(p) => {
             app.ui.export.settings = p.settings;
@@ -147,7 +147,7 @@ pub fn output_path(ex: &ExportUi) -> String {
 }
 
 /// Engine params for the current settings (`file.exportMedia` / `export.queue.add`).
-pub fn export_params(app: &FilmcraftApp) -> Value {
+pub fn export_params(app: &FilmApp) -> Value {
     let ex = &app.ui.export;
     let mut p = json!({"path": output_path(ex), "settings": settings_json(&ex.settings), "range": ex.range, "after": serde_json::to_value(ex.after).unwrap_or_default()});
     if ex.range == "custom" {
@@ -157,7 +157,7 @@ pub fn export_params(app: &FilmcraftApp) -> Value {
     p
 }
 
-fn sync_sequence(app: &mut FilmcraftApp) {
+fn sync_sequence(app: &mut FilmApp) {
     let Some(seq) = app.session.state.active_sequence else { return };
     if app.ui.export.for_sequence != Some(seq.0) || app.ui.export.file_name.is_empty() {
         app.ui.export.file_name = app.session.project.item(seq).map(|i| i.name.clone()).unwrap_or_else(|| "Sequence".into());
@@ -168,7 +168,7 @@ fn sync_sequence(app: &mut FilmcraftApp) {
     }
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let left = Rect::from_min_size(rect.min, vec2(300.0, rect.height()));
     let right = Rect::from_min_max(pos2(rect.max.x - (rect.width() * 0.4).clamp(360.0, 640.0), rect.min.y), rect.max);
@@ -203,7 +203,7 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
 // left: destinations + queue
 // ---------------------------------------------------------------------------------------------
 
-fn queue_column(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+fn queue_column(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let mut reg = Reg::default();
     let p = ui.painter();
@@ -439,7 +439,7 @@ pub(crate) const PARS: [(&str, Option<(u32, u32)>); 6] = [
     ("Anamorphic 2:1 (2.0)", Some((2, 1))),
 ];
 
-fn settings_column(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+fn settings_column(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let mut reg = Reg::default();
     let mut open_manager = false;
@@ -1109,7 +1109,7 @@ fn effects_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: 
 
 pub(crate) const RANGES: [(&str, &str); 4] = [("entire", "Entire Source"), ("inOut", "Source In/Out"), ("workArea", "Work Area"), ("custom", "Custom")];
 
-fn preview_column(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, seq_id: redrob_film_engine::project::ItemId) {
+fn preview_column(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect, seq_id: redrob_film_engine::project::ItemId) {
     let t = app.tokens;
     let mut reg = Reg::default();
     let Some(q) = app.session.active_sequence().cloned() else { return };
@@ -1343,7 +1343,7 @@ fn range_ticks(ex: &ExportUi, q: &redrob_film_engine::project::Sequence) -> (Tic
 // Preset Manager
 // ---------------------------------------------------------------------------------------------
 
-fn preset_manager(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn preset_manager(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut m) = app.ui.export.manager.clone() else { return };
     let t = app.tokens;
     let mut reg = Reg::default();
@@ -1524,7 +1524,7 @@ fn paint_star(p: &egui::Painter, r: Rect, filled: bool, color: Color32) {
 // ---------------------------------------------------------------------------------------------
 
 /// Presets offered by Quick Export: favourites first, then the common delivery presets.
-fn quick_presets(app: &FilmcraftApp) -> Vec<String> {
+fn quick_presets(app: &FilmApp) -> Vec<String> {
     let mut v: Vec<String> =
         app.session.export_presets.all().iter().filter(|p| app.session.export_presets.is_favorite(&p.name)).map(|p| p.name.clone()).collect();
     for p in builtin_presets().into_iter().filter(|p| p.category == "Match Source" || p.category == "Web & Social").map(|p| p.name) {
@@ -1536,7 +1536,7 @@ fn quick_presets(app: &FilmcraftApp) -> Vec<String> {
 }
 
 /// The Quick Export popup under the header button at `anchor`.
-pub fn quick_export(app: &mut FilmcraftApp, ctx: &egui::Context, anchor: egui::Pos2) {
+pub fn quick_export(app: &mut FilmApp, ctx: &egui::Context, anchor: egui::Pos2) {
     if !app.ui.export.quick_open {
         return;
     }

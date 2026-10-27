@@ -263,7 +263,7 @@ impl FxStage {
 
     pub(crate) fn new(device: &wgpu::Device, composite: &wgpu::ShaderModule, layer_bgl: &wgpu::BindGroupLayout) -> Self {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("filmcraft-fx"),
+            label: Some("redrob-film-fx"),
             source: wgpu::ShaderSource::Wgsl(include_str!("fx.wgsl").into()),
         });
         let tex = |binding| wgpu::BindGroupLayoutEntry {
@@ -356,7 +356,7 @@ impl FxStage {
         let v = self.pool.entry(size).or_default();
         while v.len() < n {
             let t = device.create_texture(&wgpu::TextureDescriptor {
-                label: Some("filmcraft-fx"),
+                label: Some("redrob-film-fx"),
                 size: wgpu::Extent3d { width: size.0, height: size.1, depth_or_array_layers: 1 },
                 mip_level_count: 1,
                 sample_count: 1,

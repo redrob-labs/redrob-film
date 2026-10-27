@@ -11,14 +11,14 @@ use egui::{Align2, Color32, Rect, Sense, Stroke, pos2, vec2};
 use redrob_film_scopes::ScopeKind;
 use redrob_film_time::{Tick, TimeDisplay, format_time};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::frames::{FrameKey, Target};
 use crate::icons::{self, Icon};
 use crate::panels::panel_state::RefDisplay;
 use crate::theme::Tokens;
 
 /// The frame the Reference Monitor shows (None without a sequence).
-pub fn frame(app: &FilmcraftApp) -> Option<i64> {
+pub fn frame(app: &FilmApp) -> Option<i64> {
     let q = app.session.active_sequence()?;
     let rate = q.settings.frame_rate;
     let r = &app.ui.panels.reference;
@@ -27,7 +27,7 @@ pub fn frame(app: &FilmcraftApp) -> Option<i64> {
     Some(rate.frame_at(t).clamp(0, last))
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let Some(seq_id) = app.session.state.active_sequence else {

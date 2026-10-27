@@ -107,7 +107,7 @@ pub fn hevc_probed() -> bool {
 pub fn warm_hevc_probe() {
     static STARTED: Once = Once::new();
     STARTED.call_once(|| {
-        let spawned = std::thread::Builder::new().name("filmcraft-hevc-probe".into()).spawn(|| {
+        let spawned = std::thread::Builder::new().name("redrob-film-hevc-probe".into()).spawn(|| {
             let _ = std::panic::catch_unwind(hevc_available);
         });
         if let Err(why) = spawned {

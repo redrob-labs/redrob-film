@@ -1,6 +1,6 @@
 # redrob-film-color
 
-Colour science for FilmCraft (layer L0, no workspace dependencies): Y'CbCr matrices, transfer
+Colour science for Redrob Film (layer L0, no workspace dependencies): Y'CbCr matrices, transfer
 functions, camera log curves, RGB gamuts, colour-managed input/output transforms with tone and
 gamut mapping, and LUT files.
 
@@ -72,7 +72,7 @@ the result against the published BT.709 RGB→XYZ and BT.2087 BT.709→BT.2020 m
 ## Tone mapping (HDR/log → SDR)
 
 When an HDR or log source enters a Rec. 709 working space with **Auto Tone Map Media** on (the
-default), and on the monitors of an HDR sequence, FilmCraft applies the **ITU-R BT.2390 EETF**:
+default), and on the monitors of an HDR sequence, Redrob Film applies the **ITU-R BT.2390 EETF**:
 
 1. m = max(R, G, B) in working units, converted to cd/m² (×203) and PQ-encoded, normalised by the
    PQ value of the source peak;
@@ -130,7 +130,7 @@ else the mastering peak, clamped to 203…10 000 cd/m²; without metadata 1000 c
   coordinates in each of the six Kuhn tetrahedra, solved with a 3×3 inverse) on random points for
   sizes 2–33, check exactness on affine LUTs and at grid nodes, and round-trip both formats.
 
-FilmCraft ships no LUT files. Its built-in looks and camera conversions are generated from code
+Redrob Film ships no LUT files. Its built-in looks and camera conversions are generated from code
 (`redrob-film-render`), and are written to disk only when the user exports them.
 
 ## Tests

@@ -35,7 +35,7 @@ redrob-film-platform = { workspace = true }
 redrob-film-media = { workspace = true }
 redrob-film-frame = { workspace = true }
 redrob-film-color = { workspace = true }
-# Effects mode: effectcraft hosted as the second editor of the one window (`shell.rs`).
+# Effects mode: the Effects editor (editors/effects) hosted as the second editor of the one window (`shell.rs`).
 redrob-effects-ui-egui = { workspace = true }
 redrob-effects-host = { workspace = true }
 redrob-effects-engine = { workspace = true }
@@ -46,7 +46,7 @@ redrob-effects-color = { workspace = true }
 # The Effects editor's font database, scanned in the background at start-up (`shell.rs`) so its
 # first frame does not scan the system fonts on the UI thread.
 redrob-effects-text = { workspace = true }
-# `filmcraft mcp`: the MCP server the built-in agent (Redrob Code) starts from this same executable.
+# `redrob-film mcp`: the MCP server the built-in agent (Redrob Code) starts from this same executable.
 redrob-film-automation = { workspace = true }
 # The Redrob Code app bridge (`app_bridge.rs`): this window's tools, served to the shared daemon.
 redrob-app-bridge = { git = "https://github.com/redrob-labs/redrob-code", tag = "v0.7.0" }
@@ -85,6 +85,6 @@ winit = { version = "0.30", default-features = false }
 # portal file dialogs (rfd) and accesskit already use.
 zbus = "5.19"
 
-# Icon + VERSIONINFO for filmcraft.exe (build.rs); only needed when building on Windows.
+# Icon + VERSIONINFO for redrob-film.exe (build.rs); only needed when building on Windows.
 [target.'cfg(windows)'.build-dependencies]
 winresource = "0.1"

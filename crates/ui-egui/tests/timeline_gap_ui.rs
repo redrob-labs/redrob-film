@@ -1,6 +1,6 @@
 //! Headless UI test of gaps in the Timeline (#648, #668): clicking empty time between two clips
 //! selects the gap (drawn as a light block), and Delete, Backspace or the gap's right-click menu
-//! (Ripple Delete) closes it, as in Premiere Pro. The real `FilmcraftApp` under `egui_kittest`,
+//! (Ripple Delete) closes it, as in Premiere Pro. The real `FilmApp` under `egui_kittest`,
 //! driven over the control channel.
 
 use std::sync::mpsc::{Sender, channel};
@@ -8,12 +8,12 @@ use std::sync::mpsc::{Sender, channel};
 use egui_kittest::Harness;
 use redrob_film_engine::Session;
 use redrob_film_engine::project::ClipId;
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
 }
 
@@ -32,7 +32,7 @@ impl Driver {
         let v1 = &s.active_sequence().unwrap().video_tracks[0];
         let (a, b) = (v1.items[0].id, v1.items[1].id);
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(s).with_control(rx);
+        let app = FilmApp::new(s).with_control(rx);
         let harness = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000).build_eframe(move |_cc| app);
         let mut d = Driver { harness, tx };
         d.frames(4);

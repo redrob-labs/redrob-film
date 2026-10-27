@@ -1,6 +1,6 @@
 //! Headless UI tests of trimming in the Timeline (#259): a press acts on what was under the
 //! pointer when the button went down, the side of a cut picks the clip, and the cursor,
-//! `ui.timeline.hit` and the press agree. The real `FilmcraftApp` under `egui_kittest` with the
+//! `ui.timeline.hit` and the press agree. The real `FilmApp` under `egui_kittest` with the
 //! demo project, the pointer moving a few pixels per frame as a mouse does.
 
 use std::sync::mpsc::{Sender, channel};
@@ -9,7 +9,7 @@ use egui::{CursorIcon, Pos2, pos2};
 use egui_kittest::Harness;
 use redrob_film_engine::Session;
 use redrob_film_project::ClipId;
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
@@ -18,7 +18,7 @@ const CITY: &str = "City_Night_Drive.mp4";
 const DUNES: &str = "Desert_Dunes.mp4";
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
 }
 
@@ -31,7 +31,7 @@ impl Driver {
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         session.execute("sequence.snap", json!({"on": false})).expect("snapping off");
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = FilmApp::new(session).with_control(rx);
         let harness = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_step_dt(1.0 / 60.0).with_max_steps(10_000).build_eframe(move |_cc| app);
         let mut d = Driver { harness, tx };
         d.frames(4);
@@ -72,7 +72,7 @@ impl Driver {
         self.ok("engine.execute", json!({"command": command, "params": params}))
     }
 
-    fn app(&self) -> &FilmcraftApp {
+    fn app(&self) -> &FilmApp {
         self.harness.state()
     }
 

@@ -1,4 +1,4 @@
-//! Scripted UI tests: the real `FilmcraftApp` runs headless under `egui_kittest` (no window, no
+//! Scripted UI tests: the real `FilmApp` runs headless under `egui_kittest` (no window, no
 //! GPU) and is driven through the same JSON control channel that agents use over TCP/MCP
 //! (`docs/control-protocol.md`). Each test opens the demo project, sends control requests
 //! (`engine.execute`, `ui.menu.invoke`, `ui.click`, `ui.inspect`, …) between frames and asserts on
@@ -12,12 +12,12 @@ use std::sync::mpsc::{Sender, channel};
 
 use egui_kittest::Harness;
 use redrob_film_engine::Session;
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
 }
 
@@ -32,7 +32,7 @@ impl Driver {
         let mut session = Session::default();
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = FilmApp::new(session).with_control(rx);
         let mut b = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000);
         if render {
             b = b.wgpu();

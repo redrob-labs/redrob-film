@@ -29,7 +29,7 @@ use redrob_film_project::{AutomationMode, InputMap, Sequence, Track, TrackId};
 use redrob_film_time::{TimeDisplay, format_time};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
 
@@ -112,7 +112,7 @@ impl Default for MeterStyle {
 }
 
 /// The meter appearance menu (right-click on a level meter). `ap` prefixes the automation ids.
-pub fn meter_menu(app: &mut FilmcraftApp, resp: &egui::Response, ap: &str) {
+pub fn meter_menu(app: &mut FilmApp, resp: &egui::Response, ap: &str) {
     let mut ids = Vec::new();
     resp.context_menu(|ui| {
         let st = &mut app.ui.meter_style;
@@ -172,7 +172,7 @@ pub fn meter_step(st: &mut Vec<MeterCh>, fresh: Option<&[f32]>, dt: f32) {
 /// Per-strip meter state, `strip id → [level, peak, clip hold]` per channel (dBFS; 2 channels, or
 /// 6 for 5.1 strips), fed by the playing mix ([`redrob_film_render::mixer::LiveMix`]) with fast
 /// attack and a 20 dB/s fall ([`meter_step`]). [`INPUT_METER`] holds the voice-over input.
-pub fn poll_meters(app: &mut FilmcraftApp, ui: &egui::Ui) -> HashMap<u64, Vec<MeterCh>> {
+pub fn poll_meters(app: &mut FilmApp, ui: &egui::Ui) -> HashMap<u64, Vec<MeterCh>> {
     let id = egui::Id::new("mixer-meters");
     let frame = ui.ctx().cumulative_frame_nr();
     let (last, mut st): (u64, HashMap<u64, Vec<MeterCh>>) = ui.data(|d| d.get_temp(id)).unwrap_or_default();
@@ -246,7 +246,7 @@ impl Ctx<'_> {
 }
 
 /// The value a control shows: a held override, else the automation (or static value) at the playhead.
-fn shown(app: &FilmcraftApp, tr: &Track, lane: &str, now: redrob_film_time::Tick) -> f64 {
+fn shown(app: &FilmApp, tr: &Track, lane: &str, now: redrob_film_time::Tick) -> f64 {
     app.session.previews.live.get(tr.id, lane).map(|o| o.value).unwrap_or_else(|| tr.lane_value(lane, now))
 }
 
@@ -293,7 +293,7 @@ fn solo_params(seq: &Sequence, sid: &Value, id: TrackId, solo: bool, shift: bool
 
 // ------------------------------------------------------------------------------------- track mixer
 
-pub fn track_mixer(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn track_mixer(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let Some(seq) = app.session.active_sequence().cloned() else {
         crate::dock::placeholder(ui, rect, &t, tl!("(no sequence)"));
@@ -444,7 +444,7 @@ pub fn track_mixer(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     run_actions(app, &ui.ctx().clone(), acts);
 }
 
-fn run_actions(app: &mut FilmcraftApp, ctx: &egui::Context, acts: Vec<(String, Value)>) {
+fn run_actions(app: &mut FilmApp, ctx: &egui::Context, acts: Vec<(String, Value)>) {
     for (id, p) in acts {
         let r = if redrob_film_engine::find_command(&id).is_some() {
             app.session.execute(&id, p).map(|_| ()).map_err(|e| e.to_string())
@@ -457,7 +457,7 @@ fn run_actions(app: &mut FilmcraftApp, ctx: &egui::Context, acts: Vec<(String, V
     }
 }
 
-fn strip(app: &mut FilmcraftApp, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, sr: Rect, meter: &[MeterCh]) {
+fn strip(app: &mut FilmApp, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, sr: Rect, meter: &[MeterCh]) {
     let t = cx.t;
     let seq = cx.seq;
     let Some(tr) = seq.strip(id).map(|c| c.into_owned()) else { return };
@@ -891,7 +891,7 @@ fn strip(app: &mut FilmcraftApp, ui: &mut egui::Ui, cx: &mut Ctx, id: TrackId, s
 /// The 5.1 panner: a puck in the listening square (x left … right, y rear … front; speakers drawn
 /// at L, C, R, Ls, Rs), and the Center % and LFE values. Drags are `mixer.touch` / `mixer.release`
 /// on the `pan51.x` / `pan51.y` lanes, so they are heard live and recorded like the pan knob.
-fn pan51_panner(app: &mut FilmcraftApp, ui: &mut egui::Ui, cx: &mut Ctx, tr: &Track, ap: &str, sid: &Value, r: Rect) {
+fn pan51_panner(app: &mut FilmApp, ui: &mut egui::Ui, cx: &mut Ctx, tr: &Track, ap: &str, sid: &Value, r: Rect) {
     let t = cx.t;
     let px = shown(app, tr, LANE_PAN51_X, cx.now);
     let py = shown(app, tr, LANE_PAN51_Y, cx.now);
@@ -953,7 +953,7 @@ fn pan51_panner(app: &mut FilmcraftApp, ui: &mut egui::Ui, cx: &mut Ctx, tr: &Tr
     }
 }
 
-fn transport(app: &mut FilmcraftApp, ui: &mut egui::Ui, row: Rect, cx: &mut Ctx) {
+fn transport(app: &mut FilmApp, ui: &mut egui::Ui, row: Rect, cx: &mut Ctx) {
     let t = cx.t;
     let seq = cx.seq;
     ui.painter().line_segment([pos2(row.min.x, row.min.y + 0.5), pos2(row.max.x, row.min.y + 0.5)], Stroke::new(1.0, t.separator));
@@ -1011,7 +1011,7 @@ fn transport(app: &mut FilmcraftApp, ui: &mut egui::Ui, row: Rect, cx: &mut Ctx)
 
 /// Audio Clip Mixer: one strip per audio track, controlling the clip under the playhead (clip
 /// Volume and Panner). With the keyframe button on, changes add keyframes at the playhead.
-pub fn clip_mixer(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn clip_mixer(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let Some(seq) = app.session.active_sequence().cloned() else {
         crate::dock::placeholder(ui, rect, &t, tl!("(no sequence)"));

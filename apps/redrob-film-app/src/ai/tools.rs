@@ -5,7 +5,7 @@
 //! requests `engine.execute {command, params}` (crates/automation/src/bridge.rs L49). The shell
 //! sits on that channel before the Edit editor does ([`crate::shell::ShellApp::service_control`]):
 //! these `mode.*` ids are answered by the shell, `command.list` gets them appended, everything else
-//! goes on to `FilmcraftApp` untouched (crates/ui-egui/src/control.rs L99).
+//! goes on to `FilmApp` untouched (crates/ui-egui/src/control.rs L99).
 //!
 //! Tool ids are commands, so the agent discovers them the same way as every editor command: no
 //! second tool catalogue to keep in step.
@@ -22,7 +22,7 @@ pub const SEND_SELECTION_TO_EFFECTS: &str = "mode.sendSelectionToEffects";
 pub const PLACE_COMPOSITION_ON_TIMELINE: &str = "mode.placeCompositionOnTimeline";
 /// `mode.status {}`: which mode is active, which editors exist, what the hand-offs could do.
 pub const STATUS: &str = "mode.status";
-/// `effects.run {id, params?}`: run an Effects engine command (crafts/effectcraft/crates/engine/
+/// `effects.run {id, params?}`: run an Effects engine command (editors/effects/crates/engine/
 /// src/commands/*.rs; `effects.run {id: "command.list"}` lists them) on the Effects session.
 pub const EFFECTS_RUN: &str = "effects.run";
 

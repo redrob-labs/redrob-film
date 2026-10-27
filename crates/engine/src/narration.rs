@@ -461,7 +461,7 @@ fn download_voices(s: &mut Session, p: &Value) -> Result<Value> {
     let job = new_job(s, format!("Downloading {}", tts::catalog::PACKAGE_NAME));
     job.progress.total.store(tts::catalog::missing_bytes(&dir), std::sync::atomic::Ordering::Relaxed);
     let (prog, res) = (job.progress.clone(), job.result.clone());
-    let id = spawn(s, job, wait, "filmcraft-tts-download", move || {
+    let id = spawn(s, job, wait, "redrob-film-tts-download", move || {
         let t0 = web_time::Instant::now();
         let r = download_package(&dir, &prog);
         finish(&prog, &res, r.map(|()| "Natural voices installed".to_string()), t0);

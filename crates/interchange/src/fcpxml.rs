@@ -1,6 +1,6 @@
 //! FCPXML (1.9–1.11) import/export.
 //!
-//! Mapping between FilmCraft's track model and FCPXML's magnetic model:
+//! Mapping between Redrob Film's track model and FCPXML's magnetic model:
 //! - V1 is the primary storyline (`spine`): clips, `gap`s and `transition`s.
 //! - Other video tracks become connected clips with `lane = track index` (V2 → lane 1); audio-only
 //!   items on audio track n become connected clips on lane `-n`. A V1/V2… clip whose linked audio
@@ -771,6 +771,7 @@ impl Exp<'_, '_> {
             return r.id.clone();
         }
         let id = self.rid();
+        // legacy: effect uid prefix this module reads back
         self.res_out.push(format!("    <effect id=\"{id}\" name=\"{}\" uid=\"filmcraft.{}\"/>\n", crate::xml::escape(name), crate::xml::escape(id_hint)));
         self.effects.insert(name.to_string(), Res { id: id.clone() });
         id

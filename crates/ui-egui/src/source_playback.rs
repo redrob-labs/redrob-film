@@ -8,7 +8,7 @@ use redrob_film_render::SourceProvider;
 use redrob_film_time::Tick;
 use serde_json::json;
 
-use crate::{FilmcraftApp, Playback, audio_stall_limit};
+use crate::{FilmApp, Playback, audio_stall_limit};
 
 #[derive(Default)]
 pub struct SourcePlayback {
@@ -19,7 +19,7 @@ pub struct SourcePlayback {
     failure: Arc<Mutex<Option<String>>>,
 }
 
-impl FilmcraftApp {
+impl FilmApp {
     pub fn toggle_source_play(&mut self) -> Result<(), String> {
         if self.source_playback.clock.playing {
             self.stop_source();

@@ -1,14 +1,14 @@
 //! The Redrob Film shell: one window, a thin top bar, and two editors hosted as switchable modes:
-//! Edit (`FilmcraftApp`, the timeline editor, created at start-up with every service main.rs wires)
-//! and Effects (`EffectcraftApp`, the compositor, created on the first switch and kept). The shell
+//! Edit (`FilmApp`, the timeline editor, created at start-up with every service main.rs wires)
+//! and Effects (`EffectsApp`, the compositor, created on the first switch and kept). The shell
 //! also owns what crosses the modes: the Mode menu's hand-offs (`handoff`), the shared AI dock
 //! (`ai`), the project bundle (`bundle`), the control channel the agent drives both through
 //! ([`ShellApp::service_control`]), the window title, and the close check for the editor that is
 //! not on screen.
 //!
 //! Fonts and styles: each editor installs its own fonts and style on the shared `egui::Context`
-//! once (`theme::install` in `FilmcraftApp::logic`, crates/ui-egui/src/lib.rs L1926, and in
-//! `EffectcraftApp::logic`, crafts/effectcraft/crates/ui-egui/src/lib.rs L1872), replacing the
+//! once (`theme::install` in `FilmApp::logic`, crates/ui-egui/src/lib.rs L1926, and in
+//! `EffectsApp::logic`, editors/effects/crates/ui-egui/src/lib.rs L1872), replacing the
 //! other's. A switch while one editor's definitions are live would make the other draw with
 //! `FontFamily::Name(..)` families egui has not got, which panics. So the shell records each
 //! editor's definitions as it installs them, installs the union ([`merge_fonts`]) and applies a
@@ -22,8 +22,8 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::{Duration, Instant};
 
-use redrob_effects_ui_egui::EffectcraftApp;
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
@@ -284,9 +284,9 @@ impl ModeState {
 pub struct ShellApp {
     modes: ModeState,
     /// The timeline editor, with every service main.rs gives it.
-    pub(crate) edit: FilmcraftApp,
+    pub(crate) edit: FilmApp,
     /// The compositor, created on the first switch to Effects.
-    pub(crate) effects: Option<EffectcraftApp>,
+    pub(crate) effects: Option<EffectsApp>,
     /// The shared AI dock.
     pub ai: AiDock,
     /// What the hand-offs could do when this frame's logic ran.
@@ -311,8 +311,8 @@ pub struct ShellApp {
 
 impl ShellApp {
     /// `edit` is the fully wired Edit editor; `control_rx` the control server's requests and
-    /// `edit_tx` the sender whose receiver `edit` was given with `FilmcraftApp::with_control`.
-    pub fn new(edit: FilmcraftApp, control_rx: Option<Receiver<ControlRequest>>, edit_tx: Sender<ControlRequest>) -> Self {
+    /// `edit_tx` the sender whose receiver `edit` was given with `FilmApp::with_control`.
+    pub fn new(edit: FilmApp, control_rx: Option<Receiver<ControlRequest>>, edit_tx: Sender<ControlRequest>) -> Self {
         // The Effects editor's first frame installs its fonts, and its CJK / script fallbacks come
         // from a scan of the system font folders (`redrob_effects_text::fonts::scan_system`, a
         // separate database from the Edit editor's). On the UI thread that scan was a large part
@@ -371,18 +371,17 @@ impl ShellApp {
         self.status = Some(Status::new(text, error));
     }
 
-    /// The Effects editor, created on demand: `redrob_effects_host::session()` (crafts/effectcraft/
+    /// The Effects editor, created on demand: `redrob_effects_host::session()` (editors/effects/
     /// crates/host/src/lib.rs L84: media, import, expressions, scripting, export) and
-    /// `EffectcraftApp::new` (crafts/effectcraft/crates/ui-egui/src/lib.rs L367), with the file
-    /// dialogs effectcraft's own main.rs gives it (crafts/effectcraft/apps/effectcraft/src/main.rs
-    /// L264-L300). Its control server and native menu are not used: the shell's channel and the
+    /// `EffectsApp::new` (editors/effects/crates/ui-egui/src/lib.rs L367), with the file
+    /// dialogs the original standalone Effects app gave it. Its control server and native menu are not used: the shell's channel and the
     /// one window's menus are.
-    pub(crate) fn ensure_effects(&mut self) -> &mut EffectcraftApp {
+    pub(crate) fn ensure_effects(&mut self) -> &mut EffectsApp {
         self.effects.get_or_insert_with(Self::build_effects)
     }
 
-    fn build_effects() -> EffectcraftApp {
-        let mut app = EffectcraftApp::new(redrob_effects_host::session());
+    fn build_effects() -> EffectsApp {
+        let mut app = EffectsApp::new(redrob_effects_host::session());
         app.hooks.pick_files = Some(Box::new(|exts: &[&str]| {
             rfd::FileDialog::new().add_filter("Media", exts).pick_files().unwrap_or_default().into_iter().map(|p| p.to_string_lossy().to_string()).collect()
         }));
@@ -406,7 +405,7 @@ impl ShellApp {
             d.set_file_name(file).save_file().map(|p| p.to_string_lossy().to_string())
         }));
         // The same `Box<dyn Fn(&egui::Context) -> Option<egui::Theme>>` both UI crates declare
-        // (crates/ui-egui/src/lib.rs L167, crafts/effectcraft/crates/ui-egui/src/lib.rs L106).
+        // (crates/ui-egui/src/lib.rs L167, editors/effects/crates/ui-egui/src/lib.rs L106).
         app.hooks.system_theme = crate::appearance::service();
         app
     }
@@ -559,7 +558,7 @@ impl ShellApp {
     /// The bundle's name and whether either editor has unsaved changes: the Edit project's file
     /// name (its `Session::path`), else its project name; dirty when the Edit session is
     /// (`Session::is_dirty`, crates/engine/src/lib.rs L650) or the effects session is
-    /// (crafts/effectcraft/crates/engine/src/lib.rs L823).
+    /// (editors/effects/crates/engine/src/lib.rs L823).
     pub fn active_document(&self) -> Option<(String, bool)> {
         let s = &self.edit.session;
         let name = s.path.as_deref().map(file_name).or_else(|| Some(s.project.name.clone()).filter(|n| !n.is_empty()));
@@ -568,7 +567,7 @@ impl ShellApp {
     }
 
     /// The window title is the shell's ([`window_title`]). The Effects editor sends its own on a
-    /// document change (crafts/effectcraft/crates/ui-egui/src/lib.rs L1663); the window reports
+    /// document change (editors/effects/crates/ui-egui/src/lib.rs L1663); the window reports
     /// it back the next frame and the shell sets its own again.
     ///
     /// Only a title the window actually reports counts: winit returns an empty title on X11 and

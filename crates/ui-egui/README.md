@@ -1,4 +1,4 @@
-# FilmCraft interface
+# Redrob Film interface
 
 The egui frontend draws panels and dialogs, and dispatches project changes through the engine.
 Interactive controls keep stable automation ids regardless of the interface language.

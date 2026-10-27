@@ -50,8 +50,8 @@ Headless mode also takes `--data-dir DIR` (user presets). Any other option is re
 there are no folder-confinement flags such as `--automation-read-root`, so the server can read
 and write wherever the user can.
 
-**Claude Code.** The repository's `.mcp.json` registers both servers (`filmcraft` = bridge,
-`filmcraft-headless` = demo). Both point at `target/release/redrob-film-cli`, so build it first:
+**Claude Code.** The repository's `.mcp.json` registers both servers (`redrob-film` = bridge,
+`redrob-film-headless` = demo). Both point at `target/release/redrob-film-cli`, so build it first:
 
 ```sh
 cargo build --release -p redrob-film-cli -p redrob-film-app
@@ -62,11 +62,11 @@ claude                                           # approve the project MCP serve
 To register the server by hand, or for another MCP client, use the absolute binary path:
 
 ```sh
-claude mcp add filmcraft-headless -- /abs/path/filmcraft/target/release/redrob-film-cli mcp --demo
+claude mcp add redrob-film-headless -- /abs/path/redrob-film/target/release/redrob-film-cli mcp --demo
 ```
 
 ```json
-{ "mcpServers": { "filmcraft": { "command": "/abs/path/redrob-film-cli", "args": ["mcp", "--bridge", "127.0.0.1:9876"] } } }
+{ "mcpServers": { "redrob-film": { "command": "/abs/path/redrob-film-cli", "args": ["mcp", "--bridge", "127.0.0.1:9876"] } } }
 ```
 
 ### From an installed release
@@ -82,9 +82,9 @@ The release packages ship `redrob-film-cli` alongside the desktop app, so no bui
 
 ```sh
 # Windows, default install folder
-claude mcp add filmcraft -- "C:\Program Files\Redrob Film\redrob-film-cli.exe" mcp
+claude mcp add redrob-film -- "C:\Program Files\Redrob Film\redrob-film-cli.exe" mcp
 # Linux, or macOS with the CLI unzipped onto PATH
-claude mcp add filmcraft -- redrob-film-cli mcp
+claude mcp add redrob-film -- redrob-film-cli mcp
 ```
 
 ### Tools

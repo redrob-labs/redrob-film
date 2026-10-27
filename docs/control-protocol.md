@@ -1,7 +1,7 @@
 # Control protocol & MCP
 
 ## Desktop control channel
-`filmcraft --control 9876` (or `REDROB_FILM_CONTROL_PORT`) listens on `127.0.0.1:<port>` (loopback only).
+`redrob-film --control 9876` (or `REDROB_FILM_CONTROL_PORT`) listens on `127.0.0.1:<port>` (loopback only).
 One JSON request per line → one JSON reply per line. The app opts out of macOS App Nap
 (`apps/redrob-film-app/src/app_nap.rs`): a hidden window would otherwise drop the whole process to
 background priority, and on a busy machine it would stop answering.
@@ -53,7 +53,7 @@ still apply. `engine.commands` and the menus always show the selection's enablem
 **Focus.** Driving the app never steals the user's keyboard. Started with `--control`, the app opens
 without activating itself. UI requests and screenshots that need a rendered frame bring the window
 forward without making it key (macOS `orderFrontRegardless`), so the user's typing keeps going to
-the app they are in. Only an explicit `ui.focus` activates FilmCraft.
+the app they are in. Only an explicit `ui.focus` activates Redrob Film.
 
 Element ids are stable, e.g. `timeline.clip.<id>`, `timeline.track.V1.lock`, `tools.Razor`,
 `project.item.<id>`, `effects.item.gaussian_blur`, `panel.tab.Timeline`, `program.transport.playback.toggle`.

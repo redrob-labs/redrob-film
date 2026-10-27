@@ -14,7 +14,7 @@ use crate::previews::BarState;
 
 fn tmp(name: &str) -> std::path::PathBuf {
     let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-    std::env::temp_dir().join(format!("filmcraft-previews-test-{name}-{}-{nanos}", std::process::id()))
+    std::env::temp_dir().join(format!("redrob-film-previews-test-{name}-{}-{nanos}", std::process::id()))
 }
 
 /// A 64×36 24 fps sequence: V1 = matte with Tint (0..24) + plain matte (24..48), A1 = tone (0..48).

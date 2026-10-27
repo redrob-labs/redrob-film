@@ -1,4 +1,4 @@
-//! Clip Properties from Kdenlive's Project Bin that FilmCraft keeps on the source item: an image
+//! Clip Properties from Kdenlive's Project Bin that Redrob Film keeps on the source item: an image
 //! sequence played as a slideshow (time per image, loop, crop to fill, dissolve or wipe with
 //! softness, Ken Burns pan and zoom, low-pass filter) and the audio sync offset.
 //!

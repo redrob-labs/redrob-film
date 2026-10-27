@@ -127,7 +127,7 @@ mod tests {
     use std::ffi::OsString;
 
     fn tmpdir(tag: &str) -> PathBuf {
-        let d = std::env::temp_dir().join(format!("filmcraft-testkit-{tag}-{}", std::process::id()));
+        let d = std::env::temp_dir().join(format!("redrob-film-testkit-{tag}-{}", std::process::id()));
         std::fs::create_dir_all(&d).unwrap();
         d
     }

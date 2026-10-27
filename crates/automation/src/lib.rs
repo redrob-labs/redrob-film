@@ -15,7 +15,7 @@ pub mod long_job;
 pub mod server;
 
 pub use bridge::BridgeClient;
-pub use server::FilmcraftMcp;
+pub use server::FilmMcp;
 
 #[derive(Debug, thiserror::Error)]
 pub enum AutomationError {

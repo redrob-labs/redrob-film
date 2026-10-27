@@ -44,6 +44,7 @@ use redrob_film_time::{FrameRate, Tick};
 use serde::Serialize;
 
 /// Bump when the hash layout or the preview format changes (invalidates every preview).
+// legacy: part of the on-disk preview cache key; changing it drops every cached preview
 pub const HASH_VERSION: &str = "filmcraft-preview-v1";
 
 /// Multiple of the frame duration a frame may take before a segment is marked red. Playback

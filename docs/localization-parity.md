@@ -2,7 +2,7 @@
 
 > **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** major (new file: per-language status measured from the catalogs; replaces ROADMAP.md's "Interface localization" section) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
-Per-language status of FilmCraft's interface. Premiere 26.5.2 ships 10 interface languages (the
+Per-language status of Redrob Film's interface. Premiere 26.5.2 ships 10 interface languages (the
 installed bundle's `.lproj` folders): German, English, Spanish, French, Italian, Japanese, Korean,
 Portuguese (Brazil), Russian, Simplified Chinese.
 

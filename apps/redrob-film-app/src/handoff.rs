@@ -2,7 +2,7 @@
 //! and a composition becomes a clip on the timeline.
 //!
 //! Both editors count time in the same unit (254 016 000 000 ticks a second: crates/time/src/
-//! lib.rs L20 and crafts/effectcraft/crates/time/src/lib.rs L17), so a tick value crosses over
+//! lib.rs L20 and editors/effects/crates/time/src/lib.rs L17), so a tick value crosses over
 //! unchanged; only the newtype differs (`redrob_film_time::Tick(i64)` / `redrob_effects_time::Tick(i64)`).
 //!
 //! Timeline → composition ([`timeline_to_composition`]): every selected video clip (else every
@@ -10,11 +10,11 @@
 //! footage item and a layer of a new composition the size and rate of the sequence. The geometry
 //! is [`layer_geometry`]: After Effects layers and Premiere clips describe the same thing with
 //! different numbers (clip `start/duration/source_in/speed`, crates/project/src/lib.rs L511; layer
-//! `start_time/in_point/out_point/stretch`, crafts/effectcraft/crates/project/src/lib.rs L976-981).
+//! `start_time/in_point/out_point/stretch`, editors/effects/crates/project/src/lib.rs L976-981).
 //!
 //! Composition → timeline ([`composition_to_timeline`]): the active composition is wrapped in a
 //! [`CompSource`], a `redrob_film_media::MediaSource` (crates/media/src/lib.rs L158) that renders
-//! frames with the effects renderer (`Renderer::comp_frame`, crafts/effectcraft/crates/render/src/
+//! frames with the effects renderer (`Renderer::comp_frame`, editors/effects/crates/render/src/
 //! lib.rs L944) on demand, registered in the Edit engine's media pool for a placeholder media item
 //! (`MediaPool::insert`, crates/engine/src/media_pool.rs L133: a source inserted without a key
 //! stands for the item whatever its reference). No file is rendered and no export runs. The
@@ -26,8 +26,8 @@
 //! the composition's; pixel aspect = square (a composition's `pixel_aspect` is folded into its
 //! width by the effects renderer, so the timeline sees square pixels); duration = the composition's.
 //! Colour: the effects renderer composites premultiplied f32 in the project's output space (sRGB
-//! unless the effects project says otherwise, crafts/effectcraft/crates/render/src/color.rs L55)
-//! and `Image::to_rgba8` un-premultiplies and quantises (crafts/effectcraft/crates/raster/src/
+//! unless the effects project says otherwise, editors/effects/crates/render/src/color.rs L55)
+//! and `Image::to_rgba8` un-premultiplies and quantises (editors/effects/crates/raster/src/
 //! lib.rs L201), which is exactly `PixelData::Rgba8`, straight-alpha sRGB-encoded (crates/frame/
 //! src/lib.rs L47), so the frame is tagged `ColorInfo::SRGB_FULL` with alpha. Audio: none (a
 //! composition's audio mix is not rendered here; the clip is picture-only, `audio_streams` empty).
@@ -96,7 +96,7 @@ pub fn comp_range(clips: &[ClipGeom]) -> Option<(i64, i64)> {
 ///
 /// A clip shows media time `source_in + (t - start) * speed` at sequence time `t`
 /// (crates/project/src/lib.rs L520-523). A layer shows layer time
-/// `(t - start_time) * 100 / stretch` at comp time `t` (`Layer::layer_time`, crafts/effectcraft/
+/// `(t - start_time) * 100 / stretch` at comp time `t` (`Layer::layer_time`, editors/effects/
 /// crates/project/src/lib.rs L1014). So `stretch = 100 / speed`, the visible span is the clip's
 /// span shifted by `comp_start`, and `start_time` is where layer time 0 (media time 0) falls:
 /// `in_point - source_in / speed`.
@@ -301,7 +301,7 @@ pub fn timeline_to_composition(shell: &mut ShellApp, params: &Value) -> Result<S
 
     let effects = shell.ensure_effects();
     let session = &mut effects.session;
-    // crafts/effectcraft/crates/engine/src/commands/comp.rs L99: `comp.new` returns {"comp": id}.
+    // editors/effects/crates/engine/src/commands/comp.rs L99: `comp.new` returns {"comp": id}.
     let created = session
         .execute(
             "comp.new",
@@ -341,7 +341,7 @@ pub fn timeline_to_composition(shell: &mut ShellApp, params: &Value) -> Result<S
         let fid = match imported.get(&clip.path) {
             Some(id) => *id,
             None => {
-                // crafts/effectcraft/crates/engine/src/commands/file.rs L234 / L500: {"items": [ids], "errors": [..]}
+                // editors/effects/crates/engine/src/commands/file.rs L234 / L500: {"items": [ids], "errors": [..]}
                 let r = session.execute("file.import", json!({"paths": [clip.path.as_str()], "addToComp": false})).map_err(|e| e.to_string())?;
                 let Some(id) = r.get("items").and_then(Value::as_array).and_then(|a| a.first()).and_then(Value::as_u64).map(redrob_effects_project::ItemId)
                 else {
@@ -353,7 +353,7 @@ pub fn timeline_to_composition(shell: &mut ShellApp, params: &Value) -> Result<S
                 id
             }
         };
-        // crafts/effectcraft/crates/engine/src/commands/layer.rs L253: `layer.addItem` -> {"layer": id}
+        // editors/effects/crates/engine/src/commands/layer.rs L253: `layer.addItem` -> {"layer": id}
         let r = session.execute("layer.addItem", json!({"comp": cid.0, "item": fid.0, "time": 0.0})).map_err(|e| e.to_string())?;
         let Some(lid) = r.get("layer").and_then(Value::as_u64).map(redrob_effects_project::LayerId) else {
             problems.push(format!("{}: no layer was added", clip.name));

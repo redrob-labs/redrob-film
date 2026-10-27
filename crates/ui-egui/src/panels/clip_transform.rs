@@ -26,7 +26,7 @@ use redrob_film_project::{ClipId, ItemKind, TrackItem};
 use redrob_film_time::Tick;
 use serde_json::json;
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 
 const COL: Color32 = Color32::from_rgb(0xff, 0x9f, 0x2e);
 const CROP_PARAMS: [&str; 4] = ["left", "top", "right", "bottom"];
@@ -44,18 +44,18 @@ pub struct Target {
 
 /// Whether `it` is a clip with a picture of its own that Motion moves (not a graphic or an
 /// adjustment layer).
-fn movable(app: &FilmcraftApp, it: &TrackItem) -> bool {
+fn movable(app: &FilmApp, it: &TrackItem) -> bool {
     matches!(app.session.project.item(it.item).map(|i| &i.kind), Some(ItemKind::Media(_) | ItemKind::Sequence(_) | ItemKind::Subclip { .. }))
 }
 
 /// The enabled clips on visible video tracks under the playhead that Motion moves, topmost first.
-fn under_playhead(app: &FilmcraftApp) -> Vec<TrackItem> {
+fn under_playhead(app: &FilmApp) -> Vec<TrackItem> {
     let Some(seq) = app.session.active_sequence() else { return Vec::new() };
     let ph = app.session.playhead();
     seq.video_tracks.iter().rev().filter(|t| t.enabled).filter_map(|t| t.item_at(ph)).filter(|it| it.enabled && movable(app, it)).cloned().collect()
 }
 
-fn target_of(app: &FilmcraftApp, it: TrackItem) -> Target {
+fn target_of(app: &FilmApp, it: TrackItem) -> Target {
     let ph = app.session.playhead();
     let mt = it.effect_time_at(ph.clamp(it.start, (it.end() - Tick(1)).max(it.start)));
     let frame = app.session.active_sequence().map_or((1920, 1080), |q| (q.settings.width, q.settings.height));
@@ -64,14 +64,14 @@ fn target_of(app: &FilmcraftApp, it: TrackItem) -> Target {
 }
 
 /// The selected clip under the playhead the handles act on (the topmost selected one).
-pub fn target(app: &FilmcraftApp) -> Option<Target> {
+pub fn target(app: &FilmApp) -> Option<Target> {
     let sel = &app.session.state.selection;
     let it = under_playhead(app).into_iter().find(|it| sel.contains(&it.id))?;
     Some(target_of(app, it))
 }
 
 /// Source pixels → sequence pixels for a target.
-fn motion(app: &FilmcraftApp, t: &Target) -> Option<Affine> {
+fn motion(app: &FilmApp, t: &Target) -> Option<Affine> {
     let seq = app.session.active_sequence()?;
     Some(redrob_film_render::motion_matrix(seq, &t.item, t.src, redrob_film_render::source_par(&app.session.project, t.item.item), t.mt))
 }
@@ -93,7 +93,7 @@ fn gv(p: Pos2) -> Vec2 {
 
 /// The clip's Motion values at its media time: (position in sequence px, scale %, scale width %,
 /// uniform). A Position or Anchor that was never set (NaN) is the frame / source centre.
-fn motion_values(app: &FilmcraftApp, t: &Target) -> (Vec2, f64, f64, bool) {
+fn motion_values(app: &FilmApp, t: &Target) -> (Vec2, f64, f64, bool) {
     let frame = app.session.active_sequence().map_or((1920, 1080), |q| (q.settings.width, q.settings.height));
     let centre = Vec2::new(f64::from(frame.0) / 2.0, f64::from(frame.1) / 2.0);
     match t.item.effect("motion") {
@@ -144,7 +144,7 @@ fn drag_id() -> egui::Id {
 
 /// Write one Motion / Crop parameter of `clip`: one undo step per drag (`merge`; `begin` on the
 /// first write), a keyframe at the playhead with Automatic Keyframes on.
-fn set(app: &mut FilmcraftApp, clip: ClipId, effect: serde_json::Value, param: &str, value: serde_json::Value, begin: bool) {
+fn set(app: &mut FilmApp, clip: ClipId, effect: serde_json::Value, param: &str, value: serde_json::Value, begin: bool) {
     let mut p = json!({"clip": clip.0, "effect": effect, "param": param, "value": value, "merge": true, "begin": begin});
     if app.ui.program.auto_keyframe {
         p["keyframe"] = json!(true);
@@ -155,7 +155,7 @@ fn set(app: &mut FilmcraftApp, clip: ClipId, effect: serde_json::Value, param: &
 }
 
 /// Draw the handles of the target clip over the Program picture `pic` and act on drags.
-pub fn monitor_overlay(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect, frame: (u32, u32)) {
+pub fn monitor_overlay(app: &mut FilmApp, ui: &mut egui::Ui, pic: Rect, frame: (u32, u32)) {
     if !app.ui.program.edit_handles || app.session.state.selected_mask.is_some() || app.ui.mask_pen.is_some() || app.ui.eyedropper.is_some() {
         return;
     }
@@ -315,7 +315,7 @@ pub fn monitor_overlay(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect, fra
 
 /// Alt+click on the picture: select the next of the clips stacked under the pointer (Kdenlive's
 /// way to reach a clip hidden under a resized one).
-fn alt_click_cycle(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect, frame: (u32, u32)) {
+fn alt_click_cycle(app: &mut FilmApp, ui: &mut egui::Ui, pic: Rect, frame: (u32, u32)) {
     let clicked = ui.input(|i| i.modifiers.alt && i.pointer.primary_clicked());
     let Some(p) = ui.ctx().pointer_interact_pos().filter(|p| clicked && pic.contains(*p)) else { return };
     let stacked: Vec<TrackItem> = under_playhead(app)
@@ -344,7 +344,7 @@ fn alt_click_cycle(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect, frame: 
 /// The overlay toolbar's keyframe buttons on the target clip's Motion and Crop: `prev` / `next`
 /// move the playhead to the previous / next keyframe, `add` writes a keyframe of Position, Scale
 /// (and the crop) at the playhead.
-pub fn keyframe_action(app: &mut FilmcraftApp, action: &str) -> Result<(), String> {
+pub fn keyframe_action(app: &mut FilmApp, action: &str) -> Result<(), String> {
     let t = target(app).ok_or("Select a video clip under the playhead first")?;
     let ph = app.session.playhead();
     match action {

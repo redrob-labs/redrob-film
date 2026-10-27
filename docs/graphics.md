@@ -1,6 +1,6 @@
 # Graphics
 
-FilmCraft's graphics work like Premiere's Essential Graphics: a **graphic clip** on a video track
+Redrob Film's graphics work like Premiere's Essential Graphics: a **graphic clip** on a video track
 holds **text** and **shape** layers. Text is set by the text engine in `crates/text`
 ([README](../crates/text/README.md)): bundled OFL fonts plus system fonts, OpenType shaping with
 kerning and ligatures, bidi, line breaking, all drawn as vectors in linear light.
@@ -187,7 +187,7 @@ These settings are `TrackItem::graphic` (`GraphicMeta`, schema v12).
 
 ## Graphics templates (`.fcgt`)
 
-FilmCraft's equivalent of motion graphics templates is its **own** format: a `.fcgt` file is
+Redrob Film's equivalent of motion graphics templates is its **own** format: a `.fcgt` file is
 documented, versioned JSON (`redrob_film_project::gtemplate`):
 
 | Field | Meaning |
@@ -203,9 +203,9 @@ documented, versioned JSON (`redrob_film_project::gtemplate`):
 Placing a template on a sequence of another size scales and centres its layers (pin distances
 scale too).
 
-**FilmCraft never reads or imports Adobe `.mogrt` files** (or any other application's template
+**Redrob Film never reads or imports Adobe `.mogrt` files** (or any other application's template
 packages): Install refuses `.mogrt` paths without opening them, and the reader rejects ZIP
-archives. Built-in templates are original designs made for FilmCraft in code (no image, font or
+archives. Built-in templates are original designs made for Redrob Film in code (no image, font or
 template files): lower thirds (Slab, Rule, Ticker crawl), titles (Centered, Boxed), end credits
 (Roll) and callouts (Pointer, Tag), with the bundled Inter font. Thumbnails are rendered by the
 engine at runtime.

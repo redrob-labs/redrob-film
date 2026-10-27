@@ -10,7 +10,7 @@
 use egui::{Align2, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
 
@@ -47,7 +47,7 @@ fn state_id() -> egui::Id {
 }
 
 /// The library's entries, re-read at most every two seconds (files moved outside show up).
-fn entries(app: &mut FilmcraftApp, now: f64, st: &mut PanelState) -> Vec<Entry> {
+fn entries(app: &mut FilmApp, now: f64, st: &mut PanelState) -> Vec<Entry> {
     if let Some((at, v)) = &st.cache
         && now - at < 2.0
     {
@@ -76,7 +76,7 @@ fn parent_of(path: &str) -> &str {
     path.rfind('/').map_or("", |i| &path[..i])
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let now = ctx.input(|i| i.time);

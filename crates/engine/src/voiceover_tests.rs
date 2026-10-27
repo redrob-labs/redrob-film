@@ -10,7 +10,7 @@ fn sec(x: f64) -> i64 {
 }
 
 fn tmp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("filmcraft-vo-{}-{name}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("redrob-film-vo-{}-{name}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     d.to_string_lossy().into_owned()
 }

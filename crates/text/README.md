@@ -1,6 +1,6 @@
 # redrob-film-text
 
-FilmCraft's text engine (layer L1: depends on `redrob-film-color`, `skrifa`, `harfrust`,
+Redrob Film's text engine (layer L1: depends on `redrob-film-color`, `skrifa`, `harfrust`,
 `unicode-bidi` and `unicode-linebreak`). It draws graphic-clip text and shapes, caption burn-in
 and the Timecode / Clip Name effects. Pure Rust; it builds for `wasm32-unknown-unknown`.
 

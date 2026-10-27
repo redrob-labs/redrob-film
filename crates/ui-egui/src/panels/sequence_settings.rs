@@ -31,7 +31,7 @@ use redrob_film_project::{AudioChannels, SequenceSettings};
 use redrob_film_time::FrameRate;
 use serde_json::{Map, Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::i18n::t;
 use crate::state::SequenceSettingsDraft;
 
@@ -69,7 +69,7 @@ fn mix_name(c: AudioChannels) -> &'static str {
 }
 
 /// Fill the draft from the active sequence and open the dialog on the General tab.
-pub fn open(app: &mut FilmcraftApp) {
+pub fn open(app: &mut FilmApp) {
     let Some(q) = app.session.active_sequence() else { return };
     let st = &q.settings;
     let name = app.session.state.active_sequence.and_then(|id| app.session.project.item(id)).map(|i| i.name.clone()).unwrap_or_default();
@@ -100,7 +100,7 @@ pub fn open(app: &mut FilmcraftApp) {
 
 /// File ▸ New ▸ Sequence…: the dialog as New Sequence, from the default settings, named like
 /// `file.newSequence` would name it, with three video and three audio tracks.
-pub fn open_new(app: &mut FilmcraftApp) {
+pub fn open_new(app: &mut FilmApp) {
     let st = SequenceSettings::default();
     let n = app.session.project.sequences().count() + 1;
     app.ui.sequence_settings = SequenceSettingsDraft {
@@ -594,7 +594,7 @@ fn vr(ui: &mut egui::Ui, elems: &mut Elems) {
 }
 
 /// Draw the dialog. Returns whether it stays open.
-pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool {
+pub fn show(app: &mut FilmApp, ctx: &egui::Context) -> bool {
     let new_sequence = app.ui.sequence_settings.new_sequence;
     // New Sequence compares against the defaults it started from; Sequence Settings against the
     // active sequence

@@ -5,7 +5,7 @@ use std::sync::mpsc::{Receiver, channel};
 
 use muda::accelerator::Accelerator;
 use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::menus::{MENUS, MenuItem as Item, menu_items};
 
 fn accel(s: &str) -> Option<Accelerator> {
@@ -22,7 +22,7 @@ fn accel(s: &str) -> Option<Accelerator> {
 /// Updates native key equivalents when the active keyboard shortcuts change.
 pub type ShortcutUpdater = Box<dyn FnMut(&[Item])>;
 
-pub fn install(app: &FilmcraftApp, ctx: egui::Context) -> (Receiver<String>, ShortcutUpdater) {
+pub fn install(app: &FilmApp, ctx: egui::Context) -> (Receiver<String>, ShortcutUpdater) {
     let items = menu_items(app);
     let mut native: Vec<(String, MenuItem)> = Vec::new();
     let mut titles: Vec<(String, Submenu)> = Vec::new();

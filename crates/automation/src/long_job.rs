@@ -12,7 +12,7 @@ use rmcp::model::{CallToolResult, ContentBlock as Content, ProgressNotificationP
 use rmcp::service::{Peer, RequestContext};
 use serde_json::{Value, json};
 
-use crate::server::FilmcraftMcp;
+use crate::server::FilmMcp;
 
 /// Engine commands that block until a render is written when called with `wait: true`.
 pub const LONG_COMMANDS: &[&str] = &["file.exportMedia"];
@@ -47,7 +47,7 @@ impl Reporter {
     }
 }
 
-impl FilmcraftMcp {
+impl FilmMcp {
     /// Run `id` (a [`LONG_COMMANDS`] entry, `wait: true`) as a job, reporting progress and
     /// honouring cancellation.
     pub(crate) async fn run_long(&self, id: &str, mut params: Value, context: &RequestContext<RoleServer>) -> CallToolResult {
