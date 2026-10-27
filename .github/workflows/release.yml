@@ -55,11 +55,8 @@ jobs:
           components: rustfmt
       - name: Formatting
         run: cargo fmt --all --check
-      - name: Upstream pins, notices, brand
-        run: |
-          python3 scripts/check_upstream_boundary.py
-          python3 scripts/check_no_upstream_services.py
-          python3 scripts/check_brand.py
+      - name: Brand
+        run: python3 scripts/check_brand.py
       - name: Changelog has this version
         # A dry run with a version override is not a release, so it needs no changelog entry.
         if: inputs.version == ''

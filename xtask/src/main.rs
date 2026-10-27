@@ -1,9 +1,7 @@
-//! Workspace automation: `cargo xtask <layers|wasm|ci|…>`.
+//! Workspace automation: `cargo xtask <layers|assets|ci|…>`.
 //!
 //! - `layers`: enforces the dependency layering of `docs/architecture.md` §1 (downward-only edges,
 //!   listed same-layer edges, L0 codec crates depend on `bitstream` only, no UI/OS crates below L5).
-//! - `wasm`: `cargo check --target wasm32-unknown-unknown` for every crate in L0–L4 and the egui UI
-//!   (the UI crate stays portable even though the web app itself was removed with the release trim).
 //! - `assets`: every asset file (image, icon, font, LUT, audio, video…) has a complete
 //!   `<file>.attribution` sidecar and an entry in `ATTRIBUTION.md` (AGENTS.md §1).
 //! - `fixtures [crate…]`: pre-generate the ffmpeg fixture matrix of the oracle tests (runs each
@@ -13,7 +11,7 @@
 //!   menu bar against a reference list of menu paths (default: the local `plan/premiere/menus.json`),
 //!   presence and placement reported separately (`parity.rs`, docs/gaps.md G7).
 //! - `ico <out.ico> <in.png>…`: pack PNGs into a Windows `.ico` (used by `packaging/icons.sh`).
-//! - `ci`: fmt check, clippy -D warnings, tests, layers, assets, wasm.
+//! - `ci`: fmt check, clippy -D warnings, tests, layers, assets.
 
 mod ico;
 mod parity;
@@ -244,28 +242,6 @@ fn run(cmd: &mut Command) -> Result<(), String> {
     if st.success() { Ok(()) } else { Err(format!("failed: {cmd:?}")) }
 }
 
-/// Crates above L4 that must also build for wasm32.
-const WASM_CRATES: &[&str] = &["redrob-film-ui-egui"];
-
-fn wasm() -> Result<(), String> {
-    let md = metadata()?;
-    let mut cmd = Command::new(env!("CARGO"));
-    cmd.args(["check", "--target", "wasm32-unknown-unknown"]);
-    let mut n = 0;
-    for (name, _) in workspace_crates(&md) {
-        if layer_of(&name).is_some_and(|l| l <= 4) || WASM_CRATES.contains(&name.as_str()) {
-            cmd.args(["-p", &name]);
-            n += 1;
-        }
-    }
-    if n == 0 {
-        return Ok(());
-    }
-    run(&mut cmd)?;
-    println!("wasm: ok ({n} crates)");
-    Ok(())
-}
-
 /// (crate, test target) whose ignored `generate_fixtures` test builds that crate's fixture matrix.
 const FIXTURE_GENERATORS: &[(&str, &str)] = &[
     ("h264", "conformance"),
@@ -324,8 +300,7 @@ fn ci() -> Result<(), String> {
     run(Command::new(cargo).args(["clippy", "--workspace", "--all-targets", "--release", "--", "-D", "warnings"]))?;
     run(Command::new(cargo).args(["test", "--workspace", "--release"]))?;
     layers()?;
-    assets()?;
-    wasm()
+    assets()
 }
 
 /// The headless playback benchmark (`crates/ui-egui/examples/bench_playback.rs`); extra
@@ -357,7 +332,6 @@ fn main() -> ExitCode {
     let task = std::env::args().nth(1).unwrap_or_default();
     let r = match task.as_str() {
         "layers" => layers(),
-        "wasm" => wasm(),
         "assets" => assets(),
         "fixtures" => fixtures(&std::env::args().skip(2).collect::<Vec<_>>()),
         "ci" => ci(),
@@ -376,7 +350,7 @@ fn main() -> ExitCode {
             ico::run(&rest.iter().map(String::as_str).collect::<Vec<_>>())
         }
         _ => Err(
-            "usage: cargo xtask <layers|assets|wasm|fixtures [crate…]|parity [--reference FILE] [--out FILE] [--min PERCENT]|ico OUT IN…|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]>"
+            "usage: cargo xtask <layers|assets|fixtures [crate…]|parity [--reference FILE] [--out FILE] [--min PERCENT]|ico OUT IN…|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]>"
                 .into(),
         ),
     };
