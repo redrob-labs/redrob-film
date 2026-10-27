@@ -4,7 +4,7 @@
 # docs/releasing.md.
 #
 # The tag must equal the Cargo.toml version; the validate job fails otherwise. It also checks
-# formatting, the upstream pins and the notices; clippy and the tests ran on the pull request
+# formatting and the brand; clippy and the tests ran on the pull request
 # (.github/workflows/ci.yml) and are not repeated here. The jobs that sign
 # (macOS, Windows) and the one that drafts the GitHub Release run in the `release` environment.
 # Signing secrets are the redrob-labs organization's (Apple Developer ID certificate + App Store
