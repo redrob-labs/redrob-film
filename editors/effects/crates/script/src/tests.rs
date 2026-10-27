@@ -79,7 +79,7 @@ fn builds_a_comp_end_to_end() {
         txt.setParentWithJump(nul);
         bg.blendingMode = BlendingMode.MULTIPLY;
         var rq = app.project.renderQueue.items.add(comp);
-        rq.outputModule(1).file = new File("/tmp/effectcraft-script-test/out.mp4");
+        rq.outputModule(1).file = new File("/tmp/redrob-effects-script-test/out.mp4");
         app.endUndoGroup();
         writeLn("layers: " + comp.numLayers);
         [comp.numLayers, pos.numKeys, pos.keyValue(2)[0], txt.transform.opacity.value, comp.layer(1).name]

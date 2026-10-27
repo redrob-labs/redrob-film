@@ -328,7 +328,7 @@ static JETBRAINS_MONO: &[u8] = include_bytes!("../../../assets/fonts/JetBrainsMo
 /// not the stored `general.language` preference: `system` is already resolved there, so a Chinese
 /// system draws Chinese with the default setting. The CJK fallback that draws the interface's own
 /// script is registered first, so a Chinese interface is drawn by a Chinese face and a Japanese one
-/// by a Japanese face. `install` is called again when the language changes (see the `EffectcraftApp`
+/// by a Japanese face. `install` is called again when the language changes (see the `EffectsApp`
 /// frame loop), so the fonts do not need a restart.
 pub fn install(ctx: &egui::Context, t: &Tokens, language: &str) {
     let mut fonts = FontDefinitions::default();

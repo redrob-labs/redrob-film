@@ -2,10 +2,10 @@
 use egui::{Event, Key, Modifiers, PointerButton};
 use egui_kittest::Harness;
 use redrob_effects_engine::{Session, commands::text_edit::layer_doc, project::LayerId};
-use redrob_effects_ui_egui::{EffectcraftApp, dock::PanelKind};
+use redrob_effects_ui_egui::{EffectsApp, dock::PanelKind};
 use serde_json::json;
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, EffectsApp>, id: &str) {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("missing {id}")).clone();
     let pos = egui::pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
     h.input_mut().events.push(Event::PointerMoved(pos));
@@ -15,14 +15,14 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
     }
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key) {
+fn key(h: &mut Harness<'_, EffectsApp>, key: Key) {
     for pressed in [true, false] {
         h.input_mut().events.push(Event::Key { key, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE });
     }
     h.run_steps(3);
 }
 
-fn type_text(h: &mut Harness<'_, EffectcraftApp>, text: &str) {
+fn type_text(h: &mut Harness<'_, EffectsApp>, text: &str) {
     h.input_mut().events.push(Event::Text(text.into()));
     h.run_steps(3);
 }
@@ -35,9 +35,9 @@ fn font_search_filters_selects_and_undoes_in_both_panels() {
         let lid = s.execute("layer.newText", json!({"text": "Keep this text", "font": "Inter"})).unwrap()["layer"].as_u64().unwrap();
         let builder = Harness::builder().with_size(egui::vec2(1600.0, 1000.0));
         let mut h = if std::env::var_os("EC_SNAPSHOT_DIR").is_some() {
-            builder.wgpu().build_eframe(move |_| EffectcraftApp::new(s))
+            builder.wgpu().build_eframe(move |_| EffectsApp::new(s))
         } else {
-            builder.build_eframe(move |_| EffectcraftApp::new(s))
+            builder.build_eframe(move |_| EffectsApp::new(s))
         };
         h.state_mut().show_panel(panel);
         h.run_steps(3);
@@ -92,7 +92,7 @@ fn font_search_preserves_edited_text_and_applies_only_to_selected_characters() {
     let lid = s.execute("layer.newText", json!({"text": "First second", "font": "Inter"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("text.edit", json!({"layer": lid})).unwrap();
     s.execute("text.setSelection", json!({"start": 0, "end": 5})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectsApp::new(s));
     h.state_mut().show_panel(PanelKind::Character);
     h.run_steps(3);
     click(&mut h, "character.font");
@@ -144,10 +144,10 @@ fn font_menu_filters_variable_fonts() {
     let mut s = Session::default();
     s.execute("comp.new", json!({"width": 320, "height": 180})).unwrap();
     let lid = s.execute("layer.newText", json!({"text": "Var", "font": "Inter"})).unwrap()["layer"].as_u64().unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectsApp::new(s));
     h.state_mut().show_panel(PanelKind::Character);
     h.run_steps(3);
-    let families = |h: &Harness<'_, EffectcraftApp>| -> Vec<String> {
+    let families = |h: &Harness<'_, EffectsApp>| -> Vec<String> {
         h.state().auto.query("character.font.option.").iter().map(|e| e.id.trim_start_matches("character.font.option.").to_string()).collect()
     };
     click(&mut h, "character.font");

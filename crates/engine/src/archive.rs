@@ -80,6 +80,7 @@ fn io(e: std::io::Error) -> String {
 
 /// Pack `dir` (with a manifest naming `project`) into `out`. Returns the archive's size.
 pub fn pack(dir: &Path, project: &str, out: &Path, kind: Kind) -> std::result::Result<u64, String> {
+    // legacy: archive manifests already written carry this format id
     let manifest = json!({"format": "filmcraft.archive", "version": 1, "root": dir.to_string_lossy(), "project": project});
     std::fs::write(dir.join(MANIFEST), serde_json::to_vec_pretty(&manifest).unwrap_or_default()).map_err(io)?;
     let files = walk(dir).map_err(io)?;

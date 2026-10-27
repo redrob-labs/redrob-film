@@ -533,7 +533,7 @@ pub fn start_media_job(s: &mut Session, label: String, work: Vec<(ItemId, String
         run();
         poll(s);
     } else {
-        std::thread::Builder::new().name("filmcraft-proxies".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+        std::thread::Builder::new().name("redrob-film-proxies".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
     }
     Ok(id)
 }

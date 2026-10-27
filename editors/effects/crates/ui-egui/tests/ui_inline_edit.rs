@@ -5,24 +5,24 @@ use egui::{Event, Key, Modifiers, PointerButton, Pos2, pos2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use serde_json::json;
 
-fn harness() -> (Harness<'static, EffectcraftApp>, u64) {
+fn harness() -> (Harness<'static, EffectsApp>, u64) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4, "fps": 24})).unwrap();
     let comp = s.active_comp_id().unwrap().0;
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(4);
     (h, comp)
 }
 
-fn center(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
+fn center(h: &Harness<'_, EffectsApp>, id: &str) -> Pos2 {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0)
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, times: usize) {
+fn click(h: &mut Harness<'_, EffectsApp>, p: Pos2, times: usize) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.step();
     // All in one frame (the harness' frames are longer apart than a double-click).
@@ -34,7 +34,7 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, times: usize) {
 }
 
 /// A primary-button drag from `from` to `to`, in steps.
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'_, EffectsApp>, from: Pos2, to: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(from));
     h.step();
     h.input_mut().events.push(Event::PointerButton { pos: from, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -47,13 +47,13 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
     h.run_steps(3);
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key) {
+fn key(h: &mut Harness<'_, EffectsApp>, key: Key) {
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE });
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers: Modifiers::NONE });
     h.run_steps(2);
 }
 
-fn type_text(h: &mut Harness<'_, EffectcraftApp>, text: &str) {
+fn type_text(h: &mut Harness<'_, EffectsApp>, text: &str) {
     assert!(h.ctx.egui_wants_keyboard_input(), "the field has the keyboard");
     h.input_mut().events.push(Event::Text(text.into()));
     h.step();
@@ -62,7 +62,7 @@ fn type_text(h: &mut Harness<'_, EffectcraftApp>, text: &str) {
 #[test]
 fn project_rename_replaces_the_name() {
     let (mut h, comp) = harness();
-    let name = |h: &Harness<'_, EffectcraftApp>| h.state().session.project.items.values().find(|i| i.id.0 == comp).unwrap().name.clone();
+    let name = |h: &Harness<'_, EffectsApp>| h.state().session.project.items.values().find(|i| i.id.0 == comp).unwrap().name.clone();
     let p = center(&h, &format!("project.item.{comp}.name"));
     click(&mut h, p, 1);
     key(&mut h, Key::Enter);
@@ -78,9 +78,9 @@ fn project_rename_replaces_the_name() {
 #[test]
 fn tab_in_the_project_rename_field_commits_and_keeps_enter_renaming() {
     let (mut h, comp) = harness();
-    let name = |h: &Harness<'_, EffectcraftApp>| h.state().session.project.items.values().find(|i| i.id.0 == comp).unwrap().name.clone();
+    let name = |h: &Harness<'_, EffectsApp>| h.state().session.project.items.values().find(|i| i.id.0 == comp).unwrap().name.clone();
     let edit = format!("project.item.{comp}.nameEdit");
-    let editing = |h: &Harness<'_, EffectcraftApp>| h.state().auto.elements.iter().any(|e| e.id == edit);
+    let editing = |h: &Harness<'_, EffectsApp>| h.state().auto.elements.iter().any(|e| e.id == edit);
     let p = center(&h, &format!("project.item.{comp}.name"));
     click(&mut h, p, 1);
     key(&mut h, Key::Enter);
@@ -99,7 +99,7 @@ fn tab_in_the_project_rename_field_commits_and_keeps_enter_renaming() {
 #[test]
 fn timecode_field_replaces_commits_and_cancels() {
     let (mut h, _) = harness();
-    let frame = |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().frame_rate.frame_at(h.state().session.time());
+    let frame = |h: &Harness<'_, EffectsApp>| h.state().session.active_comp().unwrap().frame_rate.frame_at(h.state().session.time());
     let p = center(&h, "timeline.timecode");
     click(&mut h, p, 2);
     type_text(&mut h, "0:00:01:00");
@@ -129,11 +129,11 @@ fn the_expression_pick_whip_inserts_at_the_cursor_while_editing() {
     h.state_mut().ui.timeline.open_layers.insert(layer);
     h.state_mut().ui.timeline.open_groups.insert(transform);
     h.run_steps(3);
-    let expr = |h: &Harness<'_, EffectcraftApp>| {
+    let expr = |h: &Harness<'_, EffectsApp>| {
         let comp = h.state().session.active_comp().unwrap();
         comp.layer(redrob_effects_engine::project::LayerId(layer)).unwrap().props.find(opacity).unwrap().expr.as_ref().unwrap().text.clone()
     };
-    let whip = |h: &mut Harness<'_, EffectcraftApp>| {
+    let whip = |h: &mut Harness<'_, EffectsApp>| {
         let (from, to) = (center(h, &format!("timeline.prop.{opacity}.pickWhip")), center(h, &format!("timeline.prop.{rotation}.name")));
         drag(h, from, to);
     };
@@ -173,11 +173,11 @@ fn the_expression_pick_whip_picks_the_dimension_it_is_dropped_on() {
     h.state_mut().ui.timeline.open_layers.insert(layer);
     h.state_mut().ui.timeline.open_groups.insert(transform);
     h.run_steps(3);
-    let expr = |h: &Harness<'_, EffectcraftApp>| {
+    let expr = |h: &Harness<'_, EffectsApp>| {
         let comp = h.state().session.active_comp().unwrap();
         comp.layer(redrob_effects_engine::project::LayerId(layer)).unwrap().props.find(opacity).unwrap().expr.as_ref().unwrap().text.clone()
     };
-    let whip_to = |h: &mut Harness<'_, EffectcraftApp>, target: &str| {
+    let whip_to = |h: &mut Harness<'_, EffectsApp>, target: &str| {
         let (from, to) = (center(h, &format!("timeline.prop.{opacity}.pickWhip")), center(h, target));
         drag(h, from, to);
     };
@@ -209,9 +209,9 @@ fn the_property_pick_whip_links_a_property_to_another() {
     h.state_mut().show_panel(redrob_effects_ui_egui::dock::PanelKind::EffectControls);
     h.run_steps(3);
     let props =
-        |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layer(redrob_effects_engine::project::LayerId(layer)).unwrap().props.clone();
-    let expr = |h: &Harness<'_, EffectcraftApp>| props(h).find(opacity).unwrap().expr.clone().map(|e| (e.text, e.enabled));
-    let whip_to = |h: &mut Harness<'_, EffectcraftApp>, target: &str| {
+        |h: &Harness<'_, EffectsApp>| h.state().session.active_comp().unwrap().layer(redrob_effects_engine::project::LayerId(layer)).unwrap().props.clone();
+    let expr = |h: &Harness<'_, EffectsApp>| props(h).find(opacity).unwrap().expr.clone().map(|e| (e.text, e.enabled));
+    let whip_to = |h: &mut Harness<'_, EffectsApp>, target: &str| {
         let (from, to) = (center(h, &format!("timeline.prop.{opacity}.propertyPickWhip")), center(h, target));
         drag(h, from, to);
     };
@@ -256,7 +256,7 @@ fn the_pick_whip_scrolls_the_timeline_at_its_edges() {
     h.state_mut().ui.timeline.open_layers.insert(top);
     h.state_mut().ui.timeline.open_groups.insert(transform);
     h.run_steps(3);
-    let scroll = |h: &Harness<'_, EffectcraftApp>| h.state().ui.timeline.scroll_y;
+    let scroll = |h: &Harness<'_, EffectsApp>| h.state().ui.timeline.scroll_y;
     let rows = h.state().auto.find("timeline.scroll").unwrap().rect;
     let from = center(&h, &format!("timeline.prop.{opacity}.pickWhip"));
     let (bottom, upper) = (pos2(from.x, rows[1] + rows[3] - 2.0), pos2(from.x, rows[1] + 2.0));
@@ -299,7 +299,7 @@ fn the_expression_field_grows_while_editing_and_drags_taller() {
     h.state_mut().ui.timeline.open_groups.insert(transform);
     h.run_steps(3);
     let id = format!("timeline.prop.{opacity}.expression");
-    let height = |h: &Harness<'_, EffectcraftApp>| h.state().auto.find(&id).unwrap().rect[3];
+    let height = |h: &Harness<'_, EffectsApp>| h.state().auto.find(&id).unwrap().rect[3];
     let line = h.state().tokens.row_h;
     let one = height(&h);
     let p = center(&h, &id);
@@ -313,7 +313,7 @@ fn the_expression_field_grows_while_editing_and_drags_taller() {
     assert!((height(&h) - one - 2.0 * line).abs() < 0.5, "three lines while editing: {} from {one}", height(&h));
     // Its bottom edge: dragged down 4 lines, then up past the top (one line).
     let edge_id = format!("timeline.prop.{opacity}.expressionHeight");
-    let drag_edge = |h: &mut Harness<'_, EffectcraftApp>, dy: f32| {
+    let drag_edge = |h: &mut Harness<'_, EffectsApp>, dy: f32| {
         let edge = center(h, &edge_id);
         let to = edge + egui::vec2(0.0, dy);
         h.input_mut().events.push(Event::PointerMoved(edge));
@@ -334,7 +334,7 @@ fn the_expression_field_grows_while_editing_and_drags_taller() {
     assert_eq!(h.state().ui.timeline.expr_lines.get(&opacity), Some(&1));
 }
 
-fn key_with(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
+fn key_with(h: &mut Harness<'_, EffectsApp>, key: Key, modifiers: Modifiers) {
     h.input_mut().events.push(Event::ModifiersChanged(modifiers));
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers });
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers });
@@ -364,9 +364,9 @@ fn tab_commits_a_value_and_moves_to_the_next() {
     h.state_mut().show_panel(redrob_effects_ui_egui::dock::PanelKind::EffectControls);
     h.run_steps(3);
     let props =
-        |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layer(redrob_effects_engine::project::LayerId(layer)).unwrap().props.clone();
-    let value = |h: &Harness<'_, EffectcraftApp>, path: &str| props(h).prop(path).unwrap().value.components();
-    let uid = |h: &Harness<'_, EffectcraftApp>, path: &str| props(h).prop(path).unwrap().uid;
+        |h: &Harness<'_, EffectsApp>| h.state().session.active_comp().unwrap().layer(redrob_effects_engine::project::LayerId(layer)).unwrap().props.clone();
+    let value = |h: &Harness<'_, EffectsApp>, path: &str| props(h).prop(path).unwrap().value.components();
+    let uid = |h: &Harness<'_, EffectsApp>, path: &str| props(h).prop(path).unwrap().uid;
     let (position, scale) = (uid(&h, "transform/position"), uid(&h, "transform/scale"));
     let none = Modifiers::NONE;
     // Timeline: Position X, Tab, Position Y, Tab, Scale (linked).
@@ -403,7 +403,7 @@ fn tab_commits_a_value_and_moves_to_the_next() {
 }
 
 /// A click at `p` with `modifiers` held.
-fn click_with(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, modifiers: Modifiers) {
+fn click_with(h: &mut Harness<'_, EffectsApp>, p: Pos2, modifiers: Modifiers) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.input_mut().events.push(Event::ModifiersChanged(modifiers));
     h.step();
@@ -423,8 +423,8 @@ fn ctrl_click_on_the_time_display_toggles_timecode_and_frames() {
     let (mut h, _) = harness();
     h.state_mut().session.execute("time.set", json!({"frame": 30})).unwrap();
     h.run_steps(2);
-    let shown = |h: &Harness<'_, EffectcraftApp>, id: &str| h.state().auto.find(id).unwrap().label.clone();
-    let style = |h: &Harness<'_, EffectcraftApp>| h.state().session.project.settings.time_display;
+    let shown = |h: &Harness<'_, EffectsApp>, id: &str| h.state().auto.find(id).unwrap().label.clone();
+    let style = |h: &Harness<'_, EffectsApp>| h.state().session.project.settings.time_display;
     let undo = h.state().session.history.undo.len();
     let at = center(&h, "timeline.timecode");
     click_with(&mut h, at, Modifiers::COMMAND);
@@ -450,7 +450,7 @@ fn ctrl_click_on_the_time_display_toggles_timecode_and_frames() {
 
 /// Hold Alt and Shift and let go of them, as Windows' keyboard-layout hotkey does; `shift_first`
 /// releases Shift before Alt.
-fn switch_layout(h: &mut Harness<'_, EffectcraftApp>, shift_first: bool) {
+fn switch_layout(h: &mut Harness<'_, EffectsApp>, shift_first: bool) {
     let held = if shift_first { Modifiers::ALT } else { Modifiers::SHIFT };
     for m in [Modifiers::ALT, Modifiers::ALT | Modifiers::SHIFT, held, Modifiers::NONE] {
         h.input_mut().events.push(Event::ModifiersChanged(m));
@@ -469,7 +469,7 @@ fn a_layout_switch_keeps_the_name_field_and_arabic_names_are_kept() {
     let layer = h.state_mut().session.execute("layer.newNull", json!({})).unwrap()["layer"].as_u64().unwrap();
     h.run_steps(3);
     let layer_name =
-        |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layer(redrob_effects_engine::project::LayerId(layer)).unwrap().name.clone();
+        |h: &Harness<'_, EffectsApp>| h.state().session.active_comp().unwrap().layer(redrob_effects_engine::project::LayerId(layer)).unwrap().name.clone();
     let p = center(&h, &format!("timeline.layer.{layer}.row"));
     click(&mut h, p, 2);
     assert!(h.state().auto.find(&format!("timeline.layer.{layer}.nameEdit")).is_some(), "double-click opened the rename field");
@@ -504,7 +504,7 @@ fn a_layout_switch_keeps_the_name_field_and_arabic_names_are_kept() {
 #[test]
 fn arrow_keys_move_the_caret_in_rename_fields() {
     let (mut h, comp) = harness();
-    let name = |h: &Harness<'_, EffectcraftApp>| h.state().session.project.items.values().find(|i| i.id.0 == comp).unwrap().name.clone();
+    let name = |h: &Harness<'_, EffectsApp>| h.state().session.project.items.values().find(|i| i.id.0 == comp).unwrap().name.clone();
     let p = center(&h, &format!("project.item.{comp}.name"));
     click(&mut h, p, 1);
     key(&mut h, Key::Enter);

@@ -1,5 +1,5 @@
 //! Shared helpers for the SILK/hybrid round-trip tests: synthetic signals, encoding, decoding
-//! with FilmCraft's spec-derived decoder, delay-searched SNR and an Ogg Opus writer for ffmpeg.
+//! with Redrob Film's spec-derived decoder, delay-searched SNR and an Ogg Opus writer for ffmpeg.
 #![allow(dead_code)]
 
 use redrob_effects_opusenc::OpusEncoder;

@@ -1,6 +1,6 @@
 //! Headless UI tests of the Sequence / Markers menu additions: the Add Tracks and Delete Tracks dialogs, the
 //! through-edit marks on the timeline, the Markers panel colour filter and the Shift+; gap key.
-//! The real `FilmcraftApp` under `egui_kittest`, driven over the control channel by automation id.
+//! The real `FilmApp` under `egui_kittest`, driven over the control channel by automation id.
 //!
 //! Set `REDROB_FILM_UI_SNAPSHOT_DIR=<dir>` to also render the window offscreen with wgpu and write
 //! `sequence-settings-*.png` there; without it no GPU is needed.
@@ -9,12 +9,12 @@ use std::sync::mpsc::{Sender, channel};
 
 use egui_kittest::Harness;
 use redrob_film_engine::Session;
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
     snapshots: Option<std::path::PathBuf>,
 }
@@ -24,7 +24,7 @@ impl Driver {
         let mut session = Session::default();
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = FilmApp::new(session).with_control(rx);
         let snapshots = std::env::var_os("REDROB_FILM_UI_SNAPSHOT_DIR").map(std::path::PathBuf::from);
         let mut b = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000);
         if snapshots.is_some() {
@@ -73,7 +73,7 @@ impl Driver {
         self.frames(2);
     }
 
-    fn app(&mut self) -> &mut FilmcraftApp {
+    fn app(&mut self) -> &mut FilmApp {
         self.harness.state_mut()
     }
 

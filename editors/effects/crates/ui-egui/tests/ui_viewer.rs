@@ -8,31 +8,31 @@ use egui_kittest::kittest::Queryable;
 use redrob_effects_engine::Session;
 use redrob_effects_engine::commands::shape_tool::PaintKind;
 use redrob_effects_engine::project::LayerId;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::state::Tool;
 use serde_json::json;
 
-fn app() -> EffectcraftApp {
+fn app() -> EffectsApp {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "View", "width": 640, "height": 360, "duration": 4})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080", "width": 640, "height": 360})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Box", "color": "#e04020", "width": 80, "height": 80})).unwrap();
     s.execute("edit.deselectAll", json!({})).unwrap();
-    EffectcraftApp::new(s)
+    EffectsApp::new(s)
 }
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, EffectsApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| app());
     h.run_steps(3);
     h
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+fn click(h: &mut Harness<'_, EffectsApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.step();
     h.input_mut().events.push(Event::PointerButton { pos: p, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
@@ -41,7 +41,7 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
     h.run_steps(2);
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'_, EffectsApp>, from: Pos2, to: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(from));
     h.input_mut().events.push(Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
     h.step();
@@ -54,20 +54,20 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
 }
 
 /// Comp pixel → screen point.
-fn screen(h: &Harness<'_, EffectcraftApp>, p: [f32; 2]) -> Pos2 {
+fn screen(h: &Harness<'_, EffectsApp>, p: [f32; 2]) -> Pos2 {
     let c = rect(h, "viewer.comp");
     let z = c.width() / 640.0;
     c.min + vec2(p[0] * z, p[1] * z)
 }
 
-fn selection_harness() -> Harness<'static, EffectcraftApp> {
+fn selection_harness() -> Harness<'static, EffectsApp> {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Selection", "width": 640, "height": 360, "duration": 4})).unwrap();
     for name in ["Back", "Front"] {
         s.execute("layer.newSolid", json!({"name": name, "color": "#406080", "width": 80, "height": 80})).unwrap();
     }
     s.execute("edit.deselectAll", json!({})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectsApp::new(s));
     h.run_steps(3);
     h
 }
@@ -171,7 +171,7 @@ fn each_comp_keeps_its_viewer_resolution() {
     use redrob_effects_ui_egui::state::Resolution;
     let mut h = harness();
     let a = h.state().session.active_comp_id().unwrap();
-    let content = |h: &Harness<'_, EffectcraftApp>, c| {
+    let content = |h: &Harness<'_, EffectsApp>, c| {
         let s = h.state();
         s.frames.content_of(&s.session.project, s.session.revision, c)
     };
@@ -208,7 +208,7 @@ fn each_comp_keeps_its_viewer_resolution() {
     s.execute("file.open", json!({"path": path.to_string_lossy()})).unwrap();
     let _ = std::fs::remove_file(&path);
     s.open_comp(b);
-    let app = EffectcraftApp::new(s);
+    let app = EffectsApp::new(s);
     assert_eq!(app.viewer_res(), Resolution::Quarter);
     assert_eq!(app.session.project.comp(a).unwrap().resolution, Resolution::Half);
 }
@@ -285,7 +285,7 @@ fn layer_drag_snaps_to_comp_centre_and_ctrl_disables() {
     let from = screen(&h, [100.0, 100.0]);
     let to = screen(&h, [323.0, 182.0]);
     drag(&mut h, from, to);
-    let pos = |h: &Harness<'_, EffectcraftApp>| {
+    let pos = |h: &Harness<'_, EffectsApp>| {
         let l = h.state().session.active_comp().unwrap().layer(box_id).unwrap().clone();
         l.props.prop("transform/position").unwrap().value.as_vec3()
     };
@@ -312,21 +312,21 @@ fn layer_drag_snaps_to_other_layers_edges_ctrl_toggles_and_options_apply() {
     let target = h.state_mut().session.execute("layer.newSolid", json!({"name": "Target", "color": "#20e040", "width": 100, "height": 100})).unwrap()["layer"]
         .as_u64()
         .unwrap();
-    let place = |h: &mut Harness<'_, EffectcraftApp>| {
+    let place = |h: &mut Harness<'_, EffectsApp>| {
         let s = &mut h.state_mut().session;
         s.execute("prop.set", json!({"layer": target, "path": "transform/position", "value": [500, 100, 0]})).unwrap();
         s.execute("prop.set", json!({"layer": box_id.0, "path": "transform/position", "value": [100, 250, 0]})).unwrap();
         s.execute("edit.deselectAll", json!({})).unwrap();
         h.run_steps(2);
     };
-    let pos = |h: &Harness<'_, EffectcraftApp>| {
+    let pos = |h: &Harness<'_, EffectsApp>| {
         let l = h.state().session.active_comp().unwrap().layer(box_id).unwrap().clone();
         l.props.prop("transform/position").unwrap().value.as_vec3()
     };
     // Grab the box by its top right corner (140, 210) and drop it 3 px left of the target's
     // left edge, well below the target: the corner lands on the edge's line (x 450).
     let ctrl = egui::Modifiers { ctrl: true, command: true, ..Default::default() };
-    let drop = |h: &mut Harness<'_, EffectcraftApp>, mods: egui::Modifiers| {
+    let drop = |h: &mut Harness<'_, EffectsApp>, mods: egui::Modifiers| {
         place(h);
         let (from, to) = (screen(h, [138.0, 212.0]), screen(h, [445.0, 232.0]));
         hold_drag(h, from, to, mods);
@@ -423,7 +423,7 @@ fn tool_creates_mask_draws_a_mask_on_the_selected_shape_layer() {
 
 /// Run frames until the viewer's background frame has landed, so the comp is painted (and not
 /// still black) before the drag begins: the ghost is then the only thing that changes.
-fn settle_viewer(h: &mut Harness<'_, EffectcraftApp>) {
+fn settle_viewer(h: &mut Harness<'_, EffectsApp>) {
     for _ in 0..600 {
         h.step();
         if h.state().frames.inflight() == 0 && h.state().frames.last_ms.lock().map(|v| *v > 0.0).unwrap_or(false) {
@@ -437,7 +437,7 @@ fn settle_viewer(h: &mut Harness<'_, EffectcraftApp>) {
 /// Press at `from`, drag to `to` with `mods` held and return the frame drawn with the button still
 /// down — what the user sees mid-drag, before anything is committed. egui only takes modifiers
 /// from [`egui::Event::ModifiersChanged`], so they are set before the press and stay set.
-fn mid_drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, mods: egui::Modifiers) -> image::RgbaImage {
+fn mid_drag(h: &mut Harness<'_, EffectsApp>, from: Pos2, to: Pos2, mods: egui::Modifiers) -> image::RgbaImage {
     h.input_mut().events.push(Event::ModifiersChanged(mods));
     h.input_mut().events.push(Event::PointerMoved(from));
     h.input_mut().events.push(Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: mods });
@@ -450,13 +450,13 @@ fn mid_drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, mods: egu
 }
 
 /// Release the button where the drag left it.
-fn release(h: &mut Harness<'_, EffectcraftApp>, at: Pos2, mods: egui::Modifiers) {
+fn release(h: &mut Harness<'_, EffectsApp>, at: Pos2, mods: egui::Modifiers) {
     h.input_mut().events.push(Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed: false, modifiers: mods });
     h.run_steps(2);
 }
 
 /// The pixel at a comp point of a rendered frame.
-fn px_at(img: &image::RgbaImage, h: &Harness<'_, EffectcraftApp>, p: [f32; 2]) -> [u8; 3] {
+fn px_at(img: &image::RgbaImage, h: &Harness<'_, EffectsApp>, p: [f32; 2]) -> [u8; 3] {
     let s = screen(h, p);
     let p = img.get_pixel(s.x.round() as u32, s.y.round() as u32).0;
     [p[0], p[1], p[2]]
@@ -468,7 +468,7 @@ fn delta(a: [u8; 3], b: [u8; 3]) -> u32 {
 }
 
 /// The Tools-bar Fill as bytes, the colour a filled ghost carries.
-fn fill_rgb(h: &Harness<'_, EffectcraftApp>) -> [u8; 3] {
+fn fill_rgb(h: &Harness<'_, EffectsApp>) -> [u8; 3] {
     let c = h.state().session.state.shape_tool.fill.color;
     std::array::from_fn(|i| (c[i].clamp(0.0, 1.0) * 255.0).round() as u8)
 }
@@ -661,7 +661,7 @@ fn fill_options_change_the_selected_shape_layer() {
         .as_u64()
         .unwrap();
     h.run_steps(2);
-    let fill_on = |h: &Harness<'_, EffectcraftApp>| {
+    let fill_on = |h: &Harness<'_, EffectsApp>| {
         let layer = h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().clone();
         layer.props.group("contents/group/contents/fill").unwrap().enabled
     };
@@ -757,7 +757,7 @@ fn motion_path_key_drag_edits_that_key() {
 }
 
 /// The first mask path of layer `name`.
-fn mask_path(h: &Harness<'_, EffectcraftApp>, name: &str) -> redrob_effects_engine::keyframe::ShapePath {
+fn mask_path(h: &Harness<'_, EffectsApp>, name: &str) -> redrob_effects_engine::keyframe::ShapePath {
     let l = h.state().session.active_comp().unwrap().layers.iter().find(|l| l.name == name).unwrap().clone();
     l.masks().unwrap().groups().next().unwrap().get("path").unwrap().value.as_path().unwrap().clone()
 }
@@ -789,7 +789,7 @@ fn pen_mask_undoes_step_by_step_and_double_click_moves_the_whole_mask() {
     drag(&mut h, from, to);
     let moved = mask_path(&h, "Plate");
     assert!(near(moved.vertices[1], [520.0, 80.0]) && moved.vertices[0] == drawn.vertices[0], "{moved:?}");
-    let undo = |h: &mut Harness<'_, EffectcraftApp>| {
+    let undo = |h: &mut Harness<'_, EffectsApp>| {
         h.state_mut().session.execute("edit.undo", json!({})).unwrap();
         h.run_steps(2);
         mask_path(h, "Plate")
@@ -1093,7 +1093,7 @@ fn pan_behind_alt_moves_the_anchor_alone_shift_constrains_and_the_tool_button_ce
 
 /// Drag from `from` to `to` with `modifiers` held, holding the end point a frame (the viewer's
 /// gestures apply the pointer of the previous frame).
-fn hold_drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, modifiers: egui::Modifiers) {
+fn hold_drag(h: &mut Harness<'_, EffectsApp>, from: Pos2, to: Pos2, modifiers: egui::Modifiers) {
     h.input_mut().events.push(Event::ModifiersChanged(modifiers));
     h.input_mut().events.push(Event::PointerMoved(from));
     h.input_mut().events.push(Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers });
@@ -1109,7 +1109,7 @@ fn hold_drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, modifier
 }
 
 /// A layer's Position and Anchor Point.
-fn position_and_anchor(h: &Harness<'_, EffectcraftApp>, layer: LayerId) -> ([f64; 3], [f64; 3]) {
+fn position_and_anchor(h: &Harness<'_, EffectsApp>, layer: LayerId) -> ([f64; 3], [f64; 3]) {
     let l = h.state().session.active_comp().unwrap().layer(layer).unwrap().clone();
     (l.props.prop("transform/position").unwrap().value.as_vec3(), l.props.prop("transform/anchor").unwrap().value.as_vec3())
 }
@@ -1135,7 +1135,7 @@ fn reference_axes_toggle_from_the_grid_menu() {
 }
 
 /// A Box layer pinned with two Position pins and a Bend pin in the middle (Bend tool active).
-fn puppet_harness() -> (Harness<'static, EffectcraftApp>, u64, u64) {
+fn puppet_harness() -> (Harness<'static, EffectsApp>, u64, u64) {
     let mut h = harness();
     let s = &mut h.state_mut().session;
     // No full-frame Plate behind the Box: the comp around the Box is empty, like the canvas
@@ -1151,7 +1151,7 @@ fn puppet_harness() -> (Harness<'static, EffectcraftApp>, u64, u64) {
     (h, id, bend)
 }
 
-fn pin_value(h: &Harness<'_, EffectcraftApp>, layer: u64, pin: u64, prop: &str) -> f64 {
+fn pin_value(h: &Harness<'_, EffectsApp>, layer: u64, pin: u64, prop: &str) -> f64 {
     let l = h.state().session.active_comp().unwrap().layer(LayerId(layer)).unwrap().clone();
     l.props.find_group(pin).unwrap().get(prop).unwrap().value.as_f64()
 }
@@ -1183,7 +1183,7 @@ fn puppet_bend_pin_rotates_by_its_ring_and_scales_by_its_square() {
 #[test]
 fn puppet_pin_click_selects_and_delete_removes_only_the_pins() {
     let (mut h, id, bend) = puppet_harness();
-    let pin = |h: &Harness<'_, EffectcraftApp>| h.state().session.state.selected_props.iter().map(|(_, u)| *u).collect::<Vec<_>>();
+    let pin = |h: &Harness<'_, EffectsApp>| h.state().session.state.selected_props.iter().map(|(_, u)| *u).collect::<Vec<_>>();
     // Clicking a pin selects it (instead of adding a pin on top of it).
     let at = rect(&h, &format!("viewer.puppetPin.{bend}")).center();
     click(&mut h, at);
@@ -1199,14 +1199,14 @@ fn puppet_pin_click_selects_and_delete_removes_only_the_pins() {
 }
 
 /// A pin's Position property and its keys' times (seconds).
-fn pin_keys(h: &Harness<'_, EffectcraftApp>, layer: u64, pin: u64) -> (u64, Vec<f64>) {
+fn pin_keys(h: &Harness<'_, EffectsApp>, layer: u64, pin: u64) -> (u64, Vec<f64>) {
     let l = h.state().session.active_comp().unwrap().layer(LayerId(layer)).unwrap().clone();
     let pos = l.props.find_group(pin).unwrap().get("position").unwrap().clone();
     (pos.uid, pos.keys.iter().map(|k| k.time.seconds()).collect())
 }
 
 /// The keys the Timeline draws for a property, left to right.
-fn timeline_keys(h: &Harness<'_, EffectcraftApp>, prop: u64) -> Vec<Pos2> {
+fn timeline_keys(h: &Harness<'_, EffectsApp>, prop: u64) -> Vec<Pos2> {
     let mut ks: Vec<Pos2> =
         h.state().auto.query(&format!("timeline.key.{prop}.")).iter().map(|e| pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0)).collect();
     ks.sort_by(|a, b| a.x.total_cmp(&b.x));
@@ -1214,7 +1214,7 @@ fn timeline_keys(h: &Harness<'_, EffectcraftApp>, prop: u64) -> Vec<Pos2> {
 }
 
 /// The pin the last click placed (placing a pin selects it).
-fn placed_pin(h: &Harness<'_, EffectcraftApp>) -> u64 {
+fn placed_pin(h: &Harness<'_, EffectsApp>) -> u64 {
     h.state().session.state.selected_props.last().map(|(_, u)| *u).unwrap()
 }
 
@@ -1303,11 +1303,11 @@ fn puppet_pins_go_on_the_deformed_mesh_and_the_tool_stays_on_the_rigged_layer() 
     s.execute("puppet.movePin", json!({"layer": boxl.0, "pin": right, "position": [140, 40]})).unwrap();
     h.state_mut().ui.tool = Tool::Puppet;
     h.run_steps(3);
-    let pins = |h: &mut Harness<'_, EffectcraftApp>| {
+    let pins = |h: &mut Harness<'_, EffectsApp>| {
         let info = h.state_mut().session.execute("puppet.info", json!({"layer": boxl.0})).unwrap();
         info["meshes"].as_array().unwrap().iter().map(|m| m["pins"].as_array().unwrap().len()).sum::<usize>()
     };
-    let rigged = |h: &Harness<'_, EffectcraftApp>, l: LayerId| {
+    let rigged = |h: &Harness<'_, EffectsApp>, l: LayerId| {
         h.state().session.active_comp().unwrap().layer(l).unwrap().effects().is_some_and(|f| f.groups().next().is_some())
     };
     // Comp (380, 180) is layer (100, 40): past the Box's own edge, over the Plate, on the
@@ -1326,7 +1326,7 @@ fn puppet_pins_go_on_the_deformed_mesh_and_the_tool_stays_on_the_rigged_layer() 
 }
 
 /// Filled circles painted this frame (flattening nested shape lists).
-fn circles(h: &Harness<'_, EffectcraftApp>) -> Vec<egui::epaint::CircleShape> {
+fn circles(h: &Harness<'_, EffectsApp>) -> Vec<egui::epaint::CircleShape> {
     fn walk(s: &egui::Shape, out: &mut Vec<egui::epaint::CircleShape>) {
         match s {
             egui::Shape::Circle(c) => out.push(*c),
@@ -1408,7 +1408,7 @@ fn puppet_marquee_selects_pins_and_alt_drag_works_over_the_art() {
 }
 
 /// Drag with `button` from `from` to `to` in steps, then release.
-fn drag_with(h: &mut Harness<'_, EffectcraftApp>, button: egui::PointerButton, from: Pos2, to: Pos2) {
+fn drag_with(h: &mut Harness<'_, EffectsApp>, button: egui::PointerButton, from: Pos2, to: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(from));
     h.input_mut().events.push(Event::PointerButton { pos: from, button, pressed: true, modifiers: Default::default() });
     h.step();
@@ -1440,7 +1440,7 @@ fn middle_and_hand_drags_pan_the_viewer_and_the_pan_stays_after_release() {
 }
 
 /// A Spacebar press or release (`repeat`: the keyboard's auto-repeat while it is held).
-fn space(h: &mut Harness<'_, EffectcraftApp>, pressed: bool, repeat: bool) {
+fn space(h: &mut Harness<'_, EffectsApp>, pressed: bool, repeat: bool) {
     h.input_mut().events.push(Event::Key { key: egui::Key::Space, physical_key: None, pressed, repeat, modifiers: Default::default() });
     h.step();
 }
@@ -1451,8 +1451,8 @@ fn space(h: &mut Harness<'_, EffectcraftApp>, pressed: bool, repeat: bool) {
 #[test]
 fn spacebar_taps_preview_and_held_spacebar_pans_the_viewer() {
     let mut h = harness();
-    let playing = |h: &Harness<'_, EffectcraftApp>| h.state().playback.playing;
-    let tap = |h: &mut Harness<'_, EffectcraftApp>| {
+    let playing = |h: &Harness<'_, EffectsApp>| h.state().playback.playing;
+    let tap = |h: &mut Harness<'_, EffectsApp>| {
         space(h, true, false);
         space(h, false, false);
     };
@@ -1473,7 +1473,7 @@ fn spacebar_taps_preview_and_held_spacebar_pans_the_viewer() {
     tap(&mut h);
 
     // Held and dragged: pans the viewer (the Box under the pointer stays), and plays nothing.
-    let box_pos = |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layers[0].props.prop("transform/position").unwrap().value.clone();
+    let box_pos = |h: &Harness<'_, EffectsApp>| h.state().session.active_comp().unwrap().layers[0].props.prop("transform/position").unwrap().value.clone();
     let (pos, before) = (box_pos(&h), h.state().ui.viewer.pan);
     let c = rect(&h, "viewer.comp").center();
     space(&mut h, true, false);
@@ -1503,9 +1503,9 @@ fn spacebar_taps_preview_and_held_spacebar_pans_the_viewer() {
 #[test]
 fn timeline_rows_drag_to_reorder_layers() {
     let mut h = harness();
-    let names = |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layers.iter().map(|l| l.name.clone()).collect::<Vec<_>>();
+    let names = |h: &Harness<'_, EffectsApp>| h.state().session.active_comp().unwrap().layers.iter().map(|l| l.name.clone()).collect::<Vec<_>>();
     assert_eq!(names(&h), ["Box", "Plate"]);
-    let row = |h: &Harness<'_, EffectcraftApp>, name: &str| {
+    let row = |h: &Harness<'_, EffectsApp>, name: &str| {
         let l = h.state().session.active_comp().unwrap().layers.iter().find(|l| l.name == name).unwrap().id.0;
         rect(h, &format!("timeline.layer.{l}.row"))
     };
@@ -1526,22 +1526,22 @@ fn timeline_rows_drag_to_reorder_layers() {
     assert_eq!(names(&h), ["Box", "Plate"]);
 }
 
-fn layer_id(h: &Harness<'_, EffectcraftApp>, name: &str) -> u64 {
+fn layer_id(h: &Harness<'_, EffectsApp>, name: &str) -> u64 {
     h.state().session.active_comp().unwrap().layers.iter().find(|l| l.name == name).unwrap().id.0
 }
 
 /// Uid of a layer's property by match path (`transform/position`).
-fn prop_uid(h: &Harness<'_, EffectcraftApp>, layer: &str, path: &str) -> u64 {
+fn prop_uid(h: &Harness<'_, EffectsApp>, layer: &str, path: &str) -> u64 {
     let id = layer_id(h, layer);
     h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().props.prop(path).unwrap().uid
 }
 
 /// Is the property's row on screen in the Timeline?
-fn shown(h: &Harness<'_, EffectcraftApp>, uid: u64) -> bool {
+fn shown(h: &Harness<'_, EffectsApp>, uid: u64) -> bool {
     h.state().auto.find(&format!("timeline.prop.{uid}.stopwatch")).is_some()
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: egui::Key, modifiers: egui::Modifiers) {
+fn key(h: &mut Harness<'_, EffectsApp>, key: egui::Key, modifiers: egui::Modifiers) {
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers });
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers });
     h.run_steps(2);
@@ -1596,7 +1596,7 @@ fn command_clicking_a_group_twirl_opens_its_whole_tree() {
     let at = rect(&h, &format!("timeline.layer.{id}.twirl")).center();
     click(&mut h, at);
     let at = rect(&h, &format!("timeline.group.{effects}.twirl")).center();
-    let cmd_click = |h: &mut Harness<'_, EffectcraftApp>| {
+    let cmd_click = |h: &mut Harness<'_, EffectsApp>| {
         h.input_mut().events.push(Event::ModifiersChanged(egui::Modifiers::COMMAND));
         h.input_mut().events.push(Event::PointerMoved(at));
         h.step();
@@ -1625,8 +1625,8 @@ fn timeline_rename_commits_on_enter_and_on_click_away() {
     let mut h = harness();
     h.state_mut().session.execute("layer.newNull", json!({"name": "Ctrl"})).unwrap();
     let id = layer_id(&h, "Ctrl");
-    let name = |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().name.clone();
-    let rename = |h: &mut Harness<'_, EffectcraftApp>| {
+    let name = |h: &Harness<'_, EffectsApp>| h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().name.clone();
+    let rename = |h: &mut Harness<'_, EffectsApp>| {
         h.state_mut().session.execute("layer.select", json!({"layers": [id]})).unwrap();
         h.run_steps(2);
         key(h, egui::Key::Enter, Default::default());
@@ -1659,7 +1659,7 @@ fn timeline_rename_commits_on_enter_and_on_click_away() {
 }
 
 /// Press `k` twice within one frame (a quick double press: the harness' frames are long).
-fn key_twice(h: &mut Harness<'_, EffectcraftApp>, k: egui::Key) {
+fn key_twice(h: &mut Harness<'_, EffectsApp>, k: egui::Key) {
     for _ in 0..2 {
         h.input_mut().events.push(Event::Key { key: k, physical_key: None, pressed: true, repeat: false, modifiers: Default::default() });
         h.input_mut().events.push(Event::Key { key: k, physical_key: None, pressed: false, repeat: false, modifiers: Default::default() });
@@ -1672,8 +1672,8 @@ fn property_shortcuts_reveal_and_key_transform_properties() {
     let mut h = harness();
     h.state_mut().session.execute("layer.select", json!({"layers": ["Box"]})).unwrap();
     h.run_steps(2);
-    let t = |h: &Harness<'_, EffectcraftApp>, p: &str| shown(h, prop_uid(h, "Box", &format!("transform/{p}")));
-    let only = |h: &Harness<'_, EffectcraftApp>, want: &[&str]| {
+    let t = |h: &Harness<'_, EffectsApp>, p: &str| shown(h, prop_uid(h, "Box", &format!("transform/{p}")));
+    let only = |h: &Harness<'_, EffectsApp>, want: &[&str]| {
         for p in ["anchor", "position", "scale", "rotation", "opacity"] {
             assert_eq!(t(h, p), want.contains(&p), "{p} shown? want {want:?}");
         }
@@ -1691,7 +1691,7 @@ fn property_shortcuts_reveal_and_key_transform_properties() {
     key(&mut h, egui::Key::R, none);
     only(&h, &["rotation"]);
     // Alt+Shift+P: a Position keyframe at the current time; again removes it.
-    let pos_keys = |h: &Harness<'_, EffectcraftApp>| {
+    let pos_keys = |h: &Harness<'_, EffectsApp>| {
         let id = layer_id(h, "Box");
         h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().props.prop("transform/position").unwrap().keys.len()
     };
@@ -1729,7 +1729,7 @@ fn double_press_shortcuts_reveal_their_second_set() {
     h.state_mut().session.execute("layer.select", json!({"layers": ["Box"]})).unwrap();
     h.state_mut().session.execute("prop.setExpression", json!({"layer": "Box", "path": "transform/scale", "expression": "value"})).unwrap();
     h.run_steps(2);
-    let reveal = |h: &Harness<'_, EffectcraftApp>| h.state().ui.timeline.reveal.clone();
+    let reveal = |h: &Harness<'_, EffectsApp>| h.state().ui.timeline.reveal.clone();
     // EE: properties with expressions (Scale), replacing E's effects.
     key_twice(&mut h, egui::Key::E);
     assert_eq!(reveal(&h), vec!["expressions"]);
@@ -1756,7 +1756,7 @@ fn double_press_shortcuts_reveal_their_second_set() {
 }
 
 /// Drag through `path` with `modifiers` held (press at the first point, release at the last).
-fn drag_path(h: &mut Harness<'_, EffectcraftApp>, path: &[Pos2], modifiers: egui::Modifiers) {
+fn drag_path(h: &mut Harness<'_, EffectsApp>, path: &[Pos2], modifiers: egui::Modifiers) {
     h.input_mut().events.push(Event::ModifiersChanged(modifiers));
     h.input_mut().events.push(Event::PointerMoved(path[0]));
     h.input_mut().events.push(Event::PointerButton { pos: path[0], button: egui::PointerButton::Primary, pressed: true, modifiers });
@@ -1782,10 +1782,10 @@ fn drag_path(h: &mut Harness<'_, EffectcraftApp>, path: &[Pos2], modifiers: egui
 fn handle_drags_scale_about_the_anchor_and_follow_the_pointer() {
     let mut h = harness();
     let box_id = h.state().session.active_comp().unwrap().layers[0].id;
-    let set = |h: &mut Harness<'_, EffectcraftApp>, path: &str, v: serde_json::Value| {
+    let set = |h: &mut Harness<'_, EffectsApp>, path: &str, v: serde_json::Value| {
         h.state_mut().session.execute("prop.set", json!({"layer": box_id.0, "path": path, "value": v})).unwrap();
     };
-    let scale = |h: &Harness<'_, EffectcraftApp>| {
+    let scale = |h: &Harness<'_, EffectsApp>| {
         let l = h.state().session.active_comp().unwrap().layer(box_id).unwrap().clone();
         l.props.prop("transform/scale").unwrap().value.as_vec3()
     };
@@ -1838,7 +1838,7 @@ fn handle_drags_scale_every_selected_layer() {
     let mut h = harness();
     let layers = h.state().session.active_comp().unwrap().layers.iter().map(|l| l.id).collect::<Vec<_>>();
     let (box_id, plate) = (layers[0], layers[1]);
-    let scale = |h: &Harness<'_, EffectcraftApp>, id: LayerId| {
+    let scale = |h: &Harness<'_, EffectsApp>, id: LayerId| {
         let l = h.state().session.active_comp().unwrap().layer(id).unwrap().clone();
         l.props.prop("transform/scale").unwrap().value.as_vec3()
     };
@@ -1864,12 +1864,12 @@ fn handle_drags_scale_every_selected_layer() {
 fn handle_drags_snap_to_the_comp_edges() {
     let mut h = harness();
     let box_id = h.state().session.active_comp().unwrap().layers[0].id.0;
-    let scale = |h: &Harness<'_, EffectcraftApp>, id: u64| {
+    let scale = |h: &Harness<'_, EffectsApp>, id: u64| {
         let l = h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().clone();
         l.props.prop("transform/scale").unwrap().value.as_vec3()
     };
     let close = |a: [f64; 3], b: [f64; 2]| (a[0] - b[0]).abs() < 0.01 && (a[1] - b[1]).abs() < 0.01;
-    let drag_handle = |h: &mut Harness<'_, EffectcraftApp>, id: u64, handle: usize, to: [f32; 2], mods: egui::Modifiers| {
+    let drag_handle = |h: &mut Harness<'_, EffectsApp>, id: u64, handle: usize, to: [f32; 2], mods: egui::Modifiers| {
         h.state_mut().session.execute("prop.set", json!({"layer": id, "path": "transform/scale", "value": [100, 100, 100]})).unwrap();
         h.state_mut().session.execute("layer.select", json!({"layers": [id]})).unwrap();
         h.run_steps(2);
@@ -1910,11 +1910,11 @@ fn handle_cursors_follow_each_handle_and_the_layer_rotation() {
     use egui::CursorIcon::{ResizeHorizontal as H, ResizeNeSw as NeSw, ResizeNwSe as NwSe, ResizeVertical as V};
     let mut h = harness();
     let box_id = h.state().session.active_comp().unwrap().layers[0].id.0;
-    let set = |h: &mut Harness<'_, EffectcraftApp>, path: &str, v: serde_json::Value| {
+    let set = |h: &mut Harness<'_, EffectsApp>, path: &str, v: serde_json::Value| {
         h.state_mut().session.execute("prop.set", json!({"layer": box_id, "path": path, "value": v})).unwrap();
         h.run_steps(2);
     };
-    let cursors = |h: &mut Harness<'_, EffectcraftApp>| {
+    let cursors = |h: &mut Harness<'_, EffectsApp>| {
         (0..8)
             .map(|i| {
                 let c = rect(h, &format!("viewer.handle.{box_id}.{i}")).center();
@@ -1947,7 +1947,7 @@ fn arrow_keys_nudge_the_selected_layer_at_the_viewer_magnification() {
     let at = screen(&h, [100.0, 100.0]);
     click(&mut h, at);
     assert_eq!(h.state().session.state.selected_layers, vec![box_id]);
-    let pos = |h: &Harness<'_, EffectcraftApp>| {
+    let pos = |h: &Harness<'_, EffectsApp>| {
         h.state().session.active_comp().unwrap().layer(box_id).unwrap().props.prop("transform/position").unwrap().value.as_vec3()
     };
     let ppp = h.ctx.pixels_per_point();
@@ -1972,11 +1972,11 @@ fn full_resolution_frames_wider_than_the_texture_limit_fit() {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Wide", "width": 2400, "height": 400, "duration": 1})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080"})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     // (egui's font atlas needs 1024.)
     h.input_mut().max_texture_side = Some(1024);
     h.state_mut().session.execute("view.res.full", json!({})).unwrap();
-    let full = |h: &mut Harness<'_, EffectcraftApp>| h.state_mut().viewer_pixels().is_some_and(|px| px.size == [2400, 400]);
+    let full = |h: &mut Harness<'_, EffectsApp>| h.state_mut().viewer_pixels().is_some_and(|px| px.size == [2400, 400]);
     for _ in 0..400 {
         h.step();
         if full(&mut h) {
@@ -2009,7 +2009,7 @@ fn roto_brush_ctrl_drag_resizes_the_brush() {
     h.run_steps(2);
     let dia = h.state().session.state.roto.diameter;
     assert!((dia - 40.0).abs() <= 1.0, "a 20 px drag makes a 40 px brush: {dia}");
-    let strokes = |h: &Harness<'_, EffectcraftApp>| {
+    let strokes = |h: &Harness<'_, EffectsApp>| {
         let l = h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().clone();
         let roto = redrob_effects_engine::effects::roto::ID;
         let g = l
@@ -2038,7 +2038,7 @@ fn vertex_tools_edit_motion_path_keyframes() {
     s.execute("prop.addKey", json!({"layer": box_id.0, "path": "transform/position", "time": 2.0, "value": [500, 100, 0]})).unwrap();
     s.execute("view.snapping", json!({"value": false})).unwrap();
     s.set_time(redrob_effects_engine::time::Tick::from_seconds_f64(3.0));
-    let keys = |h: &Harness<'_, EffectcraftApp>| {
+    let keys = |h: &Harness<'_, EffectsApp>| {
         h.state().session.active_comp().unwrap().layer(box_id).unwrap().props.prop("transform/position").unwrap().keys.clone()
     };
     h.state_mut().ui.tool = Tool::PenAdd;
@@ -2079,7 +2079,7 @@ fn frame_sits_on_the_physical_pixel_grid() {
     for ppp in [1.0f32, 1.25, 1.5] {
         let mut s = Session::default();
         s.execute("comp.new", json!({"name": "Grid", "width": 301, "height": 201, "duration": 1})).unwrap();
-        let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).with_pixels_per_point(ppp).build_eframe(move |_| EffectcraftApp::new(s));
+        let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).with_pixels_per_point(ppp).build_eframe(move |_| EffectsApp::new(s));
         h.run_steps(3);
         for (mag, pan) in [(1.0f32, [0.3f32, 0.37]), (2.0, [-0.45, 0.2])] {
             h.state_mut().ui.viewer.zoom = Some(mag / ppp);
@@ -2099,7 +2099,7 @@ fn frame_sits_on_the_physical_pixel_grid() {
 #[test]
 fn fit_up_to_100_follows_the_maximized_panel() {
     use redrob_effects_ui_egui::dock::PanelKind;
-    let pick = |h: &mut Harness<'_, EffectcraftApp>| {
+    let pick = |h: &mut Harness<'_, EffectsApp>| {
         let at = rect(h, "viewer.magnification").center();
         click(h, at);
         let at = rect(h, "viewer.magnification.1").center();
@@ -2112,7 +2112,7 @@ fn fit_up_to_100_follows_the_maximized_panel() {
     let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| {
         let mut s = Session::default();
         s.execute("comp.new", json!({"name": "Big", "width": 3840, "height": 2160, "duration": 4})).unwrap();
-        EffectcraftApp::new(s)
+        EffectsApp::new(s)
     });
     h.run_steps(3);
     pick(&mut h);
@@ -2146,7 +2146,7 @@ fn rotate_tool_counts_revolutions_both_ways() {
     h.state_mut().session.execute("layer.select", json!({"layers": [box_id.0]})).unwrap();
     h.state_mut().ui.tool = Tool::Rotate;
     h.run_steps(2);
-    let rotation = |h: &Harness<'_, EffectcraftApp>| {
+    let rotation = |h: &Harness<'_, EffectsApp>| {
         h.state().session.active_comp().unwrap().layer(box_id).unwrap().props.prop("transform/rotation").unwrap().value.as_f64()
     };
     let center = screen(&h, [320.0, 180.0]);
@@ -2160,7 +2160,7 @@ fn rotate_tool_counts_revolutions_both_ways() {
     h.input_mut().events.push(Event::PointerButton { pos: press, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
     h.step();
     let mut seen = vec![];
-    let mut walk = |h: &mut Harness<'_, EffectcraftApp>, degs: Vec<f64>| {
+    let mut walk = |h: &mut Harness<'_, EffectsApp>, degs: Vec<f64>| {
         for d in degs {
             h.input_mut().events.push(Event::PointerMoved(at(d)));
             h.step();
@@ -2197,7 +2197,7 @@ fn mask_shift_click_toggles_vertices() {
     h.state_mut().ui.tool = Tool::Selection;
     h.run_steps(2);
     let (p0, p1) = (screen(&h, [100.0, 60.0]), screen(&h, [500.0, 60.0]));
-    let shift_click = |h: &mut Harness<'_, EffectcraftApp>, p: Pos2| {
+    let shift_click = |h: &mut Harness<'_, EffectsApp>, p: Pos2| {
         h.input_mut().events.push(Event::ModifiersChanged(Modifiers::SHIFT));
         h.step();
         h.input_mut().events.push(Event::PointerMoved(p));
@@ -2241,7 +2241,7 @@ fn mask_marquee_selects_vertices() {
         (l.props.prop("transform/position").unwrap().value.as_vec3(), l.props.prop("transform/anchor").unwrap().value.as_vec3())
     };
     let v0 = [10.0 - aa[0] + pp[0], 10.0 - aa[1] + pp[1]];
-    let pos = |h: &Harness<'_, EffectcraftApp>| {
+    let pos = |h: &Harness<'_, EffectsApp>| {
         h.state().session.active_comp().unwrap().layer(LayerId(bx)).unwrap().props.prop("transform/position").unwrap().value.as_vec3()
     };
     let before = pos(&h);

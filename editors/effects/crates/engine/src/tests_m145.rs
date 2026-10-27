@@ -480,7 +480,7 @@ fn compatibility_report_and_logging() {
     let r = s.execute("help.enableLogging", json!({"on": true})).unwrap();
     let file = PathBuf::from(r["path"].as_str().unwrap());
     assert!(file.starts_with(&dir));
-    log::warn!(target: "effectcraft::tests", "hello log");
+    log::warn!(target: "redrob_effects::tests", "hello log");
     assert!(std::fs::read_to_string(&file).unwrap().contains("logging enabled"));
     assert_eq!(crate::menus::checked(&s, "help.enableLogging", &Value::Null), Some(true));
     let r = s.execute("help.revealLogFile", json!({})).unwrap();

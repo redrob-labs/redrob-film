@@ -28,6 +28,7 @@ use serde_json::{Value, json};
 use crate::commands::{CommandSpec, always, bad, clip_p, has_seq, str_p};
 use crate::{EngineError, Result, Session};
 
+// legacy: the format id in saved effect-preset files
 pub const FILE_FORMAT: &str = "filmcraft.effect-presets";
 const LIBRARY_FILE: &str = "effect-presets.json";
 

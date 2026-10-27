@@ -11,7 +11,7 @@ use crate::Session;
 use crate::render::RenderOpts;
 
 fn tmp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("effectcraft-psd-tests-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("redrob-effects-psd-tests-{}", std::process::id()));
     std::fs::create_dir_all(&d).unwrap();
     d.join(name).to_string_lossy().to_string()
 }

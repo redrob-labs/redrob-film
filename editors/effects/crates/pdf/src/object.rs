@@ -307,15 +307,15 @@ pub fn parse_num(w: &[u8]) -> Option<f64> {
 /// The most bytes one stream filter may decode to. Deflate expands up to about 1000:1, so
 /// unbounded, a few MB of PDF ask for gigabytes and a failed allocation aborts the process. The
 /// largest image `image::decode` accepts (64 Mi pixels) of four 16-bit components is 512 MiB;
-/// 1 GiB leaves room for more components and is PdfCraft's ceiling for one stream. 32-bit
+/// 1 GiB leaves room for more components. 32-bit
 /// targets (the web build) get a quarter: their whole address space is 4 GiB, and the inflater's
 /// growing buffer can reserve about twice the limit.
 const MAX_INFLATED: usize = if cfg!(target_pointer_width = "32") { 256 << 20 } else { 1 << 30 };
 
 /// The tighter bound for object streams, which [`File::parse`] decodes eagerly (all of them,
 /// before any page is chosen). They hold only other objects' dictionaries, arrays, numbers and
-/// strings, so real ones are far smaller; PdfCraft uses 256 MiB for the object and
-/// cross-reference streams it decodes while loading. A quarter on 32-bit targets, as above.
+/// strings, so real ones are far smaller: 256 MiB for the object and cross-reference streams
+/// decoded while loading. A quarter on 32-bit targets, as above.
 const MAX_OBJECT_STREAM: usize = if cfg!(target_pointer_width = "32") { 64 << 20 } else { 256 << 20 };
 
 /// Decode a stream's data through its `/Filter` chain. Unknown filters (images: DCT, JPX, CCITT,

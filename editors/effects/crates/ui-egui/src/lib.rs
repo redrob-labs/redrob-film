@@ -1,4 +1,4 @@
-//! The EffectCraft egui frontend (swappable): docking panels, the Composition viewer, the
+//! The Redrob Effects egui frontend (swappable): docking panels, the Composition viewer, the
 //! Timeline with property twirl-downs and keyframes, Effect Controls, Effects & Presets, Preview,
 //! Info, Character/Paragraph/Align, menus, dialogs and the control channel.
 //!
@@ -49,7 +49,7 @@ use theme::Tokens;
 
 const SCREENSHOT_TIMEOUT_S: f64 = 4.0;
 /// Seconds without a project change before paused prefetch resumes (see
-/// [`EffectcraftApp::editing`]).
+/// [`EffectsApp::editing`]).
 const EDIT_QUIET: f64 = 0.3;
 
 /// Modal dialogs.
@@ -81,7 +81,7 @@ pub enum Dialog {
     TrackTarget,
     /// Tracker ▸ Apply (Transform / Stabilize): Apply Dimensions.
     TrackApply,
-    /// Crash recovery: offer the latest auto-save (`EffectcraftApp::recovery`).
+    /// Crash recovery: offer the latest auto-save (`EffectsApp::recovery`).
     Recovery,
     /// Composition/Layer Marker (double-click a marker).
     Marker,
@@ -110,7 +110,7 @@ pub type SystemThemeFn = Box<dyn Fn(&egui::Context) -> Option<egui::Theme>>;
 pub enum FileDialog {
     /// Files to open or import with these extensions; several when `many`.
     Open { exts: Vec<String>, many: bool },
-    /// An EffectCraft project to open.
+    /// A Redrob Effects project to open.
     OpenProject,
     /// A folder.
     Folder,
@@ -257,7 +257,7 @@ impl Playback {
     }
 }
 
-pub struct EffectcraftApp {
+pub struct EffectsApp {
     pub session: Session,
     pub ui: UiState,
     workspace_store: workspace_state::WorkspaceStore,
@@ -299,7 +299,7 @@ pub struct EffectcraftApp {
     /// The texture the viewer draws and its frame key (CPU or GPU frame).
     pub(crate) viewer_shown: Option<(egui::TextureId, FrameKey)>,
     /// Last displayed image (Info panel colour, eyedroppers, histograms). GPU frames fill it on
-    /// demand ([`EffectcraftApp::viewer_pixels`]).
+    /// demand ([`EffectsApp::viewer_pixels`]).
     pub(crate) viewer_image: Option<Arc<egui::ColorImage>>,
     /// wasm32: an asynchronous readback of a GPU viewer frame (key asked for, result).
     viewer_readback: (Option<FrameKey>, Arc<std::sync::Mutex<Option<(FrameKey, Arc<egui::ColorImage>)>>>),
@@ -363,11 +363,11 @@ struct SavedWorkspaces {
     floating: std::collections::BTreeMap<String, Vec<dock::Floating>>,
 }
 
-impl EffectcraftApp {
+impl EffectsApp {
     pub fn new(session: Session) -> Self {
         let mut ui = UiState::default();
         let workspace_store = workspace_state::WorkspaceStore::load(session.config.as_deref(), &mut ui);
-        EffectcraftApp {
+        EffectsApp {
             session,
             ui,
             workspace_store,
@@ -429,7 +429,7 @@ impl EffectcraftApp {
         .with_ui_commands()
     }
 
-    /// Keep the saved workspaces for the next session (see [`EffectcraftApp::new`]): After
+    /// Keep the saved workspaces for the next session (see [`EffectsApp::new`]): After
     /// Effects' saved workspaces last until they are deleted (#320). `Err` when they weren't
     /// written (#696): the change applies for this session and a later save retries it, but until
     /// then a restart brings back what is on disk.
@@ -1765,7 +1765,7 @@ impl EffectcraftApp {
     }
 }
 
-impl EffectcraftApp {
+impl EffectsApp {
     /// Scripts' `app.scheduleTask` tasks that are due (repeating ones keep a ScriptUI panel
     /// fresh): errors as a toast, the last line printed in the status bar, and a repaint when
     /// the next one is due.
@@ -1847,7 +1847,7 @@ impl EffectcraftApp {
     }
 }
 
-impl eframe::App for EffectcraftApp {
+impl eframe::App for EffectsApp {
     fn on_exit(&mut self) {
         self.save_workspace_state();
         // Clean exit: no crash recovery next launch (unless the graphics device was lost with
@@ -1934,7 +1934,7 @@ impl eframe::App for EffectcraftApp {
 }
 
 /// Advance playback with the viewer's scale (called by the viewer panel each frame).
-pub(crate) fn tick_playback(app: &mut EffectcraftApp, ctx: &egui::Context, scale: f64) {
+pub(crate) fn tick_playback(app: &mut EffectsApp, ctx: &egui::Context, scale: f64) {
     app.advance_playback(ctx, scale);
 }
 
@@ -2024,7 +2024,7 @@ mod copy_frame_tests {
         let mut session = Session::default();
         session.execute("comp.new", json!({"name": "Copy", "width": 8, "height": 6, "duration": 1})).unwrap();
         session.execute("layer.newSolid", json!({"color": "#ff0000"})).unwrap();
-        let mut app = EffectcraftApp::new(session);
+        let mut app = EffectsApp::new(session);
         let ctx = egui::Context::default();
         let mut output = ctx.run_ui(egui::RawInput::default(), |ui| {
             crate::menus::invoke(&mut app, ui.ctx(), "comp.copyFrame", json!({})).unwrap();
@@ -2064,7 +2064,7 @@ mod gpu_failure_tests {
         let project = session.project.clone();
         let revision = session.revision;
         let prefs = serde_json::to_value(&session.prefs).unwrap();
-        let mut app = EffectcraftApp::new(session);
+        let mut app = EffectsApp::new(session);
         let ctx = egui::Context::default();
         let bridge = gpu_failure::GpuFailureBridge::new(&ctx);
         app.set_gpu_failure_bridge(bridge.clone());
@@ -2095,8 +2095,8 @@ mod appearance_tests {
     use super::*;
     use crate::theme::ThemeKind;
 
-    fn app() -> EffectcraftApp {
-        EffectcraftApp::new(redrob_effects_engine::Session::default())
+    fn app() -> EffectsApp {
+        EffectsApp::new(redrob_effects_engine::Session::default())
     }
 
     /// The Tools bar's appearance button: Sync with System, Light, Dark, then Sync with System

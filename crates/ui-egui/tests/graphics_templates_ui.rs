@@ -7,12 +7,12 @@ use std::sync::mpsc::{Sender, channel};
 
 use egui_kittest::Harness;
 use redrob_film_engine::Session;
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
     shots: Option<std::path::PathBuf>,
 }
@@ -21,11 +21,11 @@ impl Driver {
     fn demo(data: &str) -> Self {
         let mut session = Session::default();
         session.execute("file.openDemoProject", json!({})).expect("demo project");
-        let dir = std::env::temp_dir().join(format!("filmcraft-gfx-ui-{data}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("redrob-film-gfx-ui-{data}-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         session.prefs_path = Some(dir.join("prefs.json"));
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = FilmApp::new(session).with_control(rx);
         let shots = std::env::var_os("REDROB_FILM_UI_SHOTS").map(std::path::PathBuf::from);
         let mut b = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000);
         if shots.is_some() {

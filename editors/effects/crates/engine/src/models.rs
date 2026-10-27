@@ -8,7 +8,7 @@
 //!
 //! Weights are never bundled: the install stays small and nothing is fetched unless asked for.
 //! Downloads use the system's `curl` (shipped with Windows 10+, macOS and most Linux systems),
-//! so no networking code is linked into EffectCraft; without it, the file can be downloaded in a
+//! so no networking code is linked into Redrob Effects; without it, the file can be downloaded in a
 //! browser and installed with Install from File. The browser build uses the built-in engines
 //! only, for now.
 

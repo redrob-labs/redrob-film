@@ -1,4 +1,4 @@
-//! Footage import for EffectCraft (layer **L3**: it implements `redrob_effects_render::FootageSource`).
+//! Footage import for Redrob Effects (layer **L3**: it implements `redrob_effects_render::FootageSource`).
 //!
 //! - [`probe`] / [`probe_bytes`]: inspect a file and describe it as an [`redrob_effects_project::Footage`]
 //!   (video, still, image sequence or audio; size, rate, duration, streams, codec, alpha).
@@ -8,8 +8,8 @@
 //!   sequential playback. Also audio ([`MediaPool::audio_samples`]) and thumbnails.
 //!
 //! Video containers (MP4/MOV, Matroska/WebM, MXF OP1a / OP-Atom) and codecs (H.264, HEVC, VP9,
-//! AV1, ProRes, DNxHD, MPEG-2, MJPEG; AAC, Opus, PCM, MP3/FLAC/Vorbis) come from FilmCraft's pure-Rust crates (git dependency,
-//! pinned; `plan/adr/0001`). FilmCraft types never leave this crate. Stills use the `image` crate
+//! AV1, ProRes, DNxHD, MPEG-2, MJPEG; AAC, Opus, PCM, MP3/FLAC/Vorbis) come from Redrob Film's pure-Rust crates (git dependency,
+//! pinned; `plan/adr/0001`). Redrob Film types never leave this crate. Stills use the `image` crate
 //! (PNG, JPEG, GIF, WebP, TIFF, BMP, OpenEXR, Targa, Radiance HDR); Photoshop documents (merged image or one layer) come
 //! from `redrob-effects-psd` and SVG from `redrob-effects-svg` (rasterised at any scale).
 

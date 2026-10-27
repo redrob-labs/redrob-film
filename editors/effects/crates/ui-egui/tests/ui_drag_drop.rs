@@ -13,14 +13,14 @@ use egui_kittest::kittest::Queryable;
 use redrob_effects_engine::Session;
 use redrob_effects_engine::keyframe::Value as KV;
 use redrob_effects_engine::time::Tick;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::dock::PanelKind;
 use redrob_effects_ui_egui::panels::viewer::{comp_to_screen, last_fit};
 use serde_json::json;
 
 /// Comp "Main" (4 s at 30 fps, current time 1 s) with solids Top, Middle and Bottom, and comp
 /// "Clip" in the Project panel to drag in.
-fn harness() -> (Harness<'static, EffectcraftApp>, u64) {
+fn harness() -> (Harness<'static, EffectsApp>, u64) {
     let mut s = Session::default();
     let clip = s.execute("comp.new", json!({"name": "Clip", "width": 160, "height": 90, "frameRate": 30, "duration": 1})).unwrap()["comp"].as_u64().unwrap();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "frameRate": 30, "duration": 4})).unwrap();
@@ -28,18 +28,18 @@ fn harness() -> (Harness<'static, EffectcraftApp>, u64) {
         s.execute("layer.newSolid", json!({"name": name, "color": "#406080"})).unwrap();
     }
     s.execute("time.set", json!({"time": 1.0})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     (h, clip)
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
 /// Press on `from`, move to `to` in steps, release there (with `modifiers` held).
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, modifiers: Modifiers) {
+fn drag(h: &mut Harness<'_, EffectsApp>, from: Pos2, to: Pos2, modifiers: Modifiers) {
     h.event(Event::PointerMoved(from));
     h.step();
     h.event(Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -56,15 +56,15 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, modifiers: Mo
 }
 
 /// Layer names top to bottom, and the In point of `name`.
-fn stack(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn stack(h: &Harness<'_, EffectsApp>) -> Vec<String> {
     h.state().session.active_comp().unwrap().layers.iter().map(|l| l.name.clone()).collect()
 }
 
-fn in_point(h: &Harness<'_, EffectcraftApp>, index: usize) -> f64 {
+fn in_point(h: &Harness<'_, EffectsApp>, index: usize) -> f64 {
     h.state().session.active_comp().unwrap().layers[index].in_point.seconds()
 }
 
-fn layer_id(h: &Harness<'_, EffectcraftApp>, name: &str) -> u64 {
+fn layer_id(h: &Harness<'_, EffectsApp>, name: &str) -> u64 {
     h.state().session.active_comp().unwrap().layers.iter().find(|l| l.name == name).unwrap().id.0
 }
 
@@ -188,7 +188,7 @@ fn effects_dropped_on_the_viewer_go_on_the_layer_under_the_pointer() {
 #[test]
 fn project_items_dropped_on_new_comp_make_a_composition() {
     let (mut h, clip) = harness();
-    let comps = |h: &Harness<'_, EffectcraftApp>| h.state().session.project.comps().count();
+    let comps = |h: &Harness<'_, EffectsApp>| h.state().session.project.comps().count();
     let before = comps(&h);
     let item = rect(&h, &format!("project.item.{clip}.name")).center();
     let button = rect(&h, "project.newComp").center();
@@ -220,7 +220,7 @@ fn project_footage_dropped_on_empty_timeline_creates_first_comp() {
         s.execute("file.importPlaceholder", json!({"name": "Landscape.png", "width": 640, "height": 360, "frameRate": 24, "duration": 5})).unwrap()["item"]
             .as_u64()
             .unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     assert!(h.state().session.active_comp().is_none());
     let from = rect(&h, &format!("project.item.{footage}.name")).center();
@@ -243,7 +243,7 @@ fn multiple_selected_footage_dropped_on_empty_timeline_asks_how_to_create_comps(
     let first = s.execute("file.importPlaceholder", json!({"name": "First.png", "width": 160, "height": 90})).unwrap()["item"].as_u64().unwrap();
     let second = s.execute("file.importPlaceholder", json!({"name": "Second.png", "width": 300, "height": 200})).unwrap()["item"].as_u64().unwrap();
     s.state.project_selection = vec![redrob_effects_engine::project::ItemId(first), redrob_effects_engine::project::ItemId(second)];
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     let from = rect(&h, &format!("project.item.{first}.name")).center();
     let to = rect(&h, "panel.Timeline").center();
@@ -262,7 +262,7 @@ fn project_footage_dropped_on_empty_viewer_creates_first_comp() {
         s.execute("file.importPlaceholder", json!({"name": "Landscape.png", "width": 640, "height": 360, "frameRate": 24, "duration": 5})).unwrap()["item"]
             .as_u64()
             .unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     assert!(h.state().session.active_comp().is_none());
     let from = rect(&h, &format!("project.item.{footage}.name")).center();
@@ -285,7 +285,7 @@ fn multiple_selected_footage_dropped_on_empty_viewer_asks_how_to_create_comps() 
     let first = s.execute("file.importPlaceholder", json!({"name": "First.png", "width": 160, "height": 90})).unwrap()["item"].as_u64().unwrap();
     let second = s.execute("file.importPlaceholder", json!({"name": "Second.png", "width": 300, "height": 200})).unwrap()["item"].as_u64().unwrap();
     s.state.project_selection = vec![redrob_effects_engine::project::ItemId(first), redrob_effects_engine::project::ItemId(second)];
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     let from = rect(&h, &format!("project.item.{first}.name")).center();
     let viewer = rect(&h, "panel.Composition");
@@ -330,7 +330,7 @@ impl redrob_effects_engine::Importer for Gated {
 }
 
 /// Step the app until `done` holds (the import runs on another thread).
-fn step_until(h: &mut Harness<'_, EffectcraftApp>, done: impl Fn(&Harness<'_, EffectcraftApp>) -> bool) {
+fn step_until(h: &mut Harness<'_, EffectsApp>, done: impl Fn(&Harness<'_, EffectsApp>) -> bool) {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
     while !done(h) {
         assert!(std::time::Instant::now() < deadline, "timed out");
@@ -356,12 +356,12 @@ fn dropped_files_show_import_progress_then_the_items_they_made() {
         h.input_mut().dropped_files.push(Arc::new(Dropped(file(n))));
     }
     h.run_steps(2);
-    let card = |h: &Harness<'_, EffectcraftApp>| h.state().auto.query("import.job.").first().map(|e| e.label.clone());
+    let card = |h: &Harness<'_, EffectsApp>| h.state().auto.query("import.job.").first().map(|e| e.label.clone());
     step_until(&mut h, |h| card(h).as_deref() == Some("b.png (2 of 3)"));
     let r = rect(&h, &card_id(&h));
     assert!(r.min.x < 40.0 && r.max.y > 960.0, "bottom left, over the panels (where toasts show): {r:?}");
     assert!(h.state().auto.find(&card_id(&h).replace("import.job.", "import.cancel.")).is_some(), "with Cancel");
-    let items = |h: &Harness<'_, EffectcraftApp>| h.state().session.project.items.values().filter(|i| i.name.ends_with(".png")).count();
+    let items = |h: &Harness<'_, EffectsApp>| h.state().session.project.items.values().filter(|i| i.name.ends_with(".png")).count();
     assert_eq!(items(&h), 0, "nothing added until the import finishes");
     allow.store(usize::MAX, Ordering::SeqCst);
     step_until(&mut h, |h| card(h).is_none() && items(h) == 3);
@@ -467,7 +467,7 @@ fn an_unsupported_drop_reports_the_error_and_keeps_valid_files() {
 }
 
 /// The automation id of the Importing card on screen.
-fn card_id(h: &Harness<'_, EffectcraftApp>) -> String {
+fn card_id(h: &Harness<'_, EffectsApp>) -> String {
     h.state().auto.query("import.job.").first().map(|e| e.id.clone()).unwrap_or_default()
 }
 
@@ -494,7 +494,7 @@ fn frames(tag: &str, n: u32) -> std::path::PathBuf {
     d
 }
 
-fn click_id(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click_id(h: &mut Harness<'_, EffectsApp>, id: &str) {
     // A dialog that just opened settles its size and place in a frame or two.
     h.run_steps(3);
     let p = rect(h, id).center();
@@ -507,7 +507,7 @@ fn click_id(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
 }
 
 /// (name, sequence files) of every footage item.
-fn footage_items(h: &Harness<'_, EffectcraftApp>) -> Vec<(String, usize)> {
+fn footage_items(h: &Harness<'_, EffectsApp>) -> Vec<(String, usize)> {
     h.state()
         .session
         .project
@@ -534,7 +534,7 @@ fn import_dialog_offers_the_image_sequence_option() {
     redrob_effects_ui_egui::menus::invoke(h.state_mut(), &ctx, "file.import", json!({})).unwrap();
     h.run_steps(2);
     assert_eq!(h.state().dialog, Some(redrob_effects_ui_egui::Dialog::Form));
-    let label = |h: &Harness<'_, EffectcraftApp>, id: &str| h.state().auto.find(id).map(|e| e.label.clone());
+    let label = |h: &Harness<'_, EffectsApp>, id: &str| h.state().auto.find(id).map(|e| e.label.clone());
     assert_eq!(label(&h, "form.field.sequence").as_deref(), Some("PNG Sequence"));
     assert!(label(&h, "form.field.alphabetical").is_some() && label(&h, "form.field.frameRate").is_some());
     assert!(footage_items(&h).is_empty(), "nothing imported before OK");

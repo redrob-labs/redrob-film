@@ -469,11 +469,11 @@ impl GpuContext {
         ]
         .concat();
         let module = init_resource(&device, "kernels shader module", || {
-            device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("effectcraft kernels"), source: wgpu::ShaderSource::Wgsl(src.into()) })
+            device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("redrob-effects kernels"), source: wgpu::ShaderSource::Wgsl(src.into()) })
         })?;
         let bgl = init_resource(&device, "kernels bind-group layout", || {
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("effectcraft kernels"),
+                label: Some("redrob-effects kernels"),
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
@@ -499,7 +499,7 @@ impl GpuContext {
         })?;
         let layout = init_resource(&device, "kernels pipeline layout", || {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("effectcraft kernels"),
+                label: Some("redrob-effects kernels"),
                 bind_group_layouts: &[Some(&bgl)],
                 immediate_size: 0,
             })
@@ -512,13 +512,13 @@ impl GpuContext {
         };
         let bgl_ext = init_resource(&device, "extended kernels bind-group layout", || {
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("effectcraft kernels (ext)"),
+                label: Some("redrob-effects kernels (ext)"),
                 entries: &[storage(0), storage(1), storage(2), storage(3)],
             })
         })?;
         let layout_ext = init_resource(&device, "extended kernels pipeline layout", || {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("effectcraft kernels (ext)"),
+                label: Some("redrob-effects kernels (ext)"),
                 bind_group_layouts: &[Some(&bgl), Some(&bgl_ext)],
                 immediate_size: 0,
             })
@@ -580,19 +580,19 @@ impl GpuContext {
         }
         let dmodule = init_resource(&device, "display shader module", || {
             device.create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("effectcraft display"),
+                label: Some("redrob-effects display"),
                 source: wgpu::ShaderSource::Wgsl(include_str!("shaders/display.wgsl").into()),
             })
         })?;
         let display_bgl = init_resource(&device, "display bind-group layout", || {
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("effectcraft display"),
+                label: Some("redrob-effects display"),
                 entries: &[tex_entry(1), storage_tex_entry(3, wgpu::TextureFormat::Rgba8Unorm)],
             })
         })?;
         let dlayout = init_resource(&device, "display pipeline layout", || {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("effectcraft display"),
+                label: Some("redrob-effects display"),
                 bind_group_layouts: &[Some(&display_bgl)],
                 immediate_size: 0,
             })
@@ -794,7 +794,7 @@ impl GpuContext {
             ..wgpu::Limits::default()
         };
         let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor { label: Some("effectcraft gpu"), required_limits, ..Default::default() })
+            .request_device(&wgpu::DeviceDescriptor { label: Some("redrob-effects gpu"), required_limits, ..Default::default() })
             .await
             .map_err(|e| format!("no device: {e}"))?;
         let context = GpuContext::new(&adapter, device, queue)?;
@@ -1023,7 +1023,7 @@ impl<'g> Enc<'g> {
             .enc
             .get_or_insert_with(|| {
                 let id = g.pool.lock().map(|mut p| p.open()).unwrap_or(0);
-                (g.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("effectcraft") }), id)
+                (g.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("redrob-effects") }), id)
             })
             .0
     }

@@ -9,7 +9,7 @@ use egui::{Color32, vec2};
 use serde_json::{Map, Value, json};
 
 use crate::theme::Tokens;
-use crate::{Dialog, EffectcraftApp};
+use crate::{Dialog, EffectsApp};
 
 #[derive(Clone, Debug)]
 pub enum FieldKind {
@@ -112,13 +112,13 @@ impl Form {
 }
 
 /// Open a form dialog.
-pub fn form(app: &mut EffectcraftApp, title: &str, command: &str, base: Value, fields: Vec<Field>) {
+pub fn form(app: &mut EffectsApp, title: &str, command: &str, base: Value, fields: Vec<Field>) {
     app.dialog_state.form = Form { title: title.into(), command: command.into(), base, fields };
     app.dialog = Some(Dialog::Form);
 }
 
 /// Open a message box.
-pub fn info(app: &mut EffectcraftApp, title: &str, body: &str) {
+pub fn info(app: &mut EffectsApp, title: &str, body: &str) {
     app.dialog_state.info = (title.into(), body.into());
     app.dialog = Some(Dialog::Info);
 }
@@ -157,7 +157,7 @@ fn is_pdf(p: &Value) -> bool {
 /// parameters. Returns whether the dialog opened. The checkbox starts off, as in After Effects:
 /// unticked, the picked files import as stills. Dropped files and agents' `file.import` don't
 /// ask (files import as stills, folders' runs as sequences).
-pub fn open_import_sequence(app: &mut EffectcraftApp, p: &Value) -> bool {
+pub fn open_import_sequence(app: &mut EffectsApp, p: &Value) -> bool {
     if has(p, &["sequence", "alphabetical"]) {
         return false;
     }
@@ -171,7 +171,7 @@ pub fn open_import_sequence(app: &mut EffectcraftApp, p: &Value) -> bool {
 }
 
 /// The Import Image Sequence dialog's fields for `runs` (each a sequence's files).
-fn sequence_fields(app: &EffectcraftApp, runs: &[Vec<String>]) -> Vec<Field> {
+fn sequence_fields(app: &EffectsApp, runs: &[Vec<String>]) -> Vec<Field> {
     use redrob_effects_engine::project::sequence::sequence_name;
     let first = runs.first().map(Vec::as_slice).unwrap_or_default();
     let ext = first.first().and_then(|f| f.rsplit_once('.')).map(|(_, e)| e.to_ascii_uppercase()).unwrap_or_default();
@@ -207,7 +207,7 @@ fn value_fields(name: &str, v: &redrob_effects_engine::keyframe::Value) -> Optio
 }
 
 /// If `id` is a dialog command invoked without its parameters, open its form and return true.
-pub fn open_form(app: &mut EffectcraftApp, id: &str, p: &Value) -> bool {
+pub fn open_form(app: &mut EffectsApp, id: &str, p: &Value) -> bool {
     let s = &app.session;
     let comp = s.active_comp();
     let layer = comp.and_then(|c| s.state.selected_layers.first().and_then(|l| c.layer(*l)));
@@ -840,7 +840,7 @@ fn form_grid(ui: &mut egui::Ui, f: &mut Form, regs: &mut Vec<(String, egui::Rect
     });
 }
 
-pub fn show_form(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn show_form(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens) {
     let mut f = app.dialog_state.form.clone();
     let (mut ok, mut close) = (false, false);
     // Rows are 30 px; a note wraps at about 40 characters a line, so OK and Cancel stay in view.
@@ -919,11 +919,11 @@ pub fn show_form(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
 }
 
 /// Close the information dialog without abandoning a pending Settings transaction.
-pub(crate) fn close_info(app: &mut EffectcraftApp) {
+pub(crate) fn close_info(app: &mut EffectsApp) {
     app.dialog = app.dialog_state.prefs_snapshot.is_some().then_some(Dialog::Settings);
 }
 
-pub fn show_info(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn show_info(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens) {
     let (title, body) = app.dialog_state.info.clone();
     // Enter presses OK, the default (and only) button.
     let mut close = !ctx.egui_wants_keyboard_input() && ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter));
@@ -942,7 +942,7 @@ pub fn show_info(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
     }
 }
 
-pub fn show_view_options(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn show_view_options(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens) {
     let mut close = false;
     super::dialogs::modal(ctx, "View Options", vec2(360.0, 330.0), t, |ui| {
         let v = &mut app.ui.viewer;
@@ -988,7 +988,7 @@ mod tests {
     /// and selected: typing replaces it, and one Enter confirms.
     #[test]
     fn a_numeric_form_opens_with_its_first_number_selected() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         app.dialog_state.form = Form {
@@ -998,7 +998,7 @@ mod tests {
             fields: vec![Field::num("value[0]", "X", 960.0), Field::num("value[1]", "Y", 540.0)],
         };
         app.dialog = Some(Dialog::Form);
-        let frame = |app: &mut EffectcraftApp, events: Vec<egui::Event>| {
+        let frame = |app: &mut EffectsApp, events: Vec<egui::Event>| {
             let raw = egui::RawInput { events, ..Default::default() };
             ctx.run_ui(raw, |ui| {
                 app.auto.begin_frame();
@@ -1019,7 +1019,7 @@ mod tests {
     /// XML; its fields register automation ids and OK runs `file.exportTimeline`.
     #[test]
     fn premiere_export_dialog() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         app.session.execute("comp.new", json!({"name": "Spot", "width": 64, "height": 36, "frameRate": 25, "duration": 1})).unwrap();
@@ -1029,7 +1029,7 @@ mod tests {
         let f = &app.dialog_state.form;
         assert_eq!(f.command, "file.exportTimeline");
         assert!(matches!(&f.fields[0].kind, FieldKind::Note(t) if t.contains("Final Cut Pro XML (.xml)")));
-        let dir = std::env::temp_dir().join(format!("effectcraft-ui-premiere-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("redrob-effects-ui-premiere-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("Spot.xml").to_string_lossy().to_string();
         app.dialog_state.form.fields[1].kind = FieldKind::SavePath(path.clone());

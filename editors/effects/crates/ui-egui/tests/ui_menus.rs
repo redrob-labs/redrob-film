@@ -5,23 +5,23 @@ use egui::{Event, Key, Modifiers, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use serde_json::json;
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, EffectsApp> {
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     h
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
-fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+fn click_at(h: &mut Harness<'_, EffectsApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.input_mut().events.push(Event::PointerButton { pos: p, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
     h.step();
@@ -30,7 +30,7 @@ fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
 }
 
 /// Press and release `key` (one frame each), then let the UI settle.
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key) {
+fn key(h: &mut Harness<'_, EffectsApp>, key: Key) {
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE });
     h.step();
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers: Modifiers::NONE });
@@ -38,11 +38,11 @@ fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key) {
 }
 
 /// The label of the widget with keyboard focus (the highlighted menu entry).
-fn focused(h: &Harness<'_, EffectcraftApp>) -> String {
+fn focused(h: &Harness<'_, EffectsApp>) -> String {
     h.query_by(|n| n.is_focused()).and_then(|n| n.accesskit_node().label()).unwrap_or_default().trim().to_string()
 }
 
-fn shown(h: &Harness<'_, EffectcraftApp>, label: &str) -> bool {
+fn shown(h: &Harness<'_, EffectsApp>, label: &str) -> bool {
     h.query_by_label_contains(label).is_some()
 }
 
@@ -126,7 +126,7 @@ fn relink_menu_uses_engine_availability_and_folder_picker_cancel_is_a_noop() {
     use std::cell::Cell;
     use std::rc::Rc;
 
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = EffectsApp::new(Session::default());
     let menu = redrob_effects_ui_egui::menus::menu_items(&app);
     let entry = menu.iter().find(|e| e.id == "file.relinkFootage").unwrap();
     assert_eq!(entry.path, ["File", "Dependencies"]);
@@ -212,7 +212,7 @@ fn import_dialog_offers_mxf() {
     use std::cell::RefCell;
     use std::rc::Rc;
 
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = EffectsApp::new(Session::default());
     let offered = Rc::new(RefCell::new(Vec::<String>::new()));
     let seen = offered.clone();
     app.hooks.pick_files = Some(Box::new(move |exts: &[&str]| {

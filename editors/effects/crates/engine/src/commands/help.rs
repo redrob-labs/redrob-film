@@ -12,7 +12,7 @@ fn open(s: &mut Session, url: String) -> Result<Value> {
 }
 
 fn sibling(s: &mut Session, p: &Value) -> Result<Value> {
-    let slug = str_p(p, "app").unwrap_or("photocraft").to_ascii_lowercase();
+    let slug = str_p(p, "app").unwrap_or("redrob-canvas").to_ascii_lowercase();
     if str_p(p, "kind") == Some("github") { open(s, links::github_of(&slug)) } else { open(s, links::page_of(&slug)) }
 }
 
@@ -45,7 +45,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Other Redrob Apps",
             [],
             None,
-            "{app: photocraft|vectorcraft|filmcraft|lightcraft|pdfcraft|designcraft, kind?: page|github}",
+            "{app: redrob-canvas|redrob-shape|redrob-design|redrob-office|redrob-code, kind?: page|github}",
             always,
             sibling
         ),

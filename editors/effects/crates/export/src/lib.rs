@@ -2,15 +2,15 @@
 //!
 //! | Format | Container / files | Video | Alpha | Audio |
 //! |---|---|---|---|---|
-//! | H.264 | MP4 | FilmCraft H.264 High, 8-bit 4:2:0 BT.709 limited, VBR | no | AAC-LC (FilmCraft), mono/stereo |
-//! | ProRes | QuickTime MOV | FilmCraft ProRes 422 Proxy/LT/422/HQ, 10-bit; 4444/4444 XQ 4:4:4 | 4444 (16-bit alpha coding) | PCM 16/24-bit or 32-bit float, mono/stereo |
+//! | H.264 | MP4 | Redrob Film H.264 High, 8-bit 4:2:0 BT.709 limited, VBR | no | AAC-LC (Redrob Film), mono/stereo |
+//! | ProRes | QuickTime MOV | Redrob Film ProRes 422 Proxy/LT/422/HQ, 10-bit; 4444/4444 XQ 4:4:4 | 4444 (16-bit alpha coding) | PCM 16/24-bit or 32-bit float, mono/stereo |
 //! | Uncompressed | QuickTime MOV (`raw `) | 8-bit RGB (depth 24, rows padded to even bytes) or ARGB (depth 32) | RGB + Alpha (straight or premultiplied) | PCM 16/24-bit or 32-bit float, mono/stereo |
 //! | PNG / JPEG / TIFF sequence | one file per frame | 8-bit | PNG, TIFF | — |
 //! | OpenEXR sequence | one file per frame | 32-bit float, linear light, premultiplied | yes | — |
 //! | Animated GIF | GIF89a | 256-colour palette per frame (NeuQuant) | 1-bit | — |
 //! | WebM | WebM (Matroska) | VP9 profile 0 (`redrob-effects-vp9enc`: key + inter frames, a key frame every 2 s, loop filter), 8-bit 4:2:0; or AV1 (`redrob-effects-av1enc`) | VP9 alpha (BlockAdditional) | Opus (`redrob-effects-opusenc`: SILK / hybrid / CELT by bitrate and application), 48 kHz |
-//! | HEVC | MP4 (`hvc1`) | `redrob-effects-hevcenc` Main / Main 10 4:2:0, I + P slices, bitrate or constant quality, level, key-frame interval | no | AAC-LC (FilmCraft) |
-//! | AV1 | MP4 (`av01`) | `redrob-effects-av1enc` Main 8/10-bit 4:2:0, key + inter frames | no | AAC-LC (FilmCraft) |
+//! | HEVC | MP4 (`hvc1`) | `redrob-effects-hevcenc` Main / Main 10 4:2:0, I + P slices, bitrate or constant quality, level, key-frame interval | no | AAC-LC (Redrob Film) |
+//! | AV1 | MP4 (`av01`) | `redrob-effects-av1enc` Main 8/10-bit 4:2:0, key + inter frames | no | AAC-LC (Redrob Film) |
 //! | WAV / AIFF | RIFF WAVE / AIFF (AIFF-C for float) | — | — | PCM 16/24-bit or 32-bit float, mono/stereo (audio only) |
 //!
 //! Every frame goes through [`pipeline`]: the Render Settings overrides (Effects, Solo Switches,
@@ -24,7 +24,7 @@
 //! Frames are rendered in parallel batches (rayon; one batch ≈ one frame per core) and handed to
 //! the encoder in order. They share the job's layer cache, as viewer frames share the viewer's:
 //! static and transform-only layers render once per job. Progress is reported after each batch through a callback that can cancel
-//! the job by returning `false`. Codecs and the MP4/MOV muxer are FilmCraft's pure-Rust crates
+//! the job by returning `false`. Codecs and the MP4/MOV muxer are Redrob Film's pure-Rust crates
 //! (plan ADR 0001); nothing outside this crate touches them.
 //!
 //! H.264 requires even dimensions: odd output sizes are cropped by one pixel (padded when the

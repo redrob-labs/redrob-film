@@ -2,10 +2,10 @@
 //! context) and logs output, results and errors (egui_kittest, UI logic only).
 
 use egui_kittest::Harness;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::dock::PanelKind;
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, EffectsApp>, id: &str) {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     let c = egui::pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
     h.input_mut().events.push(egui::Event::PointerMoved(c));
@@ -18,7 +18,7 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
 #[test]
 fn script_console_runs_scripts() {
     let s = redrob_effects_host::session();
-    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectsApp::new(s));
     h.state_mut().show_panel(PanelKind::ScriptConsole);
     h.run_steps(3);
     for id in ["scriptConsole.input", "scriptConsole.output", "scriptConsole.run", "scriptConsole.clear"] {
@@ -49,7 +49,7 @@ fn script_console_runs_scripts() {
 #[ignore]
 fn script_console_snapshot() {
     let s = redrob_effects_host::session();
-    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectsApp::new(s));
     h.state_mut().show_panel(PanelKind::ScriptConsole);
     h.run_steps(2);
     for code in ["var c = app.project.items.addComp('Console', 320, 180, 1, 2, 24); writeLn('made ' + c.name); c.id", "c.layers.addText('Hi').name", "nope()"] {

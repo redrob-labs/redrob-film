@@ -17,7 +17,7 @@ APP_ID = "ai.redrob.film"
 
 class InstallTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="filmcraft-install-")
+        self.temp = tempfile.TemporaryDirectory(prefix="redrob-film-install-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.bundle = self.root / "extracted bundle"
@@ -72,7 +72,7 @@ class InstallTests(unittest.TestCase):
         prefix = self.root / 'programs with "quotes" $dollar `tick` \\slash & more'
         result = self.install("--prefix", prefix)
         self.assertEqual(result.returncode, 0, result.stderr)
-        document = self.root / "my film.filmcraft"
+        document = self.root / "my film.rfilm"
         document.touch()
         desktop = prefix / "share/applications" / f"{APP_ID}.desktop"
         subprocess.run(["gio", "launch", str(desktop), str(document)], check=True, timeout=10)

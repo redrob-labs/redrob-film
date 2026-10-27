@@ -5,24 +5,24 @@
 use egui::{Event, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::dock::PanelKind;
 use redrob_effects_ui_egui::state::Tool;
 use serde_json::json;
 
-fn app() -> EffectcraftApp {
+fn app() -> EffectsApp {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "View", "width": 640, "height": 360, "duration": 4})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Box", "color": "#e04020", "width": 80, "height": 80})).unwrap();
-    EffectcraftApp::new(s)
+    EffectsApp::new(s)
 }
 
-fn box_id(h: &Harness<'_, EffectcraftApp>) -> u64 {
+fn box_id(h: &Harness<'_, EffectsApp>) -> u64 {
     h.state().session.active_comp().unwrap().layers.iter().find(|l| l.name == "Box").unwrap().id.0
 }
 
 /// The harness with Box open in the Layer panel (focused).
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, EffectsApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| app());
     h.run_steps(3);
     let id = box_id(&h);
@@ -34,16 +34,16 @@ fn harness() -> Harness<'static, EffectcraftApp> {
     h
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
-fn press(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, button: egui::PointerButton, pressed: bool) {
+fn press(h: &mut Harness<'_, EffectsApp>, p: Pos2, button: egui::PointerButton, pressed: bool) {
     h.input_mut().events.push(Event::PointerButton { pos: p, button, pressed, modifiers: Default::default() });
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+fn click(h: &mut Harness<'_, EffectsApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.step();
     press(h, p, egui::PointerButton::Primary, true);
@@ -52,7 +52,7 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
     h.run_steps(2);
 }
 
-fn drag_with(h: &mut Harness<'_, EffectcraftApp>, button: egui::PointerButton, from: Pos2, to: Pos2) {
+fn drag_with(h: &mut Harness<'_, EffectsApp>, button: egui::PointerButton, from: Pos2, to: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(from));
     press(h, from, button, true);
     h.step();
@@ -64,14 +64,14 @@ fn drag_with(h: &mut Harness<'_, EffectcraftApp>, button: egui::PointerButton, f
     h.run_steps(2);
 }
 
-fn command(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn command(h: &mut Harness<'_, EffectsApp>, id: &str) {
     let ctx = h.ctx.clone();
     redrob_effects_ui_egui::menus::invoke(h.state_mut(), &ctx, id, json!({})).unwrap();
     h.run_steps(3);
 }
 
 /// Shown magnification: the canvas width per layer pixel (Box is 80 px wide).
-fn shown(h: &Harness<'_, EffectcraftApp>) -> f32 {
+fn shown(h: &Harness<'_, EffectsApp>) -> f32 {
     rect(h, "layerPanel.canvas").width() / 80.0
 }
 

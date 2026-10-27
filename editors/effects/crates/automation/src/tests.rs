@@ -62,7 +62,7 @@ fn initialize_and_list_tools() {
     let mut s = server();
     let r = rpc(&mut s, 1, "initialize", json!({"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "t", "version": "0"}}));
     assert_eq!(r["protocolVersion"], "2025-03-26");
-    assert_eq!(r["serverInfo"]["name"], "effectcraft");
+    assert_eq!(r["serverInfo"]["name"], "redrob-effects");
     assert!(r["capabilities"]["tools"].is_object());
     // Unknown revision: we answer with our latest.
     let r = rpc(&mut s, 2, "initialize", json!({"protocolVersion": "1999-01-01"}));
@@ -1097,7 +1097,7 @@ impl redrob_effects_engine::Exporter for SlowExporter {
 /// the project without changing the running job, which renders the snapshot it started with.
 #[test]
 fn second_render_is_refused_and_edits_apply_during_a_render() {
-    let dir = std::env::temp_dir().join(format!("effectcraft-mcp-busy-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("redrob-effects-mcp-busy-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let (in_r, mut in_w) = std::io::pipe().unwrap();
     let (out_r, out_w) = std::io::pipe().unwrap();
@@ -1152,7 +1152,7 @@ fn second_render_is_refused_and_edits_apply_during_a_render() {
 /// and `notifications/cancelled` stops it, deletes the partial file and sends no response.
 #[test]
 fn render_progress_and_cancel() {
-    let dir = std::env::temp_dir().join(format!("effectcraft-mcp-progress-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("redrob-effects-mcp-progress-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let (in_r, mut in_w) = std::io::pipe().unwrap();
     let (out_r, out_w) = std::io::pipe().unwrap();

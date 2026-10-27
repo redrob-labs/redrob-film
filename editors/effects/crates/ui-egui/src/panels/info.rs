@@ -4,9 +4,9 @@ use crate::i18n::{tr, tr_args};
 use egui::{Align2, Color32, Rect, pos2, vec2};
 
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     let x0 = rect.min.x + 12.0;

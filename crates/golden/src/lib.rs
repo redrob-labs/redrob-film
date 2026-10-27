@@ -1,4 +1,4 @@
-//! Golden-image tests for FilmCraft's renderer (test-only crate; the library is empty).
+//! Golden-image tests for Redrob Film's renderer (test-only crate; the library is empty).
 //!
 //! `tests/golden.rs` builds small procedural projects (no media files), renders one frame of each
 //! through the CPU reference compositor (`redrob-film-render`) and compares it with a committed PNG

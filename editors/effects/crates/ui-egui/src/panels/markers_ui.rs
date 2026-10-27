@@ -17,7 +17,7 @@ use serde_json::{Value, json};
 use super::timeline::TMap;
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
-use crate::{Dialog, EffectcraftApp};
+use crate::{Dialog, EffectsApp};
 
 /// Which marker a gesture or the dialog refers to.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -62,7 +62,7 @@ pub struct MarkerDraft {
 }
 
 /// Open the Composition/Layer Marker dialog for `m`.
-pub fn open_dialog(app: &mut EffectcraftApp, m: MarkerRef) -> Result<(), String> {
+pub fn open_dialog(app: &mut EffectsApp, m: MarkerRef) -> Result<(), String> {
     let mut p = json!({});
     if let Some(l) = m.layer {
         p["layer"] = json!(l);
@@ -115,13 +115,13 @@ pub fn draft_params(d: &MarkerDraft) -> Value {
     p
 }
 
-fn text_field(ui: &mut egui::Ui, app: &mut EffectcraftApp, id: &str, v: &mut String, w: f32) {
+fn text_field(ui: &mut egui::Ui, app: &mut EffectsApp, id: &str, v: &mut String, w: f32) {
     let r = ui.add(egui::TextEdit::singleline(v).desired_width(w));
     app.auto.add(id, r.rect, id);
 }
 
 /// The Composition/Layer Marker dialog.
-pub fn dialog(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn dialog(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens) {
     let mut d = app.dialog_state.marker.clone();
     let (mut ok, mut cancel, mut delete) = (false, false, false);
     // Cmd+Backspace (Ctrl elsewhere) is Delete, in a text field too.
@@ -248,7 +248,7 @@ fn drag_state_id() -> egui::Id {
 }
 
 /// Snap `t` (comp seconds) to the CTI, the work area and other marker times within 8 px.
-fn snap(app: &EffectcraftApp, comp: &Comp, tm: TMap, t: f64, skip: MarkerRef) -> f64 {
+fn snap(app: &EffectsApp, comp: &Comp, tm: TMap, t: f64, skip: MarkerRef) -> f64 {
     let fr = comp.frame_rate;
     let mut t = fr.snap_nearest(Tick::from_seconds_f64(t.max(0.0))).seconds();
     if !app.session.state.snapping {
@@ -277,7 +277,7 @@ fn marker_shape(x: f32, y0: f32, h: f32) -> Vec<Pos2> {
 /// Draw one marker (triangle + duration bar + comment) at `x` in a strip `[y0, y1]` and handle
 /// its gestures. `comp_t` is the marker's comp time.
 #[allow(clippy::too_many_arguments)]
-fn marker(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, comp: &Comp, tm: TMap, m: &Marker, comp_t: f64, r: MarkerRef, y0: f32, y1: f32) {
+fn marker(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, comp: &Comp, tm: TMap, m: &Marker, comp_t: f64, r: MarkerRef, y0: f32, y1: f32) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let x = tm.x(comp_t);
@@ -345,7 +345,7 @@ fn marker(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, comp: 
         app.session.history.merge_key = None;
     }
     crate::widgets::context_menu(&resp, |ui| {
-        let run = |ui: &mut egui::Ui, label: &str, cmd: &str, params: Value, app: &mut EffectcraftApp| {
+        let run = |ui: &mut egui::Ui, label: &str, cmd: &str, params: Value, app: &mut EffectsApp| {
             if ui.button(label).clicked() {
                 if cmd == "dialog" {
                     let _ = open_dialog(app, r);
@@ -371,7 +371,7 @@ fn marker(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, comp: 
 }
 
 /// Composition markers in the ruler strip `[y0, y1]`, protected regions over `rows`.
-pub(crate) fn comp_markers(app: &mut EffectcraftApp, ui: &mut egui::Ui, comp: &Comp, tm: TMap, strip: Rect, rows: Rect) {
+pub(crate) fn comp_markers(app: &mut EffectsApp, ui: &mut egui::Ui, comp: &Comp, tm: TMap, strip: Rect, rows: Rect) {
     let p = ui.painter().with_clip_rect(strip);
     let rp = ui.painter().with_clip_rect(rows);
     for m in comp.markers.iter().filter(|m| m.protected && m.duration > Tick(0)) {
@@ -389,7 +389,7 @@ pub(crate) fn comp_markers(app: &mut EffectcraftApp, ui: &mut egui::Ui, comp: &C
 /// (#275): drag a marker out of it and it follows the pointer along the marker strip `strip`
 /// (snapping like a dragged marker); dropping it there adds a composition marker at that time,
 /// one undo step. Dropped back on the bin or outside the time graph's width, nothing is added.
-pub(crate) fn marker_bin(app: &mut EffectcraftApp, ui: &mut egui::Ui, comp: &Comp, tm: TMap, bin: Rect, strip: Rect) {
+pub(crate) fn marker_bin(app: &mut EffectsApp, ui: &mut egui::Ui, comp: &Comp, tm: TMap, bin: Rect, strip: Rect) {
     let t = app.tokens;
     let resp = ui.interact(bin, egui::Id::new("marker-bin"), Sense::drag()).on_hover_text(tr("Composition marker bin: drag a marker to the time ruler"));
     app.auto.add("timeline.markerBin", bin, "Composition marker bin");
@@ -418,7 +418,7 @@ pub(crate) fn marker_bin(app: &mut EffectcraftApp, ui: &mut egui::Ui, comp: &Com
 
 /// Layer markers on a layer's row `r`; on a precomp layer, its comp's markers too (read-only,
 /// outlined: hover names them, a double-click opens the nested comp at the marker).
-pub(crate) fn layer_markers(app: &mut EffectcraftApp, ui: &mut egui::Ui, clip: Rect, comp: &Comp, layer: &Layer, tm: TMap, r: Rect) {
+pub(crate) fn layer_markers(app: &mut EffectsApp, ui: &mut egui::Ui, clip: Rect, comp: &Comp, layer: &Layer, tm: TMap, r: Rect) {
     let p = ui.painter().with_clip_rect(clip);
     nested_markers(app, ui, &p, comp, layer, tm, r);
     for (i, m) in layer.markers.iter().enumerate() {
@@ -427,7 +427,7 @@ pub(crate) fn layer_markers(app: &mut EffectcraftApp, ui: &mut egui::Ui, clip: R
 }
 
 /// The nested comp's markers on a precomp layer's bar (`markers.nested`).
-fn nested_markers(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, comp: &Comp, layer: &Layer, tm: TMap, r: Rect) {
+fn nested_markers(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, comp: &Comp, layer: &Layer, tm: TMap, r: Rect) {
     let redrob_effects_engine::project::LayerSource::Comp { item } = layer.source else { return };
     let Some(cid) = app.session.active_comp_id() else { return };
     let project = app.session.project.clone();
@@ -479,7 +479,7 @@ mod tests {
         s.execute("comp.new", json!({"name": "M", "width": 100, "height": 100, "frameRate": 30, "duration": 4})).unwrap();
         s.execute("markers.set", json!({"new": true, "time": 1.0, "comment": "hello", "cuePoint": {"name": "c", "params": [["a", "1"]]}, "label": "Blue"}))
             .unwrap();
-        let mut app = EffectcraftApp::new(s);
+        let mut app = EffectsApp::new(s);
         open_dialog(&mut app, MarkerRef { layer: None, index: 0 }).unwrap();
         assert_eq!(app.dialog, Some(Dialog::Marker));
         let d = &mut app.dialog_state.marker;

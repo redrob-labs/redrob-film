@@ -1,4 +1,4 @@
-//! Animated properties: EffectCraft keyframes ↔ Lottie keyframes.
+//! Animated properties: Redrob Effects keyframes ↔ Lottie keyframes.
 //!
 //! A Lottie keyframe holds the start value `s` of a segment and the segment's normalised cubic
 //! Bezier ease: `o` (out tangent of this key) and `i` (in tangent of the next key), each with `x`

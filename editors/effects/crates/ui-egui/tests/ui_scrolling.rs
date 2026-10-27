@@ -5,23 +5,23 @@ use egui::{Event, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use serde_json::json;
 
-fn harness(w: f32, h: f32) -> Harness<'static, EffectcraftApp> {
+fn harness(w: f32, h: f32) -> Harness<'static, EffectsApp> {
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(w, h)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(w, h)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     h
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
-fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+fn click_at(h: &mut Harness<'_, EffectsApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.input_mut().events.push(Event::PointerButton { pos: p, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
     h.step();
@@ -29,7 +29,7 @@ fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
     h.run_steps(2);
 }
 
-fn wheel(h: &mut Harness<'_, EffectcraftApp>, at: Pos2, dy: f32) {
+fn wheel(h: &mut Harness<'_, EffectsApp>, at: Pos2, dy: f32) {
     h.input_mut().events.push(Event::PointerMoved(at));
     h.input_mut().events.push(Event::MouseWheel {
         unit: egui::MouseWheelUnit::Point,
@@ -59,7 +59,7 @@ fn a_menu_taller_than_the_window_scrolls() {
     assert_eq!(h.state().dialog, Some(redrob_effects_ui_egui::Dialog::Shortcuts), "the entry takes the click");
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'_, EffectsApp>, from: Pos2, to: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(from));
     h.input_mut().events.push(Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
     h.step();
@@ -72,7 +72,7 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
 }
 
 /// A scroll bar's "scroll/max" automation label.
-fn scrolled(h: &Harness<'_, EffectcraftApp>, id: &str) -> (f32, f32) {
+fn scrolled(h: &Harness<'_, EffectsApp>, id: &str) -> (f32, f32) {
     let label = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).label.clone();
     let (s, max) = label.split_once('/').unwrap_or_else(|| panic!("{id}: {label}"));
     (s.parse().unwrap(), max.parse().unwrap())

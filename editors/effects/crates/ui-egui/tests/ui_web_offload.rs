@@ -16,7 +16,7 @@ use redrob_effects_engine::offload::{Inbox, Offload, Post, WorkerRequest};
 use redrob_effects_engine::remote::{FrameMsg, FrameReply, FrameServer, Mirror};
 use redrob_effects_engine::render::RenderOpts;
 use redrob_effects_ui_egui::frames::{FrameImage, FrameKey, Frames, RemoteDone, RemoteFrame, RemoteFrames, RemoteJob, RenderSource};
-use redrob_effects_ui_egui::{ControlRequest, EffectcraftApp};
+use redrob_effects_ui_egui::{ControlRequest, EffectsApp};
 use serde_json::json;
 
 /// A frame worker in the same process: messages go through JSON like `postMessage`; rendered
@@ -193,7 +193,7 @@ fn waiting_commands_reply_when_their_offloaded_job_ends() {
     s.execute("layer.newSolid", json!({"color": "#406080"})).unwrap();
     s.execute("renderQueue.add", json!({"format": "gif", "output": "/w.gif"})).unwrap();
     let (tx, rx) = std::sync::mpsc::channel();
-    let mut h = Harness::builder().with_size(egui::vec2(1280.0, 800.0)).build_eframe(|_| EffectcraftApp::new(s).with_control(rx));
+    let mut h = Harness::builder().with_size(egui::vec2(1280.0, 800.0)).build_eframe(|_| EffectsApp::new(s).with_control(rx));
     h.run_steps(2);
     // `renderQueue.render` waits by default: the job goes to the worker, the reply waits.
     let (req, reply) = ControlRequest::new("engine.execute", json!({"command": "renderQueue.render", "params": {}}));
@@ -239,7 +239,7 @@ fn waiting_commands_report_only_their_own_completion_errors() {
         (JobKind::ContentFill, "contentFill"),
     ] {
         let other = if kind == JobKind::Track { JobKind::Warp } else { JobKind::Track };
-        let mut app = EffectcraftApp::new(Session::default());
+        let mut app = EffectsApp::new(Session::default());
         app.session.offload_log = vec![(kind, Some("old error".into())), (other, Some("unrelated failure".into())), (kind, None)];
         let waiter = || JobWaiter { command: "analysis".into(), params: json!({}), result: json!({"running": true}), jobs: vec![job_id.into()], log_cursor: 1 };
         let result = waiter().finish(&mut app);
@@ -254,7 +254,7 @@ fn waiting_commands_report_only_their_own_completion_errors() {
 fn waiting_command_sees_its_error_after_the_completion_log_rolls_over() {
     use redrob_effects_engine::offload::JobKind;
     use redrob_effects_ui_egui::control::JobWaiter;
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = EffectsApp::new(Session::default());
     app.session.offload_log = vec![(JobKind::Warp, None); 31];
     app.session.offload_log.push((JobKind::Track, Some("nothing was applied".into())));
     app.session.offload_log_start = 1;

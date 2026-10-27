@@ -1,4 +1,4 @@
-//! SILK, hybrid and CELT round trips through FilmCraft's spec-derived Opus decoder: every
+//! SILK, hybrid and CELT round trips through Redrob Film's spec-derived Opus decoder: every
 //! mode/bandwidth decodes, waveform quality on speech-like and music-like signals, bitrate
 //! tracking, stereo, the application tables and delay alignment.
 

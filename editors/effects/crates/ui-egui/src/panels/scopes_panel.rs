@@ -10,7 +10,7 @@ use redrob_effects_engine::raster::scopes::{self, ColorStandard, Scope, ScopeKin
 use serde::{Deserialize, Serialize};
 
 use super::panel_kit as kit;
-use crate::EffectcraftApp;
+use crate::EffectsApp;
 use crate::theme::Tokens;
 
 /// Panel options (serde in the UI state).
@@ -38,7 +38,7 @@ struct Cached {
     tex: Option<egui::TextureHandle>,
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     p.rect_filled(rect, 0.0, t.panel_bg);

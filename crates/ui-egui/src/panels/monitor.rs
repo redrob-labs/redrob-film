@@ -12,7 +12,7 @@ use redrob_film_project::ItemKind;
 use redrob_film_time::{Tick, TimeDisplay, format_time};
 use serde_json::json;
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::frames::{FrameKey, Target};
 use crate::icons::{self, Icon};
 use crate::panels::monitor_view;
@@ -25,7 +25,7 @@ pub enum Which {
     Program,
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect, which: Which) {
     // a monitor in its own window (or full screen without Mirror) is not drawn in the dock too
     let w = window_state(ui.ctx(), which);
     if w.undocked || (w.fullscreen && !app.session.prefs.playback.mirror_fullscreen) {
@@ -41,7 +41,7 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which)
 }
 
 /// A monitor: picture and, unless `bare` (full screen), the controls under it.
-fn show_in(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which, bare: bool) {
+fn show_in(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect, which: Which, bare: bool) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let controls_h = if bare { 0.0 } else { 28.0 + 24.0 + 36.0 };
@@ -580,7 +580,7 @@ fn show_in(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect, which: Which, 
 /// the monitor's audio tap. With two channels the peak dB is written beside the bars; with more,
 /// only the ticks are shown and hovering gives every channel's dB. Right-click: the shared meter
 /// appearance menu. Also applies the monitor's Volume to its tap.
-fn level_meter(app: &mut FilmcraftApp, ui: &mut egui::Ui, row: Rect, which: Which) {
+fn level_meter(app: &mut FilmApp, ui: &mut egui::Ui, row: Rect, which: Which) {
     let t = app.tokens;
     let src = which == Which::Source;
     let prefix = if src { "source" } else { "program" };
@@ -640,7 +640,7 @@ const ASKED_KEYS: usize = 64;
 /// is, and showing it keeps the picture one pass behind the mouse instead of frozen until the
 /// mouse rests. Playback has its own schedule and remembers nothing (what was on screen before
 /// Play is no stand-in for where it stopped).
-fn asked_before(app: &mut FilmcraftApp, prefix: &str, key: FrameKey, playing: bool) -> Vec<FrameKey> {
+fn asked_before(app: &mut FilmApp, prefix: &str, key: FrameKey, playing: bool) -> Vec<FrameKey> {
     let asked = app.monitor_asked.entry(prefix.to_string()).or_default();
     if playing {
         asked.clear();
@@ -660,7 +660,7 @@ fn asked_before(app: &mut FilmcraftApp, prefix: &str, key: FrameKey, playing: bo
 /// it, else the newest ready one of `asked` (see [`asked_before`]), with the display mode's
 /// channel mapping. Returns the texture and the frame it shows.
 fn cpu_texture(
-    app: &mut FilmcraftApp,
+    app: &mut FilmApp,
     ctx: &egui::Context,
     name: &str,
     key: FrameKey,
@@ -704,7 +704,7 @@ const EYEDROPPER_SCALE: f32 = 0.5;
 /// takes a crosshair and a click fills that parameter with the colour under the pointer. The colour is
 /// read from a render of the sequence at the playhead with the armed effect switched off (an Ultra Key
 /// has already removed the green it is asked to key); Esc disarms.
-fn eyedropper(app: &mut FilmcraftApp, ui: &mut egui::Ui, resp: &egui::Response, pic: Rect, target: Target, rate: redrob_film_time::FrameRate, time: Tick) {
+fn eyedropper(app: &mut FilmApp, ui: &mut egui::Ui, resp: &egui::Response, pic: Rect, target: Target, rate: redrob_film_time::FrameRate, time: Tick) {
     let Some(armed) = app.ui.eyedropper.clone() else { return };
     let ctx = ui.ctx().clone();
     let pending_id = egui::Id::new("eyedropper-pending");
@@ -794,7 +794,7 @@ pub fn fit(area: Rect, w: f32, h: f32) -> Rect {
 
 #[allow(clippy::too_many_arguments)]
 fn mini_timeline(
-    app: &mut FilmcraftApp,
+    app: &mut FilmApp,
     ui: &mut egui::Ui,
     bar: Rect,
     which: Which,
@@ -986,7 +986,7 @@ fn set_transport_visible(hidden: &mut Vec<String>, command: &str, visible: bool)
     }
 }
 
-fn transport(app: &mut FilmcraftApp, ui: &mut egui::Ui, row: Rect, which: Which) {
+fn transport(app: &mut FilmApp, ui: &mut egui::Ui, row: Rect, which: Which) {
     let t = app.tokens;
     let src = which == Which::Source;
     let buttons: Vec<(Icon, &str, &str)> = if src {
@@ -1108,7 +1108,7 @@ fn transport(app: &mut FilmcraftApp, ui: &mut egui::Ui, row: Rect, which: Which)
 
 /// The play button's options (right-click): Play Zone, Loop Zone and, in the Program monitor,
 /// Loop Selected Clip; each runs the same command as its shortcut.
-fn play_options_menu(app: &mut FilmcraftApp, ctx: &egui::Context, resp: &egui::Response, which: Which) {
+fn play_options_menu(app: &mut FilmApp, ctx: &egui::Context, resp: &egui::Response, which: Which) {
     let src = which == Which::Source;
     let prefix = if src { "source" } else { "program" };
     let mut picked: Option<&str> = None;
@@ -1135,7 +1135,7 @@ fn play_options_menu(app: &mut FilmcraftApp, ctx: &egui::Context, resp: &egui::R
 
 /// The Source panel menu's clips (#313): the recently opened clips, the shown one ticked, to
 /// switch between, then Close / Close All. Returns whether the menu is done.
-pub fn source_panel_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui) -> bool {
+pub fn source_panel_menu(app: &mut FilmApp, ui: &mut egui::Ui) -> bool {
     let mut done = false;
     let current = app.session.state.source_item;
     let recent: Vec<(u64, String)> =
@@ -1167,7 +1167,7 @@ pub fn source_panel_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui) -> bool {
     done
 }
 
-fn source_nav(app: &mut FilmcraftApp, cmd: &str) {
+fn source_nav(app: &mut FilmApp, cmd: &str) {
     let Some(item) = app.session.state.source_item else { return };
     let Some(v) = redrob_film_engine::clip_ops::source_view(&app.session, item) else { return };
     let rate = v.rate;
@@ -1233,7 +1233,7 @@ mod tests {
 /// revision salt that keeps its frames apart from the monitor's own. Cached per revision and
 /// selection (the project is only cloned when either changes). None without a selected clip that
 /// has effects.
-fn without_effects(app: &FilmcraftApp, ctx: &egui::Context) -> Option<(std::sync::Arc<redrob_film_project::Project>, u64)> {
+fn without_effects(app: &FilmApp, ctx: &egui::Context) -> Option<(std::sync::Arc<redrob_film_project::Project>, u64)> {
     let seq_id = app.session.state.active_sequence?;
     let sel: Vec<u64> = app.session.state.selection.iter().map(|c| c.0).collect();
     let rev = app.session.revision;
@@ -1306,7 +1306,7 @@ pub fn toggle_window(ctx: &egui::Context, which: Which, full: bool, enabled: Opt
 /// Where a full-screen monitor window opens: on the main window's screen, or (Settings ▸ Playback
 /// ▸ Screen used for full screen monitor) the one beside it, by placing the new window there before
 /// it goes full screen. Screens are taken to be the size of the main window's.
-fn fullscreen_position(app: &FilmcraftApp, ctx: &egui::Context) -> Option<egui::Pos2> {
+fn fullscreen_position(app: &FilmApp, ctx: &egui::Context) -> Option<egui::Pos2> {
     let side = app.session.prefs.playback.fullscreen_screen.as_str();
     let (outer, monitor) = ctx.input(|i| (i.viewport().outer_rect, i.viewport().monitor_size));
     let outer = outer?;
@@ -1330,7 +1330,7 @@ fn fullscreen_position(app: &FilmcraftApp, ctx: &egui::Context) -> Option<egui::
 /// them in the main window where the platform cannot open another). Esc, F11, a double-click or
 /// closing the window brings a monitor back to the dock; over a full-screen picture the pointer
 /// hides after 2 s without moving, and Space, J, K, L and the arrow keys play and step.
-pub fn external_windows(app: &mut FilmcraftApp, ctx: &egui::Context) {
+pub fn external_windows(app: &mut FilmApp, ctx: &egui::Context) {
     for which in [Which::Program, Which::Source] {
         let w = window_state(ctx, which);
         if !w.fullscreen && !w.undocked {
@@ -1413,13 +1413,13 @@ fn hex_color(s: &str) -> Option<Color32> {
 }
 
 /// Settings ▸ Playback ▸ Custom monitor background, when it is on.
-fn monitor_background(app: &FilmcraftApp) -> Option<Color32> {
+fn monitor_background(app: &FilmApp) -> Option<Color32> {
     let p = &app.session.prefs.playback;
     if p.custom_monitor_background { hex_color(&p.monitor_background) } else { None }
 }
 
 /// Settings ▸ Playback ▸ Monitor overlay color.
-pub fn overlay_color(app: &FilmcraftApp) -> Color32 {
+pub fn overlay_color(app: &FilmApp) -> Color32 {
     hex_color(&app.session.prefs.playback.overlay_color).unwrap_or(Color32::from_rgb(0x3d, 0xa5, 0xff))
 }
 
@@ -1496,7 +1496,7 @@ fn draw_pattern(p: &egui::Painter, pic: Rect, n: u8, c: Color32) {
 }
 
 /// The marker a monitor's playhead is on (its start frame, or inside its duration).
-fn marker_at(app: &FilmcraftApp, which: Which, time: Tick, rate: redrob_film_time::FrameRate) -> Option<redrob_film_project::Marker> {
+fn marker_at(app: &FilmApp, which: Which, time: Tick, rate: redrob_film_time::FrameRate) -> Option<redrob_film_project::Marker> {
     let markers = match which {
         Which::Program => app.session.active_sequence().map(|q| q.markers.clone())?,
         Which::Source => app.session.state.source_item.and_then(|i| redrob_film_engine::clip_ops::source_view(&app.session, i)).map(|v| v.markers)?,
@@ -1510,7 +1510,7 @@ fn marker_at(app: &FilmcraftApp, which: Which, time: Tick, rate: redrob_film_tim
 /// waveform strip and, on the Source Monitor, the clip's running jobs with a button to cancel each.
 #[allow(clippy::too_many_arguments)]
 fn info_overlays(
-    app: &mut FilmcraftApp,
+    app: &mut FilmApp,
     ui: &mut egui::Ui,
     which: Which,
     pic: Rect,
@@ -1577,7 +1577,7 @@ fn info_overlays(
 }
 
 /// A translucent audio waveform of `item` across `area` (its whole duration), with the playhead.
-fn waveform_strip(app: &mut FilmcraftApp, p: &egui::Painter, area: Rect, item: redrob_film_project::ItemId, time: Tick, duration: Tick) {
+fn waveform_strip(app: &mut FilmApp, p: &egui::Painter, area: Rect, item: redrob_film_project::ItemId, time: Tick, duration: Tick) {
     p.rect_filled(area, 0.0, Color32::from_black_alpha(110));
     let dur = duration.0.max(1) as f64;
     let mid = area.center().y;
@@ -1611,7 +1611,7 @@ fn waveform_strip(app: &mut FilmcraftApp, p: &egui::Painter, area: Rect, item: r
 
 /// Kdenlive's clip job overlay: the running jobs of the Source clip, each with its progress and an
 /// X that cancels it.
-fn jobs_overlay(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect) {
+fn jobs_overlay(app: &mut FilmApp, ui: &mut egui::Ui, pic: Rect) {
     let Some(item) = app.session.state.source_item else { return };
     let media = redrob_film_engine::clip_ops::source_view(&app.session, item).map_or(item, |v| v.media);
     let jobs: Vec<(u64, String, f32)> = app
@@ -1654,7 +1654,7 @@ fn jobs_overlay(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect) {
 /// (right, or left after Move Overlay Toolbar). Its buttons: Monitor Info Overlay, Change Overlay,
 /// Edit Mode, Fit, full screen, move the toolbar and, in the Program Monitor with a clip selected
 /// under the playhead, previous / add / next keyframe and Automatic Keyframes (the red dot).
-fn overlay_toolbar(app: &mut FilmcraftApp, ui: &mut egui::Ui, which: Which, pic: Rect, mv: &crate::state::MonitorView) {
+fn overlay_toolbar(app: &mut FilmApp, ui: &mut egui::Ui, which: Which, pic: Rect, mv: &crate::state::MonitorView) {
     let prefix = if which == Which::Program { "program" } else { "source" };
     let kf = which == Which::Program && crate::panels::clip_transform::target(app).is_some();
     let mut items: Vec<(&str, &str, bool)> = vec![
@@ -1750,7 +1750,7 @@ fn overlay_toolbar(app: &mut FilmcraftApp, ui: &mut egui::Ui, which: Which, pic:
 
 /// The wrench menu's Go to Marker list: the monitor's markers (the sequence's, or the Source
 /// clip's), each moving the playhead to it.
-fn marker_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, which: Which) {
+fn marker_menu(app: &mut FilmApp, ui: &mut egui::Ui, which: Which) {
     let (markers, rate) = match which {
         Which::Program => match app.session.active_sequence() {
             Some(q) => (q.markers.clone(), q.settings.frame_rate),
@@ -1800,7 +1800,7 @@ fn extract_zone_id() -> egui::Id {
     egui::Id::new("extract-zone-dialog")
 }
 
-fn open_extract_zone(app: &FilmcraftApp, ctx: &egui::Context) {
+fn open_extract_zone(app: &FilmApp, ctx: &egui::Context) {
     let path = app
         .session
         .state
@@ -1823,7 +1823,7 @@ fn open_extract_zone(app: &FilmcraftApp, ctx: &egui::Context) {
 }
 
 /// Draw the Extract Zone dialog while it is open.
-pub fn extract_zone_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+pub fn extract_zone_dialog(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut d) = ctx.data(|m| m.get_temp::<ExtractZoneDraft>(extract_zone_id())) else { return };
     let mut close = ctx.input(|i| i.key_pressed(egui::Key::Escape));
     let mut run = false;
@@ -1869,7 +1869,7 @@ pub fn extract_zone_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
 /// The wrench menu's Monitor Overlay fly-out (Kdenlive's Current Monitor Overlay / Monitor Config):
 /// the info overlays, the guide pattern, Edit Mode, and on the Source Monitor the audio thumbnails
 /// and source timecode switches. Each item runs its `view.*` command on this monitor.
-fn overlay_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, which: Which) {
+fn overlay_menu(app: &mut FilmApp, ui: &mut egui::Ui, which: Which) {
     let prefix = if which == Which::Program { "program" } else { "source" };
     let mv = monitor_view::view(app, which).clone();
     let mut run: Option<String> = None;
@@ -1915,7 +1915,7 @@ fn overlay_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, which: Which) {
 
 /// Copies of the project in which only one video track of `seq` is visible (index = track
 /// index), cached per revision for Multitrack View.
-fn solo_track_projects(app: &FilmcraftApp, ctx: &egui::Context, seq: redrob_film_project::ItemId) -> Vec<std::sync::Arc<redrob_film_project::Project>> {
+fn solo_track_projects(app: &FilmApp, ctx: &egui::Context, seq: redrob_film_project::ItemId) -> Vec<std::sync::Arc<redrob_film_project::Project>> {
     let id = egui::Id::new(("multitrack-projects", seq.0));
     let rev = app.session.revision;
     type Cached = (u64, Vec<std::sync::Arc<redrob_film_project::Project>>);
@@ -1942,7 +1942,7 @@ fn solo_track_projects(app: &FilmcraftApp, ctx: &egui::Context, seq: redrob_film
 
 /// Kdenlive's Multitrack View: each video track of the sequence alone in a cell of a grid (V1 at
 /// the top left). A click on a cell targets that track and patches the source video to it.
-fn multitrack_grid(app: &mut FilmcraftApp, ui: &mut egui::Ui, area: Rect) {
+fn multitrack_grid(app: &mut FilmApp, ui: &mut egui::Ui, area: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let Some(seq_id) = app.session.state.active_sequence else { return };

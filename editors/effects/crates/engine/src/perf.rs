@@ -1,9 +1,9 @@
 //! Everyday-operation performance: a large generated project and the engine-side measurements
-//! behind `effectcraft-cli bench --ops` (open, save, auto-save, large edits with undo/redo, first
+//! behind `redrob-film-cli bench --ops` (open, save, auto-save, large edits with undo/redo, first
 //! frame). The UI-side numbers (first UI frame, timeline and Project panel draw) live in
 //! `redrob-effects-ui-egui`'s `bench` module. See `docs/architecture.md` ▸ Performance.
 
-// A benchmark harness (`effectcraft-cli bench --ops`, tests): a failed step should fail loudly,
+// A benchmark harness (`redrob-film-cli bench --ops`, tests): a failed step should fail loudly,
 // as in tests and benches (AGENTS.md, "Never crash"). Nothing here runs in the app.
 #![allow(clippy::expect_used)]
 
@@ -51,7 +51,7 @@ impl Default for LargeSpec {
             sequence_frames: 240,
             nest_depth: 20,
             expression_every: 4,
-            media_dir: "/nonexistent/effectcraft-bench-media".into(),
+            media_dir: "/nonexistent/redrob-effects-bench-media".into(),
         }
     }
 }

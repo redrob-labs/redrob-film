@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "filmcraft": {
+    "redrob-film": {
       "command": "target/release/redrob-film-cli",
       "args": ["mcp", "--bridge", "127.0.0.1:9876"]
     },
-    "filmcraft-headless": {
+    "redrob-film-headless": {
       "command": "target/release/redrob-film-cli",
       "args": ["mcp", "--demo"]
     }

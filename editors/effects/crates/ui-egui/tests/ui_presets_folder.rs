@@ -3,7 +3,7 @@
 use egui::{Event, Modifiers, OutputCommand, PointerButton, pos2};
 use egui_kittest::Harness;
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::{ControlRequest, EffectcraftApp, control, dock::PanelKind};
+use redrob_effects_ui_egui::{ControlRequest, EffectsApp, control, dock::PanelKind};
 use serde_json::json;
 
 fn expected_folder() -> String {
@@ -14,7 +14,7 @@ fn expected_folder() -> String {
     if path.is_empty() { path } else { std::path::absolute(path).unwrap().to_str().unwrap().to_string() }
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) -> Vec<String> {
+fn click(h: &mut Harness<'_, EffectsApp>, id: &str) -> Vec<String> {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("missing {id}"));
     let pos = pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
     let mut copied = Vec::new();
@@ -35,7 +35,7 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) -> Vec<String> {
 fn presets_menu_copies_the_configured_folder_without_editing_the_project() {
     let expected = expected_folder();
     let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| {
-        let mut app = EffectcraftApp::new(Session::default());
+        let mut app = EffectsApp::new(Session::default());
         app.ui.start_screen = false;
         app.show_panel(PanelKind::EffectsPresets);
         app
@@ -58,7 +58,7 @@ fn presets_menu_copies_the_configured_folder_without_editing_the_project() {
 
 #[test]
 fn presets_folder_control_command_returns_the_path_or_a_configuration_error() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = EffectsApp::new(Session::default());
     let ctx = egui::Context::default();
     let expected = expected_folder();
     let mut reply = None;

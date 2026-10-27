@@ -22,8 +22,8 @@
         DowngradeErrorMessage="A newer version of Redrob Film is already installed." />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
-    <Icon Id="FilmcraftIcon.ico" SourceFile="$(var.IconPath)" />
-    <Property Id="ARPPRODUCTICON" Value="FilmcraftIcon.ico" />
+    <Icon Id="RedrobFilmIcon.ico" SourceFile="$(var.IconPath)" />
+    <Property Id="ARPPRODUCTICON" Value="RedrobFilmIcon.ico" />
     <Property Id="ARPURLINFOABOUT" Value="https://redrob.io/cut" />
     <Property Id="ARPURLUPDATEINFO" Value="https://redrob.io/cut" />
     <Property Id="ARPHELPLINK" Value="https://github.com/redrob-labs/redrob-film/issues" />
@@ -34,24 +34,24 @@
     <StandardDirectory Id="ProgramMenuFolder" />
 
     <Feature Id="Main" Title="Redrob Film" Level="1">
-      <ComponentGroupRef Id="FilmcraftFiles" />
+      <ComponentGroupRef Id="RedrobFilmFiles" />
     </Feature>
   </Package>
 
   <Fragment>
-    <ComponentGroup Id="FilmcraftFiles" Directory="INSTALLFOLDER">
-      <Component Id="FilmcraftApp" Guid="77D5A811-1B10-4142-B33A-C406D957E2FF">
-        <File Id="FilmcraftExe" Source="$(var.BinDir)\redrob-film.exe" KeyPath="yes">
+    <ComponentGroup Id="RedrobFilmFiles" Directory="INSTALLFOLDER">
+      <Component Id="RedrobFilmApp" Guid="77D5A811-1B10-4142-B33A-C406D957E2FF">
+        <File Id="RedrobFilmExe" Source="$(var.BinDir)\redrob-film.exe" KeyPath="yes">
           <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="Redrob Film"
               Description="Redrob Film video editor" WorkingDirectory="INSTALLFOLDER" Advertise="yes"
-              Icon="FilmcraftIcon.ico" IconIndex="0" />
+              Icon="RedrobFilmIcon.ico" IconIndex="0" />
         </File>
 
-        <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\redrob-film.exe" Value="[#FilmcraftExe]" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\redrob-film.exe" Value="[#RedrobFilmExe]" Type="string" />
       </Component>
 
-      <Component Id="FilmcraftCli">
-        <File Id="FilmcraftCliExe" Source="$(var.BinDir)\redrob-film-cli.exe" KeyPath="yes" />
+      <Component Id="RedrobFilmCli">
+        <File Id="RedrobFilmCliExe" Source="$(var.BinDir)\redrob-film-cli.exe" KeyPath="yes" />
       </Component>
     </ComponentGroup>
   </Fragment>

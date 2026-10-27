@@ -100,7 +100,7 @@ impl DirectorySource {
 }
 
 /// Extra font folders from `REDROB_EFFECTS_FONT_DIRS` (a path list, `:`-separated, `;` on Windows), so a
-/// tool can hand EffectCraft its own font library without installing the fonts system-wide.
+/// tool can hand Redrob Effects its own font library without installing the fonts system-wide.
 fn extra_dirs(var: Option<&std::ffi::OsStr>) -> Vec<PathBuf> {
     var.map(|v| std::env::split_paths(v).filter(|p| !p.as_os_str().is_empty()).collect()).unwrap_or_default()
 }

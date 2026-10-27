@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 use crate::Session;
 
 fn tmp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("effectcraft-lottie-tests-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("redrob-effects-lottie-tests-{}", std::process::id()));
     std::fs::create_dir_all(&d).unwrap();
     d.join(name).to_string_lossy().to_string()
 }

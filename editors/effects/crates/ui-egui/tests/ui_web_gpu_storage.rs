@@ -20,7 +20,7 @@ use redrob_effects_engine::render::RenderOpts;
 use redrob_effects_engine::render::disk_cache;
 use redrob_effects_engine::storage::StorageHost;
 use redrob_effects_gpu::Gpu;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::control::{self, ControlRequest, Outcome};
 use redrob_effects_ui_egui::frames::{FrameImage, FrameKey, Frames, RemoteDone, RemoteFrame, RemoteFrames, RemoteJob, RenderSource};
 use serde_json::{Value, json};
@@ -208,7 +208,7 @@ impl StorageHost for Storage {
     }
 }
 
-fn send(h: &mut Harness<'_, EffectcraftApp>, method: &str, params: Value) {
+fn send(h: &mut Harness<'_, EffectsApp>, method: &str, params: Value) {
     let ctx = h.ctx.clone();
     let (req, _rx) = ControlRequest::new(method, params);
     if let Outcome::Done(v) = control::handle(h.state_mut(), &ctx, &req) {
@@ -226,7 +226,7 @@ fn settings_disk_page_shows_the_browser_storage_manager() {
     let mut s = Session::default();
     let host = Arc::new(Storage::default());
     s.storage = Some(host.clone());
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(2);
     redrob_effects_ui_egui::panels::settings::open(h.state_mut(), "disk");
     h.run_steps(3);
@@ -247,7 +247,7 @@ fn settings_disk_page_shows_the_browser_storage_manager() {
     assert_eq!(*host.cleared.lock().unwrap(), vec!["diskCache".to_string()]);
     assert!(*host.persist_asked.lock().unwrap());
     // Without a host (the desktop) the section is not there.
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(Session::default()));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(Session::default()));
     h.run_steps(2);
     redrob_effects_ui_egui::panels::settings::open(h.state_mut(), "disk");
     h.run_steps(3);

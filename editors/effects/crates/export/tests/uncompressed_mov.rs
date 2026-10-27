@@ -1,5 +1,5 @@
 //! Uncompressed QuickTime (`raw `) output (#372): every frame stored is exactly the frame the
-//! lossless PNG sequence of the same job writes, read back with FilmCraft's demuxer and — when
+//! lossless PNG sequence of the same job writes, read back with Redrob Film's demuxer and — when
 //! installed — decoded by ffmpeg as an external oracle. Audio rides along as PCM.
 //!
 //! The comp is 33×20 so 24-bit rows (99 bytes) need their padding byte, and a 16-px solid centred

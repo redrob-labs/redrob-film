@@ -364,7 +364,7 @@ impl Session {
         let base = (!folder.is_empty()).then(|| std::path::PathBuf::from(folder));
         let base =
             base.or_else(|| self.path.as_deref().and_then(|s| std::path::Path::new(s).parent().map(|d| d.to_path_buf())).filter(|d| !d.as_os_str().is_empty()));
-        // Unsaved project: ~/Movies, else the home folder (as FilmCraft's exports do). The working directory
+        // Unsaved project: ~/Movies, else the home folder (as Redrob Film's exports do). The working directory
         // is `/` for an app started from the macOS Finder, where nothing can be written (#446).
         let home = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")).map(std::path::PathBuf::from);
         let base = base.or_else(|| default_output_base(home));

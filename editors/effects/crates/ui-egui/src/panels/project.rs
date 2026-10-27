@@ -17,7 +17,7 @@ use serde_json::json;
 use crate::icons::{self, Icon};
 use crate::panels::DragPayload;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 /// Item row height (After Effects' Project panel rows are compact, about 19 pt).
 const ROW_H: f32 = 19.0;
@@ -113,7 +113,7 @@ type PendingThumb = (u64, Arc<Mutex<Option<Option<(u32, u32, Vec<u8>)>>>>);
 /// Thumbnail of a comp (its current time) or footage (first frame), cached per item/revision.
 /// Rendered on a background thread (inline on wasm32): until the new one lands the previous
 /// thumbnail stays up, so selecting a big comp or editing it never stalls the panel.
-fn thumbnail(app: &EffectcraftApp, ctx: &egui::Context, it: &Item) -> Option<egui::TextureHandle> {
+fn thumbnail(app: &EffectsApp, ctx: &egui::Context, it: &Item) -> Option<egui::TextureHandle> {
     let key = egui::Id::new(("proj-thumb", it.id.0));
     let pkey = egui::Id::new(("proj-thumb-pending", it.id.0));
     let rev = app.session.revision;
@@ -184,7 +184,7 @@ fn edit_id() -> egui::Id {
 }
 
 /// Start renaming the selected item (Enter in the Project panel).
-pub fn begin_rename(app: &EffectcraftApp, ctx: &egui::Context) {
+pub fn begin_rename(app: &EffectsApp, ctx: &egui::Context) {
     if let Some(id) = app.session.state.project_selection.first()
         && let Some(it) = app.session.project.item(*id)
     {
@@ -214,7 +214,7 @@ fn focused_row_id() -> egui::Id {
 
 /// The focused widget is one of the panel's rows, or nothing has keyboard focus: the panel's keys
 /// apply. Any other focused widget (a text field, a button reached with Tab) keeps them.
-fn keys_reach_rows(app: &EffectcraftApp, ctx: &egui::Context) -> bool {
+fn keys_reach_rows(app: &EffectsApp, ctx: &egui::Context) -> bool {
     match ctx.memory(|m| m.focused()) {
         None => app.ui.focused == crate::dock::PanelKind::Project,
         Some(f) => ctx.data(|d| d.get_temp::<ItemId>(focused_row_id())).is_some_and(|row| row_id(row) == f),
@@ -228,7 +228,7 @@ fn keys_reach_rows(app: &EffectcraftApp, ctx: &egui::Context) -> bool {
 /// else takes them: a dialog, an open menu, an inline rename. A row focused with Tab keeps them
 /// too, and keyboard focus then follows the selection, so a screen reader reads the new item.
 /// Returns the item the selection moved to.
-fn keyboard_nav(app: &mut EffectcraftApp, ctx: &egui::Context) -> Option<ItemId> {
+fn keyboard_nav(app: &mut EffectsApp, ctx: &egui::Context) -> Option<ItemId> {
     use egui::Key;
     let keys: Vec<(Key, egui::Modifiers)> = ctx.input(|i| {
         i.events
@@ -316,8 +316,8 @@ fn keyboard_nav(app: &mut EffectcraftApp, ctx: &egui::Context) -> Option<ItemId>
     moved
 }
 
-pub(crate) fn visible_rows(app: &EffectcraftApp) -> Vec<(ItemId, usize)> {
-    fn walk(app: &EffectcraftApp, folder: Option<ItemId>, depth: usize, q: &str, out: &mut Vec<(ItemId, usize)>) {
+pub(crate) fn visible_rows(app: &EffectsApp) -> Vec<(ItemId, usize)> {
+    fn walk(app: &EffectsApp, folder: Option<ItemId>, depth: usize, q: &str, out: &mut Vec<(ItemId, usize)>) {
         let mut kids = app.session.project.children(folder);
         sort_items(&mut kids, &app.ui.project_sort, app.ui.project_sort_desc);
         for it in kids {
@@ -335,7 +335,7 @@ pub(crate) fn visible_rows(app: &EffectcraftApp) -> Vec<(ItemId, usize)> {
     rows
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().clone();
     let ctx = ui.ctx().clone();
@@ -683,7 +683,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         }
         let name_rect = Rect::from_min_max(pos2(x0 + 28.0, r.min.y + 2.0), pos2(r.min.x + name_w + 2.0, r.max.y - 2.0));
         // Inline edits (rename / comment).
-        let cell_edit = |app: &mut EffectcraftApp, ui: &mut egui::Ui, actions: &mut Vec<(String, serde_json::Value)>, field: &str, cell: Rect| -> bool {
+        let cell_edit = |app: &mut EffectsApp, ui: &mut egui::Ui, actions: &mut Vec<(String, serde_json::Value)>, field: &str, cell: Rect| -> bool {
             let Some((eid, ef, mut buf)) = editing.clone().filter(|(e, f, _)| *e == id.0 && f == field) else { return false };
             let mut child = ui.new_child(egui::UiBuilder::new().max_rect(cell));
             // The field keeps Tab (egui would move the keyboard to the next widget, where Enter no
@@ -1079,7 +1079,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 }
 
 /// Items a row's menu acts on: the selection when the row is selected, else the row's item.
-fn targets(app: &EffectcraftApp, id: ItemId, selected: bool) -> Vec<u64> {
+fn targets(app: &EffectsApp, id: ItemId, selected: bool) -> Vec<u64> {
     if selected { app.session.state.project_selection.iter().map(|i| i.0).collect() } else { vec![id.0] }
 }
 
@@ -1089,7 +1089,7 @@ fn label_index(l: Label) -> usize {
 }
 
 /// The column header's context menu: show or hide the optional columns.
-fn column_menu(app: &mut EffectcraftApp, resp: &egui::Response) {
+fn column_menu(app: &mut EffectsApp, resp: &egui::Response) {
     crate::widgets::context_menu(resp, |ui| {
         ui.label(egui::RichText::new(crate::i18n::tr("Columns")).weak());
         for (key, label, _) in COLUMNS {

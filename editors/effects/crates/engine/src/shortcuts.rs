@@ -394,6 +394,7 @@ impl Keymaps {
         } else {
             self.presets.iter().find(|p| p.name == name).ok_or_else(|| format!("no shortcut preset `{name}`"))?.overrides.clone()
         };
+        // legacy: the format id in saved shortcut files
         Ok(json!({"format": "effectcraft-shortcuts", "version": 1, "name": name, "base": DEFAULT_PRESET, "overrides": overrides}))
     }
 

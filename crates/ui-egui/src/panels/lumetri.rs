@@ -13,13 +13,13 @@ use redrob_film_project::{ClipId, EffectInstance, ParamValue};
 use redrob_film_time::Tick;
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
 
 type Actions = Vec<Value>;
 
-fn selected(app: &FilmcraftApp) -> Option<(ClipId, redrob_film_project::TrackItem)> {
+fn selected(app: &FilmApp) -> Option<(ClipId, redrob_film_project::TrackItem)> {
     let seq = app.session.active_sequence()?;
     app.session.state.selection.iter().find_map(|c| {
         let (tid, it) = seq.find_item(*c)?;
@@ -27,7 +27,7 @@ fn selected(app: &FilmcraftApp) -> Option<(ClipId, redrob_film_project::TrackIte
     })
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let Some((clip, it)) = selected(app) else {
         crate::dock::placeholder(ui, rect, &t, tl!("(no clip selected)"));
@@ -267,7 +267,7 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
 
 fn open_section(
     ui: &mut egui::Ui,
-    app: &mut FilmcraftApp,
+    app: &mut FilmApp,
     e: &EffectInstance,
     name: &str,
     param: &str,
@@ -283,7 +283,7 @@ fn open_section(
 }
 
 /// LUT menu: None, built-ins, the project's LUT library, Browse… (file dialog → `lut.import`).
-fn lut_combo(ui: &mut egui::Ui, app: &mut FilmcraftApp, e: &EffectInstance, param: &str, label: &str, input: bool, out: &mut Vec<(&'static str, Value)>) {
+fn lut_combo(ui: &mut egui::Ui, app: &mut FilmApp, e: &EffectInstance, param: &str, label: &str, input: bool, out: &mut Vec<(&'static str, Value)>) {
     let t = app.tokens;
     let cur = match e.param(param).map(|p| &p.value) {
         Some(ParamValue::Text(s)) => s.clone(),
@@ -322,7 +322,7 @@ fn lut_combo(ui: &mut egui::Ui, app: &mut FilmcraftApp, e: &EffectInstance, para
 }
 
 /// A section header; returns (expanded, switch clicked). `on` is the section's enable switch.
-fn section(ui: &mut egui::Ui, app: &mut FilmcraftApp, name: &str, on: bool) -> (bool, bool) {
+fn section(ui: &mut egui::Ui, app: &mut FilmApp, name: &str, on: bool) -> (bool, bool) {
     let t = app.tokens;
     let key = format!("lumetri2:{name}");
     let open = !app.ui.collapsed_fx.contains(&key) && (name == "Basic Correction" || app.ui.expanded_fx.contains(&key));
@@ -617,7 +617,7 @@ fn color_wheel(ui: &mut egui::Ui, e: &EffectInstance, mt: Tick, id: &str, lid: &
 
 /// Color Match: reference frame (sequence timecode), Face Detection (skin-tone protection),
 /// Apply Match (`lumetri.applyMatch`).
-fn match_controls(ui: &mut egui::Ui, app: &mut FilmcraftApp, out: &mut Vec<(&'static str, Value)>) {
+fn match_controls(ui: &mut egui::Ui, app: &mut FilmApp, out: &mut Vec<(&'static str, Value)>) {
     let t = app.tokens;
     sub(ui, &t, tl!("Color Match"));
     let key = egui::Id::new("lumetri-match-ref");

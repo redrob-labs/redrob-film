@@ -8,7 +8,7 @@ use egui::{Event, Modifiers, PointerButton, Pos2, pos2, vec2};
 use egui_kittest::Harness;
 use redrob_effects_engine::Session;
 use redrob_effects_engine::project::{LayerId, PropGroup};
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::panels::viewer::comp_to_screen;
 use serde_json::json;
 
@@ -52,28 +52,28 @@ fn setup(in_group: bool, prep: impl FnOnce(&mut Session, u64, u64)) -> (Session,
     (s, ids)
 }
 
-fn harness(s: Session) -> Harness<'static, EffectcraftApp> {
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+fn harness(s: Session) -> Harness<'static, EffectsApp> {
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(4);
     h
 }
 
-fn handle(h: &Harness<'_, EffectcraftApp>, uid: u64) -> Option<Pos2> {
+fn handle(h: &Harness<'_, EffectsApp>, uid: u64) -> Option<Pos2> {
     h.state().auto.find(&format!("viewer.gradientPoint.{uid}")).map(|e| pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0))
 }
 
-fn point(h: &Harness<'_, EffectcraftApp>, ids: &Ids, uid: u64) -> [f64; 2] {
+fn point(h: &Harness<'_, EffectsApp>, ids: &Ids, uid: u64) -> [f64; 2] {
     h.state().session.active_comp().unwrap().layer(LayerId(ids.layer)).unwrap().props.find(uid).unwrap().value.as_vec2()
 }
 
 /// Screen pixels per comp pixel.
-fn zoom(h: &Harness<'_, EffectcraftApp>) -> f32 {
+fn zoom(h: &Harness<'_, EffectsApp>) -> f32 {
     let a = comp_to_screen(&h.ctx, [0.0, 0.0]).unwrap();
     let b = comp_to_screen(&h.ctx, [100.0, 0.0]).unwrap();
     (b.x - a.x) / 100.0
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'_, EffectsApp>, from: Pos2, to: Pos2) {
     h.event(Event::PointerMoved(from));
     h.step();
     h.event(Event::PointerButton { pos: from, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });

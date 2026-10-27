@@ -10,7 +10,7 @@ use serde_json::json;
 
 use crate::i18n::tr;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 /// Position of the layer's first Roto Brush & Refine Edge effect.
 pub fn roto_index(layer: &Layer) -> Option<usize> {
@@ -42,7 +42,7 @@ fn c32(c: [f64; 3], a: u8) -> Color32 {
 
 /// Draw the matte overlay of the Roto Brush on `layer` (the panel shows the effect's input).
 pub fn draw_overlay(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ctx: &egui::Context,
     painter: &egui::Painter,
     comp: &Comp,
@@ -137,7 +137,7 @@ pub fn draw_overlay(
 
 /// Pointer handling for the Roto Brush / Refine Edge tools. Returns true when it handled input.
 pub fn interact(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     painter: &egui::Painter,
     area: Rect,
@@ -229,7 +229,7 @@ pub fn interact(
     true
 }
 
-fn run_stroke(app: &mut EffectcraftApp, layer: u64, kind: &str, points: &[[f64; 2]], radius: f64) {
+fn run_stroke(app: &mut EffectsApp, layer: u64, kind: &str, points: &[[f64; 2]], radius: f64) {
     let r = app.session.execute("roto.stroke", json!({"layer": layer, "kind": kind, "points": points, "radius": radius}));
     if let Err(e) = r {
         app.ui.status = e.to_string();
@@ -239,7 +239,7 @@ fn run_stroke(app: &mut EffectcraftApp, layer: u64, kind: &str, points: &[[f64; 
 /// The segmentation span bar (above the panel's bottom bar): the layer's frames, the span, the
 /// base frame (yellow), computed frames (green) and stroke frames. Click to go to a frame; drag
 /// the span's ends to change it.
-pub fn span_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, r: Rect, comp: &Comp, layer: &Layer) {
+pub fn span_bar(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, r: Rect, comp: &Comp, layer: &Layer) {
     let t = app.tokens;
     let Some(g) = roto_group(layer) else { return };
     let Some(cid) = app.session.active_comp_id() else { return };
@@ -315,7 +315,7 @@ pub fn span_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, 
 }
 
 /// View-mode toggles and Freeze / Propagate buttons in the Layer panel's bottom bar, from `x`.
-pub fn bar_buttons(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, bar: Rect, x: f32, layer: &Layer) {
+pub fn bar_buttons(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, bar: Rect, x: f32, layer: &Layer) {
     let t = app.tokens;
     let mut x = x;
     let view = app.session.state.roto.view.clone();

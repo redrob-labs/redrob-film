@@ -9,7 +9,7 @@ use redrob_effects_engine::project::{Footage, FootageKind, ItemId, ItemKind};
 use redrob_effects_engine::render::FootageSource;
 use redrob_effects_render::Image;
 use redrob_effects_time::Tick;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use serde_json::json;
 
 const WHY: &str = "H.264 (High 4:2:2) isn't supported by the built-in decoder: chroma_format_idc 2 (only 4:2:0 is implemented)";
@@ -26,7 +26,7 @@ impl FootageSource for Stub {
     }
 }
 
-fn harness(broken: bool) -> (Harness<'static, EffectcraftApp>, ItemId) {
+fn harness(broken: bool) -> (Harness<'static, EffectsApp>, ItemId) {
     let mut s = Session { footage: Arc::new(Stub(broken)), ..Default::default() };
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4})).unwrap();
     let footage = Footage {
@@ -41,7 +41,7 @@ fn harness(broken: bool) -> (Harness<'static, EffectcraftApp>, ItemId) {
     let clip = std::sync::Arc::make_mut(&mut s.project).add_item("Clip", Default::default(), None, ItemKind::Footage(footage));
     s.execute("layer.addItem", json!({"item": clip.0})).unwrap();
     s.execute("project.select", json!({"items": []})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(4);
     (h, clip)
 }

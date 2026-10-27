@@ -7,7 +7,7 @@ use redrob_effects_engine::project::Comp;
 use serde_json::{Value, json};
 
 use super::timeline::TMap;
-use crate::EffectcraftApp;
+use crate::EffectsApp;
 
 type Actions = Vec<(String, Value)>;
 
@@ -61,7 +61,7 @@ fn handle_points(r: Rect) -> [Pos2; 8] {
 /// the inside moves the keys; times land on frames.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn transform_box(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     keys: &[SelKey],
@@ -189,7 +189,7 @@ pub(crate) fn transform_box(
 
 /// Graph Editor ▸ Snap: a dragged key time (comp s) snaps to the current time, another key's
 /// time, a layer's in or out point, a comp or layer marker or the work area within 6 points.
-pub(crate) fn snap_time(app: &EffectcraftApp, tm: TMap, t: f64, others: &[f64]) -> f64 {
+pub(crate) fn snap_time(app: &EffectsApp, tm: TMap, t: f64, others: &[f64]) -> f64 {
     if !app.ui.timeline.graph_snap {
         return t;
     }
@@ -259,7 +259,7 @@ fn alt_id() -> egui::Id {
 }
 
 /// Selected keys' comp-time range.
-fn sel_range(app: &EffectcraftApp, comp: &Comp) -> Option<(f64, f64)> {
+fn sel_range(app: &EffectsApp, comp: &Comp) -> Option<(f64, f64)> {
     let ts: Vec<f64> = app.session.state.selected_keys.iter().filter_map(|k| comp.layer(k.layer).map(|l| l.comp_time(k.time).seconds())).collect();
     if ts.len() < 2 {
         return None;
@@ -271,7 +271,7 @@ fn sel_range(app: &EffectcraftApp, comp: &Comp) -> Option<(f64, f64)> {
 
 /// Alt-drag on the first or last key of a selected group starts scaling the group in time
 /// about the other end. Returns true when it took the drag.
-pub(crate) fn alt_scale_begin(app: &EffectcraftApp, ctx: &egui::Context, comp: &Comp, key_ct: f64) -> bool {
+pub(crate) fn alt_scale_begin(app: &EffectsApp, ctx: &egui::Context, comp: &Comp, key_ct: f64) -> bool {
     let Some((lo, hi)) = sel_range(app, comp) else { return false };
     let st = if (key_ct - hi).abs() < 1e-6 {
         AltScale { anchor: lo, end_is_max: true, span: None }
@@ -285,7 +285,7 @@ pub(crate) fn alt_scale_begin(app: &EffectcraftApp, ctx: &egui::Context, comp: &
 }
 
 /// While an Alt-drag scale is active: scale the group so its dragged end follows the pointer.
-pub(crate) fn alt_scale_update(app: &EffectcraftApp, ctx: &egui::Context, comp: &Comp, tm: TMap, actions: &mut Actions) {
+pub(crate) fn alt_scale_update(app: &EffectsApp, ctx: &egui::Context, comp: &Comp, tm: TMap, actions: &mut Actions) {
     let Some(st) = ctx.data(|d| d.get_temp::<AltScale>(alt_id())) else { return };
     if !ctx.input(|i| i.pointer.primary_down()) {
         ctx.data_mut(|d| d.remove::<AltScale>(alt_id()));

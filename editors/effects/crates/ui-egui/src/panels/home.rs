@@ -1,6 +1,6 @@
 //! The Home screen, laid out like After Effects' (shown over the whole workspace at launch, from
 //! the Tools bar's Home button and by the Learn workspace). A left rail holds New Project / Open
-//! Project, the Home / Templates / Learn pages and, at its foot, the ArtCraft community links.
+//! Project, the Home / Templates / Learn pages and, at its foot, the Redrob community links.
 //! The Home page welcomes you with quick-start tiles (New Composition, the demo project, Import,
 //! New from Template) over the recent projects (File ▸ Open Recent, from Settings): a filterable
 //! table with thumbnails and Name / Opened / Size / Kind columns. Templates is the New from
@@ -18,7 +18,7 @@ use serde_json::json;
 use crate::i18n::{tr, tr_args};
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 pub const THUMB_W: usize = 96;
 pub const THUMB_H: usize = 54;
@@ -166,7 +166,7 @@ pub fn decode_thumb(text: &str) -> Option<egui::ColorImage> {
 
 /// Store the viewer's frame as the open project's thumbnail after it is opened or saved (once per
 /// saved revision, when the viewer shows that revision).
-pub fn capture_thumbnail(app: &mut EffectcraftApp) {
+pub fn capture_thumbnail(app: &mut EffectsApp) {
     let s = &app.session;
     let (Some(path), Some(_)) = (s.path.clone(), s.config.as_ref()) else { return };
     if s.is_dirty() {
@@ -190,7 +190,7 @@ pub fn capture_thumbnail(app: &mut EffectcraftApp) {
     app.home_thumb_saved = Some(key);
 }
 
-fn thumb_texture(app: &mut EffectcraftApp, ctx: &egui::Context, path: &str) -> Option<egui::TextureHandle> {
+fn thumb_texture(app: &mut EffectsApp, ctx: &egui::Context, path: &str) -> Option<egui::TextureHandle> {
     if let Some(t) = app.home_thumbs.get(path) {
         return t.clone();
     }
@@ -209,7 +209,7 @@ fn thumb_texture(app: &mut EffectcraftApp, ctx: &egui::Context, path: &str) -> O
 const RAIL_W: f32 = 236.0;
 
 /// Draw the Home screen over `rect` (the whole workspace).
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let p = ui.painter().with_clip_rect(rect);
@@ -231,7 +231,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 }
 
 /// The left rail: New / Open Project, the pages, and the community links at its foot.
-fn rail_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, rail: Rect, actions: &mut Vec<(&'static str, serde_json::Value)>) {
+fn rail_ui(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, rail: Rect, actions: &mut Vec<(&'static str, serde_json::Value)>) {
     let t = app.tokens;
     let x0 = rail.min.x + 16.0;
     let w = rail.width() - 32.0;
@@ -316,7 +316,7 @@ fn rail_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, rail:
 
 /// The Home page: the welcome, quick-start tiles and the recent projects table.
 fn home_page(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     area: Rect,
@@ -459,7 +459,7 @@ fn home_page(
     }
 }
 
-fn run_actions(app: &mut EffectcraftApp, ctx: &egui::Context, actions: Vec<(&str, serde_json::Value)>) {
+fn run_actions(app: &mut EffectsApp, ctx: &egui::Context, actions: Vec<(&str, serde_json::Value)>) {
     for (id, params) in actions {
         let before = (app.session.path.clone(), app.session.revision);
         match crate::menus::invoke(app, ctx, id, params) {
@@ -551,7 +551,7 @@ mod tests {
     fn home_screen_registers_its_controls() {
         let mut s = redrob_effects_engine::Session::default();
         s.prefs.push_recent("/projects/Alpha.rfx");
-        let mut app = EffectcraftApp::new(s);
+        let mut app = EffectsApp::new(s);
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         ctx.run_ui(Default::default(), |_| {}).textures_delta.clear();
@@ -582,12 +582,12 @@ mod tests {
 
     #[test]
     fn learn_tab_lists_and_starts_tutorials() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.ui.start_screen = true;
         app.ui.home_learn = true;
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
-        let frame = |app: &mut EffectcraftApp| {
+        let frame = |app: &mut EffectsApp| {
             ctx.run_ui(Default::default(), |ui| {
                 app.auto.begin_frame();
                 show(app, ui, Rect::from_min_size(pos2(0.0, 0.0), vec2(1200.0, 800.0)));

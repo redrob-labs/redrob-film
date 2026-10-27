@@ -1,6 +1,6 @@
-//! A fully wired [`Session`]: footage decoding through `redrob-effects-media` (FilmCraft's codecs),
+//! A fully wired [`Session`]: footage decoding through `redrob-effects-media` (Redrob Film's codecs),
 //! the media importer, the expression engine, JavaScript scripting (`redrob-effects-script`) and
-//! Render Queue export through `redrob-effects-export` (FilmCraft's encoders). Frontends (desktop,
+//! Render Queue export through `redrob-effects-export` (Redrob Film's encoders). Frontends (desktop,
 //! CLI, MCP, web) start here.
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
@@ -97,10 +97,10 @@ pub fn session() -> Session {
     }
 }
 
-/// The platform config directory for EffectCraft (`REDROB_EFFECTS_CONFIG_DIR` overrides):
-/// `~/Library/Application Support/EffectCraft` (macOS), `%APPDATA%\EffectCraft` (Windows),
+/// The platform config directory for Redrob Effects (`REDROB_EFFECTS_CONFIG_DIR` overrides):
+/// `~/Library/Application Support/Redrob Film` (macOS), `%APPDATA%\Redrob Film` (Windows),
 /// `$XDG_CONFIG_HOME/effectcraft` or `~/.config/effectcraft` (Linux and others). A `portable.txt`
-/// beside the executable puts it in `EffectCraftData` there instead ([`app_dirs`]).
+/// beside the executable puts it in `Redrob FilmData` there instead ([`app_dirs`]).
 pub fn config_dir() -> Option<std::path::PathBuf> {
     app_dirs::current().dir.clone()
 }
@@ -228,7 +228,7 @@ mod tests {
     /// and the software renderer (no GPU, as on the reporter's Intel HD Graphics 5500) draws it.
     #[test]
     fn imported_glb_shows_in_a_new_composition() {
-        let path = std::env::temp_dir().join(format!("effectcraft-264-cube-{}.glb", std::process::id()));
+        let path = std::env::temp_dir().join(format!("redrob-effects-264-cube-{}.glb", std::process::id()));
         std::fs::write(&path, glb_cube()).unwrap();
         let mut s = super::session();
         assert!(s.accel.is_none(), "renders in software");
@@ -290,7 +290,7 @@ mod tests {
         let mut s = super::session();
         s.exporter = Some(Arc::new(super::FileExporter { sink: Some(Arc::new(move |p: &str, d: Vec<u8>| g.lock().unwrap().push((p.to_string(), d)))) }));
         s.execute("file.openDemoProject", json!({})).unwrap();
-        let dir = "/no-such-dir-effectcraft-sink-test";
+        let dir = "/no-such-dir-redrob-effects-sink-test";
         s.execute(
             "renderQueue.add",
             json!({"format": "gif", "output": format!("{dir}/a.gif"), "resolution": 0.0625, "timeSpan": "custom", "start": 0.0, "end": 0.2}),

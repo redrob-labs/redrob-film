@@ -263,7 +263,7 @@ pub fn run(s: &mut Session, p: &Value) -> Result<Value> {
     if bool_p(p, "wait").unwrap_or(false) || cfg!(target_arch = "wasm32") {
         run();
     } else {
-        std::thread::Builder::new().name("filmcraft-project-manager".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+        std::thread::Builder::new().name("redrob-film-project-manager".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
     }
     let mut out = summary;
     out["job"] = json!(id);

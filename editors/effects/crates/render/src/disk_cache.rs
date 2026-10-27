@@ -88,8 +88,7 @@ struct Meta {
 }
 
 /// The cache's index: entry sizes and least-recently-used order under a size limit. Portable
-/// (no file system): [`DiskCache`] keeps one over its folder, and the browser keeps one over the
-/// Origin Private File System (`apps/effectcraft-web`, where the files are written by workers).
+/// (no file system): [`DiskCache`] keeps one over its folder.
 #[derive(Default)]
 pub struct DiskIndex {
     map: HashMap<(Kind, u128), Meta>,
@@ -284,9 +283,9 @@ pub fn default_folder() -> PathBuf {
         return PathBuf::from(l).join("Redrob Film").join("Disk Cache");
     }
     if let Some(x) = std::env::var_os("XDG_CACHE_HOME") {
-        return PathBuf::from(x).join("effectcraft/disk-cache");
+        return PathBuf::from(x).join("redrob-effects/disk-cache");
     }
-    home.map(|h| h.join(".cache/effectcraft/disk-cache")).unwrap_or_else(|| std::env::temp_dir().join("effectcraft-disk-cache"))
+    home.map(|h| h.join(".cache/redrob-effects/disk-cache")).unwrap_or_else(|| std::env::temp_dir().join("redrob-effects-disk-cache"))
 }
 
 impl DiskCache {
@@ -772,6 +771,7 @@ fn decode_layer(p: &[u8]) -> Option<Buf> {
 // ---------------------------------------------------------------- content keys
 
 /// Bump when rendering changes in a way that makes old disk entries wrong.
+// legacy: part of the on-disk cache key; changing it drops the cache
 const RENDER_VERSION: &str = "effectcraft-render-2";
 
 fn hash_debug(h: &mut Hash128, v: &impl std::fmt::Debug) {
@@ -881,7 +881,7 @@ mod tests {
     use super::*;
 
     fn tmpdir(name: &str) -> PathBuf {
-        let d = std::env::temp_dir().join(format!("effectcraft-disk-cache-{name}-{}", std::process::id()));
+        let d = std::env::temp_dir().join(format!("redrob-effects-disk-cache-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
         d
     }

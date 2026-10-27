@@ -221,7 +221,7 @@ impl Pipes {
     fn new(device: &wgpu::Device, raster: bool) -> Pipes {
         let raster = raster.then(|| {
             let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("effectcraft advanced 3d"),
+                label: Some("redrob-effects advanced 3d"),
                 source: wgpu::ShaderSource::Wgsl(include_str!("shaders/advanced3d.wgsl").into()),
             });
             let mut entries = vec![wgpu::BindGroupLayoutEntry {
@@ -612,7 +612,7 @@ const KERNELS: &[&str] = &["resolve", "radius_of", "boost", "prefix_rows", "gath
 impl Post {
     fn new(device: &wgpu::Device) -> Post {
         let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("effectcraft advanced 3d post"),
+            label: Some("redrob-effects advanced 3d post"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shaders/adv3d.wgsl").into()),
         });
         let tex = |binding, sample_type| wgpu::BindGroupLayoutEntry {

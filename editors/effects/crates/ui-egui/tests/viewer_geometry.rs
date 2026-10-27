@@ -5,26 +5,26 @@ use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use redrob_effects_engine::Session;
 use redrob_effects_ui_egui::{
-    EffectcraftApp,
+    EffectsApp,
     panels::viewer,
     theme::{self, ThemeKind},
 };
 use serde_json::json;
 
-fn harness(width: f32, kind: ThemeKind) -> Harness<'static, EffectcraftApp> {
+fn harness(width: f32, kind: ThemeKind) -> Harness<'static, EffectsApp> {
     harness_at_scale(width, kind, 1.0)
 }
 
-fn harness_at_scale(width: f32, kind: ThemeKind, scale: f32) -> Harness<'static, EffectcraftApp> {
+fn harness_at_scale(width: f32, kind: ThemeKind, scale: f32) -> Harness<'static, EffectsApp> {
     let mut session = Session::default();
     session.execute("comp.new", json!({"name":"Geometry validation", "width":640, "height":360, "duration":4})).unwrap();
     let mut h = Harness::builder().with_size(vec2(width, 360.0)).with_pixels_per_point(scale).build_ui_state(
-        |ui, app: &mut EffectcraftApp| {
+        |ui, app: &mut EffectsApp| {
             app.auto.begin_frame();
             *app.frames.last_ms.lock().unwrap() = 0.0;
             viewer::show(app, ui, ui.max_rect());
         },
-        EffectcraftApp::new(session),
+        EffectsApp::new(session),
     );
     let ctx = h.ctx.clone();
     h.state_mut().set_theme(&ctx, kind);
@@ -39,7 +39,7 @@ fn harness_at_scale(width: f32, kind: ThemeKind, scale: f32) -> Harness<'static,
     h
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> Rect {
     let e = h.state().auto.elements.iter().find(|e| e.id == id).unwrap_or_else(|| panic!("missing {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
@@ -141,7 +141,7 @@ fn compact_control_row_scrolls_and_preserves_interactions() {
     assert_eq!(h.state().session.state.viewer.fast_previews.id(), "adaptive", "a scrolled dropdown must retain its menu command");
 }
 
-fn click_control(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click_control(h: &mut Harness<'_, EffectsApp>, id: &str) {
     let control = rect(h, id);
     let point = control.center();
     let row = rect(h, "viewer.controls");
@@ -194,7 +194,7 @@ fn compact_scrollbar_thumb_is_distinct_and_tracks_the_scrolled_position() {
     }
 }
 
-fn painted_scrollbar(h: &Harness<'_, EffectcraftApp>, kind: ThemeKind, scale: f32, state: &str) -> (Rect, Rect) {
+fn painted_scrollbar(h: &Harness<'_, EffectsApp>, kind: ThemeKind, scale: f32, state: &str) -> (Rect, Rect) {
     let scrollbar = h.get_by_role(egui::accesskit::Role::ScrollBar).rect();
     let row = rect(h, "viewer.controls");
     assert!(row.contains_rect(scrollbar), "scrollbar {scrollbar:?} must stay inside {row:?}");
@@ -230,7 +230,7 @@ fn painted_scrollbar(h: &Harness<'_, EffectcraftApp>, kind: ThemeKind, scale: f3
     (track.rect, thumb.rect)
 }
 
-fn scroll_controls_to_end(h: &mut Harness<'_, EffectcraftApp>) {
+fn scroll_controls_to_end(h: &mut Harness<'_, EffectsApp>) {
     h.event(Event::PointerMoved(pos2(150.0, 345.0)));
     h.event(Event::MouseWheel { unit: egui::MouseWheelUnit::Point, delta: vec2(-1500.0, 0.0), modifiers: Default::default(), phase: egui::TouchPhase::Move });
     h.run_steps(30);
@@ -256,7 +256,7 @@ fn viewer_theme_and_width_visual_matrix() {
     }
 }
 
-fn save_stable_snapshot(h: &mut Harness<'_, EffectcraftApp>, path: &str, width: f32) {
+fn save_stable_snapshot(h: &mut Harness<'_, EffectsApp>, path: &str, width: f32) {
     let image = h.render().unwrap();
     image.save(path).unwrap();
     h.run_steps(3);

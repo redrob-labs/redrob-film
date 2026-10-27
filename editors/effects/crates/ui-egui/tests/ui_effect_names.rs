@@ -7,7 +7,7 @@ use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use redrob_effects_engine::Session;
 use redrob_effects_engine::project::LayerId;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::dock::PanelKind;
 use redrob_effects_ui_egui::native_menu::{NativeNode, build as native_menu};
 use serde_json::json;
@@ -17,7 +17,7 @@ const BLUR: &str = "ec.blur.gaussian";
 const BLUR_EN: &str = "Gaussian Blur";
 const BLUR_ZH: &str = "高斯模糊";
 
-fn harness(language: &str) -> (Harness<'static, EffectcraftApp>, u64) {
+fn harness(language: &str) -> (Harness<'static, EffectsApp>, u64) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 640, "height": 360, "frameRate": 30, "duration": 10})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Back", "color": "#20c040"})).unwrap();
@@ -28,7 +28,7 @@ fn harness(language: &str) -> (Harness<'static, EffectcraftApp>, u64) {
     s.state.selected_layers = vec![LayerId(layer)];
     s.state.selected_props.clear();
     s.prefs.general.language = language.to_string();
-    let mut app = EffectcraftApp::new(s);
+    let mut app = EffectsApp::new(s);
     app.show_panel(PanelKind::EffectControls);
     app.show_panel(PanelKind::EffectsPresets);
     app.show_panel(PanelKind::Timeline);
@@ -39,14 +39,14 @@ fn harness(language: &str) -> (Harness<'static, EffectcraftApp>, u64) {
 
 /// How many widgets draw a label containing `needle` (the Effect Controls header registers its
 /// drawn name with the accessibility tree, so a translated name shows up here).
-fn drawn(h: &Harness<'_, EffectcraftApp>, needle: &str) -> usize {
+fn drawn(h: &Harness<'_, EffectsApp>, needle: &str) -> usize {
     h.query_all_by_label_contains(needle).count()
 }
 
 /// The label the native menu gives the `effect.apply` entry for effect `id`, under top-level menu
 /// `top` and category `category`. The in-window menu bar builds its labels through the same
 /// `entry_label`, so this covers both menu bars.
-fn menu_label(h: &Harness<'_, EffectcraftApp>, top: &str, category: &str, id: &str) -> Option<String> {
+fn menu_label(h: &Harness<'_, EffectsApp>, top: &str, category: &str, id: &str) -> Option<String> {
     let menu = native_menu(h.state());
     let effect = menu.menus.iter().find_map(|n| match n {
         NativeNode::Submenu { label, children } if label == top => Some(children),

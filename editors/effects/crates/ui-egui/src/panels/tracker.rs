@@ -14,7 +14,7 @@ use serde_json::json;
 
 use super::viewer::ViewerMap;
 use crate::theme::Tokens;
-use crate::{Dialog, EffectcraftApp, widgets};
+use crate::{Dialog, EffectsApp, widgets};
 
 const ROW: f32 = 26.0;
 
@@ -39,7 +39,7 @@ pub struct ApplyDraft {
 }
 
 /// The current track: (tracked layer, tracker uid), resolved like the engine does.
-fn current(app: &EffectcraftApp) -> Option<(LayerId, Uid)> {
+fn current(app: &EffectsApp) -> Option<(LayerId, Uid)> {
     let comp = app.session.active_comp()?;
     if let Some((l, t)) = app.session.state.current_track
         && comp.layer(l).and_then(|l| l.tracker(t)).is_some()
@@ -56,7 +56,7 @@ fn source_id() -> egui::Id {
 }
 
 /// Motion Source: the current track's layer, the chosen source, or the selected layer.
-fn motion_source(app: &EffectcraftApp) -> Option<LayerId> {
+fn motion_source(app: &EffectsApp) -> Option<LayerId> {
     let comp = app.session.active_comp()?;
     if let Some((l, _)) = app.session.state.current_track
         && comp.layer(l).is_some()
@@ -80,7 +80,7 @@ fn label(p: &egui::Painter, pos: Pos2, s: &str, t: &Tokens) {
 }
 
 /// A button that can be disabled (drawn dim and inert).
-fn button(app: &mut EffectcraftApp, ui: &mut egui::Ui, r: Rect, text: &str, enabled: bool, id: &str) -> bool {
+fn button(app: &mut EffectsApp, ui: &mut egui::Ui, r: Rect, text: &str, enabled: bool, id: &str) -> bool {
     let t = app.tokens;
     app.auto.add(id, r, text);
     if !enabled {
@@ -91,7 +91,7 @@ fn button(app: &mut EffectcraftApp, ui: &mut egui::Ui, r: Rect, text: &str, enab
     widgets::text_button(ui, r, text, false, &t, egui::Id::new(id)).clicked()
 }
 
-fn run(app: &mut EffectcraftApp, ctx: &egui::Context, cmd: &str, p: serde_json::Value) {
+fn run(app: &mut EffectsApp, ctx: &egui::Context, cmd: &str, p: serde_json::Value) {
     if let Err(e) = crate::menus::invoke(app, ctx, cmd, p) {
         app.ui.status = e;
     }
@@ -113,7 +113,7 @@ fn analyze_glyph(p: &egui::Painter, r: Rect, forward: bool, frame: bool, stop: b
     }
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     if app.session.track_job.is_some() {
@@ -347,7 +347,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 
 /// The Tracker panel in mask mode: Method and the four track buttons (◀| ◀ ▶ |▶).
 #[allow(clippy::too_many_arguments)]
-fn mask_mode(app: &mut EffectcraftApp, ui: &mut egui::Ui, ctx: &egui::Context, p: &egui::Painter, rect: Rect, mut y: f32, layer: LayerId, mask: Uid) {
+fn mask_mode(app: &mut EffectsApp, ui: &mut egui::Ui, ctx: &egui::Context, p: &egui::Painter, rect: Rect, mut y: f32, layer: LayerId, mask: Uid) {
     use redrob_effects_engine::mask_track::MaskMethod;
     let t = app.tokens;
     let x0 = rect.min.x + 10.0;
@@ -451,7 +451,7 @@ fn mask_mode(app: &mut EffectcraftApp, ui: &mut egui::Ui, ctx: &egui::Context, p
 
 // ---------------------------------------------------------------- dialogs
 
-pub fn open_options(app: &mut EffectcraftApp) -> Result<(), String> {
+pub fn open_options(app: &mut EffectsApp) -> Result<(), String> {
     let (l, u) = current(app).ok_or("no current track")?;
     let comp = app.session.active_comp().ok_or("no composition")?;
     let (g, s) = comp.layer(l).and_then(|l| l.tracker(u)).ok_or("no tracker")?;
@@ -463,7 +463,7 @@ pub fn open_options(app: &mut EffectcraftApp) -> Result<(), String> {
     Ok(())
 }
 
-pub fn open_target(app: &mut EffectcraftApp) -> Result<(), String> {
+pub fn open_target(app: &mut EffectsApp) -> Result<(), String> {
     let (l, u) = current(app).ok_or("no current track")?;
     let comp = app.session.active_comp().ok_or("no composition")?;
     let (_, s) = comp.layer(l).and_then(|l| l.tracker(u)).ok_or("no tracker")?;
@@ -472,7 +472,7 @@ pub fn open_target(app: &mut EffectcraftApp) -> Result<(), String> {
     Ok(())
 }
 
-fn ok_cancel(ui: &mut egui::Ui, app: &mut EffectcraftApp, t: &Tokens, prefix: &str) -> (bool, bool) {
+fn ok_cancel(ui: &mut egui::Ui, app: &mut EffectsApp, t: &Tokens, prefix: &str) -> (bool, bool) {
     let (mut ok, mut cancel) = (false, false);
     ui.add_space(14.0);
     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -486,7 +486,7 @@ fn ok_cancel(ui: &mut egui::Ui, app: &mut EffectcraftApp, t: &Tokens, prefix: &s
     (ok, cancel)
 }
 
-pub fn options_dialog(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn options_dialog(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens) {
     let mut d = app.dialog_state.track_options.clone();
     let (mut ok, mut cancel) = (false, false);
     super::dialogs::modal(ctx, "Motion Tracker Options", vec2(460.0, 470.0), t, |ui| {
@@ -573,7 +573,7 @@ pub fn options_dialog(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens)
     }
 }
 
-pub fn target_dialog(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn target_dialog(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens) {
     let mut d = app.dialog_state.track_target.clone();
     let (mut ok, mut cancel) = (false, false);
     let layers: Vec<(u64, String)> =
@@ -609,7 +609,7 @@ pub fn target_dialog(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) 
     }
 }
 
-pub fn apply_dialog(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn apply_dialog(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens) {
     let mut d = app.dialog_state.track_apply.clone();
     let (mut ok, mut cancel) = (false, false);
     super::dialogs::modal(ctx, "Motion Tracker Apply Options", vec2(380.0, 170.0), t, |ui| {
@@ -702,7 +702,7 @@ fn quad_contains(q: &[Pos2; 4], p: Pos2) -> bool {
 
 /// Draw the current track's points (layer → comp matrix `m`) and return their hit areas, from the
 /// most to the least specific.
-pub fn draw_overlay(app: &mut EffectcraftApp, painter: &egui::Painter, map: &ViewerMap, m: &Mat3, layer: &Layer, tracker: Uid, comp_time: Tick) -> Vec<Hit> {
+pub fn draw_overlay(app: &mut EffectsApp, painter: &egui::Painter, map: &ViewerMap, m: &Mat3, layer: &Layer, tracker: Uid, comp_time: Tick) -> Vec<Hit> {
     let Some((g, _)) = layer.tracker(tracker) else { return vec![] };
     let lt = layer.layer_time(comp_time);
     let scr = |p: [f64; 2]| {
@@ -836,6 +836,6 @@ pub fn drag_params(d: &Drag, cpt: [f64; 2]) -> serde_json::Value {
 }
 
 /// The tracked layer and tracker the viewer shows widgets for.
-pub fn viewer_track(app: &EffectcraftApp) -> Option<(LayerId, Uid)> {
+pub fn viewer_track(app: &EffectsApp) -> Option<(LayerId, Uid)> {
     current(app)
 }

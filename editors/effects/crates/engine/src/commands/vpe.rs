@@ -1,6 +1,6 @@
 //! File ▸ Import ▸ Vanishing Point (.vpe): present in the menu like After Effects', but always
 //! disabled. The `.vpe` exchange format Photoshop's Vanishing Point filter writes has no public
-//! specification, and EffectCraft implements formats only from published specs (clean room), so
+//! specification, and Redrob Effects implements formats only from published specs (clean room), so
 //! the entry explains that instead of importing. See docs/file-format-parity.md.
 
 use serde_json::Value;

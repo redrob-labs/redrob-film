@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 use crate::{Event, Session};
 
 fn tmp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("effectcraft-limits-tests-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("redrob-effects-limits-tests-{}", std::process::id()));
     std::fs::create_dir_all(&d).unwrap();
     d.join(name).to_string_lossy().to_string()
 }

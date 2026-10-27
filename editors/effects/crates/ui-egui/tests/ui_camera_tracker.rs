@@ -7,14 +7,14 @@ use egui_kittest::Harness;
 use redrob_effects_engine::Session;
 use redrob_effects_engine::effects::camera_tracker as ct;
 use redrob_effects_engine::track::camtrack::{CameraSolve, ShotType, SolveMethod, SolvedFrame, SolvedPoint};
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::dock::PanelKind;
 use serde_json::json;
 
 const W: f64 = 640.0;
 const H: f64 = 360.0;
 
-fn app() -> (EffectcraftApp, u64, u64) {
+fn app() -> (EffectsApp, u64, u64) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Shot", "width": W, "height": H, "duration": 2})).unwrap();
     let plate = s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080"})).unwrap()["layer"].as_u64().unwrap();
@@ -48,19 +48,19 @@ fn app() -> (EffectcraftApp, u64, u64) {
     s.state.selected_props = vec![(redrob_effects_engine::project::LayerId(plate), uid)];
     s.execute("layer.select", json!({"layers": [plate]})).unwrap();
     s.state.selected_props = vec![(redrob_effects_engine::project::LayerId(plate), uid)];
-    (EffectcraftApp::new(s), plate, uid)
+    (EffectsApp::new(s), plate, uid)
 }
 
-fn ids(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn ids(h: &Harness<'_, EffectsApp>) -> Vec<String> {
     h.state().auto.previous.iter().chain(h.state().auto.elements.iter()).map(|e| e.id.clone()).collect()
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> egui::Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> egui::Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     egui::Rect::from_min_size(egui::pos2(e.rect[0], e.rect[1]), egui::vec2(e.rect[2], e.rect[3]))
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, at: egui::Pos2, modifiers: egui::Modifiers) {
+fn click(h: &mut Harness<'_, EffectsApp>, at: egui::Pos2, modifiers: egui::Modifiers) {
     h.input_mut().events.push(egui::Event::ModifiersChanged(modifiers));
     h.input_mut().events.push(egui::Event::PointerMoved(at));
     h.input_mut().events.push(egui::Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed: true, modifiers });
@@ -146,7 +146,7 @@ fn viewer_points_selection_and_effect_controls() {
 }
 
 /// Drag with `button` from `from` to `to` in steps, then release.
-fn drag_with(h: &mut Harness<'_, EffectcraftApp>, button: egui::PointerButton, from: egui::Pos2, to: egui::Pos2) {
+fn drag_with(h: &mut Harness<'_, EffectsApp>, button: egui::PointerButton, from: egui::Pos2, to: egui::Pos2) {
     h.input_mut().events.push(egui::Event::PointerMoved(from));
     h.input_mut().events.push(egui::Event::PointerButton { pos: from, button, pressed: true, modifiers: Default::default() });
     h.step();
@@ -187,7 +187,7 @@ fn viewer_zooms_and_pans_over_the_track_points() {
     assert!(h.state().session.state.camera_points.is_empty(), "a pan selects no points");
     // Spacebar held: a primary drag from a point pans instead of drawing a marquee.
     let at = rect(&h, "viewer.cameraTracker.point.7").center();
-    let space = |h: &mut Harness<'_, EffectcraftApp>, pressed: bool| {
+    let space = |h: &mut Harness<'_, EffectsApp>, pressed: bool| {
         h.input_mut().events.push(egui::Event::Key { key: egui::Key::Space, physical_key: None, pressed, repeat: false, modifiers: Default::default() });
         h.step();
     };
@@ -200,7 +200,7 @@ fn viewer_zooms_and_pans_over_the_track_points() {
 }
 
 /// Step the UI until background frame renders have landed.
-fn settle(h: &mut Harness<'_, EffectcraftApp>) {
+fn settle(h: &mut Harness<'_, EffectsApp>) {
     for _ in 0..600 {
         h.step();
         if h.state().frames.inflight() == 0 && h.state().frames.last_ms.lock().map(|v| *v > 0.0).unwrap_or(false) {
@@ -224,7 +224,7 @@ fn snapshot_showcase_track() {
     s.execute("layer.select", json!({"layers": ["#1"]})).unwrap();
     s.execute("track.camera", json!({"layer": "#1", "wait": true})).unwrap();
     s.execute("time.set", json!({"time": 2.0})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).with_pixels_per_point(1.0).wgpu().build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).with_pixels_per_point(1.0).wgpu().build_eframe(|_| EffectsApp::new(s));
     h.state_mut().show_panel(PanelKind::Composition);
     settle(&mut h);
     let pts: Vec<String> = ids(&h).into_iter().filter(|i| i.starts_with("viewer.cameraTracker.point.")).collect();

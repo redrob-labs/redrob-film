@@ -3,24 +3,24 @@
 
 use egui_kittest::Harness;
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::dock::PanelKind;
 use serde_json::json;
 
-fn app() -> EffectcraftApp {
+fn app() -> EffectsApp {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Track", "width": 640, "height": 360, "duration": 2})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080"})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Target", "width": 80, "height": 80})).unwrap();
     s.execute("layer.select", json!({"layers": ["Plate"]})).unwrap();
-    EffectcraftApp::new(s)
+    EffectsApp::new(s)
 }
 
-fn ids(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn ids(h: &Harness<'_, EffectsApp>) -> Vec<String> {
     h.state().auto.previous.iter().chain(h.state().auto.elements.iter()).map(|e| e.id.clone()).collect()
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> egui::Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> egui::Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     egui::Rect::from_min_size(egui::pos2(e.rect[0], e.rect[1]), egui::vec2(e.rect[2], e.rect[3]))
 }
@@ -116,7 +116,7 @@ fn tracker_panel_and_track_point_widgets() {
     assert_eq!(h.state().dialog, Some(redrob_effects_ui_egui::Dialog::TrackTarget));
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: egui::Pos2, to: egui::Pos2) {
+fn drag(h: &mut Harness<'_, EffectsApp>, from: egui::Pos2, to: egui::Pos2) {
     h.input_mut().events.push(egui::Event::PointerMoved(from));
     h.input_mut().events.push(egui::Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
     h.step();
@@ -140,13 +140,13 @@ fn zoomed_out_track_point_can_be_grabbed() {
         s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080"})).unwrap();
         s.execute("layer.select", json!({"layers": ["Plate"]})).unwrap();
         s.execute("track.motion", json!({})).unwrap();
-        let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectcraftApp::new(s));
+        let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(move |_| EffectsApp::new(s));
         h.state_mut().show_panel(PanelKind::Composition);
         h.run_steps(3);
         h.state_mut().ui.viewer.zoom = Some(mag);
         h.run_steps(3);
         let zoom = rect(&h, "viewer.comp").width() / 1920.0;
-        let point = |h: &mut Harness<'_, EffectcraftApp>| h.state_mut().session.execute("track.status", json!({})).unwrap()["tracker"]["points"][0].clone();
+        let point = |h: &mut Harness<'_, EffectsApp>| h.state_mut().session.execute("track.status", json!({})).unwrap()["tracker"]["points"][0].clone();
         let p0 = point(&mut h);
         let fr = rect(&h, "viewer.track.1.feature");
         let from = fr.center() + egui::vec2(fr.width() * 0.35, 0.0);

@@ -1,4 +1,4 @@
-//! EffectCraft composition → Lottie document.
+//! Redrob Effects composition → Lottie document.
 
 use std::collections::BTreeSet;
 
@@ -32,7 +32,7 @@ impl ExportResult {
 }
 
 /// One supported effect: Lottie effect type and its parameter list in Lottie order:
-/// (EffectCraft param id or "" for a Lottie-only param, Lottie value type, scale to Lottie,
+/// (Redrob Effects param id or "" for a Lottie-only param, Lottie value type, scale to Lottie,
 /// constant value for Lottie-only params).
 pub(crate) struct FxMap {
     pub id: &'static str,

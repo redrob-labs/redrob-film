@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use egui::{Align2, Color32, Rect, Stroke, pos2, vec2};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::theme::Tokens;
 
 /// FFT size (≈ 85 ms at 48 kHz).
@@ -64,7 +64,7 @@ pub fn analyse(chans: &[Vec<f32>], sample_rate: f32) -> Spectrum {
 }
 
 /// The spectrum at the playhead, cached by (sequence, sample, revision).
-fn current(app: &mut FilmcraftApp, ctx: &egui::Context) -> Option<Arc<Spectrum>> {
+fn current(app: &mut FilmApp, ctx: &egui::Context) -> Option<Arc<Spectrum>> {
     let seq_id = app.session.state.active_sequence?;
     let sr = app.session.active_sequence()?.settings.sample_rate as i64;
     let now = app.session.playhead().to_units_floor(sr);
@@ -86,7 +86,7 @@ fn hz_label(hz: f32) -> String {
     if hz >= 1000.0 { format!("{}k", (hz / 100.0).round() / 10.0) } else { format!("{}", hz.round()) }
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     ui.painter().rect_filled(rect, 0.0, Color32::BLACK);

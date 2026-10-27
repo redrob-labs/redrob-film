@@ -14,7 +14,7 @@ use redrob_film_engine::project::{ItemId, ItemKind};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 
 type Actions = Vec<(String, Value)>;
 
@@ -51,7 +51,7 @@ pub struct ClipJobsUi {
 }
 
 /// The item menu entries (a file media item).
-pub fn item_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, id: ItemId, kind: &ItemKind, actions: &mut Actions) {
+pub fn item_menu(app: &mut FilmApp, ui: &mut egui::Ui, id: ItemId, kind: &ItemKind, actions: &mut Actions) {
     let ItemKind::Media(m) = kind else { return };
     if !matches!(m.media, redrob_film_engine::project::MediaRef::File { .. }) {
         return;
@@ -155,12 +155,12 @@ impl ClipJobDraft {
     }
 }
 
-fn push(app: &mut FilmcraftApp, id: &str, r: &egui::Response, label: &str) {
+fn push(app: &mut FilmApp, id: &str, r: &egui::Response, label: &str) {
     app.auto.add(&format!("clipJob.{id}"), r.rect, label);
 }
 
 /// Draw the open clip job dialog.
-pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
+pub fn show(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut d) = app.ui.clip_jobs.dialog.clone() else { return };
     let mut keep = true;
     let mut run: Option<(&'static str, Value)> = None;

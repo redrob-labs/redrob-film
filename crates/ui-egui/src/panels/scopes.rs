@@ -28,7 +28,7 @@ use std::sync::Arc;
 use egui::{Align2, Color32, Rect, Sense, Stroke, TextureHandle, TextureOptions, pos2, vec2};
 use redrob_film_scopes::{self as sc, Brightness, ColorSpace, PaintMode, ParadeType, Params, Scale, ScopeKind, Signal, Targets, WaveformType};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::frames::{FrameKey, Target};
 use crate::icons::{self, Icon};
 use crate::panels::panel_state::{SCOPE_PRESETS, ScopeSource, ScopesState, VECTOR_GAINS};
@@ -58,7 +58,7 @@ fn hash_of(v: impl Hash) -> u64 {
 /// The active sequence's frame `frame` for the scopes: the monitor picture (¼ resolution, from
 /// the frame workers at priority `prio`) or, for Rec. 2100 scopes of an HDR sequence, a small
 /// working-space render. While a new frame renders the last one stays.
-pub fn frame_signal(app: &mut FilmcraftApp, ctx: &egui::Context, slot: &str, frame: i64, st: &ScopesState, prio: u32) -> Option<ScopeFrame> {
+pub fn frame_signal(app: &mut FilmApp, ctx: &egui::Context, slot: &str, frame: i64, st: &ScopesState, prio: u32) -> Option<ScopeFrame> {
     let seq_id = app.session.state.active_sequence?;
     let q = app.session.active_sequence()?;
     let hdr_seq = q.settings.color.working.is_hdr();
@@ -104,7 +104,7 @@ const FULL_W: usize = 3840;
 const FULL_H: usize = 2160;
 
 /// The Source monitor's frame for the scopes (the clip at the Source playhead).
-pub fn source_signal(app: &mut FilmcraftApp, ctx: &egui::Context, st: &ScopesState, prio: u32) -> Option<ScopeFrame> {
+pub fn source_signal(app: &mut FilmApp, ctx: &egui::Context, st: &ScopesState, prio: u32) -> Option<ScopeFrame> {
     let item = app.session.state.source_item?;
     let view = redrob_film_engine::clip_ops::source_view(&app.session, item)?;
     let frame = view.rate.frame_at(app.session.state.source_playhead);
@@ -133,7 +133,7 @@ pub fn source_signal(app: &mut FilmcraftApp, ctx: &egui::Context, st: &ScopesSta
 }
 
 /// Whether the scopes read the Source monitor now (Scope Source, or the focused monitor).
-pub fn reads_source(app: &FilmcraftApp, st: &ScopesState) -> bool {
+pub fn reads_source(app: &FilmApp, st: &ScopesState) -> bool {
     match st.source {
         ScopeSource::Program => false,
         ScopeSource::Source => true,
@@ -154,7 +154,7 @@ pub fn request_refresh(ctx: &egui::Context) {
 }
 
 /// The Lumetri Scopes panel.
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let st = app.ui.panels.scopes.clone();
     let area = Rect::from_min_max(rect.min, pos2(rect.max.x, rect.max.y - FOOTER_H));
@@ -219,7 +219,7 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     footer(app, ui, Rect::from_min_max(pos2(rect.min.x, area.max.y), rect.max), sf.as_ref().map(|s| s.space));
 }
 
-fn footer(app: &mut FilmcraftApp, ui: &mut egui::Ui, r: Rect, space: Option<ColorSpace>) {
+fn footer(app: &mut FilmApp, ui: &mut egui::Ui, r: Rect, space: Option<ColorSpace>) {
     let t = app.tokens;
     let (scale0, clamp0, space0) = (app.ui.panels.scopes.scale, app.ui.panels.scopes.clamp, app.ui.panels.scopes.color_space);
     let space = space.unwrap_or(space0.resolve(false));
@@ -273,7 +273,7 @@ fn pick(ui: &mut egui::Ui, out: &mut Picks, id: &str, label: &str, on: bool) {
 }
 
 /// The scopes' settings menu (wrench and right-click).
-pub fn settings_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
+pub fn settings_menu(app: &mut FilmApp, ui: &mut egui::Ui) {
     ui.set_min_width(220.0);
     let st = app.ui.panels.scopes.clone();
     let mut out: Picks = Vec::new();
@@ -384,7 +384,7 @@ pub fn settings_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
 }
 
 /// Menu items that act on more than the settings: Refresh Now and Export Background.
-pub fn apply_app_menu_id(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str) -> bool {
+pub fn apply_app_menu_id(app: &mut FilmApp, ctx: &egui::Context, id: &str) -> bool {
     if id == "scopes.menu.refresh" {
         request_refresh(ctx);
         return true;
@@ -526,7 +526,7 @@ pub fn layout(area: Rect, n: usize) -> Vec<Rect> {
 }
 
 /// Draw `shown` scopes of a frame into `area` (black background expected).
-pub fn draw(app: &mut FilmcraftApp, ui: &mut egui::Ui, area: Rect, shown: &[ScopeKind], sf: &ScopeFrame, st: &ScopesState, prefix: &str) {
+pub fn draw(app: &mut FilmApp, ui: &mut egui::Ui, area: Rect, shown: &[ScopeKind], sf: &ScopeFrame, st: &ScopesState, prefix: &str) {
     let cells = layout(area, shown.len());
     if shown.len() > 1 {
         for c in &cells {
@@ -617,7 +617,7 @@ fn highlight_extremes(px: &mut [u8], grids: &[&sc::Grid], (lo, hi): (f32, f32)) 
     }
 }
 
-fn draw_one(app: &mut FilmcraftApp, ui: &mut egui::Ui, cell: Rect, k: ScopeKind, sf: &ScopeFrame, st: &ScopesState, prefix: &str) {
+fn draw_one(app: &mut FilmApp, ui: &mut egui::Ui, cell: Rect, k: ScopeKind, sf: &ScopeFrame, st: &ScopesState, prefix: &str) {
     let ctx = ui.ctx().clone();
     let rows = ((cell.height() - 20.0) * ctx.pixels_per_point()).clamp(64.0, 256.0) as usize;
     let key = hash_of((sf.key, settings_key(st), k, rows));
@@ -840,7 +840,7 @@ fn histogram_image(h: &sc::Histogram, gain: f32, c: HistComps) -> (usize, usize,
 }
 
 /// The pointer over a waveform / parade: a horizontal line at its level and the value there.
-fn hover_level(app: &mut FilmcraftApp, ui: &egui::Ui, plot: Rect, st: &ScopesState, sf: &ScopeFrame, (lo, hi): (f32, f32), prefix: &str) {
+fn hover_level(app: &mut FilmApp, ui: &egui::Ui, plot: Rect, st: &ScopesState, sf: &ScopeFrame, (lo, hi): (f32, f32), prefix: &str) {
     let Some(pos) = ui.ctx().pointer_hover_pos() else { return };
     if !plot.contains(pos) || !ui.rect_contains_pointer(plot) {
         return;

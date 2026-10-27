@@ -4,24 +4,24 @@
 
 use egui::{Event, Rect, pos2, vec2};
 use egui_kittest::Harness;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::dock::PanelKind;
 use serde_json::json;
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, EffectsApp> {
     let mut s = redrob_effects_host::session();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     h
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, EffectsApp>, id: &str) {
     let c = rect(h, id).center();
     h.input_mut().events.push(Event::PointerMoved(c));
     for pressed in [true, false] {
@@ -30,7 +30,7 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
     h.run_steps(3);
 }
 
-fn layer_names(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn layer_names(h: &Harness<'_, EffectsApp>) -> Vec<String> {
     h.state().session.active_comp().map(|c| c.layers.iter().map(|l| l.name.clone()).collect()).unwrap_or_default()
 }
 
@@ -101,7 +101,7 @@ fn panels_open_at_quit_dock_again_at_launch() {
     let mut s = redrob_effects_host::session();
     s.config = Some(store.clone());
     s.execute("window.restoreScriptPanels", json!({})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     let panel = h.state().session.script_ui.windows.iter().find(|w| w.script == "Hello Panel.jsx").expect("the panel's window").id;
     assert!(h.state().ui.dock.contains(PanelKind::ScriptPanel(panel)), "the panel docks");
@@ -174,14 +174,14 @@ fn history_panel_jumps_between_branches() {
 /// onDraw fills of concave paths and real images (drawImage, image controls), rendered.
 #[test]
 fn on_draw_concave_fills_and_images_render() {
-    let dir = std::env::temp_dir().join(format!("effectcraft-scriptui-img-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("redrob-effects-scriptui-img-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let png = dir.join("green.png");
     image::RgbaImage::from_pixel(8, 8, image::Rgba([0, 255, 0, 255])).save(&png).unwrap();
     let png = png.to_string_lossy().replace('\\', "/");
     let mut s = redrob_effects_host::session();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_pixels_per_point(1.0).wgpu().build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_pixels_per_point(1.0).wgpu().build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     let code = format!(
         r#"
@@ -252,7 +252,7 @@ fn script_windows_send_mouse_events_to_listeners() {
     assert_eq!(r["ok"], true, "{r}");
     h.run_steps(3);
     let win = h.state().session.script_ui.windows[0].id;
-    let text = |h: &Harness<'_, EffectcraftApp>, name: &str| h.state().session.script_ui.windows[0].root.lookup(&json!(name)).cloned().unwrap();
+    let text = |h: &Harness<'_, EffectsApp>, name: &str| h.state().session.script_ui.windows[0].root.lookup(&json!(name)).cloned().unwrap();
     let pad = rect(&h, &format!("scriptui.{win}.pad"));
     let at = pad.min + vec2(10.0, 20.0);
     click_at(&mut h, at);
@@ -264,7 +264,7 @@ fn script_windows_send_mouse_events_to_listeners() {
     h.state_mut().session.execute("scriptui.close", json!({})).unwrap();
 }
 
-fn click_at(h: &mut Harness<'_, EffectcraftApp>, c: egui::Pos2) {
+fn click_at(h: &mut Harness<'_, EffectsApp>, c: egui::Pos2) {
     h.input_mut().events.push(Event::PointerMoved(c));
     h.run_steps(1);
     for pressed in [true, false] {

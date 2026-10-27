@@ -496,7 +496,7 @@ fn screenshot(b: &mut Backend, a: &Value) -> Result<Reply> {
         c.check(p, crate::confine::Access::Write)?;
     }
     let path =
-        keep.clone().unwrap_or_else(|| std::env::temp_dir().join(format!("effectcraft-mcp-shot-{}.png", std::process::id())).to_string_lossy().into_owned());
+        keep.clone().unwrap_or_else(|| std::env::temp_dir().join(format!("redrob-effects-mcp-shot-{}.png", std::process::id())).to_string_lossy().into_owned());
     b.control("ui.screenshot", obj(&[("path", Some(&json!(path))), ("panel", get(a, "panel")), ("id", get(a, "id"))]))?;
     let bytes = std::fs::read(&path).map_err(|e| Error::Other(format!("screenshot: {e}")))?;
     if keep.is_none() {

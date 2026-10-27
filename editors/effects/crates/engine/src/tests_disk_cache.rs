@@ -7,7 +7,7 @@ use crate::Session;
 use crate::render::RenderOpts;
 
 fn folder(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("effectcraft-session-disk-{name}-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("redrob-effects-session-disk-{name}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     d.to_string_lossy().to_string()
 }
@@ -80,7 +80,7 @@ fn disk_cache_settings_persistence_and_invalidation() {
 fn footage_changes_change_the_salt() {
     let dir = folder("salt");
     let mut s = session(&dir);
-    let foot = std::env::temp_dir().join(format!("effectcraft-salt-{}.png", std::process::id()));
+    let foot = std::env::temp_dir().join(format!("redrob-effects-salt-{}.png", std::process::id()));
     std::fs::write(&foot, b"one").unwrap();
     s.edit("add", None, |p, _| {
         let f = redrob_effects_project::Footage {

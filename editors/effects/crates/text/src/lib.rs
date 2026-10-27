@@ -1,7 +1,7 @@
-//! EffectCraft text engine.
+//! Redrob Effects text engine.
 //!
 //! - [`fonts`], [`sfnt`], [`layout`]: font database, shaping (harfrust), bidi, line breaking and
-//!   paragraph layout (shared design with FilmCraft's text engine).
+//!   paragraph layout (shared design with Redrob Film's text engine).
 //! - This module turns a layer's [`TextDoc`] into per-character glyph outlines (Bezier paths) with
 //!   character / word / line indices, which is what text animators and selectors work on.
 

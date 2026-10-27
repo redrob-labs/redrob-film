@@ -4,7 +4,7 @@
 //! - **Photoshop Layers** writes a layered PSD (crates/psd's writer): one pixel layer per comp
 //!   layer, each rendered in isolation (solo, Normal mode, 100% opacity) and cropped to its
 //!   pixels, carrying the layer's blend mode and opacity, plus the flattened frame as the merged
-//!   image. Photoshop (and EffectCraft's PSD import) rebuild the frame from the layers.
+//!   image. Photoshop (and Redrob Effects' PSD import) rebuild the frame from the layers.
 //! - **ProEXR** writes one multi-layer OpenEXR (half-float-free, 32-bit float, linear light,
 //!   premultiplied): the composite as `R`, `G`, `B`, `A` plus one `<layer name>.R/G/B/A` channel
 //!   set per layer (the layer-prefixed channel convention multi-layer EXR readers use).

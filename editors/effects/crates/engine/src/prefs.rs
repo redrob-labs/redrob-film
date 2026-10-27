@@ -93,7 +93,7 @@ macro_rules! page {
 }
 
 page!(General {
-    /// Interface language: `system` (the operating system's, where EffectCraft has it, else
+    /// Interface language: `system` (the operating system's, where Redrob Effects has it, else
     /// English), or a language code from `LANGUAGES`.
     language: String = "system".into(),
     /// Levels of Undo (1–99).
@@ -940,7 +940,7 @@ fn push_mru(list: &mut Vec<String>, v: &str, max: usize) {
 }
 
 /// The most the layer cache holds in the browser. A wasm32 page addresses at most 4 GiB, which
-/// these caches share with the app and with the decoders' own decoded frames (FilmCraft keeps
+/// these caches share with the app and with the decoders' own decoded frames (Redrob Film keeps
 /// up to 384 MB per open movie): with the desktop's 1 GB defaults, eight stacked 1080p clips ran
 /// the page out of memory a few seconds into playback.
 pub const WEB_LAYER_CACHE: u64 = 512 << 20;

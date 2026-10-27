@@ -218,7 +218,7 @@ fn detect(s: &mut Session, p: &Value) -> Result<Value> {
         }
         poll(s);
     } else {
-        std::thread::Builder::new().name("filmcraft-scene-detect".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+        std::thread::Builder::new().name("redrob-film-scene-detect".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
     }
     if let Some(Err(e)) = s.jobs.iter().find(|j| j.id == id).and_then(|j| lock(&j.result).clone()) {
         return Err(EngineError::Other(e));

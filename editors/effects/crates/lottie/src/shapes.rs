@@ -297,7 +297,7 @@ pub(crate) fn export_items(ex: &mut Ex, contents: &PropGroup, label: &str) -> Ve
             "rp" => {
                 o.put("c", "copies", &anim::num);
                 o.put("o", "offset", &anim::num);
-                // Lottie: 1 = Above, 2 = Below; EffectCraft: 0 = Below, 1 = Above.
+                // Lottie: 1 = Above, 2 = Below; Redrob Effects: 0 = Below, 1 = Above.
                 o.raw("m", json!(if o.e("composite") == 1 { 1 } else { 2 }));
                 if let Some(t) = g.sub("transform") {
                     let tr = shape_transform(o.ex, t, &lbl);

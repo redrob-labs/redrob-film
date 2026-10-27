@@ -17,7 +17,7 @@ use serde_json::{Value, json};
 use super::mixer::{db_to_pos, pos_to_db};
 use super::timeline::{Layout, Row};
 use super::timeline_hit::EDGE_PX;
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::icons::{self, Icon};
 use crate::state::Tool;
 use crate::theme::Tokens;
@@ -144,7 +144,7 @@ pub fn start(seq: &Sequence, layout: &Layout, clip: ClipId, at: Pos2) -> Option<
 }
 
 /// Follow the pointer, now at height `y`. The clip changes as the line moves, so it is heard.
-pub fn drag(app: &mut FilmcraftApp, ui: &egui::Ui, seq: &Sequence, layout: &Layout, mut d: LineDrag, y: f32) -> LineDrag {
+pub fn drag(app: &mut FilmApp, ui: &egui::Ui, seq: &Sequence, layout: &Layout, mut d: LineDrag, y: f32) -> LineDrag {
     let Some((r, it)) = find(seq, layout, d.clip) else { return d };
     let db = pos_to_db(db_to_pos(d.from) + (d.y - y) / band(body(layout, r, it)).height().max(1.0));
     tip(ui, db);
@@ -167,13 +167,13 @@ pub fn drag(app: &mut FilmcraftApp, ui: &egui::Ui, seq: &Sequence, layout: &Layo
 }
 
 /// The Pen tool or a Cmd/Ctrl-click on `clip`'s line at `x`: a keyframe there.
-pub fn add_keyframe(app: &mut FilmcraftApp, seq: &Sequence, layout: &Layout, clip: ClipId, x: f32) {
+pub fn add_keyframe(app: &mut FilmApp, seq: &Sequence, layout: &Layout, clip: ClipId, x: f32) {
     let Some((r, it)) = find(seq, layout, clip) else { return };
     let t = seq.settings.frame_rate.snap_nearest(t_at(it, body(layout, r, it), x));
     run(app, vec![("effects.addKeyframe", json!({"clip": clip.0, "effect": "volume", "param": "level", "time": t.0}))]);
 }
 
-fn run(app: &mut FilmcraftApp, acts: Vec<(&str, Value)>) {
+fn run(app: &mut FilmApp, acts: Vec<(&str, Value)>) {
     for (id, p) in acts {
         if let Err(e) = app.session.execute(id, p) {
             app.ui.status = e.to_string();
@@ -204,7 +204,7 @@ fn key_drag_id() -> egui::Id {
 
 /// The keyframes on the lines of the audio clips in view: drag one in time and level, right-click
 /// it to delete it. Runs after the timeline's own interaction, so they are above the clip.
-pub fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, layout: &Layout, aclip: Rect) {
+pub fn interact(app: &mut FilmApp, ui: &mut egui::Ui, seq: &Sequence, layout: &Layout, aclip: Rect) {
     let held: Option<KeyDrag> = ui.data(|d| d.get_temp(key_drag_id()));
     if held.is_none() && (app.tl.drag.is_some() || !matches!(app.ui.tool, Tool::Selection | Tool::Pen)) {
         return;

@@ -81,7 +81,8 @@ fn eval_file_is_bounded_and_gated() {
 }
 
 #[test]
-fn bridgetalk_identifies_effectcraft() {
+// legacy: `effectcraft` is the BridgeTalk app specifier user scripts address
+fn bridgetalk_identifies_the_effects_app() {
     let mut s = session();
     let o = run_code(
         &mut s,

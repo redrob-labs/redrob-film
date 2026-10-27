@@ -1,4 +1,4 @@
-//! Animation menu: animation presets (EffectCraft's own JSON format), Add Keyframe, Keyframe
+//! Animation menu: animation presets (Redrob Effects' own JSON format), Add Keyframe, Keyframe
 //! Assistant (Exponential Scale), text animators/selectors, and the
 //! Reveal Properties commands.
 
@@ -14,6 +14,7 @@ use super::{CommandSpec, bad, frontend, has_comp, has_keys, has_layers, layer_mu
 use crate::{EngineError, KeyRef, Result, Session, cmd};
 
 /// Preset file format version tag (`*.ecpreset`, JSON).
+// legacy: the tag in saved animation-preset files
 pub const PRESET_TAG: &str = "effectcraftAnimationPreset";
 
 fn has_selected_props(s: &Session) -> std::result::Result<(), String> {
@@ -98,7 +99,7 @@ fn apply_preset(s: &mut Session, p: &Value) -> Result<Value> {
         _ => return Err(bad("anim.applyPreset", "missing `path` (or inline `preset`)")),
     };
     if doc.get(PRESET_TAG).is_none() {
-        return Err(bad("anim.applyPreset", "not an Redrob Film animation preset"));
+        return Err(bad("anim.applyPreset", "not a Redrob Film animation preset"));
     }
     let (cid, ids) = layers_p(s, p)?;
     if ids.is_empty() {

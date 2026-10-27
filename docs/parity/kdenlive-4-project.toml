@@ -784,7 +784,7 @@ feature = "Clip Properties: override scanning and field order"
 manual = "https://docs.kdenlive.org/en/project_and_asset_management/project_bin/clip_properties.html"
 film = "partial"
 evidence = "crates/project/src/lib.rs:613"
-gap = "field options are per timeline clip, not per source; FilmCraft renders progressive frames, so a per-source scanning override would be stored only"
+gap = "field options are per timeline clip, not per source; Redrob Film renders progressive frames, so a per-source scanning override would be stored only"
 
 [[row]]
 id = "K4-088"

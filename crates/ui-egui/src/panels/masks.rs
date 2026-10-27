@@ -15,7 +15,7 @@ use redrob_film_project::{ClipId, EffectInstance, MaskMode, MaskPath, MaskVertex
 use redrob_film_time::Tick;
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
 
@@ -30,7 +30,7 @@ pub fn maskable(e: &EffectInstance) -> bool {
 /// Mask rows under an effect in Effect Controls.
 #[allow(clippy::too_many_arguments)]
 pub fn effect_rows(
-    app: &mut FilmcraftApp,
+    app: &mut FilmApp,
     ui: &mut egui::Ui,
     body: Rect,
     clip: ClipId,
@@ -173,7 +173,7 @@ pub fn effect_rows(
 }
 
 /// Clip pixels → screen points for the clip's current Motion and the monitor picture rect.
-fn clip_to_screen(app: &FilmcraftApp, it: &TrackItem, mt: Tick, pic: Rect, frame: (u32, u32)) -> Option<Affine> {
+fn clip_to_screen(app: &FilmApp, it: &TrackItem, mt: Tick, pic: Rect, frame: (u32, u32)) -> Option<Affine> {
     let seq = app.session.active_sequence()?;
     let size = redrob_film_render::source_size(&app.session.project, it.item).unwrap_or(frame);
     let motion = redrob_film_render::motion_matrix(seq, it, size, redrob_film_render::source_par(&app.session.project, it.item), mt);
@@ -222,7 +222,7 @@ fn inside(pts: &[Vec2], p: Vec2) -> bool {
 }
 
 /// Mask editing on the Program monitor (selected mask) and the pen tool.
-pub fn monitor_overlay(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect, frame: (u32, u32)) {
+pub fn monitor_overlay(app: &mut FilmApp, ui: &mut egui::Ui, pic: Rect, frame: (u32, u32)) {
     if app.ui.mask_pen.is_some() {
         pen_overlay(app, ui, pic, frame);
         return;
@@ -444,7 +444,7 @@ pub fn draft_path(points: &[[f64; 4]]) -> MaskPath {
     }
 }
 
-fn pen_overlay(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect, frame: (u32, u32)) {
+fn pen_overlay(app: &mut FilmApp, ui: &mut egui::Ui, pic: Rect, frame: (u32, u32)) {
     let Some(draft) = app.ui.mask_pen.clone() else { return };
     let ph = app.session.playhead();
     let clip = ClipId(draft.clip);
@@ -552,7 +552,7 @@ fn open_polyline(path: &MaskPath, to_screen: &Affine) -> Vec<Pos2> {
 
 /// The Mask Path row's value area: mask tracking (backward continuously / one frame, forward one
 /// frame / continuously; clicking while a track runs stops it) and the tracking-method menu.
-pub fn path_value(app: &mut FilmcraftApp, ui: &mut egui::Ui, clip: ClipId, effect: usize, mask: Option<usize>, actions: &mut Vec<(String, Value)>) {
+pub fn path_value(app: &mut FilmApp, ui: &mut egui::Ui, clip: ClipId, effect: usize, mask: Option<usize>, actions: &mut Vec<(String, Value)>) {
     let Some(k) = mask else { return };
     let t = app.tokens;
     let Some(it) = app.session.active_sequence().and_then(|q| q.find_item(clip)).map(|(_, i)| i.clone()) else { return };

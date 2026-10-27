@@ -6,7 +6,7 @@
 use egui_kittest::Harness;
 use redrob_effects_engine::Session;
 use redrob_effects_engine::perf::{LargeSpec, large_project};
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::dock::PanelKind;
 use serde_json::json;
 
@@ -14,8 +14,8 @@ fn spec() -> LargeSpec {
     LargeSpec { comps: 8, main_layers: 1500, comp_layers: 3, footage: 90, sequence_frames: 12, nest_depth: 3, expression_every: 5, ..Default::default() }
 }
 
-fn harness(s: Session) -> Harness<'static, EffectcraftApp> {
-    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectcraftApp::new(s));
+fn harness(s: Session) -> Harness<'static, EffectsApp> {
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     h
 }
@@ -35,7 +35,7 @@ fn project_panel_scrolls_and_reveals_the_selection() {
     h.run_steps(3);
     // Far more rows than fit: a scroll bar, and the bottom rows aren't drawn yet.
     assert!(h.state().auto.find("project.vscroll").is_some());
-    let drawn = |h: &Harness<'_, EffectcraftApp>| {
+    let drawn = |h: &Harness<'_, EffectsApp>| {
         h.state().auto.previous.iter().filter(|e| e.id.starts_with("project.item.") && e.id.matches('.').count() == 2).count()
     };
     let rows = drawn(&h);

@@ -1,4 +1,4 @@
-//! File ▸ Import ▸ EffectCraft Project: merge another `.rfx` (or its XML copy) into the
+//! File ▸ Import ▸ Redrob Effects Project: merge another `.rfx` (or its XML copy) into the
 //! current project, as After Effects imports an `.aep` into the open project. The imported
 //! items land in a folder named after the file; every id is shifted past the current project's
 //! so nothing collides, and the whole import is one undo step.
@@ -12,7 +12,7 @@ use crate::{EngineError, Result, Session, cmd};
 
 const C: &str = "file.importProject";
 
-/// Whether `path` names a project EffectCraft imports as a project (not as footage).
+/// Whether `path` names a project Redrob Effects imports as a project (not as footage).
 pub(crate) fn is_project_path(path: &str) -> bool {
     let lower = path.to_ascii_lowercase();
     lower.ends_with(".rfx") || lower.ends_with(".rfxx") || lower.ends_with(".ecproj") || lower.ends_with(".ecprojx") // legacy: pre-rename projects import too

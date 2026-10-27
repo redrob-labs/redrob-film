@@ -1,5 +1,5 @@
 //! Premiere Pro interop through timeline interchange, with real media: documents written in code
-//! with FilmCraft's writers are imported (`file.importTimeline`) and rendered; compositions are
+//! with Redrob Film's writers are imported (`file.importTimeline`) and rendered; compositions are
 //! exported (`file.exportTimeline`, with a ProRes 4444 pre-render) and re-imported, and both
 //! render the same pixels.
 
@@ -14,7 +14,7 @@ const W: u32 = 64;
 const H: u32 = 36;
 
 fn tmp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("effectcraft-host-timeline-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("redrob-effects-host-timeline-{}", std::process::id()));
     std::fs::create_dir_all(&d).unwrap();
     d.join(name).to_string_lossy().to_string()
 }

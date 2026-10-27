@@ -1,6 +1,6 @@
 //! Settings ▸ Media ▸ Automatically refresh growing files: media files that change on disk while
 //! the project is open are read again, whether they are still being written (a recording, an
-//! ingest) or were replaced (a render from EffectCraft or After Effects written over the file a
+//! ingest) or were replaced (a render from Redrob Effects or After Effects written over the file a
 //! clip uses).
 //!
 //! Each file media item's file is compared by size and modification time with what it was when

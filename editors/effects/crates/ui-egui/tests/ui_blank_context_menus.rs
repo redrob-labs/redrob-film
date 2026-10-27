@@ -2,26 +2,26 @@
 use egui::{Event, Modifiers, PointerButton, Pos2, Rect, pos2, vec2};
 use egui_kittest::{Harness, kittest::Queryable as _};
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::{Dialog, EffectcraftApp, dock::PanelKind};
+use redrob_effects_ui_egui::{Dialog, EffectsApp, dock::PanelKind};
 use serde_json::json;
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, EffectsApp> {
     let mut session = Session::default();
     session.execute("comp.new", json!({"name":"Empty", "width":640,"height":360,"duration":4})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(session));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(session));
     h.run_steps(3);
     h
 }
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("missing {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
-fn snapshot(h: &mut Harness<'_, EffectcraftApp>, name: &str) {
+fn snapshot(h: &mut Harness<'_, EffectsApp>, name: &str) {
     if let Ok(dir) = std::env::var("BLANK_CONTEXT_MENU_SNAPSHOTS") {
         h.render().unwrap().save(format!("{dir}/{name}.png")).unwrap();
     }
 }
-fn right_click(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+fn right_click(h: &mut Harness<'_, EffectsApp>, p: Pos2) {
     for pressed in [true, false] {
         h.input_mut().events.push(Event::PointerMoved(p));
         h.input_mut().events.push(Event::PointerButton { pos: p, button: PointerButton::Secondary, pressed, modifiers: Modifiers::NONE });
@@ -158,17 +158,17 @@ fn timeline_property_names_have_the_property_menu() {
     let layer = h.state_mut().session.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080"})).unwrap()["layer"].as_u64().unwrap();
     h.state_mut().session.execute("prop.set", json!({"layer": layer, "path": "transform/rotation", "value": 30})).unwrap();
     let props =
-        |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layer(redrob_effects_engine::project::LayerId(layer)).unwrap().props.clone();
-    let uid = |h: &Harness<'_, EffectcraftApp>, path: &str| props(h).prop(path).unwrap().uid;
+        |h: &Harness<'_, EffectsApp>| h.state().session.active_comp().unwrap().layer(redrob_effects_engine::project::LayerId(layer)).unwrap().props.clone();
+    let uid = |h: &Harness<'_, EffectsApp>, path: &str| props(h).prop(path).unwrap().uid;
     h.state_mut().ui.timeline.open_layers.insert(layer);
     let transform = props(&h).sub("transform").unwrap().uid;
     h.state_mut().ui.timeline.open_groups.insert(transform);
     h.run_steps(3);
-    let menu = |h: &mut Harness<'_, EffectcraftApp>, uid: u64| {
+    let menu = |h: &mut Harness<'_, EffectsApp>, uid: u64| {
         let p = rect(h, &format!("timeline.prop.{uid}.name")).center();
         right_click(h, p);
     };
-    let choose = |h: &mut Harness<'_, EffectcraftApp>, uid: u64, entry: &str| {
+    let choose = |h: &mut Harness<'_, EffectsApp>, uid: u64, entry: &str| {
         let p = rect(h, &format!("timeline.prop.{uid}.menu.{entry}")).center();
         for pressed in [true, false] {
             h.input_mut().events.push(Event::PointerMoved(p));
@@ -265,7 +265,7 @@ fn timeline_layer_context_menu_has_the_effects_submenu_and_applies_an_effect() {
 #[test]
 fn layer_context_menu_adds_a_layer_marker() {
     let mut h = harness();
-    let solid = |h: &mut Harness<'_, EffectcraftApp>, name: &str| -> u64 {
+    let solid = |h: &mut Harness<'_, EffectsApp>, name: &str| -> u64 {
         h.state_mut().session.execute("layer.newSolid", json!({"name": name, "color": "#406080"})).unwrap()["layer"].as_u64().unwrap()
     };
     let (below, top) = (solid(&mut h, "Below"), solid(&mut h, "Top"));

@@ -10,7 +10,7 @@ use redrob_film_project::{CaptionAlign, CaptionAnchor, CaptionFormat};
 use redrob_film_time::{TimeDisplay, format_time};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
 
@@ -25,7 +25,7 @@ fn tab_text_width(painter: &egui::Painter, label: &str) -> f32 {
     (label.chars().count() as f32 * 7.0).max(drawn)
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     ui.painter().rect_filled(rect, 0.0, t.panel_bg);
     // tabs
@@ -61,7 +61,7 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     }
 }
 
-fn tool_button(app: &mut FilmcraftApp, ui: &mut egui::Ui, r: Rect, icon: Icon, id: &str, label: &str, enabled: bool) -> bool {
+fn tool_button(app: &mut FilmApp, ui: &mut egui::Ui, r: Rect, icon: Icon, id: &str, label: &str, enabled: bool) -> bool {
     let t = app.tokens;
     let resp = ui.interact(r, egui::Id::new(("text-tool", id)), if enabled { Sense::click() } else { Sense::hover() });
     if enabled && resp.hovered() {
@@ -72,7 +72,7 @@ fn tool_button(app: &mut FilmcraftApp, ui: &mut egui::Ui, r: Rect, icon: Icon, i
     resp.on_hover_text(label).clicked() && enabled
 }
 
-fn captions(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+fn captions(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let Some(seq) = app.session.active_sequence().cloned() else {
         crate::dock::placeholder(ui, rect, &t, tl!("Open a sequence to work with captions"));
@@ -307,7 +307,7 @@ fn captions(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     run(app, ui, actions);
 }
 
-fn transcript(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+fn transcript(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     if app.session.active_sequence().is_none() {
         crate::dock::placeholder(ui, rect, &t, tl!("Open a sequence to see its transcript"));
@@ -319,7 +319,7 @@ fn transcript(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         let c = rect.center();
         icons::paint(ui.painter(), Rect::from_center_size(c - vec2(0.0, 70.0), vec2(40.0, 40.0)), Icon::Captions, t.text_dim);
         ui.painter().text(c - vec2(0.0, 30.0), Align2::CENTER_CENTER, tl!("Transcribe sequence"), Tokens::semibold(16.0), t.text);
-        let note = if filmcraft_speech_available(app) {
+        let note = if redrob_film_speech_available(app) {
             tl!("Speech-to-text turns the dialogue into editable text.")
         } else {
             tl!("This build has no speech-to-text; import a transcript with transcript.set.")
@@ -447,11 +447,11 @@ fn transcript(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     run(app, ui, actions);
 }
 
-fn filmcraft_speech_available(app: &FilmcraftApp) -> bool {
+fn redrob_film_speech_available(app: &FilmApp) -> bool {
     app.session.transcriber.is_some() || redrob_film_engine::transcript::speech_available()
 }
 
-fn style_strip(app: &mut FilmcraftApp, ui: &mut egui::Ui, r: Rect, track_idx: usize, actions: &mut Vec<(String, Value)>) {
+fn style_strip(app: &mut FilmApp, ui: &mut egui::Ui, r: Rect, track_idx: usize, actions: &mut Vec<(String, Value)>) {
     let Some(tr) = app.session.active_sequence().and_then(|q| q.caption_tracks.get(track_idx)).cloned() else { return };
     let st = tr.style.clone();
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(r).id_salt("caption-style"));
@@ -519,7 +519,7 @@ fn style_strip(app: &mut FilmcraftApp, ui: &mut egui::Ui, r: Rect, track_idx: us
     });
 }
 
-fn run(app: &mut FilmcraftApp, ui: &egui::Ui, actions: Vec<(String, Value)>) {
+fn run(app: &mut FilmApp, ui: &egui::Ui, actions: Vec<(String, Value)>) {
     let ctx = ui.ctx().clone();
     for (cmd, p) in actions {
         if let Err(e) = crate::menus::invoke(app, &ctx, &cmd, p) {

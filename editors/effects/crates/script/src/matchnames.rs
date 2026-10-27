@@ -62,7 +62,7 @@ const TEXT: &[(&str, &str)] = &[
 ];
 
 // Match names of the six properties below Text ▸ Path Options, as named by
-// After Effects' scripting API (rather than EffectCraft's internal ids).
+// After Effects' scripting API (rather than Redrob Effects' internal ids).
 const TEXT_PATH_OPTIONS: &[(&str, &str)] = &[
     ("path", "ADBE Text Path"),
     ("reversePath", "ADBE Text Reverse Path"),

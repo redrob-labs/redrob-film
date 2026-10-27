@@ -16,7 +16,7 @@ use super::viewer::ViewerMap;
 use crate::icons::Icon;
 use crate::state::Resolution;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 // ---------------------------------------------------------------- snapping
 
@@ -29,7 +29,7 @@ fn snap_id() -> egui::Id {
 }
 
 /// Layer snapping is on: the Snapping checkbox (View ▸ Snapping), inverted while Cmd/Ctrl is held.
-pub(crate) fn snapping_on(app: &EffectcraftApp, mods: egui::Modifiers) -> bool {
+pub(crate) fn snapping_on(app: &EffectsApp, mods: egui::Modifiers) -> bool {
     app.session.state.snapping != mods.command
 }
 
@@ -39,7 +39,7 @@ pub(crate) fn snapping_on(app: &EffectcraftApp, mods: egui::Modifiers) -> bool {
 /// grid (View ▸ Snap to Grid). Returns the comp-space correction (zero when nothing is near) and
 /// records the feedback for this frame.
 pub(crate) fn snap(
-    app: &EffectcraftApp,
+    app: &EffectsApp,
     ctx: &egui::Context,
     ectx: &EvalCtx,
     map: &ViewerMap,
@@ -52,7 +52,7 @@ pub(crate) fn snap(
 
 /// [`snap`] with `extra` layer targets (the Pan Behind layer's own box).
 pub(crate) fn snap_with(
-    app: &EffectcraftApp,
+    app: &EffectsApp,
     ctx: &egui::Context,
     ectx: &EvalCtx,
     map: &ViewerMap,
@@ -140,7 +140,7 @@ pub(crate) fn draw_snap(ctx: &egui::Context, painter: &egui::Painter, map: &View
 pub(crate) const RULER: f32 = 16.0;
 
 /// The viewer area left for the image once the rulers (View ▸ Show Rulers) take their strips.
-pub(crate) fn inset(app: &EffectcraftApp, area: Rect) -> Rect {
+pub(crate) fn inset(app: &EffectsApp, area: Rect) -> Rect {
     if app.ui.viewer.rulers { Rect::from_min_max(area.min + vec2(RULER, RULER), area.max) } else { area }
 }
 
@@ -161,7 +161,7 @@ fn nice(raw: f64) -> f64 {
 /// Draw the rulers (ticks relative to the zero point, live pointer markers) and handle their
 /// gestures: drag from a ruler to add a guide, drag the corner to move the zero point
 /// (double-click resets it).
-pub(crate) fn rulers(app: &mut EffectcraftApp, ui: &mut egui::Ui, map: &ViewerMap, outer: Rect, inner: Rect) {
+pub(crate) fn rulers(app: &mut EffectsApp, ui: &mut egui::Ui, map: &ViewerMap, outer: Rect, inner: Rect) {
     if !app.ui.viewer.rulers {
         return;
     }
@@ -278,13 +278,13 @@ pub(crate) fn rulers(app: &mut EffectcraftApp, ui: &mut egui::Ui, map: &ViewerMa
     }
 }
 
-pub(crate) fn guide_color(app: &EffectcraftApp) -> Color32 {
+pub(crate) fn guide_color(app: &EffectsApp) -> Color32 {
     let [r, g, b] = super::viewer::hex_rgb(&app.session.prefs.grids.guide_color).unwrap_or([0x3c, 0xc8, 0xf0]);
     Color32::from_rgb(r, g, b)
 }
 
 /// The guide under a screen point (visible, unlocked guides only): (index, vertical).
-pub(crate) fn guide_at(app: &EffectcraftApp, comp: &Comp, map: &ViewerMap, pos: Pos2) -> Option<(usize, bool)> {
+pub(crate) fn guide_at(app: &EffectsApp, comp: &Comp, map: &ViewerMap, pos: Pos2) -> Option<(usize, bool)> {
     if !app.ui.viewer.guides || app.ui.viewer.lock_guides {
         return None;
     }
@@ -298,7 +298,7 @@ pub(crate) fn guide_at(app: &EffectcraftApp, comp: &Comp, map: &ViewerMap, pos: 
 
 /// Proportional grid (Grid and guide options ▸ Proportional Grid): Settings ▸ Grids & Guides
 /// horizontal × vertical cells over the comp.
-pub(crate) fn proportional_grid(app: &EffectcraftApp, painter: &egui::Painter, comp_rect: Rect) {
+pub(crate) fn proportional_grid(app: &EffectsApp, painter: &egui::Painter, comp_rect: Rect) {
     if !app.ui.viewer.proportional_grid {
         return;
     }
@@ -334,7 +334,7 @@ pub(crate) fn shown_region(ctx: &egui::Context, comp: [f32; 2]) -> [f64; 4] {
 }
 
 /// Show Snapshot: the stored snapshot is on screen (button or F5 held).
-pub(crate) fn showing_snapshot(app: &EffectcraftApp, ctx: &egui::Context) -> bool {
+pub(crate) fn showing_snapshot(app: &EffectsApp, ctx: &egui::Context) -> bool {
     let f5 = ctx.input(|i| i.key_down(egui::Key::F5)) && !ctx.egui_wants_keyboard_input();
     app.session.snapshot.is_some() && (app.session.state.viewer.show_snapshot || f5)
 }
@@ -351,7 +351,7 @@ fn transformed(img: &egui::ColorImage, ch: Channel, colorized: bool, stops: f32,
 }
 
 /// The display conversion's inputs, for the texture caches.
-pub(crate) fn display_key(app: &EffectcraftApp, has_conversion: bool) -> String {
+pub(crate) fn display_key(app: &EffectsApp, has_conversion: bool) -> String {
     let opts = &app.session.state.viewer;
     let custom = if opts.simulation.profile == vw::SimProfile::MyCustom { format!("{:?}", app.session.prefs.custom_rgb) } else { String::new() };
     format!("{:?}{:?}{}{custom}", has_conversion, opts.simulation, app.session.prefs.previews.display_profile)
@@ -361,7 +361,7 @@ pub(crate) fn display_key(app: &EffectcraftApp, has_conversion: bool) -> String 
 /// Draw the frame into `comp_rect`: the rendered frame (covering the region of interest when one
 /// is set), or the snapshot while Show Snapshot is on / F5 is held, through Show Channel and the
 /// exposure. Fast Previews ▸ Wireframe draws layer outlines instead.
-pub(crate) fn draw_frame(app: &mut EffectcraftApp, ctx: &egui::Context, painter: &egui::Painter, comp_rect: Rect, cid: ItemId, ectx: &EvalCtx) {
+pub(crate) fn draw_frame(app: &mut EffectsApp, ctx: &egui::Context, painter: &egui::Painter, comp_rect: Rect, cid: ItemId, ectx: &EvalCtx) {
     let opts = app.session.state.viewer.clone();
     let snap = showing_snapshot(app, ctx);
     // Settings ▸ Video ▸ Mirror on Computer Monitor off: playback goes to Video Preview only.
@@ -478,7 +478,7 @@ fn fitted_uv(ctx: &egui::Context, size: [usize; 2], minify: usize) -> Rect {
 
 /// A popup list above `anchor` (selected entries highlighted); entries register
 /// `viewer.<auto>.<n>` automation ids.
-fn popup(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: &str, anchor: Rect, items: &[(String, bool)], auto: &str) -> Option<usize> {
+fn popup(app: &mut EffectsApp, ui: &mut egui::Ui, id: &str, anchor: Rect, items: &[(String, bool)], auto: &str) -> Option<usize> {
     let pid = egui::Id::new(id);
     if !widgets::popup_is_open(ui, pid) {
         return None;
@@ -516,7 +516,7 @@ fn toggle_popup(ui: &egui::Ui, id: &str) {
 /// Returns the chosen magnification (`Some(None)` = Fit).
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn magnification_menu(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     r: Rect,
     id: &str,
@@ -587,7 +587,7 @@ pub(crate) fn resolution_label(res: Resolution, scale: f64) -> String {
 /// transparency grid, mask and shape path visibility, region of interest, grid and guide
 /// options, show channel, reset exposure, exposure, take / show snapshot, Fast Previews, the 3D
 /// renderer and view, and the current time.
-pub(crate) fn bottom_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, bar: Rect, zoom: f32, time: Tick, comp: &Comp) {
+pub(crate) fn bottom_bar(app: &mut EffectsApp, ui: &mut egui::Ui, bar: Rect, zoom: f32, time: Tick, comp: &Comp) {
     let t = app.tokens;
     let p = ui.painter().clone();
     p.rect_filled(bar, 0.0, t.panel_bg);
@@ -616,7 +616,7 @@ pub(crate) fn bottom_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, bar: Rect,
     });
 }
 
-fn bottom_bar_contents(app: &mut EffectcraftApp, ui: &mut egui::Ui, bar: Rect, zoom: f32, time: Tick, comp: &Comp) -> f32 {
+fn bottom_bar_contents(app: &mut EffectsApp, ui: &mut egui::Ui, bar: Rect, zoom: f32, time: Tick, comp: &Comp) -> f32 {
     let t = app.tokens;
     let p = ui.painter().clone();
     let cy = bar.center().y;

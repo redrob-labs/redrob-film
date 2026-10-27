@@ -22,6 +22,7 @@ use super::{CommandSpec, b_p, bad, comp_id, has_comp, layer_p, selected_leaf_pro
 use crate::{EngineError, Result, Session, cmd, query};
 
 /// Format id written into template manifests.
+// legacy: the format id in saved templates
 pub const TEMPLATE_FORMAT: &str = "effectcraft-template";
 pub const TEMPLATE_VERSION: u32 = 1;
 
@@ -878,9 +879,9 @@ pub fn read_template(bytes: &[u8]) -> std::result::Result<(Value, Project, Vec<(
     let entries = redrob_effects_lottie::zip::read_stored(bytes);
     let get = |n: &str| entries.iter().find(|(k, _)| k == n).map(|(_, v)| v.clone());
     let manifest: Value =
-        serde_json::from_slice(&get("manifest.json").ok_or("not an Redrob Film template (no manifest.json)")?).map_err(|e| format!("manifest.json: {e}"))?;
+        serde_json::from_slice(&get("manifest.json").ok_or("not a Redrob Film template (no manifest.json)")?).map_err(|e| format!("manifest.json: {e}"))?;
     if manifest.get("format").and_then(Value::as_str) != Some(TEMPLATE_FORMAT) {
-        return Err("not an Redrob Film template".into());
+        return Err("not a Redrob Film template".into());
     }
     if manifest.get("version").and_then(Value::as_u64).unwrap_or(0) > TEMPLATE_VERSION as u64 {
         return Err("the template was made by a newer Redrob Film".into());

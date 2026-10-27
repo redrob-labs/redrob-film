@@ -1,4 +1,4 @@
-//! Round trip of `redrob-effects-opusenc` through FilmCraft's spec-derived Opus decoder, plus an
+//! Round trip of `redrob-effects-opusenc` through Redrob Film's spec-derived Opus decoder, plus an
 //! ffmpeg oracle (skipped when ffmpeg is not installed) reading an Ogg Opus file written here.
 
 use std::process::Command;
@@ -342,7 +342,7 @@ fn ffmpeg_oracle_decodes_ogg_opus() {
             }
         }
         let (enc, packets) = encode(&pcm, channels, rate);
-        let path = std::env::temp_dir().join(format!("effectcraft-opusenc-{}-{channels}.opus", std::process::id()));
+        let path = std::env::temp_dir().join(format!("redrob-effects-opusenc-{}-{channels}.opus", std::process::id()));
         std::fs::write(&path, ogg_opus(&enc, &packets, len)).unwrap();
         let out = Command::new("ffmpeg")
             .args(["-v", "error", "-i"])

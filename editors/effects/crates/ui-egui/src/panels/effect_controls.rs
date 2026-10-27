@@ -26,7 +26,7 @@ use super::fx_widgets as fw;
 use crate::icons::{self, Icon};
 use crate::state::FxPick;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 type Actions = Vec<(String, serde_json::Value)>;
 
@@ -52,7 +52,7 @@ fn effect_active(g: &PropGroup, layer: redrob_effects_engine::project::LayerId, 
     selected.iter().any(|(l, uid)| *l == layer && contains(g, *uid, 0))
 }
 
-fn selected_layer(app: &EffectcraftApp) -> Option<Layer> {
+fn selected_layer(app: &EffectsApp) -> Option<Layer> {
     let comp = app.session.active_comp()?;
     let id = app.session.state.selected_layers.first()?;
     comp.layer(*id).cloned()
@@ -61,7 +61,7 @@ fn selected_layer(app: &EffectcraftApp) -> Option<Layer> {
 /// An effect was just applied (`effect.apply` / `effect.applyLast` with `params`): Effect
 /// Controls comes up (opened if closed, brought to the front, the focus left where it is) on the
 /// layer the effect went to, with the new effect selected, as in After Effects.
-pub fn reveal_applied(app: &mut EffectcraftApp, params: &serde_json::Value) {
+pub fn reveal_applied(app: &mut EffectsApp, params: &serde_json::Value) {
     // `effect.apply` selects the new effect on (the last of) the layers it went to.
     let target = app.session.state.selected_props.last().map(|(l, _)| *l);
     if let Some(l) = target
@@ -83,7 +83,7 @@ pub fn reveal_applied(app: &mut EffectcraftApp, params: &serde_json::Value) {
 /// dialog for its LUT). For the instances `effect.apply` made (`applied`, its result), open the
 /// file dialog for their first empty file parameter and set the file on each; cancelling
 /// leaves the effect without one. Does nothing without a file dialog (tests, agents).
-pub fn choose_files_after_apply(app: &mut EffectcraftApp, applied: &serde_json::Value) {
+pub fn choose_files_after_apply(app: &mut EffectsApp, applied: &serde_json::Value) {
     let Some(pick) = app.hooks.pick_files.as_ref() else { return };
     let Some(comp) = app.session.active_comp() else { return };
     let uids: Vec<u64> = applied.get("effects").and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|v| v.as_u64()).collect()).unwrap_or_default();
@@ -140,7 +140,7 @@ fn triangle(p: &egui::Painter, c: egui::Pos2, left: bool, col: Color32) {
 
 /// ◀ ◆ ▶ at the right end of an animated parameter's row.
 fn key_navigator(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -188,7 +188,7 @@ fn key_navigator(
 
 /// Toggle a viewer pick (crosshair / eyedropper) for a parameter (also the Timeline's colour
 /// eyedroppers).
-pub(crate) fn toggle_pick(app: &mut EffectcraftApp, kind: &str, layer: &Layer, prop: &Property) {
+pub(crate) fn toggle_pick(app: &mut EffectsApp, kind: &str, layer: &Layer, prop: &Property) {
     let pick = FxPick { kind: kind.into(), layer: layer.id.0, prop: prop.uid, name: prop.name.clone() };
     if app.ui.fx_pick.as_ref() == Some(&pick) {
         app.ui.fx_pick = None;
@@ -207,7 +207,7 @@ pub(crate) fn toggle_pick(app: &mut EffectcraftApp, kind: &str, layer: &Layer, p
 /// value fields of a vector, one per dimension, for the pick whip.
 #[allow(clippy::too_many_arguments)]
 fn prop_row(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -280,7 +280,7 @@ fn prop_row(
     let set = |actions: &mut Actions, v: serde_json::Value| {
         actions.push(("prop.set".into(), json!({"layer": layer.id.0, "prop": uid, "value": v, "merge": merge, "selected": true, "offset": scrub})))
     };
-    let twirl_open = |app: &mut EffectcraftApp, ui: &mut egui::Ui| {
+    let twirl_open = |app: &mut EffectsApp, ui: &mut egui::Ui| {
         let open = app.ui.fx_slider_open.contains(&uid);
         let tw = Rect::from_center_size(pos2(swr.min.x - 9.0, cy), vec2(10.0, 10.0));
         if widgets::twirl(ui, tw, open, egui::Id::new(("ec-stw", uid)), &t).clicked() {
@@ -560,7 +560,7 @@ fn gradient_at(g: &redrob_effects_engine::keyframe::Gradient, f: f64) -> Color32
 /// The twirled-open slider under a slider param: track, knob and the slider range's ends.
 #[allow(clippy::too_many_arguments)]
 fn slider_row(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -600,7 +600,7 @@ fn slider_row(
 
 /// The twirled-open angle dial under an angle param.
 #[allow(clippy::too_many_arguments)]
-fn dial_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, layer: &Layer, prop: &Property, ectx: &EvalCtx, r: Rect, x0: f32, actions: &mut Actions) {
+fn dial_row(app: &mut EffectsApp, ui: &mut egui::Ui, layer: &Layer, prop: &Property, ectx: &EvalCtx, r: Rect, x0: f32, actions: &mut Actions) {
     let t = app.tokens;
     let Value::Scalar(v) = ectx.value(layer, prop) else { return };
     let uid = prop.uid;
@@ -647,7 +647,7 @@ impl<'a> FxScope<'a> {
 }
 
 /// Twirl `g` closed (it was `open`) or open; with `all` (Alt/Cmd-click) every group under it follows.
-fn toggle_closed(app: &mut EffectcraftApp, g: &PropGroup, open: bool, all: bool) {
+fn toggle_closed(app: &mut EffectsApp, g: &PropGroup, open: bool, all: bool) {
     fn walk(g: &PropGroup, out: &mut Vec<u64>) {
         for sg in g.groups() {
             out.push(sg.uid);
@@ -669,7 +669,7 @@ fn toggle_closed(app: &mut EffectcraftApp, g: &PropGroup, open: bool, all: bool)
 
 #[allow(clippy::too_many_arguments)]
 fn group_rows(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -750,7 +750,7 @@ fn group_rows(
 }
 
 /// Warp Stabilizer's Analyze / Cancel buttons and analysis status.
-fn warp_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, r: Rect, actions: &mut Actions) {
+fn warp_editor(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, r: Rect, actions: &mut Actions) {
     let t = app.tokens;
     let running = app.session.warp_target().is_some_and(|(_, l, u)| l == layer.id && u == g.uid) && app.session.is_warp_analyzing();
     let busy = app.session.is_warp_analyzing();
@@ -777,7 +777,7 @@ fn warp_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, l
 }
 
 /// Roto Brush & Refine Edge: Freeze / Unfreeze and Propagate buttons and the segmentation status.
-fn roto_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, r: Rect, actions: &mut Actions) {
+fn roto_editor(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, r: Rect, actions: &mut Actions) {
     use redrob_effects_engine::effects::roto as fx;
     let t = app.tokens;
     let params = redrob_effects_engine::effects::flatten_params(g, &mut |pr| pr.value.clone());
@@ -807,7 +807,7 @@ fn roto_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, l
 
 /// Object Matte: Freeze / Unfreeze and Track / Stop buttons (the background job that computes
 /// the matte over the tracked frames) and its status.
-fn object_matte_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, r: Rect, actions: &mut Actions) {
+fn object_matte_editor(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, r: Rect, actions: &mut Actions) {
     use redrob_effects_engine::effects::object_matte as om;
     let t = app.tokens;
     let params = redrob_effects_engine::effects::flatten_params(g, &mut |pr| pr.value.clone());
@@ -865,7 +865,7 @@ fn curves_size(width: f32) -> f32 {
 }
 
 /// Cached histogram of the displayed frame (recomputed when the frame changes).
-fn frame_histogram(app: &mut EffectcraftApp, ctx: &egui::Context) -> Option<std::sync::Arc<[[u32; 256]; 5]>> {
+fn frame_histogram(app: &mut EffectsApp, ctx: &egui::Context) -> Option<std::sync::Arc<[[u32; 256]; 5]>> {
     let img = app.viewer_pixels()?;
     let key = std::sync::Arc::as_ptr(&img) as usize;
     let id = egui::Id::new("ec-histogram");
@@ -892,7 +892,7 @@ fn channel_color(ch: usize) -> Color32 {
 /// A "Channel: [RGB ▾]" popup; returns the chosen channel.
 #[allow(clippy::too_many_arguments)]
 fn channel_popup(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     x: f32,
@@ -917,7 +917,7 @@ fn channel_popup(
 /// Curves: channel popup, Bezier/pencil mode, Reset, and the graph bound to the channel's
 /// hidden point-list parameter.
 #[allow(clippy::too_many_arguments)]
-fn curves_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, ectx: &EvalCtx, r: Rect, actions: &mut Actions) {
+fn curves_editor(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, ectx: &EvalCtx, r: Rect, actions: &mut Actions) {
     let t = app.tokens;
     let euid = g.uid;
     // The channel lives in the effect's hidden Channel parameter (UI state for instances
@@ -997,7 +997,7 @@ fn levels_ids(effect: &str, ch: usize) -> [String; 5] {
 /// black/white triangles.
 #[allow(clippy::too_many_arguments)]
 fn levels_editor(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -1087,7 +1087,7 @@ fn levels_editor(
 }
 
 /// Auto Levels / Auto Contrast / Auto Color: the histogram they work from.
-fn histogram_only(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, g: &PropGroup, r: Rect) {
+fn histogram_only(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, g: &PropGroup, r: Rect) {
     let t = app.tokens;
     let x0 = r.min.x + 30.0;
     p.text(pos2(x0, r.min.y + 12.0), Align2::LEFT_CENTER, crate::i18n::tr("Histogram"), Tokens::ui(12.0), t.text_dim);
@@ -1116,7 +1116,7 @@ pub fn start_rename(ctx: &egui::Context, uid: u64, name: &str) {
     ctx.memory_mut(|m| m.request_focus(id.with("field")));
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     let ctx = ui.ctx().clone();
@@ -1447,7 +1447,7 @@ fn visible_points<'a>(g: &'a PropGroup, scope: &FxScope<'_>, layer: &Layer, ectx
 ///
 /// `l2c` is the viewer's layer→comp matrix (it knows the 3D view).
 pub fn viewer_hook(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     painter: &egui::Painter,
     map: &super::viewer::ViewerMap,

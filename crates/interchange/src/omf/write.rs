@@ -292,6 +292,7 @@ pub(crate) fn write(doc: &Document, report: &mut Report) -> Result<Vec<u8>> {
                     let start = w.u(c.start, rate);
                     let sc = w.sclp("omfi:data:Sound", n, mid, mtrack, start);
                     if !c.name.is_empty() {
+                        // legacy: OMF property name the reader matches
                         w.str(sc, "FilmCraft:SCLP:ClipName", &c.name);
                     }
                     let seg = match &c.gain {
@@ -325,6 +326,7 @@ pub(crate) fn write(doc: &Document, report: &mut Report) -> Result<Vec<u8>> {
                     w.cpnt(e, "omfi:data:Sound", n);
                     w.r#ref(e, "OMFI:EFFE:EffectKind", kind);
                     w.refs(e, "OMFI:EFFE:EffectSlots", &[]);
+                    // legacy: OMF property name the reader matches
                     w.str(e, "FilmCraft:EFFE:EffectID", &x.effect);
                     let tr = w.obj(b"TRAN");
                     w.cpnt(tr, "omfi:data:Sound", n);

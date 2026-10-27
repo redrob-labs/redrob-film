@@ -11,12 +11,12 @@ use std::sync::mpsc::{Sender, channel};
 use egui_kittest::Harness;
 use redrob_film_engine::Session;
 use redrob_film_engine::project::{ItemId, ItemKind};
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
     shots: Option<std::path::PathBuf>,
 }
@@ -24,7 +24,7 @@ struct Driver {
 impl Driver {
     fn new(session: Session) -> Self {
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = FilmApp::new(session).with_control(rx);
         let shots = std::env::var_os("REDROB_FILM_UI_SHOTS").map(std::path::PathBuf::from);
         let mut b = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000);
         if shots.is_some() {

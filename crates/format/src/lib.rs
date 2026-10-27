@@ -3,7 +3,7 @@
 //! A project file is UTF-8 JSON with an explicit schema version:
 //!
 //! ```json
-//! { "format": "filmcraft.project", "schema_version": 2, "generator": "FilmCraft 0.1.0", "project": { … } }
+//! { "format": "filmcraft.project", "schema_version": 2, "generator": "Redrob Film 0.1.0", "project": { … } }
 //! ```
 //!
 //! - **Versioning.** [`SCHEMA_VERSION`] is the version this build writes. Older files are upgraded on
@@ -52,6 +52,7 @@ use serde_json::Value;
 pub use atomic::atomic_write;
 
 /// The `format` tag written in every envelope.
+// legacy: project files carry this format id; older files must keep opening
 pub const FORMAT_ID: &str = "filmcraft.project";
 
 /// The project file extension written by every save (`.rfilm`).

@@ -1,7 +1,7 @@
 //! Headless UI tests of the M7.8 audio features: the 5.1 panner puck on Audio Track Mixer strips
 //! that feed a 5.1 Mix, six-channel meters, Show/Hide Tracks and Meter Input(s) Only, the mixer
 //! transport's record button, and the Audio Clip Mixer automation modes recording clip keyframes.
-//! The real `FilmcraftApp` runs under `egui_kittest`, driven by automation id and frame-by-frame
+//! The real `FilmApp` runs under `egui_kittest`, driven by automation id and frame-by-frame
 //! pointer drags.
 //!
 //! Set `REDROB_FILM_UI_SNAPSHOT_DIR=<dir>` to render the window offscreen with wgpu and write
@@ -11,12 +11,12 @@ use std::sync::mpsc::{Sender, channel};
 
 use egui_kittest::Harness;
 use redrob_film_engine::Session;
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
     snapshots: Option<std::path::PathBuf>,
 }
@@ -26,7 +26,7 @@ impl Driver {
         let mut session = Session::default();
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = FilmApp::new(session).with_control(rx);
         let snapshots = std::env::var_os("REDROB_FILM_UI_SNAPSHOT_DIR").map(std::path::PathBuf::from);
         let mut b = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000);
         if snapshots.is_some() {

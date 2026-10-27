@@ -3,10 +3,10 @@
 
 use egui_kittest::Harness;
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use serde_json::json;
 
-fn settle(h: &mut Harness<'_, EffectcraftApp>) {
+fn settle(h: &mut Harness<'_, EffectsApp>) {
     for _ in 0..600 {
         h.step();
         if h.state().frames.inflight() == 0 && h.state().frames.last_ms.lock().map(|v| *v > 0.0).unwrap_or(false) {
@@ -57,7 +57,7 @@ fn viewer_draws_gpu_frames_that_match_the_cpu() {
         .with_size(egui::vec2(1400.0, 900.0))
         .with_pixels_per_point(1.0)
         .wgpu_setup(same_adapter(adapter))
-        .build_eframe(|_| EffectcraftApp::new(s));
+        .build_eframe(|_| EffectsApp::new(s));
     settle(&mut h);
     if gl && h.state().gpu_adapter().is_none() {
         eprintln!("egui-wgpu's GL device has WebGL2 limits: the viewer stays on the CPU, skipping");
@@ -97,7 +97,7 @@ fn a_lost_device_draws_nothing_autosaves_and_closes() {
     let mut s = Session { autosave_folder_override: Some(dir.clone()), ..Default::default() };
     s.execute("comp.new", json!({"name": "Unsaved", "width": 64, "height": 64, "duration": 1})).unwrap();
     assert!(s.is_dirty());
-    let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_| EffectsApp::new(s));
     let told = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
     let log = told.clone();
     h.state_mut().hooks.device_lost = Some(Box::new(move |saved| log.borrow_mut().push(saved)));

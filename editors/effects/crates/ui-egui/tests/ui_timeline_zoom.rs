@@ -6,15 +6,15 @@ use egui::{Event, Modifiers, MouseWheelUnit, Pos2, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use serde_json::json;
 
 /// A 10-minute comp with one solid, zoomed in on its start.
-fn harness() -> (Harness<'static, EffectcraftApp>, u64) {
+fn harness() -> (Harness<'static, EffectsApp>, u64) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Long", "width": 320, "height": 180, "frameRate": 30, "duration": 600})).unwrap();
     let layer = s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080"})).unwrap()["layer"].as_u64().unwrap();
-    let mut app = EffectcraftApp::new(s);
+    let mut app = EffectsApp::new(s);
     app.ui.timeline.pps = Some(200.0);
     let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| app);
     h.run_steps(3);
@@ -22,12 +22,12 @@ fn harness() -> (Harness<'static, EffectcraftApp>, u64) {
 }
 
 /// A point over the layer's bar in the time graph.
-fn over_bar(h: &Harness<'_, EffectcraftApp>, layer: u64) -> Pos2 {
+fn over_bar(h: &Harness<'_, EffectsApp>, layer: u64) -> Pos2 {
     let e = h.state().auto.find(&format!("timeline.layer.{layer}.bar")).expect("layer bar").clone();
     pos2(e.rect[0] + 40.0, e.rect[1] + e.rect[3] / 2.0)
 }
 
-fn alt_wheel(h: &mut Harness<'_, EffectcraftApp>, at: Pos2, dy: f32) {
+fn alt_wheel(h: &mut Harness<'_, EffectsApp>, at: Pos2, dy: f32) {
     h.event(Event::PointerMoved(at));
     h.event(Event::ModifiersChanged(Modifiers::ALT));
     h.event(Event::MouseWheel { unit: MouseWheelUnit::Point, delta: vec2(0.0, dy), modifiers: Modifiers::ALT, phase: egui::TouchPhase::Move });
@@ -66,7 +66,7 @@ fn ctrl_wheel_and_pinch_zoom_time() {
     let (mut h, layer) = harness();
     h.state_mut().ui.timeline.pps = Some(200.0);
     h.run_steps(2);
-    let pps = |h: &Harness<'_, EffectcraftApp>| h.state().ui.timeline.pps.unwrap_or(0.0);
+    let pps = |h: &Harness<'_, EffectsApp>| h.state().ui.timeline.pps.unwrap_or(0.0);
     let start = pps(&h);
     assert!(start > 0.0);
     let at = over_bar(&h, layer);
@@ -87,17 +87,17 @@ fn ctrl_wheel_and_pinch_zoom_time() {
     assert_eq!(h.state().ui.timeline.scroll_y, 0.0);
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> egui::Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> egui::Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     egui::Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'_, EffectsApp>, from: Pos2, to: Pos2) {
     drag_with(h, from, to, Modifiers::NONE);
 }
 
 /// [`drag`] with `modifiers` held.
-fn drag_with(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, modifiers: Modifiers) {
+fn drag_with(h: &mut Harness<'_, EffectsApp>, from: Pos2, to: Pos2, modifiers: Modifiers) {
     h.event(Event::ModifiersChanged(modifiers));
     h.event(Event::PointerMoved(from));
     h.step();
@@ -114,7 +114,7 @@ fn drag_with(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, modifier
 }
 
 /// The visible span (seconds) from the ruler's automation label ("start,pps") and width.
-fn visible(h: &Harness<'_, EffectcraftApp>) -> (f64, f64) {
+fn visible(h: &Harness<'_, EffectsApp>) -> (f64, f64) {
     let e = h.state().auto.find("timeline.ruler").unwrap().clone();
     let (start, pps) = e.label.split_once(',').map(|(a, b)| (a.parse::<f64>().unwrap(), b.parse::<f64>().unwrap())).unwrap();
     // (The time graph ends 18 px before the ruler, at the marker bin; it maps time from 6 px in.)
@@ -186,7 +186,7 @@ fn shift_semicolon_toggles_the_whole_comp_and_the_span_before() {
     assert_eq!(h.state().ui.timeline.pps, None);
 }
 
-fn space(h: &mut Harness<'_, EffectcraftApp>, pressed: bool) {
+fn space(h: &mut Harness<'_, EffectsApp>, pressed: bool) {
     h.event(Event::Key { key: egui::Key::Space, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE });
     h.step();
 }
@@ -200,7 +200,7 @@ fn spacebar_drag_scrolls_the_time_graph() {
     h.state_mut().ui.timeline.pps = Some(200.0);
     h.state_mut().ui.timeline.start = 10.0;
     h.run_steps(2);
-    let in_point = |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layers[0].in_point.seconds();
+    let in_point = |h: &Harness<'_, EffectsApp>| h.state().session.active_comp().unwrap().layers[0].in_point.seconds();
     let from = pos2(rect(&h, "timeline.ruler").center().x, over_bar(&h, layer).y);
     // 400 px to the left at 200 px/s: 2 s later.
     space(&mut h, true);
@@ -259,15 +259,15 @@ fn shift_dragging_the_work_area_snaps_to_the_current_time() {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Short", "width": 320, "height": 180, "frameRate": 30, "duration": 10})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080"})).unwrap();
-    let mut app = EffectcraftApp::new(s);
+    let mut app = EffectsApp::new(s);
     app.ui.timeline.pps = Some(100.0);
     let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| app);
-    let reset = |h: &mut Harness<'_, EffectcraftApp>| {
+    let reset = |h: &mut Harness<'_, EffectsApp>| {
         h.state_mut().session.execute("comp.workArea", json!({"start": 1.0, "end": 4.0})).unwrap();
         h.state_mut().session.execute("time.set", json!({"time": 6.0})).unwrap();
         h.run_steps(3);
     };
-    let work_area = |h: &Harness<'_, EffectcraftApp>| {
+    let work_area = |h: &Harness<'_, EffectsApp>| {
         let wa = h.state().session.active_comp().unwrap().work_area;
         (wa.0.seconds(), wa.1.seconds())
     };
@@ -333,7 +333,7 @@ fn dragging_out_of_the_marker_bin_adds_a_comp_marker() {
     h.state_mut().ui.timeline.pps = Some(200.0);
     h.state_mut().ui.timeline.start = 10.0;
     h.run_steps(2);
-    let markers = |h: &Harness<'_, EffectcraftApp>| -> Vec<f64> { h.state().session.active_comp().unwrap().markers.iter().map(|m| m.time.seconds()).collect() };
+    let markers = |h: &Harness<'_, EffectsApp>| -> Vec<f64> { h.state().session.active_comp().unwrap().markers.iter().map(|m| m.time.seconds()).collect() };
     let bin = rect(&h, "timeline.markerBin");
     let ruler = rect(&h, "timeline.ruler");
     assert!(ruler.contains_rect(bin) && bin.max.x > ruler.max.x - 20.0, "at the ruler's right end: {bin:?} in {ruler:?}");
@@ -370,12 +370,12 @@ fn dragging_out_of_the_marker_bin_adds_a_comp_marker() {
 fn numpad_star_marks_the_selected_layer() {
     let (mut h, layer) = harness();
     let comp_markers =
-        |h: &Harness<'_, EffectcraftApp>| -> Vec<f64> { h.state().session.active_comp().unwrap().markers.iter().map(|m| m.time.seconds()).collect() };
-    let layer_markers = |h: &Harness<'_, EffectcraftApp>| -> Vec<f64> {
+        |h: &Harness<'_, EffectsApp>| -> Vec<f64> { h.state().session.active_comp().unwrap().markers.iter().map(|m| m.time.seconds()).collect() };
+    let layer_markers = |h: &Harness<'_, EffectsApp>| -> Vec<f64> {
         let comp = h.state().session.active_comp().unwrap();
         comp.layer(redrob_effects_engine::project::LayerId(layer)).unwrap().markers.iter().map(|m| m.time.seconds()).collect()
     };
-    let star = |h: &mut Harness<'_, EffectcraftApp>, time: f64| {
+    let star = |h: &mut Harness<'_, EffectsApp>, time: f64| {
         h.state_mut().session.execute("time.set", json!({"time": time})).unwrap();
         h.event(Event::Text("*".into()));
         h.run_steps(2);
@@ -413,7 +413,7 @@ fn the_timeline_follows_the_cti_past_its_edges() {
     }
     // Held still past the edge: it keeps scrolling (the view is read once the button is up).
     h.run_steps(30);
-    let release = |h: &mut Harness<'_, EffectcraftApp>, at: Pos2| {
+    let release = |h: &mut Harness<'_, EffectsApp>, at: Pos2| {
         h.event(Event::PointerButton { pos: at, button: egui::PointerButton::Primary, pressed: false, modifiers: Modifiers::NONE });
         h.run_steps(2);
     };

@@ -10,7 +10,7 @@ use serde_json::json;
 
 use crate::state::TextColorPick;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 /// What the text panels act on: a text layer, a document whose base style and first paragraph
 /// show the selection's formatting, and the selected character range while editing.
@@ -33,7 +33,7 @@ impl TextTarget {
 }
 
 /// The edited text layer's selection, else the selected text layer's Source Text at the CTI.
-pub fn text_target(app: &EffectcraftApp) -> Option<TextTarget> {
+pub fn text_target(app: &EffectsApp) -> Option<TextTarget> {
     let comp = app.session.active_comp()?;
     let cid = app.session.active_comp_id()?;
     if let Some(e) = app.session.state.text_edit.clone()
@@ -61,7 +61,7 @@ pub fn text_target(app: &EffectcraftApp) -> Option<TextTarget> {
     redrob_effects_engine::render::text::source_text(&ectx, layer).map(|d| TextTarget { layer: layer.id.0, doc: d, range: None })
 }
 
-fn toggle(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, r: Rect, id: &str, label: &str, on: bool, bold: bool) -> bool {
+fn toggle(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, r: Rect, id: &str, label: &str, on: bool, bold: bool) -> bool {
     let t = app.tokens;
     let resp = ui.interact(r, egui::Id::new(("text-toggle", id)), Sense::click());
     p.rect_filled(
@@ -81,7 +81,7 @@ fn toggle(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, r: Rec
     resp.clicked()
 }
 
-pub fn character(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn character(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     let ctx = ui.ctx().clone();
@@ -319,7 +319,7 @@ pub fn character(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 /// The Character panel's OpenType popup: feature toggles (dimmed when the font lacks them),
 /// figure styles and the twenty stylistic sets. Every row is an automation target
 /// (`character.opentype.<key>`), and every change is a `layer.setText` attribute.
-fn opentype_popup(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui::Id, pos: egui::Pos2, doc: &TextDoc, actions: &mut Vec<serde_json::Value>) {
+fn opentype_popup(app: &mut EffectsApp, ui: &mut egui::Ui, id: egui::Id, pos: egui::Pos2, doc: &TextDoc, actions: &mut Vec<serde_json::Value>) {
     let open_id = id.with("open");
     if !ui.data(|d| d.get_temp::<bool>(open_id).unwrap_or(false)) {
         return;
@@ -449,7 +449,7 @@ pub fn paint_justify_glyph(p: &egui::Painter, r: Rect, j: Justify, c: egui::Colo
     }
 }
 
-pub fn paragraph(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn paragraph(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     let ctx = ui.ctx().clone();
@@ -569,7 +569,7 @@ struct FontSearch {
 }
 
 /// Shared font menu for Character and Properties: search, recent fonts and previews.
-pub(super) fn font_picker(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui::Id, rect: Rect, current: &str, auto: &str, enabled: bool) -> Option<String> {
+pub(super) fn font_picker(app: &mut EffectsApp, ui: &mut egui::Ui, id: egui::Id, rect: Rect, current: &str, auto: &str, enabled: bool) -> Option<String> {
     let state_id = id.with("search-state");
     app.auto.add(auto, rect, "Font family");
     if !widgets::popup_is_open(ui, id) || !enabled {
@@ -754,7 +754,7 @@ pub(super) fn font_picker(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: egui:
 /// Align panel: Align Layers to Selection / Composition, the six align buttons and the six
 /// Distribute Layers buttons. Buttons run `layer.align {edge, to}` and `layer.distribute
 /// {mode}` on the selected layers.
-pub fn align(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn align(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     let x0 = rect.min.x + 10.0;

@@ -3,20 +3,20 @@
 //! group to tab it there (center) or split it off to a side (After Effects' drop zones, with a
 //! highlight of where it will land); hold Cmd/Ctrl when releasing, or drop outside every group,
 //! to float it. `` ` `` maximizes the panel under the pointer. A floating group can also move
-//! out of the main window into its own native window ([`EffectcraftApp::set_panel_window`]),
+//! out of the main window into its own native window ([`EffectsApp::set_panel_window`]),
 //! which can sit on another monitor.
 
 use egui::{Color32, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
 
 use crate::dock::{self, DockAction, DockNode, Group, Layout, PanelKind, PanelWindow};
-use crate::{EffectcraftApp, panels};
+use crate::{EffectsApp, panels};
 use craft_ui::docking::{Action, DropTarget, resolve_drop};
 
 fn drag_id() -> egui::Id {
     egui::Id::new("dock-tab-drag")
 }
 
-impl EffectcraftApp {
+impl EffectsApp {
     pub(crate) fn dock_command(&mut self, ctx: &egui::Context, action: Action<PanelKind>) -> Result<(), String> {
         let value = serde_json::to_value(action).map_err(|error| error.to_string())?;
         crate::menus::invoke(self, ctx, "window.dockAction", serde_json::json!({"action": value})).map(|_| ())
@@ -605,7 +605,7 @@ fn insertion_mark(painter: &egui::Painter, x: f32, strip: Rect, col: Color32) {
 
 /// The native window of the floating group whose window entry names `panel`.
 pub fn panel_window_id(panel: PanelKind) -> egui::ViewportId {
-    egui::ViewportId::from_hash_of(("effectcraft-panel-window", panel.id()))
+    egui::ViewportId::from_hash_of(("redrob-effects-panel-window", panel.id()))
 }
 
 /// Where a native panel window was told to open (kept for as long as it stays open).

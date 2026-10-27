@@ -8,12 +8,12 @@ use egui_kittest::Harness;
 use redrob_effects_engine::Session;
 use redrob_effects_engine::keyframe::Value as KV;
 use redrob_effects_engine::project::{LayerId, Node, PropGroup};
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::dock::PanelKind;
 use serde_json::json;
 
-fn harness(s: Session) -> Harness<'static, EffectcraftApp> {
-    let mut app = EffectcraftApp::new(s);
+fn harness(s: Session) -> Harness<'static, EffectsApp> {
+    let mut app = EffectsApp::new(s);
     app.show_panel(PanelKind::EffectControls);
     app.toggle_maximize(PanelKind::EffectControls);
     let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1400.0)).build_eframe(|_| app);
@@ -31,12 +31,12 @@ fn with_effect(effect: &str) -> (Session, u64, u64) {
     (s, l, fx)
 }
 
-fn group(h: &Harness<'_, EffectcraftApp>, layer: u64, fx: u64) -> PropGroup {
+fn group(h: &Harness<'_, EffectsApp>, layer: u64, fx: u64) -> PropGroup {
     h.state().session.active_comp().unwrap().layer(LayerId(layer)).unwrap().props.find_group(fx).unwrap().clone()
 }
 
 /// A parameter's value by its spec-id path inside the effect (`curves/rgbCurves/master`).
-fn value(h: &Harness<'_, EffectcraftApp>, layer: u64, fx: u64, path: &str) -> KV {
+fn value(h: &Harness<'_, EffectsApp>, layer: u64, fx: u64, path: &str) -> KV {
     let g = group(h, layer, fx);
     let mut cur = &g;
     let parts: Vec<&str> = path.split('/').collect();
@@ -54,7 +54,7 @@ fn s(v: KV) -> String {
 }
 
 /// Close every parameter group of the effect except those named (and their parents).
-fn only_groups(h: &mut Harness<'_, EffectcraftApp>, layer: u64, fx: u64, keep: &[&str]) {
+fn only_groups(h: &mut Harness<'_, EffectsApp>, layer: u64, fx: u64, keep: &[&str]) {
     fn walk(g: &PropGroup, keep: &[&str], out: &mut Vec<u64>) {
         for c in &g.children {
             if let Node::Group(sg) = c {
@@ -72,7 +72,7 @@ fn only_groups(h: &mut Harness<'_, EffectcraftApp>, layer: u64, fx: u64, keep: &
     h.run_steps(3);
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> egui::Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> egui::Rect {
     let e = h.state().auto.previous.iter().chain(h.state().auto.elements.iter()).find(|e| e.id == id).cloned().unwrap_or_else(|| {
         let near: Vec<String> = h
             .state()
@@ -91,7 +91,7 @@ fn at(r: egui::Rect, fx: f32, fy: f32) -> Pos2 {
     pos2(r.min.x + r.width() * fx, r.min.y + r.height() * fy)
 }
 
-fn click_n(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, n: u32) {
+fn click_n(h: &mut Harness<'_, EffectsApp>, p: Pos2, n: u32) {
     h.event(Event::PointerMoved(p));
     h.step();
     // (all in one frame: the harness' frame time is longer than a double-click's)
@@ -103,12 +103,12 @@ fn click_n(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, n: u32) {
     h.run_steps(2);
 }
 
-fn click_id(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click_id(h: &mut Harness<'_, EffectsApp>, id: &str) {
     let p = rect(h, id).center();
     click_n(h, p, 1);
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'_, EffectsApp>, from: Pos2, to: Pos2) {
     h.event(Event::PointerMoved(from));
     h.step();
     h.event(Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
@@ -122,7 +122,7 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
     h.run_steps(3);
 }
 
-fn undo(h: &mut Harness<'_, EffectcraftApp>) {
+fn undo(h: &mut Harness<'_, EffectsApp>) {
     h.state_mut().session.execute("edit.undo", json!({})).unwrap();
     h.run_steps(2);
 }
@@ -286,7 +286,7 @@ fn mesh_warp_vertices_drag_on_the_viewer() {
 fn composition_tabs_and_scrolling_preview() {
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(4);
     rect(&h, "panel.tab.Timeline.close");
     rect(&h, "preview.scroll");

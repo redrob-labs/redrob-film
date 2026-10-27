@@ -38,7 +38,7 @@ use redrob_film_time::{FrameRate, fields_to_frames, frames_to_fields};
 use crate::cea608::with_parity;
 use crate::{Cue, Document, Error, Result, scc};
 
-/// MCC files written by FilmCraft are 29.97 fps.
+/// MCC files written by Redrob Film are 29.97 fps.
 pub const RATE: FrameRate = FrameRate::FPS_29_97;
 const CC_COUNT: usize = 20;
 /// cc_data triplets per frame left for CEA-708 (after the two CEA-608 fields).

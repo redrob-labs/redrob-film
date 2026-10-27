@@ -62,13 +62,13 @@ impl AlphaOp {
     }
 }
 
-/// Convert a FilmCraft frame to an [`Image`].
+/// Convert a Redrob Film frame to an [`Image`].
 #[cfg(test)]
 pub(crate) fn frame_to_image(f: &VideoFrame, op: AlphaOp) -> Image {
     frame_to_image_in(f, op, Vec::new())
 }
 
-/// Convert a FilmCraft frame to an [`Image`], reusing `buf`'s allocation when it is large enough
+/// Convert a Redrob Film frame to an [`Image`], reusing `buf`'s allocation when it is large enough
 /// (every pixel is overwritten, so a recycled frame's contents do not matter).
 pub(crate) fn frame_to_image_in(f: &VideoFrame, op: AlphaOp, mut buf: Vec<Px>) -> Image {
     let (w, h) = (f.width as usize, f.height as usize);
@@ -140,7 +140,7 @@ pub(crate) fn turned(img: Image, turn: image::metadata::Orientation) -> Image {
     Image { width: tw as u32, height: th as u32, data }
 }
 
-/// A FilmCraft frame for a render that shows it at `w` × `h`, at most half its size each way:
+/// A Redrob Film frame for a render that shows it at `w` × `h`, at most half its size each way:
 /// what `resample(&frame_to_image(f, op), w, h)` makes, converting a quarter of the pixels.
 /// Opaque 4:2:0 Y'CbCr is box-filtered to half size before conversion (each 2×2 block of luma,
 /// and the [1 6 1]/8 neighbourhood of its chroma sample: the mean of the upsampled chroma its

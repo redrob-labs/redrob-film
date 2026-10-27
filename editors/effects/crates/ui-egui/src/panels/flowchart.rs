@@ -16,7 +16,7 @@ use serde_json::{Value, json};
 
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 /// Flowchart panel options (the panel's switches).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -192,12 +192,12 @@ pub fn layout(g: &FlowGraph, vertical: bool) -> Vec<[f32; 2]> {
 }
 
 /// The comp the panel charts.
-pub fn root(app: &EffectcraftApp) -> Option<ItemId> {
+pub fn root(app: &EffectsApp) -> Option<ItemId> {
     app.ui.flowchart.root.map(ItemId).filter(|r| app.session.project.comp(*r).is_some()).or_else(|| app.session.active_comp_id())
 }
 
 /// `flowchart.options` / `flowchart.graph` (UI commands).
-pub fn command(app: &mut EffectcraftApp, id: &str, p: &Value) -> Result<Value, String> {
+pub fn command(app: &mut EffectsApp, id: &str, p: &Value) -> Result<Value, String> {
     let o = &mut app.ui.flowchart;
     let b = |k: &str| p.get(k).and_then(Value::as_bool);
     if let Some(v) = b("layers") {
@@ -244,7 +244,7 @@ fn kind_style(kind: &str) -> (Icon, Color32) {
 }
 
 /// Draw the Flowchart panel.
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let p = ui.painter().with_clip_rect(rect);
@@ -449,7 +449,7 @@ mod tests {
     #[test]
     fn options_command() {
         let (s, main, ..) = session();
-        let mut app = EffectcraftApp::new(s);
+        let mut app = EffectsApp::new(s);
         let r = command(&mut app, "flowchart.options", &json!({"layers": true, "direction": "tb"})).unwrap();
         assert_eq!(r["direction"], "tb");
         assert!(app.ui.flowchart.layers && app.ui.flowchart.vertical);

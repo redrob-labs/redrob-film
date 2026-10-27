@@ -8,11 +8,11 @@ use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use redrob_effects_engine::Session;
 use redrob_effects_engine::project::LayerId;
-use redrob_effects_ui_egui::{Dialog, EffectcraftApp};
+use redrob_effects_ui_egui::{Dialog, EffectsApp};
 use serde_json::json;
 
-fn harness(s: Session) -> Harness<'static, EffectcraftApp> {
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+fn harness(s: Session) -> Harness<'static, EffectsApp> {
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     h
 }
@@ -23,13 +23,13 @@ fn session() -> Session {
     s
 }
 
-fn center(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
+fn center(h: &Harness<'_, EffectsApp>, id: &str) -> Pos2 {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0)
 }
 
 /// Step until the viewer's frame has rendered (frames render on background threads).
-fn settle(h: &mut Harness<'_, EffectcraftApp>) {
+fn settle(h: &mut Harness<'_, EffectsApp>) {
     for _ in 0..600 {
         h.step();
         if h.state().frames.inflight() == 0 && h.state().frames.last_ms.lock().map(|v| *v > 0.0).unwrap_or(false) {
@@ -40,7 +40,7 @@ fn settle(h: &mut Harness<'_, EffectcraftApp>) {
     h.run_steps(2);
 }
 
-fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+fn click_at(h: &mut Harness<'_, EffectsApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.step();
     h.input_mut().events.push(Event::PointerButton { pos: p, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -49,12 +49,12 @@ fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
     h.run_steps(3);
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, EffectsApp>, id: &str) {
     let p = center(h, id);
     click_at(h, p);
 }
 
-fn open_layer(h: &mut Harness<'_, EffectcraftApp>, id: u64) {
+fn open_layer(h: &mut Harness<'_, EffectsApp>, id: u64) {
     h.state_mut().ui.timeline.open_layers.insert(id);
     h.run_steps(2);
 }
@@ -124,7 +124,7 @@ fn mask_feather_values_are_linked_and_not_negative() {
     let mut s = session();
     let l = s.execute("layer.newSolid", json!({"color": "#808080"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("layer.addMask", json!({"layer": l, "shape": "rect"})).unwrap();
-    let feather = |h: &Harness<'_, EffectcraftApp>| {
+    let feather = |h: &Harness<'_, EffectsApp>| {
         let p = h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().props.prop("masks/#1/feather").unwrap().clone();
         (p.uid, p.value.components())
     };
@@ -133,7 +133,7 @@ fn mask_feather_values_are_linked_and_not_negative() {
     h.state_mut().ui.timeline.layer_reveal.insert(l, vec!["feather".into()]);
     h.run_steps(2);
     let (uid, _) = feather(&h);
-    let type_value = |h: &mut Harness<'_, EffectcraftApp>, d: usize, v: &str| {
+    let type_value = |h: &mut Harness<'_, EffectsApp>, d: usize, v: &str| {
         click(h, &format!("timeline.prop.{uid}.value.{d}"));
         h.input_mut().events.push(Event::Text(v.into()));
         h.step();
@@ -151,7 +151,7 @@ fn mask_feather_values_are_linked_and_not_negative() {
 
 /// Two shape layers, "Rect" (Rectangle 1) and "Oval" (Ellipse 1, selected): (harness with Rect's
 /// Contents open, Rect, Oval, Rectangle 1's uid).
-fn two_shape_layers() -> (Harness<'static, EffectcraftApp>, u64, u64, u64) {
+fn two_shape_layers() -> (Harness<'static, EffectsApp>, u64, u64, u64) {
     let mut s = session();
     let a = s.execute("layer.newShape", json!({"kind": "rect", "name": "Rect"})).unwrap()["layer"].as_u64().unwrap();
     let b = s.execute("layer.newShape", json!({"kind": "ellipse", "name": "Oval"})).unwrap()["layer"].as_u64().unwrap();
@@ -163,7 +163,7 @@ fn two_shape_layers() -> (Harness<'static, EffectcraftApp>, u64, u64, u64) {
     (h, a, b, rect)
 }
 
-fn contents_names(h: &Harness<'_, EffectcraftApp>, l: u64) -> Vec<String> {
+fn contents_names(h: &Harness<'_, EffectsApp>, l: u64) -> Vec<String> {
     h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().props.sub("contents").unwrap().groups().map(|g| g.name.clone()).collect()
 }
 

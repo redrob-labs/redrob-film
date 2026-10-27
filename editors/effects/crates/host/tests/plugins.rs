@@ -89,7 +89,7 @@ fn example_wasm_plugin_loads_and_renders() {
     let Some(wasm) = build_example() else { return };
     let (mut s, l) = setup();
     let r = s.execute("effect.plugins.load", json!({"path": wasm.to_string_lossy()})).unwrap();
-    assert_eq!(r["loaded"][0]["id"], "org.effectcraft.example.posterize-bands", "{r}");
+    assert_eq!(r["loaded"][0]["id"], "ai.redrob.effects.example.posterize-bands", "{r}");
     s.execute("effect.apply", json!({"layer": l, "effect": "Posterize Bands"})).unwrap();
     s.execute("prop.set", json!({"layer": l, "path": "effects/#1/mix", "value": 0})).unwrap();
     s.execute("prop.set", json!({"layer": l, "path": "effects/#1/levels", "value": 2})).unwrap();
@@ -124,7 +124,7 @@ fn wat_plugin(id: &str, api: i32, render: &str) -> String {
 
 #[test]
 fn plugin_loading_reports_bad_modules_and_survives_failing_renders() {
-    let dir = std::env::temp_dir().join(format!("effectcraft-host-plugins-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("redrob-effects-host-plugins-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let files = [
         ("a-good.wasm", wat_plugin("org.test.host.good", 1, "i32.const 0").into_bytes()),

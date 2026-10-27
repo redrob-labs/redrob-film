@@ -138,8 +138,8 @@ fn search_dirs(user: &std::path::Path) -> Vec<std::path::PathBuf> {
 }
 
 /// Whether the `.desktop` body's `Exec` points at our binary exactly (a stale dev entry from
-/// another checkout — `/a/filmcraft-old` is not `/a/filmcraft` — does not, and is rewritten; a
-/// packaged `Exec=filmcraft` never matches a source-tree path).
+/// another checkout — `/a/redrob-film-old` is not `/a/redrob-film` — does not, and is rewritten; a
+/// packaged `Exec=redrob-film` never matches a source-tree path).
 fn desktop_file_exec_is_ours(body: &str, exe: &str) -> bool {
     exec_line(body).is_some_and(|arg| arg == exe)
 }
@@ -288,7 +288,7 @@ mod tests {
     /// backslashes just added.
     #[test]
     fn exec_escapes_both_desktop_entry_layers() {
-        assert_eq!(escape_exec_argument("/opt/film craft/filmcraft"), "/opt/film craft/filmcraft");
+        assert_eq!(escape_exec_argument("/opt/film craft/redrob-film"), "/opt/film craft/redrob-film");
         // a\b → shell a\\b → string a\\\\b
         assert_eq!(escape_exec_argument("a\\b"), "a\\\\\\\\b");
         // a$b → shell a\$b → string a\\$b
@@ -298,7 +298,7 @@ mod tests {
     /// A written entry reads back as the exact binary it was written for, through both layers.
     #[test]
     fn exec_round_trips_through_both_layers() {
-        for exe in ["/home/dev/Projects/filmcraft/target/debug/redrob-film", "/opt/film craft/filmcraft", "/a$b\"c`d\\e"] {
+        for exe in ["/home/dev/Projects/redrob-film/target/debug/redrob-film", "/opt/film craft/redrob-film", "/a$b\"c`d\\e"] {
             let body = desktop_file_content("ai.redrob.film", "Redrob Film", exe);
             assert_eq!(exec_line(&body).as_deref(), Some(exe));
             assert!(desktop_file_exec_is_ours(&body, exe));
@@ -306,15 +306,15 @@ mod tests {
     }
 
     /// Only the exact executable counts: another checkout's path, a path with our path as a
-    /// prefix, and a packaged `Exec=filmcraft` are all someone else's entry.
+    /// prefix, and a packaged `Exec=redrob-film` are all someone else's entry.
     #[test]
     fn desktop_file_exec_is_ours_matches_only_our_binary() {
-        let body = desktop_file_content("ai.redrob.film", "Redrob Film", "/a/filmcraft");
-        assert!(!desktop_file_exec_is_ours(&body, "/a/filmcraft-old"));
-        assert!(!desktop_file_exec_is_ours(&body, "/b/filmcraft"));
-        assert!(!desktop_file_exec_is_ours("Exec=filmcraft %F\n", "/a/filmcraft"));
-        assert!(!desktop_file_exec_is_ours("Name=filmcraft\n", "/a/filmcraft"));
-        assert!(!desktop_file_exec_is_ours("Exec=\"dangling\n", "/a/filmcraft"));
+        let body = desktop_file_content("ai.redrob.film", "Redrob Film", "/a/redrob-film");
+        assert!(!desktop_file_exec_is_ours(&body, "/a/redrob-film-old"));
+        assert!(!desktop_file_exec_is_ours(&body, "/b/redrob-film"));
+        assert!(!desktop_file_exec_is_ours("Exec=redrob-film %F\n", "/a/redrob-film"));
+        assert!(!desktop_file_exec_is_ours("Name=redrob-film\n", "/a/redrob-film"));
+        assert!(!desktop_file_exec_is_ours("Exec=\"dangling\n", "/a/redrob-film"));
     }
 
     /// The string layer is undone before the argument is split: `\s` becomes a space, which

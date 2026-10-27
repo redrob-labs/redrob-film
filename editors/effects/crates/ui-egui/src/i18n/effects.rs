@@ -27,7 +27,7 @@
 //! The Simplified Chinese names come from the installed After Effects 2026 (26.5.0.89)
 //! Simplified Chinese interface, its 21 category folder names included; `Cryptomatte`,
 //! `EXtractoR`, `IDentifier`, `Key Light` and `Unmult` stay in English as brand names, and
-//! `Face Measurements` / `Face Track Points` are EffectCraft's own effects, so their wording is
+//! `Face Measurements` / `Face Track Points` are Redrob Effects' own effects, so their wording is
 //! ours.
 
 use std::collections::HashMap;
@@ -437,7 +437,7 @@ const TRADITIONAL_CHINESE: &[Row] = &[];
 /// one catalog instead of inventing a second mechanism. A translator fills one row per effect,
 /// ids from [`SIMPLIFIED_CHINESE`]; the names Adobe's Japanese interface leaves in English (the
 /// `CC` series, the `VR` set, the `OCIO` set, `Cryptomatte`, `EXtractoR`, `IDentifier`,
-/// `Key Light`, `Unmult`, `Twirl (Legacy)` and the two EffectCraft-only effects) repeat that
+/// `Key Light`, `Unmult`, `Twirl (Legacy)` and the two Redrob Effects-only effects) repeat that
 /// English name here rather than being left out.
 const JAPANESE_EFFECTS: &[Row] = &[];
 

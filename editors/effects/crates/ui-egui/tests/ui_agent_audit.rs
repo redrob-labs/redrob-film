@@ -9,7 +9,7 @@
 use egui::Rect;
 use egui_kittest::Harness;
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::control::{self, ControlRequest, Outcome};
 use redrob_effects_ui_egui::dock::PanelKind;
 use serde_json::{Value, json};
@@ -20,13 +20,13 @@ fn session() -> Session {
     s
 }
 
-fn harness(s: Session) -> Harness<'static, EffectcraftApp> {
-    let mut h = Harness::builder().with_size(egui::vec2(1680.0, 1020.0)).build_eframe(|_| EffectcraftApp::new(s));
+fn harness(s: Session) -> Harness<'static, EffectsApp> {
+    let mut h = Harness::builder().with_size(egui::vec2(1680.0, 1020.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     h
 }
 
-fn send(h: &mut Harness<'_, EffectcraftApp>, method: &str, params: Value) -> Value {
+fn send(h: &mut Harness<'_, EffectsApp>, method: &str, params: Value) -> Value {
     let ctx = h.ctx.clone();
     let (req, _rx) = ControlRequest::new(method, params);
     match control::handle(h.state_mut(), &ctx, &req) {
@@ -95,7 +95,7 @@ fn covered(w: Rect, elements: &[Rect]) -> bool {
 
 /// (panel, widget rect, label) of every interactive widget no automation element covers, for
 /// one panel shown maximized.
-fn gaps_of(h: &mut Harness<'_, EffectcraftApp>, p: PanelKind) -> Vec<String> {
+fn gaps_of(h: &mut Harness<'_, EffectsApp>, p: PanelKind) -> Vec<String> {
     h.state_mut().show_panel(p);
     h.state_mut().ui.maximized = Some(p);
     h.run_steps(4);
@@ -128,10 +128,10 @@ fn every_panel_registers_automation_ids_for_its_widgets() {
     let mut s = session();
     // Content for the selection-driven panels: the title (text with effects), a Render Queue
     // item, a comp marker.
-    s.execute("layer.select", json!({"layers": ["EFFECTCRAFT"]})).unwrap();
+    s.execute("layer.select", json!({"layers": ["REDROB EFFECTS"]})).unwrap();
     s.execute("renderQueue.add", json!({"format": "png", "output": "/tmp/ec-audit-[#####].png"})).unwrap();
     s.execute("markers.add", json!({})).ok();
-    let title = s.active_comp().unwrap().layers.iter().find(|l| l.name == "EFFECTCRAFT").map(|l| l.id.0).unwrap();
+    let title = s.active_comp().unwrap().layers.iter().find(|l| l.name == "REDROB EFFECTS").map(|l| l.id.0).unwrap();
     let mut h = harness(s);
     h.state_mut().ui.layer_panel = Some(title);
     // egui records widget types (to tell labels from controls) with this debug option, which

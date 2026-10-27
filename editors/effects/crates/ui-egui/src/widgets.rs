@@ -8,6 +8,7 @@ use crate::theme::Tokens;
 
 /// The [`egui::UiStackInfo`] tag of a dock panel's `Ui`: Tab moves between the hot-text fields
 /// of one panel.
+// legacy: the tag in saved panel layouts
 pub const PANEL_TAG: &str = "effectcraft.panel";
 
 /// A panel's hot-text fields in drawing order (this pass's and the last one's), and a Tab

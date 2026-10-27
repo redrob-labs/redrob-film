@@ -4,28 +4,28 @@
 use egui::{Event, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use serde_json::json;
 
-fn harness(w: f32) -> Harness<'static, EffectcraftApp> {
+fn harness(w: f32) -> Harness<'static, EffectsApp> {
     harness_at(vec2(w, 900.0))
 }
 
-fn harness_at(size: egui::Vec2) -> Harness<'static, EffectcraftApp> {
+fn harness_at(size: egui::Vec2) -> Harness<'static, EffectsApp> {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Tail", "width": 640, "height": 360, "duration": 4})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080", "width": 640, "height": 360})).unwrap();
-    let mut h = Harness::builder().with_size(size).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(size).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     h
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'_, EffectsApp>, from: Pos2, to: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(from));
     h.input_mut().events.push(Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
     h.step();
@@ -64,7 +64,7 @@ fn timeline_outline_columns_scroll_horizontally() {
     assert!(h.state().auto.find("timeline.outlineScroll").is_none());
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, at: Pos2) {
+fn click(h: &mut Harness<'_, EffectsApp>, at: Pos2) {
     for pressed in [true, false] {
         h.input_mut().events.push(Event::PointerMoved(at));
         h.step();
@@ -74,7 +74,7 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, at: Pos2) {
     h.run_steps(2);
 }
 
-fn styles(h: &mut Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn styles(h: &mut Harness<'_, EffectsApp>) -> Vec<String> {
     let v = h.state_mut().session.execute("layer.style.list", json!({})).unwrap();
     v["styles"].as_array().unwrap().iter().map(|s| s["style"].as_str().unwrap().to_string()).collect()
 }
@@ -119,7 +119,7 @@ fn layer_style_dialog_adds_previews_and_cancels() {
 
 /// The Layer Style dialog on the solid, opened from Layer ▸ Layer Styles ▸ Drop Shadow (which
 /// adds the style) at `scale` % UI Scale. Returns the layer.
-fn open_drop_shadow(h: &mut Harness<'_, EffectcraftApp>, scale: u32) -> u64 {
+fn open_drop_shadow(h: &mut Harness<'_, EffectsApp>, scale: u32) -> u64 {
     let lid = h.state().session.active_comp().unwrap().layers[0].id.0;
     h.state_mut().session.execute("layer.select", json!({"layers": [lid]})).unwrap();
     h.state_mut().set_pref("appearance.uiScale", json!(scale)).unwrap();
@@ -132,7 +132,7 @@ fn open_drop_shadow(h: &mut Harness<'_, EffectcraftApp>, scale: u32) -> u64 {
 }
 
 /// `id` whole: inside the window, and painted with none of it clipped away.
-fn in_view(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
+fn in_view(h: &Harness<'_, EffectsApp>, id: &str) -> Pos2 {
     let r = rect(h, id);
     // (A shape it paints: the topmost lying inside it, not the panels behind the dialog.)
     let clip = h.output().shapes.iter().rev().find(|c| matches!(&c.shape, egui::Shape::Rect(s) if r.expand(1.0).contains_rect(s.rect))).map(|c| c.clip_rect);
@@ -140,7 +140,7 @@ fn in_view(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
     r.center()
 }
 
-fn style_value(h: &mut Harness<'_, EffectcraftApp>, lid: u64, path: &str) -> f64 {
+fn style_value(h: &mut Harness<'_, EffectsApp>, lid: u64, path: &str) -> f64 {
     h.state_mut().session.execute("prop.get", json!({"layer": lid, "path": format!("layerStyles/dropShadow/{path}")})).unwrap()["value"].as_f64().unwrap()
 }
 

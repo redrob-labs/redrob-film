@@ -25,7 +25,7 @@ use redrob_film_project::ItemId;
 use redrob_film_time::Tick;
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::frames::{FrameKey, Target};
 use crate::state::SyncDraft;
 use crate::theme::Tokens;
@@ -33,7 +33,7 @@ use crate::theme::Tokens;
 type Elems = Vec<(String, Rect, String)>;
 
 /// Menu / shortcut entry points: the three dialogs (without params) and the view toggles.
-pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
+pub fn route(app: &mut FilmApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
     match id {
         "multicam.toggleView" => {
             app.ui.program.multicam = params.get("enabled").and_then(Value::as_bool).unwrap_or(!app.ui.program.multicam);
@@ -91,7 +91,7 @@ fn methods() -> [(&'static str, &'static str); 5] {
 }
 
 /// Draw the open Synchronize / Merge Clips / Create Multi-Camera dialog.
-pub fn show_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+pub fn show_dialog(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut d) = app.ui.sync_dialog.clone() else { return };
     let (title, pre) = match d.kind.as_str() {
         "merge" => (tl!("Merge Clips"), "merge"),
@@ -272,7 +272,7 @@ pub fn show_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
 
 /// A revision for grid frames: changes when the multi-camera source (or its cameras' media)
 /// changes, not with every edit of the cut (cuts recorded live must not throw away the grid).
-fn grid_revision(app: &FilmcraftApp, src: ItemId) -> u64 {
+fn grid_revision(app: &FilmApp, src: ItemId) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut h = std::collections::hash_map::DefaultHasher::new();
     if let Some(q) = app.session.project.sequence(src) {
@@ -287,7 +287,7 @@ fn grid_revision(app: &FilmcraftApp, src: ItemId) -> u64 {
 }
 
 /// The angle grid of the Multi-Camera view in `area`.
-pub fn grid(app: &mut FilmcraftApp, ui: &mut egui::Ui, area: Rect) {
+pub fn grid(app: &mut FilmApp, ui: &mut egui::Ui, area: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     ui.painter().rect_filled(area, 0.0, t.panel_bg);
@@ -420,7 +420,7 @@ pub fn grid(app: &mut FilmcraftApp, ui: &mut egui::Ui, area: Rect) {
 }
 
 /// The Edit Cameras dialog: a thumbnail, name and on/off switch per camera (`multicam.editCameras`).
-pub fn show_edit_cameras(app: &mut FilmcraftApp, ctx: &egui::Context) {
+pub fn show_edit_cameras(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut d) = app.ui.edit_cameras.clone() else { return };
     let src = ItemId(d.sequence);
     let Some(q) = app.session.project.sequence(src).cloned() else {
@@ -518,7 +518,7 @@ pub fn show_edit_cameras(app: &mut FilmcraftApp, ctx: &egui::Context) {
 }
 
 /// Start a recording pass when playback starts in the Multi-Camera view.
-pub fn on_play(app: &mut FilmcraftApp) {
+pub fn on_play(app: &mut FilmApp) {
     if app.ui.program.multicam && app.ui.multicam_record && !app.session.mcrec.active() && (app.playback.speed - 1.0).abs() < 1e-9 {
         let t = app.session.playhead();
         if redrob_film_engine::multicam::multicam_clip_at(&app.session, t).is_some() {
@@ -528,7 +528,7 @@ pub fn on_play(app: &mut FilmcraftApp) {
 }
 
 /// End the recording pass (one undo step) when playback stops.
-pub fn on_stop(app: &mut FilmcraftApp) {
+pub fn on_stop(app: &mut FilmApp) {
     if app.session.mcrec.active() {
         let t = app.session.playhead();
         match app.session.execute("multicam.recordStop", json!({"time": t.0})) {

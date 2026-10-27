@@ -1,5 +1,5 @@
-//! Encode a short comp to every output format and decode it back: through EffectCraft's own
-//! media layer (FilmCraft decoders) for MP4/MOV, the `image`/`gif` crates for stills and GIF,
+//! Encode a short comp to every output format and decode it back: through Redrob Effects' own
+//! media layer (Redrob Film decoders) for MP4/MOV, the `image`/`gif` crates for stills and GIF,
 //! and — when installed — ffprobe as an external oracle (skipped otherwise).
 //!
 //! The comp: 64×48 @ 10 fps, 1.2 s (12 frames), dark-blue background, a red solid of 32×48
@@ -533,7 +533,7 @@ fn webm_vp9_opus_roundtrip() {
     let path = d.join("comp.webm");
     let r = run(&p, cid, &pool, &om, &path);
     assert!(r.audio && r.bytes > 200, "{r:?}");
-    // Decoded back through FilmCraft (Matroska demuxer, VP9 and Opus decoders).
+    // Decoded back through Redrob Film (Matroska demuxer, VP9 and Opus decoders).
     let f = decode_movie(&path, FRAMES, 0.08);
     assert!(f.has_audio);
     let s = MediaPool::new().audio_samples(&f, Tick::from_seconds_f64(0.3), 24_000, 48_000);
@@ -596,7 +596,7 @@ fn wav_and_aiff_audio_only() {
         // 1.2 s of 48 kHz 16-bit stereo.
         assert!((bytes.len() as i64 - 57_600 * 4).abs() < 200, "{name}: {}", bytes.len());
         let l = if fmt == OutputFormat::Wav {
-            // Decoded by FilmCraft.
+            // Decoded by Redrob Film.
             let f = redrob_effects_media::probe(&path).expect("probe audio");
             assert!(f.has_audio && !f.has_video, "{name}");
             let s = MediaPool::new().audio_samples(&f, Tick::from_seconds_f64(0.3), 24_000, 48_000);

@@ -4,7 +4,7 @@
 //! to a Redrob workspace. Connecting uses the console's device flow, so nobody copies a key: the
 //! app shows a short code, the person approves it on console.redrob.ai, and the console hands this
 //! machine a workspace key. The flow and the stored key live behind [`AccountService`], supplied
-//! by the desktop app ([`crate::FilmcraftApp::account`]); the UI only ever sees names, never the
+//! by the desktop app ([`crate::FilmApp::account`]); the UI only ever sees names, never the
 //! key.
 //!
 //! Nothing here runs on its own. [`require`] is the one gate: an AI feature calls it right before
@@ -13,7 +13,7 @@
 use egui::{RichText, vec2};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 
 /// What may be shown about the connected workspace.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -55,14 +55,14 @@ pub trait AccountService {
 }
 
 /// Whether a Redrob workspace is connected. Without a service (web, tests) there never is.
-pub fn connected(app: &FilmcraftApp) -> bool {
+pub fn connected(app: &FilmApp) -> bool {
     app.account.as_ref().is_some_and(|s| s.account().is_some())
 }
 
 /// The gate an AI feature passes right before it needs the workspace key: `true` when connected;
 /// otherwise the connect dialog opens (remembering `feature` for its title) and this is `false`.
 /// Editing commands never call this.
-pub fn require(app: &mut FilmcraftApp, feature: &str) -> bool {
+pub fn require(app: &mut FilmApp, feature: &str) -> bool {
     if connected(app) {
         return true;
     }
@@ -72,7 +72,7 @@ pub fn require(app: &mut FilmcraftApp, feature: &str) -> bool {
 }
 
 /// `account.*` commands (menu, control channel, agents). `None` for any other id.
-pub fn route(app: &mut FilmcraftApp, id: &str) -> Option<Result<Value, String>> {
+pub fn route(app: &mut FilmApp, id: &str) -> Option<Result<Value, String>> {
     match id {
         "account.status" => Some(Ok(status(app))),
         "account.connect" => {
@@ -97,7 +97,7 @@ pub fn route(app: &mut FilmcraftApp, id: &str) -> Option<Result<Value, String>> 
 }
 
 /// `{connected, accountName?, keyName?, state}` as the control channel reports it. Never the key.
-pub fn status(app: &mut FilmcraftApp) -> Value {
+pub fn status(app: &mut FilmApp) -> Value {
     let Some(s) = app.account.as_mut() else {
         return json!({"connected": false, "available": false, "state": "unavailable"});
     };
@@ -114,7 +114,7 @@ pub fn status(app: &mut FilmcraftApp) -> Value {
 }
 
 /// The Connect dialog. Returns false once it should close.
-pub fn connect_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool {
+pub fn connect_dialog(app: &mut FilmApp, ctx: &egui::Context) -> bool {
     let mut open = true;
     let title = tl!("Connect to Redrob");
     egui::Window::new(title)
@@ -153,7 +153,7 @@ pub fn connect_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool {
 }
 
 /// Settings ▸ Redrob Account block.
-pub fn settings_block(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
+pub fn settings_block(app: &mut FilmApp, ui: &mut egui::Ui) {
     body(app, ui, "settings.account");
 }
 
@@ -162,7 +162,7 @@ pub fn settings_block(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
 ///
 /// Automation ids: `<prefix>.connect`, `<prefix>.cancel`, `<prefix>.disconnect`, `<prefix>.code`,
 /// `<prefix>.open`.
-fn body(app: &mut FilmcraftApp, ui: &mut egui::Ui, prefix: &str) {
+fn body(app: &mut FilmApp, ui: &mut egui::Ui, prefix: &str) {
     let t = app.tokens;
     let Some(svc) = app.account.as_mut() else {
         ui.label(RichText::new(tl!("Connecting a Redrob workspace is available in the desktop app.")).small().color(t.text_dim));
@@ -280,9 +280,9 @@ mod tests {
         }
     }
 
-    fn app_with(account: Option<Account>) -> (FilmcraftApp, Rc<RefCell<Vec<&'static str>>>) {
+    fn app_with(account: Option<Account>) -> (FilmApp, Rc<RefCell<Vec<&'static str>>>) {
         let calls = Rc::new(RefCell::new(Vec::new()));
-        let mut app = FilmcraftApp::new(redrob_film_engine::Session::default());
+        let mut app = FilmApp::new(redrob_film_engine::Session::default());
         app.account = Some(Box::new(Fake { account, state: ConnectState::Idle, calls: calls.clone() }));
         (app, calls)
     }
@@ -299,7 +299,7 @@ mod tests {
         assert_eq!(app.dialog, None);
 
         // No service at all (web, headless): never connected, and the dialog still explains itself.
-        let mut app = FilmcraftApp::new(redrob_film_engine::Session::default());
+        let mut app = FilmApp::new(redrob_film_engine::Session::default());
         assert!(!connected(&app));
         assert!(!require(&mut app, "Redrob Code"));
     }
@@ -327,7 +327,7 @@ mod tests {
         assert_eq!(s["connected"], json!(false));
         assert_eq!(*calls.borrow(), vec!["disconnect"]);
 
-        let mut app = FilmcraftApp::new(redrob_film_engine::Session::default());
+        let mut app = FilmApp::new(redrob_film_engine::Session::default());
         assert_eq!(route(&mut app, "account.status").unwrap().unwrap(), json!({"connected": false, "available": false, "state": "unavailable"}));
     }
 }

@@ -168,6 +168,7 @@ BridgeTalk.prototype.send = function () {
 };
 BridgeTalk.prototype.sendResult = BridgeTalk.prototype.send;
 BridgeTalk.prototype.toString = function () { return "[object BridgeTalk]"; };
+// legacy: the BridgeTalk app specifier user scripts address
 BridgeTalk.appName = "effectcraft";
 Object.defineProperty(BridgeTalk, "appVersion", { get: function () { return __get("app").buildName; } });
 Object.defineProperty(BridgeTalk, "appSpecifier", { get: function () { return "effectcraft-" + BridgeTalk.appVersion; } });

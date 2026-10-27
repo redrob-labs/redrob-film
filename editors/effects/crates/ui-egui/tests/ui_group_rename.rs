@@ -4,7 +4,7 @@
 use egui::{Event, Key, Modifiers};
 use egui_kittest::Harness;
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use serde_json::json;
 
 struct Fx {
@@ -16,7 +16,7 @@ struct Fx {
     group: u64,
 }
 
-fn harness() -> (Harness<'static, EffectcraftApp>, Fx) {
+fn harness() -> (Harness<'static, EffectsApp>, Fx) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4, "fps": 24})).unwrap();
     let text = s.execute("layer.newText", json!({"text": "ABCD"})).unwrap()["layer"].as_u64().unwrap();
@@ -28,38 +28,38 @@ fn harness() -> (Harness<'static, EffectcraftApp>, Fx) {
         s.active_comp().unwrap().layer(redrob_effects_engine::project::LayerId(l)).unwrap().props.group(path).unwrap().groups().next().unwrap().uid
     };
     let (anim, mask, group) = (first(&s, text, "text/animators"), first(&s, shape, "masks"), first(&s, shape, "contents"));
-    let mut h = Harness::builder().with_size(egui::vec2(1700.0, 1100.0)).with_step_dt(1.0 / 60.0).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1700.0, 1100.0)).with_step_dt(1.0 / 60.0).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(6);
     (h, Fx { text, shape, effect, anim, mask, group })
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key) {
+fn key(h: &mut Harness<'_, EffectsApp>, key: Key) {
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE });
     h.input_mut().events.push(Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers: Modifiers::NONE });
     h.run_steps(3);
 }
 
-fn name(h: &Harness<'_, EffectcraftApp>, layer: u64, uid: u64) -> String {
+fn name(h: &Harness<'_, EffectsApp>, layer: u64, uid: u64) -> String {
     h.state().session.active_comp().unwrap().layer(redrob_effects_engine::project::LayerId(layer)).unwrap().props.find_group(uid).unwrap().name.clone()
 }
 
-fn layer_name(h: &Harness<'_, EffectcraftApp>, layer: u64) -> String {
+fn layer_name(h: &Harness<'_, EffectsApp>, layer: u64) -> String {
     h.state().session.active_comp().unwrap().layer(redrob_effects_engine::project::LayerId(layer)).unwrap().name.clone()
 }
 
-fn select(h: &mut Harness<'_, EffectcraftApp>, layer: u64, uid: u64) {
+fn select(h: &mut Harness<'_, EffectsApp>, layer: u64, uid: u64) {
     let s = &mut h.state_mut().session;
     s.execute("layer.select", json!({"layers": [layer]})).unwrap();
     s.execute("prop.select", json!({"layer": layer, "prop": uid, "selectKeys": false})).unwrap();
     h.run_steps(3);
 }
 
-fn editing(h: &Harness<'_, EffectcraftApp>, uid: u64) -> bool {
+fn editing(h: &Harness<'_, EffectsApp>, uid: u64) -> bool {
     let ids = [format!("timeline.group.{uid}.nameEdit"), format!("effectControls.effect.{uid}.nameEdit")];
     h.state().auto.previous.iter().chain(h.state().auto.elements.iter()).any(|e| ids.contains(&e.id))
 }
 
-fn rename_with_enter(h: &mut Harness<'_, EffectcraftApp>, layer: u64, uid: u64, new: &str) {
+fn rename_with_enter(h: &mut Harness<'_, EffectsApp>, layer: u64, uid: u64, new: &str) {
     select(h, layer, uid);
     key(h, Key::Enter);
     assert!(editing(h, uid), "Enter opens a rename field on group {uid}");

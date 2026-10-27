@@ -3,36 +3,36 @@ use egui::{Event, Modifiers, PointerButton, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable as _;
 use redrob_effects_engine::{Session, project::LayerId};
-use redrob_effects_ui_egui::{Dialog, EffectcraftApp, dock::PanelKind};
+use redrob_effects_ui_egui::{Dialog, EffectsApp, dock::PanelKind};
 use serde_json::json;
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, EffectsApp> {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name":"Study", "width":640,"height":360,"duration":4})).unwrap();
     for n in 0..4 {
         s.execute("layer.newSolid", json!({"name":format!("Tile {n}"),"width":80,"height":80,"color":"#406080"})).unwrap();
     }
     s.execute("edit.deselectAll", json!({})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     h
 }
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("missing {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
-fn pointer(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, down: bool, m: Modifiers) {
+fn pointer(h: &mut Harness<'_, EffectsApp>, p: Pos2, down: bool, m: Modifiers) {
     h.input_mut().events.push(Event::ModifiersChanged(m));
     h.input_mut().events.push(Event::PointerMoved(p));
     h.input_mut().events.push(Event::PointerButton { pos: p, button: PointerButton::Primary, pressed: down, modifiers: m });
     h.step();
 }
-fn click(h: &mut Harness<'_, EffectcraftApp>, p: Pos2, m: Modifiers) {
+fn click(h: &mut Harness<'_, EffectsApp>, p: Pos2, m: Modifiers) {
     pointer(h, p, true, m);
     pointer(h, p, false, m);
     h.run_steps(2);
 }
-fn drag(h: &mut Harness<'_, EffectcraftApp>, a: Pos2, b: Pos2, m: Modifiers) {
+fn drag(h: &mut Harness<'_, EffectsApp>, a: Pos2, b: Pos2, m: Modifiers) {
     pointer(h, a, true, m);
     for n in 1..=8 {
         h.input_mut().events.push(Event::PointerMoved(a + (b - a) * (n as f32 / 8.0)));
@@ -45,7 +45,7 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, a: Pos2, b: Pos2, m: Modifiers) {
 fn timeline_shift_click_selects_range_and_ctrl_toggles() {
     let mut h = harness();
     let ids: Vec<LayerId> = h.state().session.active_comp().unwrap().layers.iter().map(|l| l.id).collect();
-    let point = |h: &Harness<'_, EffectcraftApp>, id: LayerId| {
+    let point = |h: &Harness<'_, EffectsApp>, id: LayerId| {
         let r = rect(h, &format!("timeline.layer.{}.row", id.0));
         pos2(r.min.x + 210.0, r.center().y)
     };
@@ -64,7 +64,7 @@ fn timeline_shift_click_selects_range_and_ctrl_toggles() {
 fn timeline_shift_click_on_layer_bars_selects_the_range() {
     let mut h = harness();
     let ids: Vec<LayerId> = h.state().session.active_comp().unwrap().layers.iter().map(|l| l.id).collect();
-    let bar = |h: &Harness<'_, EffectcraftApp>, id: LayerId| rect(h, &format!("timeline.layer.{}.bar", id.0)).center();
+    let bar = |h: &Harness<'_, EffectsApp>, id: LayerId| rect(h, &format!("timeline.layer.{}.bar", id.0)).center();
     let p = bar(&h, ids[3]);
     click(&mut h, p, Modifiers::NONE);
     assert_eq!(h.state().session.state.selected_layers, vec![ids[3]]);
@@ -95,7 +95,7 @@ fn timeline_empty_outline_marquee_selects_layers() {
 fn timeline_click_on_empty_track_area_deselects_layers() {
     let mut h = harness();
     let ids: Vec<LayerId> = h.state().session.active_comp().unwrap().layers.iter().map(|l| l.id).collect();
-    let select = |h: &mut Harness<'_, EffectcraftApp>, layers: &[LayerId]| {
+    let select = |h: &mut Harness<'_, EffectsApp>, layers: &[LayerId]| {
         let layers: Vec<u64> = layers.iter().map(|l| l.0).collect();
         h.state_mut().session.execute("layer.select", json!({"layers": layers})).unwrap();
         h.run_steps(2);
@@ -251,7 +251,7 @@ fn viewer_right_click_targets_hit_and_duplicate_preserves_group() {
     h.run_steps(3);
     let comp = rect(&h, "viewer.comp");
     let p = comp.min + vec2(120.0, 180.0) * (comp.width() / 640.0);
-    let right_click = |h: &mut Harness<'_, EffectcraftApp>| {
+    let right_click = |h: &mut Harness<'_, EffectsApp>| {
         for pressed in [true, false] {
             h.input_mut().events.push(Event::PointerMoved(p));
             h.input_mut().events.push(Event::PointerButton { pos: p, button: PointerButton::Secondary, pressed, modifiers: Modifiers::NONE });
@@ -344,7 +344,7 @@ fn style_cancel_restores_checkpoint_with_bounded_history_and_reopened_scrub() {
     h.state_mut().session.execute("layer.style.dropShadow", json!({})).unwrap();
     h.state_mut().session.prefs.general.undo_levels = 1;
     let ctx = h.ctx.clone();
-    let open = |h: &mut Harness<'_, EffectcraftApp>| {
+    let open = |h: &mut Harness<'_, EffectsApp>| {
         redrob_effects_ui_egui::menus::invoke(h.state_mut(), &ctx, "layer.style.options", json!({"style":"dropShadow"})).unwrap();
     };
     open(&mut h);
@@ -388,7 +388,7 @@ fn project_edit_commands_do_not_target_timeline_layers() {
 
 #[test]
 fn compact_settings_keeps_confirmation_buttons_clickable() {
-    let mut h = Harness::builder().with_size(vec2(1024.0, 768.0)).build_eframe(|_| EffectcraftApp::new(Session::default()));
+    let mut h = Harness::builder().with_size(vec2(1024.0, 768.0)).build_eframe(|_| EffectsApp::new(Session::default()));
     h.state_mut().dialog = Some(redrob_effects_ui_egui::Dialog::Settings);
     h.run_steps(4);
     h.get_by_label("   OK   ").click();
@@ -437,7 +437,7 @@ fn workflow_snapshot() {
 }
 
 /// Filled rects painted this frame (flattening nested shape lists).
-fn filled_rects(h: &Harness<'_, EffectcraftApp>) -> Vec<(Rect, egui::Color32)> {
+fn filled_rects(h: &Harness<'_, EffectsApp>) -> Vec<(Rect, egui::Color32)> {
     fn walk(s: &egui::Shape, out: &mut Vec<(Rect, egui::Color32)>) {
         match s {
             egui::Shape::Rect(r) => out.push((r.rect, r.fill)),
@@ -467,7 +467,7 @@ fn timeline_selected_effect_row_highlights() {
     h.run_steps(3);
     let row_selected = h.state().tokens.row_selected;
     let name = rect(&h, &format!("timeline.group.{fx}.name"));
-    let highlighted = |h: &Harness<'_, EffectcraftApp>| filled_rects(h).iter().any(|(r, c)| *c == row_selected && r.contains(name.center()));
+    let highlighted = |h: &Harness<'_, EffectsApp>| filled_rects(h).iter().any(|(r, c)| *c == row_selected && r.contains(name.center()));
     assert!(!highlighted(&h), "not highlighted before it is selected");
     click(&mut h, name.center(), Modifiers::NONE);
     assert!(h.state().session.state.selected_props.contains(&(id, fx)), "the click selects the effect");
@@ -480,7 +480,7 @@ fn timeline_selected_effect_row_highlights() {
 /// menu acted on the right-clicked layer only (#878).
 #[test]
 fn timeline_context_menu_acts_on_the_whole_selection() {
-    let right_click = |h: &mut Harness<'_, EffectcraftApp>, p: Pos2| {
+    let right_click = |h: &mut Harness<'_, EffectsApp>, p: Pos2| {
         for pressed in [true, false] {
             h.input_mut().events.push(Event::PointerMoved(p));
             h.input_mut().events.push(Event::PointerButton { pos: p, button: PointerButton::Secondary, pressed, modifiers: Modifiers::NONE });
@@ -488,11 +488,11 @@ fn timeline_context_menu_acts_on_the_whole_selection() {
         }
         h.run_steps(3);
     };
-    let row = |h: &Harness<'_, EffectcraftApp>, id: LayerId| {
+    let row = |h: &Harness<'_, EffectsApp>, id: LayerId| {
         let r = rect(h, &format!("timeline.layer.{}.row", id.0));
         pos2(r.min.x + 210.0, r.center().y)
     };
-    let bar = |h: &Harness<'_, EffectcraftApp>, id: LayerId| rect(h, &format!("timeline.layer.{}.bar", id.0)).center();
+    let bar = |h: &Harness<'_, EffectsApp>, id: LayerId| rect(h, &format!("timeline.layer.{}.bar", id.0)).center();
     let mut h = harness();
     let ids: Vec<LayerId> = h.state().session.active_comp().unwrap().layers.iter().map(|l| l.id).collect();
     // Outline row: Delete removes both selected layers.
@@ -558,7 +558,7 @@ fn project_context_move_to_root_acts_on_the_whole_selection() {
 /// (#985, #1003).
 #[test]
 fn timeline_context_menu_precompose_groups_the_whole_selection() {
-    let right_click = |h: &mut Harness<'_, EffectcraftApp>, p: Pos2| {
+    let right_click = |h: &mut Harness<'_, EffectsApp>, p: Pos2| {
         for pressed in [true, false] {
             h.input_mut().events.push(Event::PointerMoved(p));
             h.input_mut().events.push(Event::PointerButton { pos: p, button: PointerButton::Secondary, pressed, modifiers: Modifiers::NONE });
@@ -566,11 +566,11 @@ fn timeline_context_menu_precompose_groups_the_whole_selection() {
         }
         h.run_steps(3);
     };
-    let row = |h: &Harness<'_, EffectcraftApp>, id: LayerId| {
+    let row = |h: &Harness<'_, EffectsApp>, id: LayerId| {
         let r = rect(h, &format!("timeline.layer.{}.row", id.0));
         pos2(r.min.x + 210.0, r.center().y)
     };
-    let bar = |h: &Harness<'_, EffectcraftApp>, id: LayerId| rect(h, &format!("timeline.layer.{}.bar", id.0)).center();
+    let bar = |h: &Harness<'_, EffectsApp>, id: LayerId| rect(h, &format!("timeline.layer.{}.bar", id.0)).center();
     for via_bar in [false, true] {
         let mut h = harness();
         let ids: Vec<LayerId> = h.state().session.active_comp().unwrap().layers.iter().map(|l| l.id).collect();
@@ -606,13 +606,13 @@ fn timeline_context_menu_creates_shapes_and_masks_from_text() {
     s.execute("edit.deselectAll", json!({})).unwrap();
     let text = s.active_comp().unwrap().layers.iter().find(|l| matches!(l.source, LayerSource::Text)).unwrap().id.0;
     let plate = s.active_comp().unwrap().layers.iter().find(|l| l.name == "Plate").unwrap().id.0;
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
-    let row = |h: &Harness<'_, EffectcraftApp>, id: u64| {
+    let row = |h: &Harness<'_, EffectsApp>, id: u64| {
         let r = rect(h, &format!("timeline.layer.{id}.row"));
         pos2(r.min.x + 210.0, r.center().y)
     };
-    let right_click = |h: &mut Harness<'_, EffectcraftApp>, p: Pos2| {
+    let right_click = |h: &mut Harness<'_, EffectsApp>, p: Pos2| {
         for pressed in [true, false] {
             h.input_mut().events.push(Event::PointerMoved(p));
             h.input_mut().events.push(Event::PointerButton { pos: p, button: PointerButton::Secondary, pressed, modifiers: Modifiers::NONE });

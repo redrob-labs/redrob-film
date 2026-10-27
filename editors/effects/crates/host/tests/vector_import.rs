@@ -9,7 +9,7 @@ use redrob_effects_raster::Image;
 use serde_json::json;
 
 fn tmp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("effectcraft-host-vector-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("redrob-effects-host-vector-{}", std::process::id()));
     std::fs::create_dir_all(&d).unwrap();
     d.join(name).to_string_lossy().to_string()
 }

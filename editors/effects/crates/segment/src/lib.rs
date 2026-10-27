@@ -7,7 +7,7 @@
 //! - [`face::FaceModel`]: what face tracking asks of a model: find a face in a region, follow it
 //!   from frame to frame. The classical face tracker stays the built-in fallback.
 //! - [`MODELS`]: the registry. Every entry is open source under a licence compatible with
-//!   EffectCraft's (MIT OR Apache-2.0), with its authors, source, size and SHA-256. Weights are
+//!   Redrob Effects' (MIT OR Apache-2.0), with its authors, source, size and SHA-256. Weights are
 //!   never bundled: they are fetched on demand (or installed from a file), verified ([`sha256`])
 //!   and loaded by [`load`].
 //! - [`pt`]: a PyTorch checkpoint reader; [`tflite`]: a TensorFlow Lite reader and interpreter;

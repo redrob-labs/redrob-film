@@ -664,7 +664,7 @@ fn perf_sequential_1080p_h264() {
     let Some(p) = h264_mp4() else { return };
     let f = probe(&p).expect("probe");
     let n = 60;
-    // FilmCraft alone (decode only, YUV frames)
+    // Redrob Film alone (decode only, YUV frames)
     let bytes: Arc<[u8]> = std::fs::read(&p).expect("read").into();
     let src = redrob_film_codecs::open_bytes("a.mp4", bytes).expect("open");
     let t0 = Instant::now();
@@ -696,7 +696,7 @@ fn perf_sequential_1080p_h264() {
     let cached = 20.0 / t0.elapsed().as_secs_f64();
     assert!(pool.stats().hits >= 20);
     eprintln!(
-        "1080p H.264 sequential: filmcraft decode {raw:.1} fps; MediaPool (decode + RGBA f32) {plain:.1} fps, with read-ahead {ours:.1} fps; cached {cached:.0} fps"
+        "1080p H.264 sequential: redrob-film decode {raw:.1} fps; MediaPool (decode + RGBA f32) {plain:.1} fps, with read-ahead {ours:.1} fps; cached {cached:.0} fps"
     );
 }
 
@@ -1064,7 +1064,7 @@ fn an_unsupported_stream_reports_why_it_shows_no_picture() {
     let pool = MediaPool::new();
     assert_eq!(pool.problem(&f), None, "nothing is wrong before a frame was asked for");
     if pool.frame(ItemId(1), &f, Tick::ZERO).is_some() {
-        // a decoder that handles 4:2:2 (FilmCraft's, or a hardware one): no notice
+        // a decoder that handles 4:2:2 (Redrob Film's, or a hardware one): no notice
         assert_eq!(pool.problem(&f), None);
         return;
     }

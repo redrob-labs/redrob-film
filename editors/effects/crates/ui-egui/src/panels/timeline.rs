@@ -17,7 +17,7 @@ use serde_json::json;
 use crate::i18n::tr;
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 #[derive(Clone, Debug)]
 enum RowKind {
@@ -169,7 +169,7 @@ fn pick_whip_id() -> egui::Id {
 /// the layer's own), drawn and dropped at the end of [`show`].
 #[allow(clippy::too_many_arguments)]
 fn pick_whip(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &egui::Ui,
     p: &egui::Painter,
     rect: Rect,
@@ -489,7 +489,7 @@ fn snap_candidates(comp: &Comp, rows: &[Row]) -> Vec<f64> {
 /// Shift-dragging the work area or one of its ends (#252): the correction (seconds) that puts
 /// the nearest of the `moving` times on the current time, a key, a layer in / out point or a
 /// marker within 8 px (the work area's own ends are no targets).
-fn work_area_snap(app: &EffectcraftApp, comp: &Comp, moving: &[f64], pps: f64) -> f64 {
+fn work_area_snap(app: &EffectsApp, comp: &Comp, moving: &[f64], pps: f64) -> f64 {
     let (a, b) = (comp.work_area.0.seconds(), comp.work_area.1.seconds());
     let mut cands = snap_candidates(comp, &build_rows(app, comp));
     cands.retain(|c| (c - a).abs() > 1e-9 && (c - b).abs() > 1e-9);
@@ -563,7 +563,7 @@ pub(crate) fn set_zoom(tl: &mut crate::state::TimelineState, comp: &Comp, pps: f
 }
 
 /// `;`: from the whole comp, zoom in to frame level around the CTI; otherwise show the whole comp.
-pub fn toggle_frame_zoom(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn toggle_frame_zoom(app: &mut EffectsApp, ctx: &egui::Context) {
     let Some((_, w)) = ctx.data(|d| d.get_temp::<(f32, f32)>(egui::Id::new("timeline-graph-area"))) else { return };
     let Some(comp) = app.session.active_comp_arc() else { return };
     let fit = fit_pps(w, &comp);
@@ -576,7 +576,7 @@ pub fn toggle_frame_zoom(app: &mut EffectcraftApp, ctx: &egui::Context) {
 }
 
 /// `Shift+;`: show the whole comp; from there, go back to the span it was pressed in.
-pub fn toggle_fit_zoom(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn toggle_fit_zoom(app: &mut EffectsApp, ctx: &egui::Context) {
     let tl = &mut app.ui.timeline;
     if let Some(pps) = tl.pps {
         tl.before_fit = Some((tl.start, pps));
@@ -591,7 +591,7 @@ pub fn toggle_fit_zoom(app: &mut EffectcraftApp, ctx: &egui::Context) {
 }
 
 /// Zoom the time ruler around the CTI.
-pub fn zoom(app: &mut EffectcraftApp, ctx: &egui::Context, k: f64) {
+pub fn zoom(app: &mut EffectsApp, ctx: &egui::Context, k: f64) {
     let Some((_, w)) = ctx.data(|d| d.get_temp::<(f32, f32)>(egui::Id::new("timeline-graph-area"))) else { return };
     let Some(comp) = app.session.active_comp_arc() else { return };
     let fit = fit_pps(w, &comp);
@@ -602,7 +602,7 @@ pub fn zoom(app: &mut EffectcraftApp, ctx: &egui::Context, k: f64) {
 }
 
 /// Screen point of a layer bar (centre, or at a comp time).
-pub fn locate(app: &EffectcraftApp, layer: u64, time: Option<f64>) -> Option<(f32, f32)> {
+pub fn locate(app: &EffectsApp, layer: u64, time: Option<f64>) -> Option<(f32, f32)> {
     let e = app.auto.find(&format!("timeline.layer.{layer}.bar"))?;
     let y = e.rect[1] + e.rect[3] / 2.0;
     match time {
@@ -617,7 +617,7 @@ pub fn locate(app: &EffectcraftApp, layer: u64, time: Option<f64>) -> Option<(f3
 }
 
 /// Start renaming the first selected layer (Enter in the Timeline).
-pub fn begin_rename(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn begin_rename(app: &mut EffectsApp, ctx: &egui::Context) {
     // A selected effect, mask, shape group or text animator renames before its layer (as in
     // After Effects, #1061).
     let group = app.session.state.selected_props.iter().rev().find_map(|(lid, uid)| {
@@ -735,7 +735,7 @@ fn reveal_matches(p: &Property, path_matches: &[&str], kind: &str) -> bool {
 }
 
 /// The name shown for a layer: its name, or its source's name (Source Name column).
-fn display_name(app: &EffectcraftApp, l: &Layer) -> String {
+fn display_name(app: &EffectsApp, l: &Layer) -> String {
     if app.ui.timeline.source_name
         && let Some(item) = l.source.item().and_then(|i| app.session.project.item(i))
     {
@@ -819,7 +819,7 @@ fn reveal_targets(kind: &str) -> Option<(&'static str, &'static [&'static str])>
 
 /// The properties the Timeline shows (revealed rows), as `{layer, prop}`: J / K and Select All
 /// Keyframes act on these, as in After Effects.
-pub(crate) fn visible_props(app: &EffectcraftApp, comp: &Comp) -> Vec<serde_json::Value> {
+pub(crate) fn visible_props(app: &EffectsApp, comp: &Comp) -> Vec<serde_json::Value> {
     build_rows(app, comp)
         .iter()
         .filter_map(|r| match r.kind {
@@ -829,7 +829,7 @@ pub(crate) fn visible_props(app: &EffectcraftApp, comp: &Comp) -> Vec<serde_json
         .collect()
 }
 
-fn build_rows(app: &EffectcraftApp, comp: &Comp) -> Vec<Row> {
+fn build_rows(app: &EffectsApp, comp: &Comp) -> Vec<Row> {
     let tl = &app.ui.timeline;
     let search = tl.search.trim().to_lowercase();
     let mut rows = Vec::new();
@@ -931,7 +931,7 @@ fn build_rows(app: &EffectcraftApp, comp: &Comp) -> Vec<Row> {
 /// Rows of a twirled-open layer under the reveal shortcuts (one, or several added with Shift):
 /// masks, effects, the revealed properties in property-tree order, the Reveal Properties
 /// selection, then the waveform.
-fn reveal_rows(app: &EffectcraftApp, l: &Layer, kinds: &[String], rows: &mut Vec<Row>) {
+fn reveal_rows(app: &EffectsApp, l: &Layer, kinds: &[String], rows: &mut Vec<Row>) {
     let tl = &app.ui.timeline;
     let has = |k: &str| kinds.iter().any(|r| r == k);
     // Groups shown with their whole contents: the revealed properties inside aren't listed again.
@@ -1122,7 +1122,7 @@ fn enclosing_groups(l: &Layer, uid: u64) -> Vec<u64> {
 
 /// Twirl open the groups holding `props` of `layer` that sit inside effects, so their rows show
 /// (a U reveal, an EE reveal, a puppet pin placed or moved in the viewer).
-pub(crate) fn open_effect_paths(app: &mut EffectcraftApp, layer: u64, props: &[u64]) {
+pub(crate) fn open_effect_paths(app: &mut EffectsApp, layer: u64, props: &[u64]) {
     let Some(l) = app.session.active_comp().and_then(|c| c.layer(LayerId(layer))) else { return };
     let Some(fx) = l.effects().map(|g| g.uid) else { return };
     let mut open = vec![];
@@ -1137,7 +1137,7 @@ pub(crate) fn open_effect_paths(app: &mut EffectcraftApp, layer: u64, props: &[u
 
 /// After a reveal shortcut that picks properties by state (EE expressions): those inside effects
 /// on `layers` show under their effect, twirled open.
-pub(crate) fn open_revealed(app: &mut EffectcraftApp, layers: &[u64], kinds: &[String]) {
+pub(crate) fn open_revealed(app: &mut EffectsApp, layers: &[u64], kinds: &[String]) {
     for kind in kinds.iter().filter(|k| matches!(k.as_str(), "animated" | "expressions")) {
         for id in layers {
             let Some(l) = app.session.active_comp().and_then(|c| c.layer(LayerId(*id))) else { continue };
@@ -1151,7 +1151,7 @@ pub(crate) fn open_revealed(app: &mut EffectcraftApp, layers: &[u64], kinds: &[S
 /// After the viewer edits a property (a puppet pin placed, moved or recorded): when `layer` is
 /// twirled open, its groups open, and a U reveal of the layer takes it in, so its keyframes show
 /// (#273). A collapsed layer stays collapsed, as in After Effects.
-pub fn keep_in_view(app: &mut EffectcraftApp, layer: LayerId, prop: u64) {
+pub fn keep_in_view(app: &mut EffectsApp, layer: LayerId, prop: u64) {
     if !app.ui.timeline.open_layers.contains(&layer.0) {
         return;
     }
@@ -1383,7 +1383,7 @@ fn layer_drop_id() -> egui::Id {
     egui::Id::new("tl-layer-drop")
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let Some(cid) = app.session.active_comp_id() else {
@@ -3451,7 +3451,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 /// change by frames), Stretch (click: Time Stretch dialog).
 #[allow(clippy::too_many_arguments)]
 fn layer_cells(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     lp: &egui::Painter,
     cw: &Cols,
@@ -3571,7 +3571,7 @@ fn find_group(g: &PropGroup, uid: u64) -> Option<&PropGroup> {
 /// A stroke's Dashes "+" / "−" buttons (add or remove a Dash/Gap pair).
 #[allow(clippy::too_many_arguments)]
 fn dash_buttons(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -3634,7 +3634,7 @@ const SHAPE_ADD_ITEMS: &[(&str, &str)] = &[
 /// selected shape group, else to the layer's contents.
 #[allow(clippy::too_many_arguments)]
 fn shape_add_popup(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -3677,7 +3677,7 @@ fn shape_add_popup(
 /// The Text group's "Animate:" and an animator's "Add:" pop-up menus (AE's twirl-down menus).
 #[allow(clippy::too_many_arguments)]
 fn text_anim_popups(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -3977,7 +3977,7 @@ fn fmt_num(v: f64, d: usize) -> String {
 /// Inline value editor for a property row; pushes `prop.set` actions. Returns the rects of a
 /// multi-dimension value's fields, one per dimension (none for other values).
 fn value_editor(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -4261,7 +4261,7 @@ mod tests {
     }
 
     /// A comp with two solids; "Box" has an animated Position and a Gaussian Blur.
-    fn app() -> EffectcraftApp {
+    fn app() -> EffectsApp {
         let mut s = redrob_effects_engine::Session::default();
         s.execute("comp.new", json!({"name": "T", "width": 320, "height": 180, "duration": 4})).unwrap();
         s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080", "width": 320, "height": 180})).unwrap();
@@ -4272,10 +4272,10 @@ mod tests {
         s.execute("effect.apply", json!({"effect": "ec.blur.gaussian"})).unwrap();
         let pos = s.active_comp().unwrap().layer(LayerId(bx)).unwrap().transform().unwrap().get("position").unwrap().uid;
         s.execute("prop.toggleAnimation", json!({"layer": bx, "prop": pos})).unwrap();
-        EffectcraftApp::new(s)
+        EffectsApp::new(s)
     }
 
-    fn labels(app: &EffectcraftApp) -> Vec<String> {
+    fn labels(app: &EffectsApp) -> Vec<String> {
         let comp = app.session.active_comp().unwrap().clone();
         build_rows(app, &comp)
             .into_iter()
@@ -4399,7 +4399,7 @@ mod tests {
         let comp = app.session.active_comp().unwrap().clone();
         let id = |n: &str| comp.layers.iter().find(|l| l.name == n).unwrap().id.0;
         let (plate, bx) = (id("Plate"), id("Box"));
-        let select = |app: &mut EffectcraftApp, l: u64| app.session.execute("layer.select", json!({"layers": [l]})).unwrap();
+        let select = |app: &mut EffectsApp, l: u64| app.session.execute("layer.select", json!({"layers": [l]})).unwrap();
         // Plate shows Scale (S); then U on Box.
         select(&mut app, plate);
         crate::menus::invoke(&mut app, &ctx, "timeline.reveal.scale", json!({})).unwrap();
@@ -4456,7 +4456,7 @@ mod tests {
         let inner = s.execute("comp.new", json!({"name": "Inner", "width": 32, "height": 32, "duration": 2})).unwrap()["comp"].as_u64().unwrap();
         s.execute("comp.new", json!({"name": "Main", "width": 64, "height": 64, "duration": 4})).unwrap();
         let nested = s.execute("layer.addItem", json!({"item": inner})).unwrap()["layer"].as_u64().unwrap();
-        let mut app = EffectcraftApp::new(s);
+        let mut app = EffectsApp::new(s);
         let ctx = egui::Context::default();
         crate::menus::invoke(&mut app, &ctx, "layer.enableTimeRemap", json!({"layers": [nested]})).unwrap();
         app.session.execute("layer.select", json!({"layers": [nested]})).unwrap();
@@ -4479,7 +4479,7 @@ mod tests {
         let inner = s.execute("comp.new", json!({"name": "Inner", "width": 32, "height": 32, "duration": 2})).unwrap()["comp"].as_u64().unwrap();
         s.execute("comp.new", json!({"name": "Main", "width": 64, "height": 64, "duration": 4})).unwrap();
         let nested = s.execute("layer.addItem", json!({"item": inner})).unwrap()["layer"].as_u64().unwrap();
-        let mut app = EffectcraftApp::new(s);
+        let mut app = EffectsApp::new(s);
         let ctx = egui::Context::default();
         crate::menus::invoke(&mut app, &ctx, "layer.enableTimeRemap", json!({"layers": [nested]})).unwrap();
         let uid = app.session.active_comp().unwrap().layer(LayerId(nested)).unwrap().props.prop("timeRemap").unwrap().uid;
@@ -4506,7 +4506,7 @@ mod tests {
         s.execute("comp.new", json!({"name": "Main", "width": 64, "height": 64, "duration": 4})).unwrap();
         s.execute("layer.newSolid", json!({"name": "Other"})).unwrap();
         let nested = s.execute("layer.addItem", json!({"item": inner})).unwrap()["layer"].as_u64().unwrap();
-        let mut app = EffectcraftApp::new(s);
+        let mut app = EffectsApp::new(s);
         let ctx = egui::Context::default();
         crate::menus::invoke(&mut app, &ctx, "layer.enableTimeRemap", json!({"layers": [nested]})).unwrap();
         assert_eq!(app.ui.timeline.layer_reveal.get(&nested), Some(&vec!["timeRemap".to_string()]));

@@ -1,4 +1,4 @@
-//! Round trips through FilmCraft's spec-derived AV1 decoder: decoded frames must equal the
+//! Round trips through Redrob Film's spec-derived AV1 decoder: decoded frames must equal the
 //! encoder's own reconstruction bit for bit.
 
 mod common;

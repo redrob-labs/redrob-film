@@ -1,4 +1,4 @@
-//! The EffectCraft document model.
+//! The Redrob Effects document model.
 //!
 //! `Project` → items (folders, compositions, footage, solids) → `Comp` → `Layer` → property tree
 //! ([`props`]). Compositions sit behind `Arc` so undo snapshots share everything that did not
@@ -36,10 +36,10 @@ pub const SCHEMA_VERSION: u32 = 2;
 /// The first schema in which effect positions are in effect space (see [`SCHEMA_VERSION`]).
 pub const SCHEMA_EFFECT_SPACE: u32 = 2;
 
-/// The EffectCraft version, written into project files as `savedBy`.
+/// The Redrob Effects version, written into project files as `savedBy`.
 pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// The EffectCraft version that wrote a project file (its `savedBy`), when it says.
+/// The Redrob Effects version that wrote a project file (its `savedBy`), when it says.
 pub fn saved_by(text: &str) -> Option<String> {
     #[derive(Deserialize)]
     struct Meta {

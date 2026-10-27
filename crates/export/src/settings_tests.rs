@@ -667,7 +667,7 @@ fn metadata_and_quicktime_multiplexer() {
     let dir = Scratch::new("meta");
     let path = dir.path("m.mov");
     let mut s = ExportSettings { format: Format::H264, path: path.clone(), multiplexer: Multiplexer::Mov, ..Default::default() };
-    s.metadata = ExportMetadata { title: "Test Title".into(), creator: "FilmCraft Tests".into(), copyright: "CC0".into(), ..Default::default() };
+    s.metadata = ExportMetadata { title: "Test Title".into(), creator: "Redrob Film Tests".into(), copyright: "CC0".into(), ..Default::default() };
     s.audio.codec = AudioCodec::Pcm;
     s.audio.bits = 24;
     assert_eq!(s.extension(), "mov");

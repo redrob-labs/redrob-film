@@ -22,7 +22,7 @@ use serde_json::{Value, json};
 
 use crate::theme::Tokens;
 use crate::widgets::check_label as mark;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 const TOP_H: f32 = 74.0;
 const HEAD_H: f32 = 22.0;
@@ -298,7 +298,7 @@ fn codec_menu(o: &redrob_effects_engine::project::render_queue::OutputModule, v:
 }
 
 /// Open the form behind a `{"form": …}` menu entry.
-fn open_menu_form(app: &mut EffectcraftApp, it: &RenderQueueItem, form: &str) {
+fn open_menu_form(app: &mut EffectsApp, it: &RenderQueueItem, form: &str) {
     use crate::panels::forms::{Field, form as open};
     let id = it.id;
     let o = &it.output;
@@ -399,11 +399,11 @@ fn output_to_menu(it: &RenderQueueItem) -> Vec<(String, Value)> {
 /// Output To's save dialog, as After Effects' Output Movie To: it opens at the current output
 /// (folder and name, which ends in the format's extension) and offers that extension. `None`
 /// when the host has no save dialog; `Some(None)` when the dialog was cancelled.
-fn pick_output(app: &EffectcraftApp, it: &RenderQueueItem) -> Option<Option<String>> {
+fn pick_output(app: &EffectsApp, it: &RenderQueueItem) -> Option<Option<String>> {
     app.hooks.save_dialog(&app.session.resolve_output(it).unwrap_or_default())
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     let queue: Vec<RenderQueueItem> = app.session.project.render_queue.clone();

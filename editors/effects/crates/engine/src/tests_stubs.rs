@@ -274,7 +274,7 @@ fn rq() -> (Session, Arc<MockExporter>) {
 /// where it means "the current drive" to the OS but resolves against the home folder's drive in
 /// the render queue, so a test cannot know which drive to expect.
 pub(crate) fn tmp_out(rel: &str) -> String {
-    let base = std::env::temp_dir().join("effectcraft-rq-tests");
+    let base = std::env::temp_dir().join("redrob-effects-rq-tests");
     rel.split('/').fold(base, |p, part| p.join(part)).to_string_lossy().into_owned()
 }
 

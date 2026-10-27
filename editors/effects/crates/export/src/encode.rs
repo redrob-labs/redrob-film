@@ -1,6 +1,6 @@
-//! Movie export: FilmCraft H.264, HEVC (`redrob-effects-hevcenc`) and AV1 (`redrob-effects-av1enc`)
+//! Movie export: Redrob Film H.264, HEVC (`redrob-effects-hevcenc`) and AV1 (`redrob-effects-av1enc`)
 //! → MP4 (+ AAC), ProRes and uncompressed `raw ` → MOV (+ PCM), muxed by
-//! FilmCraft's ISO BMFF / QuickTime writer.
+//! Redrob Film's ISO BMFF / QuickTime writer.
 
 use std::io::Write;
 

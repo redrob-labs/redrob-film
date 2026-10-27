@@ -1,4 +1,4 @@
-//! Posterize Bands: an example EffectCraft effect plug-in (plug-in API v1, see
+//! Posterize Bands: an example Redrob Effects effect plug-in (plug-in API v1, see
 //! `docs/plugins.md`). It quantizes each pixel's luminance into `levels` bands and mixes a tint
 //! colour in by `mix` percent, optionally only above a `threshold`.
 //!
@@ -12,7 +12,7 @@ use std::cell::RefCell;
 /// levels, mix, tint r g b a, invert).
 const MANIFEST: &str = r#"{
   "api": 1,
-  "id": "org.effectcraft.example.posterize-bands",
+  "id": "ai.redrob.effects.example.posterize-bands",
   "name": "Posterize Bands",
   "category": "Stylize",
   "version": "1.0.0",

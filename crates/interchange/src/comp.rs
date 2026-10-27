@@ -4,8 +4,8 @@
 //! sequences of fillers, source clips and transitions, where a transition *overlaps* the end of
 //! the segment before it and the start of the segment after it (the sequence's length is the sum of
 //! its segment lengths minus its transition lengths). Source clips reference media through master
-//! mobs and file source mobs. [`from_project`] turns a FilmCraft sequence into that shape;
-//! [`to_project`] builds FilmCraft sequences and media from it. All times are ticks; the format
+//! mobs and file source mobs. [`from_project`] turns a Redrob Film sequence into that shape;
+//! [`to_project`] builds Redrob Film sequences and media from it. All times are ticks; the format
 //! serialisers convert to and from edit units.
 
 use std::collections::HashMap;
@@ -120,7 +120,7 @@ pub(crate) struct CTransition {
     pub len: Tick,
     /// Where the cut lies, from the transition start.
     pub cut: Tick,
-    /// FilmCraft effect id.
+    /// Redrob Film effect id.
     pub effect: String,
 }
 
@@ -175,7 +175,7 @@ impl Source {
 }
 
 // ---------------------------------------------------------------------------------------------
-// FilmCraft → composition
+// Redrob Film → composition
 // ---------------------------------------------------------------------------------------------
 
 /// How a transition sits on a clip.
@@ -664,7 +664,7 @@ fn marker_in(b: &mut Builder, m: &CMarker) -> Marker {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Composition → FilmCraft
+// Composition → Redrob Film
 // ---------------------------------------------------------------------------------------------
 
 /// Media a document embeds, to be written next to it by the caller (the item's path).

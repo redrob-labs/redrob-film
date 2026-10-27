@@ -26,7 +26,7 @@ fn f32_bytes(v: &[f32]) -> Vec<u8> {
 impl GpuMask {
     pub fn new(device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("filmcraft-mask"),
+            label: Some("redrob-film-mask"),
             source: wgpu::ShaderSource::Wgsl(include_str!("mask.wgsl").into()),
         });
         let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

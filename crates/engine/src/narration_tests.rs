@@ -8,7 +8,7 @@ use serde_json::json;
 const RATE: i64 = redrob_film_tts::SAMPLE_RATE as i64;
 
 fn tmp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("filmcraft-tts-{}-{name}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("redrob-film-tts-{}-{name}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     d.to_string_lossy().into_owned()
 }

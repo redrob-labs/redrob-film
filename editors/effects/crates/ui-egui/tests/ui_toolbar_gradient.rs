@@ -11,7 +11,7 @@ use redrob_effects_engine::Session;
 use redrob_effects_engine::keyframe::Value;
 use redrob_effects_engine::project::{LayerId, PropGroup};
 use redrob_effects_ui_egui::state::Tool;
-use redrob_effects_ui_egui::{Dialog, EffectcraftApp};
+use redrob_effects_ui_egui::{Dialog, EffectsApp};
 use serde_json::json;
 
 /// The Colors uid of the first `paint` ("gfill" / "gstroke") group in `g`, through nested groups.
@@ -21,7 +21,7 @@ fn colors(g: &PropGroup, paint: &str) -> Option<u64> {
 
 /// A rectangle shape layer (selected unless `select` is false) with `items` added to its
 /// contents, and the toolbar set with `tool` (shape.toolOptions).
-fn setup(items: &[&str], tool: serde_json::Value, select: bool) -> (Harness<'static, EffectcraftApp>, u64) {
+fn setup(items: &[&str], tool: serde_json::Value, select: bool) -> (Harness<'static, EffectsApp>, u64) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 640, "height": 360, "duration": 4})).unwrap();
     let l = s.execute("layer.newShape", json!({"kind": "rect"})).unwrap()["layer"].as_u64().unwrap();
@@ -38,7 +38,7 @@ fn setup(items: &[&str], tool: serde_json::Value, select: bool) -> (Harness<'sta
     }
     s.state.selected_layers = if select { vec![LayerId(l)] } else { vec![] };
     s.state.selected_props.clear();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     // With no shape layer selected, Fill / Stroke show while a shape tool is active.
     if !select {
         h.state_mut().ui.tool = Tool::Rectangle;
@@ -47,12 +47,12 @@ fn setup(items: &[&str], tool: serde_json::Value, select: bool) -> (Harness<'sta
     (h, l)
 }
 
-fn center(h: &Harness<'_, EffectcraftApp>, id: &str) -> Pos2 {
+fn center(h: &Harness<'_, EffectsApp>, id: &str) -> Pos2 {
     let r = h.state().auto.find(id).unwrap_or_else(|| panic!("no automation id {id}")).rect;
     pos2(r[0] + r[2] / 2.0, r[1] + r[3] / 2.0)
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str, modifiers: Modifiers) {
+fn click(h: &mut Harness<'_, EffectsApp>, id: &str, modifiers: Modifiers) {
     let p = center(h, id);
     h.input_mut().events.push(Event::ModifiersChanged(modifiers));
     h.input_mut().events.push(Event::PointerMoved(p));
@@ -65,12 +65,12 @@ fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str, modifiers: Modifiers) {
     h.run_steps(3);
 }
 
-fn layer_colors(h: &Harness<'_, EffectcraftApp>, l: u64, paint: &str) -> u64 {
+fn layer_colors(h: &Harness<'_, EffectsApp>, l: u64, paint: &str) -> u64 {
     colors(&h.state().session.active_comp().unwrap().layer(LayerId(l)).unwrap().props, paint).expect("the gradient")
 }
 
 /// The options popup is open (its kind buttons are in the automation tree).
-fn options_open(h: &Harness<'_, EffectcraftApp>, key: &str) -> bool {
+fn options_open(h: &Harness<'_, EffectsApp>, key: &str) -> bool {
     h.state().auto.find(&format!("header.{key}Options.solid")).is_some()
 }
 

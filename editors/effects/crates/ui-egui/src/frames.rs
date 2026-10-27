@@ -248,7 +248,7 @@ pub struct RenderSource {
     /// desktop: Show Channel / exposure / region-of-interest drawing read the CPU frame texture,
     /// so GPU frames are read back (the compositing still runs on the GPU). On in the browser
     /// while the viewer draws plainly, because there frames can't be read back synchronously
-    /// (`EffectcraftApp::gpu_display`).
+    /// (`EffectsApp::gpu_display`).
     pub gpu_display: bool,
     /// The persistent disk cache, when enabled.
     pub disk: Option<Arc<DiskCache>>,

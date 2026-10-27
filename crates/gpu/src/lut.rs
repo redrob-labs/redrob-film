@@ -22,7 +22,7 @@ fn storage(binding: u32, read_only: bool) -> wgpu::BindGroupLayoutEntry {
 impl GpuLut {
     pub fn new(device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("filmcraft-lut"),
+            label: Some("redrob-film-lut"),
             source: wgpu::ShaderSource::Wgsl(include_str!("lut.wgsl").into()),
         });
         let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

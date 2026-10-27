@@ -1,6 +1,6 @@
 //! Effects & Presets: search (matches highlighted), the contents menu (colour-depth / GPU
 //! filters, animation presets on/off, categories or alphabetical, refresh), Favorites (star an
-//! effect), Recently Used, "* Animation Presets" (EffectCraft's own text animation and transition
+//! effect), Recently Used, "* Animation Presets" (Redrob Effects' own text animation and transition
 //! presets and the user's `.ecpreset` files) and the effect categories. Double-click applies to the
 //! selected layers; dragging an effect onto a layer (timeline, viewer, Effect Controls) applies
 //! it there.
@@ -12,7 +12,7 @@ use serde_json::json;
 use crate::icons::{self, Icon};
 use crate::panels::DragPayload;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 const ROW_H: f32 = 21.0;
 const RECENT_MAX: usize = 8;
@@ -24,7 +24,7 @@ pub struct PresetFile {
     pub path: String,
 }
 
-/// Where user presets live: `$EC_PRESETS_DIR`, else `~/Documents/EffectCraft/Presets`.
+/// Where user presets live: `$EC_PRESETS_DIR`, else `~/Documents/Redrob Film/Presets`.
 pub fn presets_dir() -> Option<std::path::PathBuf> {
     if let Ok(d) = std::env::var("EC_PRESETS_DIR") {
         return Some(d.into());
@@ -116,7 +116,7 @@ enum Apply {
 /// A folder row; returns whether it is open.
 #[allow(clippy::too_many_arguments)]
 fn folder_row(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     lp: &egui::Painter,
     list: Rect,
@@ -161,7 +161,7 @@ fn folder_row(
 /// An effect row (fx icon, highlighted name, favourite star, 32 bpc badge).
 #[allow(clippy::too_many_arguments)]
 fn effect_row(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     lp: &egui::Painter,
     list: Rect,
@@ -220,7 +220,7 @@ fn effect_row(
 /// A preset row (no drag; double-click applies).
 #[allow(clippy::too_many_arguments)]
 fn preset_row(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     lp: &egui::Painter,
     list: Rect,
@@ -264,7 +264,7 @@ fn user_presets(ctx: &egui::Context, force: bool) -> Vec<PresetFile> {
     v
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let p = ui.painter().clone();

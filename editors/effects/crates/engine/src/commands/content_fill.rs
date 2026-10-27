@@ -132,7 +132,7 @@ fn png(img: &Image) -> std::result::Result<Vec<u8>, String> {
 fn default_dir(s: &Session, name: &str) -> String {
     let base = s.path.as_deref().and_then(|p| std::path::Path::new(p).parent().map(|d| d.join("Fill"))).unwrap_or_else(|| {
         // (the browser has no temporary folder: its storage)
-        if cfg!(target_arch = "wasm32") { std::path::PathBuf::from("/Fill") } else { std::env::temp_dir().join("effectcraft-fill") }
+        if cfg!(target_arch = "wasm32") { std::path::PathBuf::from("/Fill") } else { std::env::temp_dir().join("redrob-effects-fill") }
     });
     let safe: String = name.chars().map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' }).collect();
     let mut k = 1;

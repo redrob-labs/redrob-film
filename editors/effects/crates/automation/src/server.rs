@@ -171,8 +171,9 @@ impl McpServer {
                 Ok(json!({
                     "protocolVersion": version,
                     "capabilities": {"tools": {"listChanged": false}, "resources": {"listChanged": false, "subscribe": false}},
-                    "serverInfo": {"name": "effectcraft", "title": format!("Redrob Film ({mode})"), "version": env!("CARGO_PKG_VERSION")},
+                    "serverInfo": {"name": "redrob-effects", "title": format!("Redrob Film ({mode})"), "version": env!("CARGO_PKG_VERSION")},
                     "instructions": instructions,
+                    // legacy: MCP _meta key that agent clients read
                     "_meta": {"effectcraftAutoSave": self.autosave_info()},
                 }))
             }
@@ -206,6 +207,7 @@ impl McpServer {
                 {
                     let meta = obj.entry("_meta").or_insert_with(|| json!({}));
                     if let Some(meta) = meta.as_object_mut() {
+                        // legacy: MCP _meta key that agent clients read
                         meta.insert("effectcraftAutoSave".into(), self.autosave_info());
                     }
                 }

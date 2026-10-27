@@ -155,6 +155,7 @@ impl R<'_> {
         let rate = FrameRate::new(pic_rate.0, pic_rate.1);
         let tags = tagged_values(c, pid::MOB_USER_COMMENTS);
         let tag = |n: &str| tags.iter().find(|(k, _)| k == n).map(|(_, v)| v.clone());
+        // legacy: AAF tagged-value names written by older versions
         let (mut width, mut height) = tag("FilmCraft Frame Size")
             .and_then(|s| s.split_once('x').and_then(|(a, b)| Some((a.trim().parse().ok()?, b.trim().parse().ok()?))))
             .unwrap_or((0, 0));

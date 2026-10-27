@@ -5,7 +5,7 @@
 //! requests `engine.execute {command, params}` (crates/automation/src/bridge.rs L49). The shell
 //! sits on that channel before the Edit editor does ([`crate::shell::ShellApp::service_control`]):
 //! these `mode.*` ids are answered by the shell, `command.list` gets them appended, everything else
-//! goes on to `FilmcraftApp` untouched (crates/ui-egui/src/control.rs L99).
+//! goes on to `FilmApp` untouched (crates/ui-egui/src/control.rs L99).
 //!
 //! Tool ids are commands, so the agent discovers them the same way as every editor command: no
 //! second tool catalogue to keep in step.

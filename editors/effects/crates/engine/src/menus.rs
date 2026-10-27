@@ -14,7 +14,7 @@
 //!   @effects                                  the effect categories (Effect menu)
 //!   @dynamic:history                          entries computed from the session when the menu
 //!                                             opens ([`dynamic`]: recent files, undo history…)
-//! [mac] Quit EffectCraft | app.quit           only on macOS ([!mac] = everywhere else)
+//! [mac] Quit Redrob Effects | app.quit           only on macOS ([!mac] = everywhere else)
 //! ```
 //!
 //! An entry's shortcut is the command's default shortcut unless the line gives one (needed for
@@ -22,7 +22,7 @@
 //! (`| F3, Cmd+Shift+T`); the menus show the first. Adobe-service entries (Team Projects,
 //! Libraries, Bridge, Media Encoder, Behance, Creative Cloud…) are intentionally absent; the
 //! Essential Graphics workspace uses the Properties panel and the Essential Graphics panel, whose
-//! templates use EffectCraft's own open `.ectemplate` format.
+//! templates use Redrob Effects' own open `.ectemplate` format.
 
 use std::sync::OnceLock;
 

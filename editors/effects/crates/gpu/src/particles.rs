@@ -38,7 +38,7 @@ fn pipes(g: &GpuContext) -> &Pipes {
         let d = &g.device;
         let src = [include_str!("shaders/common.wgsl"), include_str!("shaders/kernels.wgsl"), include_str!("shaders/particles.wgsl")].concat();
         let module =
-            d.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("effectcraft particles"), source: wgpu::ShaderSource::Wgsl(src.into()) });
+            d.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("redrob-effects particles"), source: wgpu::ShaderSource::Wgsl(src.into()) });
         let buffer = |binding: u32, ty: wgpu::BufferBindingType| wgpu::BindGroupLayoutEntry {
             binding,
             visibility: wgpu::ShaderStages::COMPUTE,
@@ -46,7 +46,7 @@ fn pipes(g: &GpuContext) -> &Pipes {
             count: None,
         };
         let bgl = d.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("effectcraft particles"),
+            label: Some("redrob-effects particles"),
             entries: &[
                 buffer(0, wgpu::BufferBindingType::Uniform),
                 buffer(1, wgpu::BufferBindingType::Storage { read_only: true }),
@@ -55,7 +55,7 @@ fn pipes(g: &GpuContext) -> &Pipes {
             ],
         });
         let layout = d.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("effectcraft particles"),
+            label: Some("redrob-effects particles"),
             bind_group_layouts: &[None, Some(&bgl)],
             immediate_size: 0,
         });

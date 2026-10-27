@@ -16,10 +16,10 @@ use redrob_effects_engine::templates::{self, THUMB_H, THUMB_W, TemplateInfo};
 
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
-use crate::{Dialog, EffectcraftApp, widgets};
+use crate::{Dialog, EffectsApp, widgets};
 
 /// The gallery's entries (re-listed when the user template files change).
-pub fn entries(app: &mut EffectcraftApp) -> Vec<TemplateInfo> {
+pub fn entries(app: &mut EffectsApp) -> Vec<TemplateInfo> {
     let files = templates::user_files(&app.session);
     if app.template_list.as_ref().map(|(f, _)| f) != Some(&files) {
         let list = templates::list(&app.session);
@@ -30,7 +30,7 @@ pub fn entries(app: &mut EffectcraftApp) -> Vec<TemplateInfo> {
 }
 
 /// A template's thumbnail texture; renders at most one missing thumbnail per frame (`budget`).
-fn thumb(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, budget: &mut bool) -> Option<egui::TextureHandle> {
+fn thumb(app: &mut EffectsApp, ctx: &egui::Context, id: &str, budget: &mut bool) -> Option<egui::TextureHandle> {
     if let Some(t) = app.template_thumbs.get(id) {
         return t.clone();
     }
@@ -53,7 +53,7 @@ fn fmt_secs(s: f64) -> String {
 }
 
 /// The Templates tab of the Home screen.
-pub fn home_tab(app: &mut EffectcraftApp, ui: &mut egui::Ui, area: Rect) {
+pub fn home_tab(app: &mut EffectsApp, ui: &mut egui::Ui, area: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let p = ui.painter().with_clip_rect(area);
@@ -170,7 +170,7 @@ pub fn home_tab(app: &mut EffectcraftApp, ui: &mut egui::Ui, area: Rect) {
 
 /// Delete Template: the user template waiting on the prompt (`dialog_state.delete_template`, its
 /// id and name).
-pub fn show_delete(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn show_delete(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens) {
     let Some((id, name)) = app.dialog_state.delete_template.clone() else {
         app.dialog = None;
         return;
@@ -218,7 +218,7 @@ pub fn show_delete(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
 mod tests {
     use super::*;
 
-    fn frame(app: &mut EffectcraftApp, ctx: &egui::Context) {
+    fn frame(app: &mut EffectsApp, ctx: &egui::Context) {
         ctx.run_ui(Default::default(), |ui| {
             app.auto.begin_frame();
             if app.ui.start_screen {
@@ -231,7 +231,7 @@ mod tests {
     }
 
     /// Click the widget registered as `id`, then draw the frame that follows.
-    fn click(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str) {
+    fn click(app: &mut EffectsApp, ctx: &egui::Context, id: &str) {
         let [x, y, w, h] = app.auto.find(id).unwrap_or_else(|| panic!("{id} is not on screen")).rect;
         let pos = pos2(x + w / 2.0, y + h / 2.0);
         let button = |pressed| egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers: Default::default() };
@@ -251,10 +251,10 @@ mod tests {
         frame(app, ctx);
     }
 
-    fn app_with_store() -> EffectcraftApp {
+    fn app_with_store() -> EffectsApp {
         let s =
             redrob_effects_engine::Session { config: Some(std::sync::Arc::new(redrob_effects_engine::config::MemoryConfig::default())), ..Default::default() };
-        EffectcraftApp::new(s)
+        EffectsApp::new(s)
     }
 
     #[test]

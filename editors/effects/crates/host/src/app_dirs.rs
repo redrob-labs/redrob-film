@@ -1,15 +1,15 @@
-//! Where EffectCraft keeps its per-user data (settings, shortcuts, crash recovery, logs, models,
+//! Where Redrob Effects keeps its per-user data (settings, shortcuts, crash recovery, logs, models,
 //! plug-ins): the one directory [`config_dir`](crate::config_dir) returns.
 //!
 //! In order:
 //! 1. `REDROB_EFFECTS_CONFIG_DIR`, when set (tests, agents, custom setups).
 //! 2. **Portable mode** (#993): a marker file ([`PORTABLE_MARKERS`]) beside the executable puts
-//!    everything in `<exe dir>/EffectCraftData`, so a portable copy on a USB stick leaves nothing in
+//!    everything in `<exe dir>/Redrob FilmData`, so a portable copy on a USB stick leaves nothing in
 //!    `%APPDATA%`. The Windows portable zip ships with `portable.txt`; the MSI doesn't. If that
 //!    folder can't be written (read-only medium, Program Files), a warning is logged and the
 //!    platform folder is used.
-//! 3. The platform convention: macOS `~/Library/Application Support/EffectCraft`, Windows
-//!    `%APPDATA%\EffectCraft`, Linux `$XDG_CONFIG_HOME/effectcraft` or `~/.config/effectcraft`.
+//! 3. The platform convention: macOS `~/Library/Application Support/Redrob Film`, Windows
+//!    `%APPDATA%\Redrob Film`, Linux `$XDG_CONFIG_HOME/effectcraft` or `~/.config/effectcraft`.
 
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
@@ -25,7 +25,7 @@ pub const PORTABLE_DATA_DIR: &str = "Redrob FilmData";
 pub enum Mode {
     /// `REDROB_EFFECTS_CONFIG_DIR`.
     Override,
-    /// `<exe dir>/EffectCraftData`.
+    /// `<exe dir>/Redrob FilmData`.
     Portable,
     /// The platform's per-user config directory.
     Platform,
@@ -85,7 +85,7 @@ pub fn platform_dir(env: &impl Fn(&str) -> Option<OsString>) -> Option<PathBuf> 
     if cfg!(target_os = "windows") {
         return env("APPDATA").map(|a| PathBuf::from(a).join("Redrob Film"));
     }
-    env("XDG_CONFIG_HOME").map(PathBuf::from).or_else(|| home().map(|h| h.join(".config"))).map(|c| c.join("effectcraft"))
+    env("XDG_CONFIG_HOME").map(PathBuf::from).or_else(|| home().map(|h| h.join(".config"))).map(|c| c.join("effectcraft")) // legacy: the Linux settings folder existing installs already use
 }
 
 /// The first portable marker file in `exe_dir`, if any.
@@ -111,7 +111,7 @@ mod tests {
 
     fn temp(tag: &str) -> PathBuf {
         static N: AtomicUsize = AtomicUsize::new(0);
-        let d = std::env::temp_dir().join(format!("effectcraft-app-dirs-{tag}-{}-{}", std::process::id(), N.fetch_add(1, Ordering::Relaxed)));
+        let d = std::env::temp_dir().join(format!("redrob-effects-app-dirs-{tag}-{}-{}", std::process::id(), N.fetch_add(1, Ordering::Relaxed)));
         let _ = std::fs::remove_dir_all(&d);
         std::fs::create_dir_all(&d).unwrap();
         d

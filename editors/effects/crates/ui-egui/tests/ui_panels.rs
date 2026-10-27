@@ -8,26 +8,26 @@ use egui::{Event, Pos2, pos2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use redrob_effects_engine::{Session, config::MemoryConfig};
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::dock::PanelKind;
 use serde_json::json;
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, EffectsApp> {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Panels", "width": 320, "height": 180, "duration": 4})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Plate", "color": "#406080"})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     h
 }
 
-fn open(h: &mut Harness<'_, EffectcraftApp>, panel: &str) {
+fn open(h: &mut Harness<'_, EffectsApp>, panel: &str) {
     let ctx = h.ctx.clone();
     redrob_effects_ui_egui::menus::invoke(h.state_mut(), &ctx, "window.panel", json!({"panel": panel})).unwrap();
     h.run_steps(3);
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click(h: &mut Harness<'_, EffectsApp>, id: &str) {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     let p: Pos2 = pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
     h.input_mut().events.push(Event::PointerMoved(p));
@@ -113,7 +113,7 @@ fn progress_panel_cancels_a_job() {
     assert_eq!(h.state().session.job_log.last().unwrap().status, "cancelled");
 }
 
-fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+fn click_at(h: &mut Harness<'_, EffectsApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.input_mut().events.push(Event::PointerButton { pos: p, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
     h.step();
@@ -121,7 +121,7 @@ fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
     h.run_steps(2);
 }
 
-fn hover(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+fn hover(h: &mut Harness<'_, EffectsApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.run_steps(3);
 }
@@ -136,7 +136,7 @@ fn saved_workspaces_persist_across_sessions() {
     let store = std::sync::Arc::new(MemoryConfig::default());
     let launch = || {
         let s = Session { config: Some(store.clone()), ..Default::default() };
-        let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+        let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
         h.run_steps(2);
         h
     };
@@ -237,13 +237,13 @@ fn leaving_the_learn_workspace_closes_its_tutorials() {
     }
 }
 
-fn open_settings(h: &mut Harness<'_, EffectcraftApp>) {
+fn open_settings(h: &mut Harness<'_, EffectsApp>) {
     let ctx = h.ctx.clone();
     redrob_effects_ui_egui::menus::invoke(h.state_mut(), &ctx, "app.settings", json!({"page": "appearance"})).unwrap();
     h.run_steps(3);
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: egui::Key, modifiers: egui::Modifiers) {
+fn key(h: &mut Harness<'_, EffectsApp>, key: egui::Key, modifiers: egui::Modifiers) {
     for pressed in [true, false] {
         h.input_mut().events.push(Event::Key { key, physical_key: None, pressed, repeat: false, modifiers });
         h.step();
@@ -251,13 +251,13 @@ fn key(h: &mut Harness<'_, EffectcraftApp>, key: egui::Key, modifiers: egui::Mod
 }
 
 /// The UI Scale setting and the zoom it gives.
-fn scale(h: &Harness<'_, EffectcraftApp>) -> (u32, f32) {
+fn scale(h: &Harness<'_, EffectsApp>) -> (u32, f32) {
     (h.state().session.prefs.appearance.ui_scale, h.ctx.zoom_factor())
 }
 
 /// Types `text` into Settings' UI Scale a key at a time: nothing applies (and the field keeps
 /// the keyboard) until Enter.
-fn type_scale(h: &mut Harness<'_, EffectcraftApp>, text: &str) {
+fn type_scale(h: &mut Harness<'_, EffectsApp>, text: &str) {
     let before = scale(h);
     click(h, "settings.appearance.uiScale");
     for c in text.chars() {
@@ -305,7 +305,7 @@ fn ui_scale_setting_sizes_the_interface() {
     assert_eq!(ctx.zoom_factor(), 0.9);
     // A saved scale applies from the first frame.
     let s = Session { prefs: redrob_effects_engine::prefs::Prefs::from_json(&h.state().session.prefs.to_json()), ..Default::default() };
-    let mut h2 = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h2 = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h2.run_steps(3);
     assert_eq!(h2.ctx.zoom_factor(), 0.9);
 }
@@ -326,15 +326,15 @@ fn settings_buttons_stay_in_view_at_200_percent() {
     s.prefs.disk.disk_cache_enabled = false;
     s.prefs.set("appearance.uiScale", json!(200)).unwrap();
     s.save_prefs();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     assert_eq!(scale(&h), (200, 2.0));
-    let rect = |h: &Harness<'_, EffectcraftApp>, id: &str| {
+    let rect = |h: &Harness<'_, EffectsApp>, id: &str| {
         let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}"));
         egui::Rect::from_min_size(pos2(e.rect[0], e.rect[1]), egui::vec2(e.rect[2], e.rect[3]))
     };
     // Whole: inside the window, and painted with none of them clipped away.
-    let buttons = |h: &Harness<'_, EffectcraftApp>| {
+    let buttons = |h: &Harness<'_, EffectsApp>| {
         ["previous", "next", "cancel", "ok"].map(|b| {
             let r = rect(h, &format!("settings.{b}"));
             let clip = h
@@ -347,7 +347,7 @@ fn settings_buttons_stay_in_view_at_200_percent() {
             r
         })
     };
-    let scroll_page = |h: &mut Harness<'_, EffectcraftApp>| {
+    let scroll_page = |h: &mut Harness<'_, EffectsApp>| {
         let at = rect(h, "settings.appearance.appearanceMode").center();
         h.input_mut().events.push(Event::PointerMoved(at));
         h.input_mut().events.push(Event::MouseWheel {
@@ -388,7 +388,7 @@ fn panels_snapshot() {
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
     let solid = s.project.items.values().find(|i| matches!(i.kind, redrob_effects_engine::project::ItemKind::Solid(_))).map(|i| i.id.0);
-    let mut app = Some(EffectcraftApp::new(s));
+    let mut app = Some(EffectsApp::new(s));
     let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| app.take().expect("app"));
     h.run_steps(3);
     let ctx = h.ctx.clone();
@@ -421,7 +421,7 @@ fn panels_snapshot() {
 }
 
 /// Drag the automation element `id` horizontally by `dx` points.
-fn drag_x(h: &mut Harness<'_, EffectcraftApp>, id: &str, dx: f32) {
+fn drag_x(h: &mut Harness<'_, EffectsApp>, id: &str, dx: f32) {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     let from: Pos2 = pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
     h.input_mut().events.push(Event::PointerMoved(from));
@@ -448,7 +448,7 @@ fn essential_graphics_scale_keeps_constrain_proportions() {
         h.state_mut().session.execute("essential.addProperty", json!({"layer": layer, "path": "transform/scale"})).unwrap()["controls"][0].as_u64().unwrap();
     open(&mut h, "essentialGraphics");
     let value = format!("essential.control.{c}.value");
-    let scale = |h: &Harness<'_, EffectcraftApp>| {
+    let scale = |h: &Harness<'_, EffectsApp>| {
         let comp = h.state().session.active_comp().unwrap();
         let l = comp.layers.iter().find(|l| l.id.0 == layer).unwrap();
         l.props.prop("transform/scale").unwrap().value.components()
@@ -481,7 +481,7 @@ fn properties_scale_link_shares_the_timeline_state() {
     };
     let link = format!("properties.prop.{uid}.constrain");
     assert!(h.state().auto.find(&link).is_some(), "the chain link is drawn");
-    let scale = |h: &Harness<'_, EffectcraftApp>| {
+    let scale = |h: &Harness<'_, EffectsApp>| {
         let comp = h.state().session.active_comp().unwrap();
         let l = comp.layers.iter().find(|l| l.id.0 == layer).unwrap();
         l.props.prop("transform/scale").unwrap().value.components()

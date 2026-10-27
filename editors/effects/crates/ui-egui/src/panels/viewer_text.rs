@@ -25,7 +25,7 @@ use redrob_effects_engine::text::{TextLayout, layout_doc};
 use serde_json::{Value, json};
 
 use super::viewer::ViewerMap;
-use crate::EffectcraftApp;
+use crate::EffectsApp;
 use crate::dock::PanelKind;
 use crate::state::Tool;
 
@@ -105,7 +105,7 @@ impl Edited {
     }
 }
 
-fn edited(app: &EffectcraftApp, ectx: &EvalCtx, lid: LayerId) -> Option<Edited> {
+fn edited(app: &EffectsApp, ectx: &EvalCtx, lid: LayerId) -> Option<Edited> {
     let layer = ectx.comp.layer(lid)?.clone();
     if !matches!(layer.source, LayerSource::Text) {
         return None;
@@ -120,7 +120,7 @@ fn edited(app: &EffectcraftApp, ectx: &EvalCtx, lid: LayerId) -> Option<Edited> 
 
 /// Type-tool clicks prefer a selected text layer, as viewer dragging does (#230).
 /// Double-clicks retain topmost picking. Both use the same visibility/lock/time/solo filter.
-fn text_layer_at(app: &EffectcraftApp, ectx: &EvalCtx, map: &ViewerMap, s: Pos2, prefer_selected: bool) -> Option<Edited> {
+fn text_layer_at(app: &EffectsApp, ectx: &EvalCtx, map: &ViewerMap, s: Pos2, prefer_selected: bool) -> Option<Edited> {
     let mut topmost = None;
     for e in super::viewer::selectable_layers(ectx.comp, ectx.time)
         .filter(|l| matches!(l.source, LayerSource::Text))
@@ -137,7 +137,7 @@ fn text_layer_at(app: &EffectcraftApp, ectx: &EvalCtx, map: &ViewerMap, s: Pos2,
     topmost
 }
 
-fn exec(app: &mut EffectcraftApp, id: &str, p: Value) -> Option<Value> {
+fn exec(app: &mut EffectsApp, id: &str, p: Value) -> Option<Value> {
     match app.session.execute(id, p) {
         Ok(v) => Some(v),
         Err(e) => {
@@ -155,7 +155,7 @@ fn keeps_text_edit(p: PanelKind) -> bool {
 
 /// A click in panel `p`. Any other panel (the Timeline, the Project panel, …) ends the edit, as a
 /// click outside the text does, and gives the keyboard back to the app (#831).
-pub fn panel_clicked(app: &mut EffectcraftApp, ctx: &egui::Context, p: PanelKind) {
+pub fn panel_clicked(app: &mut EffectsApp, ctx: &egui::Context, p: PanelKind) {
     if app.session.state.text_edit.is_some() && !keeps_text_edit(p) {
         exec(app, "text.endEdit", json!({}));
         ctx.memory_mut(|m| m.surrender_focus(focus_id()));
@@ -176,7 +176,7 @@ fn typing_key(ui: &egui::Ui, bump: bool) -> String {
 /// Viewer hook: draws the edit overlay and handles text pointer and keyboard input. Returns
 /// true when it owns this frame's pointer interaction (the viewer then skips its own gestures).
 pub fn hook(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     painter: &egui::Painter,
     map: &ViewerMap,
@@ -391,7 +391,7 @@ pub fn hook(
 /// This frame's keys, in order, into the edited text, up to a press outside the `viewer`: the
 /// panel it lands in decides (after this frame's panels) whether the edit ends, so the keys after
 /// it in this frame are neither typed nor run as shortcuts (#831).
-fn keyboard(app: &mut EffectcraftApp, ui: &mut egui::Ui, viewer: Rect) {
+fn keyboard(app: &mut EffectsApp, ui: &mut egui::Ui, viewer: Rect) {
     let events = ui.input(|i| i.events.clone());
     let ctx = ui.ctx().clone();
     for ev in events {
@@ -432,7 +432,7 @@ fn keyboard(app: &mut EffectcraftApp, ui: &mut egui::Ui, viewer: Rect) {
             egui::Event::Key { key, pressed: true, modifiers: m, .. } => {
                 use egui::Key;
                 let cmd = m.command;
-                let mv = |app: &mut EffectcraftApp, to: &str| {
+                let mv = |app: &mut EffectsApp, to: &str| {
                     exec(app, "text.moveCaret", json!({"to": to, "extend": m.shift}));
                 };
                 match key {
@@ -510,7 +510,7 @@ fn keyboard(app: &mut EffectcraftApp, ui: &mut egui::Ui, viewer: Rect) {
     }
 }
 
-fn draw(app: &mut EffectcraftApp, ui: &mut egui::Ui, painter: &egui::Painter, map: &ViewerMap, e: &Edited, sel: std::ops::Range<usize>, caret: usize) {
+fn draw(app: &mut EffectsApp, ui: &mut egui::Ui, painter: &egui::Painter, map: &ViewerMap, e: &Edited, sel: std::ops::Range<usize>, caret: usize) {
     let t = app.tokens;
     let to_s = |p: Point| e.to_screen(map, (p.x, p.y));
     // Paragraph box and its handles.

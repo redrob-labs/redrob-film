@@ -11,11 +11,11 @@ use egui::{Color32, Rect, Sense, Stroke, pos2, vec2};
 use redrob_film_geom::{Affine, Vec2};
 use redrob_film_project::{Param, ParamValue};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 
 const METERS: [&str; 3] = ["audio_levels_viz", "audio_spectrum_viz", "audio_waveform_viz"];
 
-pub fn monitor_overlay(app: &mut FilmcraftApp, ui: &mut egui::Ui, pic: Rect, frame: (u32, u32)) {
+pub fn monitor_overlay(app: &mut FilmApp, ui: &mut egui::Ui, pic: Rect, frame: (u32, u32)) {
     // masks and the mask pen own the monitor while they are being edited
     if app.ui.mask_pen.is_some() || app.session.state.selected_mask.is_some() || frame.0 == 0 || frame.1 == 0 {
         return;

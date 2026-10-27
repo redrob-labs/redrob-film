@@ -3,10 +3,10 @@
 use egui::{Align2, Rect, Sense, pos2, vec2};
 use redrob_film_time::{TimeDisplay, format_time};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::theme::Tokens;
 
-pub fn history(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn history(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(rect.shrink(6.0)));
     let undo: Vec<String> = app.session.history.undo.iter().map(|h| h.0.clone()).collect();
@@ -50,11 +50,11 @@ pub fn history(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     }
 }
 /// Markers panel: see `panels::marker_ui` (search, sort, selection, categories, thumbnails).
-pub fn markers(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn markers(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     crate::panels::marker_ui::panel(app, ui, rect);
 }
 
-pub fn info(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn info(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(rect.shrink(8.0)));
     let ui = &mut child;

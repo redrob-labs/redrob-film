@@ -1,4 +1,4 @@
-//! FilmCraft captions.
+//! Redrob Film captions.
 //!
 //! - **Files:** [SubRip](srt) (`.srt`), [WebVTT](vtt) (`.vtt`), [Scenarist SCC](scc) (`.scc`,
 //!   CEA-608 pop-on, roll-up and paint-on on read; pop-on on write), [MacCaption MCC](mcc)

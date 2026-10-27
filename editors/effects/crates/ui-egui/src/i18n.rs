@@ -1,9 +1,9 @@
-//! Menu labels for EffectCraft's own engine tree in each translated language. Commands remain
+//! Menu labels for Redrob Effects' own engine tree in each translated language. Commands remain
 //! locale-independent. A command plus its source label distinguishes parameterised entries (e.g.
 //! blend modes). Empty command keys identify submenus. Dynamic filenames, user names and effect
 //! plug-in names remain verbatim; these catalogs only translate the fixed menu tree.
 
-use crate::EffectcraftApp;
+use crate::EffectsApp;
 
 /// Effect names, keyed by effect id (#821).
 pub(crate) mod effects;
@@ -17,7 +17,7 @@ const CATALOG_CODES: [&str; 10] = ["ja", "zh-hans", "zh-hant", "uk", "es", "pt-b
 
 /// The active interface language: the stored preference when it names a catalog, otherwise `en`
 /// (English is the source of every label and needs no lookup).
-pub(crate) fn language(app: &EffectcraftApp) -> &'static str {
+pub(crate) fn language(app: &EffectsApp) -> &'static str {
     match app.session.prefs.general.language.as_str() {
         "system" => system_language(),
         stored => code(stored),
@@ -30,42 +30,42 @@ fn code(stored: &str) -> &'static str {
 }
 
 /// The UI is in Japanese: the fast path for the menu builders.
-pub(crate) fn japanese(app: &EffectcraftApp) -> bool {
+pub(crate) fn japanese(app: &EffectsApp) -> bool {
     language(app) == "ja"
 }
 
 /// The UI is in Simplified Chinese.
-pub(crate) fn simplified(app: &EffectcraftApp) -> bool {
+pub(crate) fn simplified(app: &EffectsApp) -> bool {
     language(app) == "zh-hans"
 }
 
 /// The UI is in Traditional Chinese.
-pub(crate) fn traditional(app: &EffectcraftApp) -> bool {
+pub(crate) fn traditional(app: &EffectsApp) -> bool {
     language(app) == "zh-hant"
 }
 
 /// The UI is in Ukrainian.
-pub(crate) fn ukrainian(app: &EffectcraftApp) -> bool {
+pub(crate) fn ukrainian(app: &EffectsApp) -> bool {
     language(app) == "uk"
 }
 
 /// The UI is in Spanish.
-pub(crate) fn spanish(app: &EffectcraftApp) -> bool {
+pub(crate) fn spanish(app: &EffectsApp) -> bool {
     language(app) == "es"
 }
 
 /// The UI is in Brazilian Portuguese.
-pub(crate) fn brazilian_portuguese(app: &EffectcraftApp) -> bool {
+pub(crate) fn brazilian_portuguese(app: &EffectsApp) -> bool {
     language(app) == "pt-br"
 }
 
 /// The UI is in Czech.
-pub(crate) fn czech(app: &EffectcraftApp) -> bool {
+pub(crate) fn czech(app: &EffectsApp) -> bool {
     language(app) == "cs"
 }
 
 /// Settings ▸ General ▸ Language ▸ Match System: the operating system's interface language
-/// where EffectCraft has it, else English (#229), as After Effects installs in the system's
+/// where Redrob Effects has it, else English (#229), as After Effects installs in the system's
 /// language. The browser build stays in English because it has no system-locale probe.
 fn system_language() -> &'static str {
     #[cfg(not(target_arch = "wasm32"))]
@@ -78,7 +78,7 @@ fn system_language() -> &'static str {
     supported(None)
 }
 
-/// The language EffectCraft shows for a BCP 47 locale (`ja-JP` → `ja`, `zh-Hans-CN` → `zh-hans`,
+/// The language Redrob Effects shows for a BCP 47 locale (`ja-JP` → `ja`, `zh-Hans-CN` → `zh-hans`,
 /// `zh-TW` → `zh-hant`, `uk-UA` → `uk`, `es-ES` → `es`, `pt-BR` → `pt-br`, `cs-CZ` → `cs`).
 fn supported(locale: Option<&str>) -> &'static str {
     let Some(locale) = locale else { return "en" };
@@ -100,7 +100,7 @@ fn supported(locale: Option<&str>) -> &'static str {
     }
 }
 
-pub(crate) fn label<'a>(app: &EffectcraftApp, command: &str, source: &'a str) -> &'a str {
+pub(crate) fn label<'a>(app: &EffectsApp, command: &str, source: &'a str) -> &'a str {
     let language = language(app);
     // The engine names the platform's file manager before the catalog sees the label. These
     // two commands keep their ids, but on Windows/Linux their source is no longer "Finder".
@@ -139,7 +139,7 @@ fn lookup<'a>(catalog: &[(&str, &str, &'a str)], command: &str, source: &'a str)
     catalog.iter().find(|(id, en, _)| *id == command && *en == source).map(|(_, _, translated)| *translated).unwrap_or(source)
 }
 
-pub(crate) fn entry(app: &EffectcraftApp, e: &MenuEntry, shown: String) -> String {
+pub(crate) fn entry(app: &EffectsApp, e: &MenuEntry, shown: String) -> String {
     // The generated Effect menu's entries label themselves with the effect's registry name; the
     // catalog replaces it with the interface language's (#821). The entry keeps its command and
     // its `{"effect": <id>}` params, so a script, an expression or the control channel is
@@ -189,7 +189,7 @@ pub(crate) fn effect_category(children: &[MenuNode], source: &str) -> Option<Str
     (!children.is_empty() && children.iter().all(|c| matches!(c, MenuNode::Item(e) if e.command == "effect.apply"))).then(|| effects::category(source))
 }
 
-pub(crate) fn submenu(app: &EffectcraftApp, source: &str, shown: String) -> String {
+pub(crate) fn submenu(app: &EffectsApp, source: &str, shown: String) -> String {
     match language(app) {
         "cs" => {
             if source == "Assign Shortcut to Workspace" {
@@ -275,7 +275,7 @@ pub(crate) fn submenu(app: &EffectcraftApp, source: &str, shown: String) -> Stri
 
 /// Simplified Chinese (zh-hans): the same (command, English label) keys as `JAPANESE`, one
 /// entry per fixed menu row of the engine's menu tree. The wording follows Adobe's Simplified
-/// Chinese After Effects documentation and the catalogs the sibling Craft apps ship; see the
+/// Chinese After Effects documentation and the catalogs of comparable desktop apps; see the
 /// pull request for the rows taken from #321.
 const SIMPLIFIED_CHINESE: &[(&str, &str, &str)] = &[
     ("", "Redrob Film", "Redrob Film"),
@@ -908,7 +908,7 @@ const SIMPLIFIED_CHINESE: &[(&str, &str, &str)] = &[
 
 /// Traditional Chinese (zh-hant): the same (command, English label) keys as `JAPANESE`, one
 /// entry per fixed menu row of the engine's menu tree, mirroring `SIMPLIFIED_CHINESE` in the
-/// vocabulary the sibling Craft apps' zh-hant catalogs use.
+/// vocabulary of comparable desktop apps' zh-hant catalogs.
 const TRADITIONAL_CHINESE: &[(&str, &str, &str)] = &[
     ("", "Redrob Film", "Redrob Film"),
     ("app.about", "About Redrob Film...", "關於 Redrob Film..."),
@@ -6599,7 +6599,7 @@ mod tests {
 
     #[test]
     fn czech_translates_menus_without_changing_bindings_or_user_names() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.session.execute("prefs.set", json!({"key": "general.language", "value": "en"})).unwrap();
         app.session.prefs.push_recent("File.rfx");
         let en = crate::native_menu::build(&app);
@@ -6647,7 +6647,7 @@ mod tests {
 
     #[test]
     fn czech_undo_redo_keeps_history_labels_verbatim() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.session.execute("prefs.set", json!({"key": "general.language", "value": "cs"})).unwrap();
         let undo = MenuEntry { label: "Undo".into(), command: "edit.undo".into(), params: json!({}), shortcut: None, alt_shortcuts: vec![] };
         let redo = MenuEntry { label: "Redo".into(), command: "edit.redo".into(), params: json!({}), shortcut: None, alt_shortcuts: vec![] };
@@ -6661,7 +6661,7 @@ mod tests {
 
     #[test]
     fn czech_reveal_labels_follow_the_platform_file_manager() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.session.execute("prefs.set", json!({"key": "general.language", "value": "cs"})).unwrap();
         for command in ["file.revealInFinder", "layer.revealInFinder"] {
             for (source, translated) in [
@@ -6756,7 +6756,7 @@ mod tests {
     /// Windows/Linux catalog miss, while filenames and unrelated commands stay untouched.
     #[test]
     fn ukrainian_reveal_labels_follow_the_platform_file_manager() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.session.execute("prefs.set", json!({"key": "general.language", "value": "uk"})).unwrap();
         for command in ["file.revealInFinder", "layer.revealInFinder"] {
             for (source, translated) in [
@@ -6779,7 +6779,7 @@ mod tests {
 
     #[test]
     fn language_changes_native_labels_without_changing_commands_or_parameters() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.session.execute("prefs.set", json!({"key":"general.language", "value":"en"})).unwrap();
         let en = crate::native_menu::build(&app);
         let state = crate::native_menu::state_key(&app);
@@ -6843,7 +6843,7 @@ mod tests {
         ] {
             assert_eq!(supported(locale), language, "{locale:?}");
         }
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         assert_eq!(app.session.prefs.general.language, "system", "the default");
         assert_eq!(japanese(&app), system_language() == "ja");
         assert_eq!(simplified(&app), system_language() == "zh-hans");
@@ -6883,7 +6883,7 @@ mod tests {
 
     #[test]
     fn zh_hans_translates_labels_computed_titles_and_keeps_names_verbatim() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.session.execute("prefs.set", json!({"key":"general.language", "value":"zh-hans"})).unwrap();
         assert_eq!(language(&app), "zh-hans");
         assert!(simplified(&app));
@@ -6927,7 +6927,7 @@ mod tests {
 
     #[test]
     fn zh_hant_translates_labels_computed_titles_and_keeps_names_verbatim() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.session.execute("prefs.set", json!({"key":"general.language", "value":"zh-hant"})).unwrap();
         assert_eq!(language(&app), "zh-hant");
         assert!(traditional(&app));
@@ -6971,7 +6971,7 @@ mod tests {
 
     #[test]
     fn ukrainian_translates_menus_without_changing_bindings_or_user_names() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.session.execute("prefs.set", json!({"key":"general.language", "value":"en"})).unwrap();
         app.session.prefs.push_recent("/tmp/File.rfx");
         let en = crate::native_menu::build(&app);
@@ -7008,7 +7008,7 @@ mod tests {
 
     #[test]
     fn ukrainian_undo_redo_keeps_history_labels_verbatim() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.session.execute("prefs.set", json!({"key":"general.language", "value":"uk"})).unwrap();
         let undo = MenuEntry { label: "Undo".into(), command: "edit.undo".into(), params: json!({}), shortcut: None, alt_shortcuts: vec![] };
         let redo = MenuEntry { label: "Redo".into(), command: "edit.redo".into(), params: json!({}), shortcut: None, alt_shortcuts: vec![] };
@@ -7031,7 +7031,7 @@ mod tests {
 
     #[test]
     fn es_translates_labels_computed_titles_and_keeps_names_verbatim() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.session.execute("prefs.set", json!({"key":"general.language", "value":"es"})).unwrap();
         assert_eq!(language(&app), "es");
         assert!(spanish(&app));
@@ -7080,7 +7080,7 @@ mod tests {
 
     #[test]
     fn pt_br_translates_labels_computed_titles_and_keeps_names_verbatim() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.session.execute("prefs.set", json!({"key":"general.language", "value":"pt-br"})).unwrap();
         assert_eq!(language(&app), "pt-br");
         assert!(!japanese(&app));
@@ -7117,7 +7117,7 @@ mod tests {
 
     #[test]
     fn general_settings_exposes_the_language_automation_id() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         let ctx = egui::Context::default();
         let tokens = crate::theme::Tokens::for_kind(crate::theme::ThemeKind::Dark);
         crate::theme::install(&ctx, &tokens, language(&app));

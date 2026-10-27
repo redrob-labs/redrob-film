@@ -43,7 +43,7 @@ fn mean(img: &redrob_film_render::Image) -> [f32; 3] {
 }
 
 fn tmp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("filmcraft-color-{}-{name}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("redrob-film-color-{}-{name}", std::process::id()));
     d.to_string_lossy().to_string()
 }
 

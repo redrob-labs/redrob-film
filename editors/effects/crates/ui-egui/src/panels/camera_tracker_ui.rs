@@ -28,7 +28,7 @@ use serde_json::json;
 
 use super::viewer::ViewerMap;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 /// The tracker whose points the viewer shows.
 struct Active {
@@ -147,7 +147,7 @@ fn triangle_at(hits: &[Hit], hp: Pos2) -> Option<[u32; 3]> {
     None
 }
 
-fn run(app: &mut EffectcraftApp, ctx: &egui::Context, cmd: &str, p: serde_json::Value) {
+fn run(app: &mut EffectsApp, ctx: &egui::Context, cmd: &str, p: serde_json::Value) {
     if let Err(e) = crate::menus::invoke(app, ctx, cmd, p) {
         app.ui.status = e;
     }
@@ -156,7 +156,7 @@ fn run(app: &mut EffectcraftApp, ctx: &egui::Context, cmd: &str, p: serde_json::
 /// The viewer overlay and its interaction (call after the viewer's own gestures so it takes
 /// the clicks while a 3D Camera Tracker is selected).
 pub fn viewer_hook(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     painter: &egui::Painter,
     map: &ViewerMap,
@@ -355,11 +355,11 @@ pub fn viewer_hook(
 
 /// "Analyzing in background (step 1 of 2)" / "Solving camera" over the analysed layer, and a
 /// warning when the solve failed (unless Hide Warning Banner).
-fn banner(app: &mut EffectcraftApp, painter: &egui::Painter, map: &ViewerMap, ectx: &EvalCtx, l2c: &dyn Fn(&EvalCtx, &Layer) -> Mat3) {
+fn banner(app: &mut EffectsApp, painter: &egui::Painter, map: &ViewerMap, ectx: &EvalCtx, l2c: &dyn Fn(&EvalCtx, &Layer) -> Mat3) {
     let comp = ectx.comp;
     let time = ectx.time;
     let cid = ectx.comp_id;
-    let draw = |app: &mut EffectcraftApp, layer: &Layer, text: String, color: Color32, id: &str| {
+    let draw = |app: &mut EffectsApp, layer: &Layer, text: String, color: Color32, id: &str| {
         let m = l2c(ectx, layer);
         let (w, h) = redrob_effects_engine::render::source_size(&app.session.project, layer);
         let c = m.apply(gv2(w as f64 / 2.0, h as f64 / 2.0));
@@ -398,7 +398,7 @@ fn banner(app: &mut EffectcraftApp, painter: &egui::Painter, map: &ViewerMap, ec
 /// Effect Controls: Analyze / Cancel, Create Camera and the solve report.
 #[allow(clippy::too_many_arguments)]
 pub fn editor(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,

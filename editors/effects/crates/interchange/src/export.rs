@@ -17,7 +17,7 @@ use crate::{Error, Result, TimelineFormat, par_fraction, rate_out, tick_out};
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum PrerenderMode {
-    /// Nothing is rendered: layers only EffectCraft can draw are left out (with a warning), and
+    /// Nothing is rendered: layers only Redrob Effects can draw are left out (with a warning), and
     /// effects, masks, parenting… of footage layers are dropped.
     None,
     /// Layers a timeline cannot represent (text, shapes, effects, masks, 3D, parenting, track
@@ -648,7 +648,7 @@ fn set_effect(ti: &mut fp::TrackItem, e: fp::EffectInstance) {
     }
 }
 
-/// A property → a FilmCraft parameter (layer-time keys → clip-time keys).
+/// A property → a Redrob Film parameter (layer-time keys → clip-time keys).
 fn param_out(p: &Property, to_clip: &impl Fn(Tick) -> redrob_film_time::Tick, conv: impl Fn(&Value) -> fp::ParamValue) -> fp::Param {
     let mut out = fp::Param::new(conv(&p.value));
     for k in &p.keys {

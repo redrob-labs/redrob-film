@@ -31,7 +31,7 @@ FORBIDDEN = re.compile(
     r"|Redrob Cut|redrob-cut|redrob_cut|ai\.redrob\.cut|REDROB_CUT|RedrobCut"
 )
 SURFACES = (
-    "crates/ui-egui/src/", "apps/filmcraft/src/", "apps/filmcraft-cli/src/",
+    "crates/ui-egui/src/", "apps/redrob-film-app/src/", "apps/redrob-film-cli/src/",
     "crates/engine/src/", "crates/automation/src/", "packaging/", ".github/workflows/",
     "editors/effects/crates/",
 )
@@ -42,7 +42,8 @@ KEEP = re.compile(
     r"|filmcraft_|filmcraft-(target|install-|sign-|signing|logging-|web|speech|engine|ui-egui)"
     r"|/run/build/filmcraft/|FilmcraftApp|Filmcraft(Icon|Files|App|Exe|Cli|CliExe|Output)\b"
     # internal plist keys; the copyright credit upstream's licence requires; a negative test
-    r"|FilmCraft(Version|BuildCommit)\b|the (FilmCraft|EffectCraft) contributors|desktop_file_exec_is_ours|effectcraft_|EffectCraftProject"
+    r"|the (FilmCraft|EffectCraft) contributors|EffectCraft contributors|desktop_file_exec_is_ours|EffectCraftProject"
+    r"|FilmCraft (Frame Size|Audio Sample Rate|Effect\b|MXF writer|test\b)|FilmCraft:(SCLP|EFFE):|FilmCraftGenerat|rendered by FilmCraft"
 )
 COMMENT = re.compile(r"^\s*(//|#|<!--|\*|/\*|;|REM\b)")
 

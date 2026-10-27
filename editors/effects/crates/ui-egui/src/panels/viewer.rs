@@ -16,7 +16,7 @@ use serde_json::json;
 
 use crate::state::Tool;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 /// Viewer mapping published each frame (for the control channel and other panels).
 #[derive(Clone, Copy, Debug)]
@@ -240,7 +240,7 @@ fn roi_handles(r: Rect) -> [Pos2; 8] {
 
 /// A drag starting on a region of interest handle: the ROI redrawn from the opposite corner (or
 /// edge, with the other axis kept).
-fn roi_drag(app: &EffectcraftApp, map: &ViewerMap, comp_rect: Rect, zoom: f32, press: Pos2) -> Option<ov::Drag> {
+fn roi_drag(app: &EffectsApp, map: &ViewerMap, comp_rect: Rect, zoom: f32, press: Pos2) -> Option<ov::Drag> {
     let [rx, ry, rw, rh] = app.session.state.region_of_interest?;
     let r = Rect::from_min_size(comp_rect.min + vec2(rx as f32 * zoom, ry as f32 * zoom), vec2(rw as f32 * zoom, rh as f32 * zoom));
     let i = roi_handles(r).iter().position(|h| h.distance(press) < 6.0)?;
@@ -285,7 +285,7 @@ pub(crate) fn fx2c(ctx: &EvalCtx, layer: &Layer) -> Mat3 {
 
 /// The selected, unlocked layers of `comp` other than `layer` (when `layer` is one of them): a
 /// handle or Rotation tool drag on one changes them all.
-fn selected_others<'a>(app: &EffectcraftApp, comp: &'a Comp, layer: LayerId) -> Vec<&'a Layer> {
+fn selected_others<'a>(app: &EffectsApp, comp: &'a Comp, layer: LayerId) -> Vec<&'a Layer> {
     let sel = &app.session.state.selected_layers;
     if !sel.contains(&layer) {
         return vec![];
@@ -555,7 +555,7 @@ fn parent_inverse(ctx: &EvalCtx, layer: &Layer) -> Mat3 {
 
 /// Draw the extra views of a 2- or 4-view layout and return the main view's rectangle.
 fn aux_views(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     comp: &redrob_effects_engine::project::Comp,
     cid: redrob_effects_engine::project::ItemId,
@@ -663,7 +663,7 @@ fn aux_views(
 
 /// The view selector in the top-left corner of pane `pane` (1 to 3) of a multi-view layout, a
 /// popup of every 3D view like the toolbar's 3D View menu. Returns the view chosen this frame.
-fn pane_selector(app: &mut EffectcraftApp, ui: &mut egui::Ui, pane: usize, area: Rect, current: View3D) -> Option<View3D> {
+fn pane_selector(app: &mut EffectsApp, ui: &mut egui::Ui, pane: usize, area: Rect, current: View3D) -> Option<View3D> {
     let t = app.tokens;
     let r = Rect::from_min_size(area.min + vec2(6.0, 6.0), vec2(124.0, 20.0));
     let pid = egui::Id::new(("viewer-pane-view", pane));
@@ -693,7 +693,7 @@ fn pane_selector(app: &mut EffectcraftApp, ui: &mut egui::Ui, pane: usize, area:
 
 /// View ▸ Split with New Locked Viewer: the locked viewer on the left of the Composition panel
 /// (its comp and 3D view stay put whatever comp is active). Returns the main viewer's rectangle.
-fn locked_pane(app: &mut EffectcraftApp, ui: &mut egui::Ui, full: Rect, bg: Color32) -> Rect {
+fn locked_pane(app: &mut EffectsApp, ui: &mut egui::Ui, full: Rect, bg: Color32) -> Rect {
     let Some(lv) = app.session.state.locked_viewer else { return full };
     let Some(comp) = app.session.project.comp_arc(lv.comp) else { return full };
     let name = app.session.project.item(lv.comp).map(|i| i.name.clone()).unwrap_or_default();
@@ -773,7 +773,7 @@ pub(crate) fn checker(p: &egui::Painter, r: Rect) {
     }
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let Some(cid) = app.session.active_comp_id() else {
@@ -1225,7 +1225,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     }
     // The layer a Puppet tool press works on: while selected layers are rigged, only those
     // ([`super::puppet_tool::target`]); otherwise the layer under the pointer, selected.
-    let puppet_layer = |app: &mut EffectcraftApp, cpt: [f64; 2]| -> Option<LayerId> {
+    let puppet_layer = |app: &mut EffectsApp, cpt: [f64; 2]| -> Option<LayerId> {
         if puppet_layers.is_empty() {
             return pick(app, &ectx, cpt, false);
         }
@@ -1711,7 +1711,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                     painter.rect_stroke(r, 0.0, Stroke::new(1.0, Color32::WHITE), StrokeKind::Middle);
                 }
                 d => {
-                    let mut snapper = |a: &EffectcraftApp, p: [f64; 2], l: LayerId| vt::snap(a, &ctx, &ectx, &map, &[l], &[p], mods);
+                    let mut snapper = |a: &EffectsApp, p: [f64; 2], l: LayerId| vt::snap(a, &ctx, &ectx, &map, &[l], &[p], mods);
                     if let Some(nd) = ov::update(app, &d, cpt, pos, mods, &merge, zoom, &mut snapper) {
                         ui.data_mut(|dd| dd.insert_temp(gid, Gesture::Overlay(nd)));
                     }
@@ -2068,7 +2068,7 @@ fn drag_axes(ctx: &EvalCtx, l: &Layer) -> ([f64; 3], [f64; 3]) {
 /// (`viewer.view.<view>.camera.<id>`).
 #[allow(clippy::too_many_arguments)]
 fn draw_rigs(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     painter: &egui::Painter,
     map: &ViewerMap,
     ectx: &EvalCtx,
@@ -2150,14 +2150,14 @@ fn draw_rigs(
 /// Mask), a shape path (Shape n group with the Tools bar's Fill and Stroke) on the selected shape
 /// layer, or a new shape layer when nothing is selected. The placed point snaps.
 /// Add a Position keyframe at a motion path's frame, keeping the path where it is.
-fn add_motion_key(app: &mut EffectcraftApp, f: ov::PathFrame) {
+fn add_motion_key(app: &mut EffectsApp, f: ov::PathFrame) {
     if let Err(e) = app.session.execute("prop.addKey", json!({"layer": f.layer.0, "prop": f.prop, "time": f.time.seconds()})) {
         app.ui.status = e.to_string();
     }
 }
 
 /// Select only the motion path's keyframe `k` (what the vertex tools act on).
-fn select_motion_key(app: &mut EffectcraftApp, k: &ov::KeyHit) -> bool {
+fn select_motion_key(app: &mut EffectsApp, k: &ov::KeyHit) -> bool {
     app.session.execute("keys.select", json!({"keys": [{"layer": k.layer.0, "prop": k.prop, "time": k.time.seconds()}]})).is_ok()
 }
 
@@ -2194,7 +2194,7 @@ fn pen_cursor(ctx: &egui::Context, at: Pos2, icon: crate::icons::Icon) {
 
 #[allow(clippy::too_many_arguments)]
 fn pen_press(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     ectx: &EvalCtx,
     map: &ViewerMap,
@@ -2309,7 +2309,7 @@ pub(crate) fn layer_at<'a>(ectx: &EvalCtx<'a>, cpt: [f64; 2]) -> Option<&'a Laye
 /// The layer a press at a comp point acts on, selected (Shift toggles the topmost layer). As in
 /// After Effects, a selected layer under the point comes before the layers in front of it, so it
 /// can be dragged where they cover it; otherwise the topmost layer (#230).
-pub(crate) fn pick(app: &mut EffectcraftApp, ectx: &EvalCtx, cpt: [f64; 2], toggle: bool) -> Option<LayerId> {
+pub(crate) fn pick(app: &mut EffectsApp, ectx: &EvalCtx, cpt: [f64; 2], toggle: bool) -> Option<LayerId> {
     if toggle {
         let hit = layer_at(ectx, cpt)?.id;
         let _ = app.session.execute("layer.select", json!({"layers": [hit.0], "toggle": true}));
@@ -2373,7 +2373,7 @@ fn shape_kind(tool: Tool) -> &'static str {
 /// What a shape tool drag from `start` to `end` makes, or `None` while it is too small to make
 /// anything. Alt (Option) draws from the press point and Shift squares the box; the live ghost and
 /// [`create_shape`] both go through this, so the drag always shows what it will commit.
-fn shape_drag(app: &EffectcraftApp, tool: Tool, start: [f64; 2], end: [f64; 2], mods: egui::Modifiers) -> Option<ShapeDrag> {
+fn shape_drag(app: &EffectsApp, tool: Tool, start: [f64; 2], end: [f64; 2], mods: egui::Modifiers) -> Option<ShapeDrag> {
     let comp = app.session.active_comp()?;
     let selected = app.session.state.selected_layers.first().copied();
     let sel = selected.and_then(|id| comp.layer(id));
@@ -2421,7 +2421,7 @@ fn paint_rgb(c: [f32; 3], opacity: f64, alpha: f32) -> Color32 {
 
 /// Draw a shape drag as it will land: the tool's own path, filled with the Tools bar's Fill and
 /// outlined in its Stroke (or the mask colour, for a mask), captioned with where it goes.
-fn draw_shape_ghost(painter: &egui::Painter, map: &ViewerMap, app: &EffectcraftApp, d: &ShapeDrag, t: &Tokens) {
+fn draw_shape_ghost(painter: &egui::Painter, map: &ViewerMap, app: &EffectsApp, d: &ShapeDrag, t: &Tokens) {
     // The engine's own geometry for the kind, so the ghost is the shape and not a stand-in for it.
     let Some(sp) = redrob_effects_engine::commands::shape_tool::mask_path(d.kind, d.centre, d.size) else { return };
     let mut pts = ov::flatten(&sp, &Mat3::IDENTITY, map);
@@ -2467,7 +2467,7 @@ fn bounds_of(pts: &[Pos2]) -> Option<Rect> {
     Some(r)
 }
 
-fn create_shape(app: &mut EffectcraftApp, tool: Tool, a: [f64; 2], b: [f64; 2], mods: egui::Modifiers) {
+fn create_shape(app: &mut EffectsApp, tool: Tool, a: [f64; 2], b: [f64; 2], mods: egui::Modifiers) {
     let Some(d) = shape_drag(app, tool, a, b, mods) else { return };
     let (kind, (w, h), (cx, cy)) = (d.kind, (d.size[0], d.size[1]), (d.centre[0], d.centre[1]));
     // A mask on the selected layer, as the ghost showed.
@@ -2502,7 +2502,7 @@ fn create_shape(app: &mut EffectcraftApp, tool: Tool, a: [f64; 2], b: [f64; 2], 
     }
 }
 
-fn empty_state(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+fn empty_state(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().clone();
     p.rect_filled(rect, 0.0, t.pasteboard);
@@ -2618,7 +2618,7 @@ pub(crate) use crate::widgets::hex_rgb;
 ///
 /// [`ViewerState::extended`]: crate::state::ViewerState::extended
 pub(crate) fn extended_region(
-    app: &EffectcraftApp,
+    app: &EffectsApp,
     comp: &redrob_effects_engine::project::Comp,
     cid: redrob_effects_engine::project::ItemId,
     map: ViewerMap,
@@ -2643,7 +2643,7 @@ fn rect_of(map: &ViewerMap, r: Option<[f64; 4]>) -> Rect {
 /// Put a rendered frame on screen: CPU pixels go into an egui texture, averaged down by `minify`
 /// (see [`minify_factor`]); GPU frames are drawn straight from their wgpu texture (registered with
 /// egui-wgpu, no readback).
-fn show_frame(app: &mut EffectcraftApp, ctx: &egui::Context, key: crate::frames::FrameKey, img: crate::frames::FrameImage, minify: usize) {
+fn show_frame(app: &mut EffectsApp, ctx: &egui::Context, key: crate::frames::FrameKey, img: crate::frames::FrameImage, minify: usize) {
     use crate::frames::FrameImage;
     // Settings ▸ Previews ▸ Viewer Zoom Quality.
     let smooth = app.session.prefs.viewer_zoom_smooth();

@@ -20,7 +20,7 @@ use serde_json::json;
 
 use crate::state::Tool;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 /// A stroke being drawn.
 #[derive(Clone, Debug)]
@@ -55,7 +55,7 @@ pub fn last_fit(ctx: &egui::Context) -> f32 {
 }
 
 /// Zoom to `nz` (points per layer pixel) keeping layer point `q` under screen point `at`.
-fn zoom_at(app: &mut EffectcraftApp, area: Rect, size: [f64; 2], at: Pos2, q: [f64; 2], nz: f32) {
+fn zoom_at(app: &mut EffectsApp, area: Rect, size: [f64; 2], at: Pos2, q: [f64; 2], nz: f32) {
     let nz = nz.clamp(0.01, 32.0);
     let origin = at - vec2(q[0] as f32 * nz, q[1] as f32 * nz);
     let pan = origin + vec2(size[0] as f32 * nz / 2.0, size[1] as f32 * nz / 2.0) - area.center();
@@ -66,7 +66,7 @@ fn zoom_at(app: &mut EffectcraftApp, area: Rect, size: [f64; 2], at: Pos2, q: [f
 }
 
 /// The layer shown: the opened one, else the first selected layer.
-pub fn current_layer(app: &EffectcraftApp) -> Option<Layer> {
+pub fn current_layer(app: &EffectsApp) -> Option<Layer> {
     let comp = app.session.active_comp()?;
     let id = app.ui.layer_panel.map(LayerId).filter(|id| comp.layer(*id).is_some()).or_else(|| app.session.state.selected_layers.first().copied())?;
     comp.layer(id).cloned()
@@ -83,7 +83,7 @@ fn default_view(layer: &Layer, tool: Tool) -> usize {
     }
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let p = ui.painter().with_clip_rect(rect);

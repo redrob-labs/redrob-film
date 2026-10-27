@@ -56,7 +56,7 @@ pub(crate) fn open(s: &mut Session, p: &Value) -> Result<Value> {
         let more = if more > 0 { format!(" and {more} more") } else { String::new() };
         s.toast(format!("This project had values outside Redrob Film's limits, corrected when it opened: {shown}{more}."));
     }
-    // Written by a newer EffectCraft: what this version doesn't know would be lost on saving.
+    // Written by a newer Redrob Effects: what this version doesn't know would be lost on saving.
     let saved_by = redrob_effects_project::saved_by(&text);
     if let Some(v) = saved_by.as_deref().filter(|v| redrob_effects_project::is_newer_version(v, redrob_effects_project::APP_VERSION)) {
         s.toast(format!(
@@ -245,7 +245,7 @@ struct PendingImport {
     comps: Vec<u64>,
     items: Vec<u64>,
     errors: Vec<String>,
-    /// EffectCraft projects merged in (`file.importProject` results); never added to a comp.
+    /// Redrob Effects projects merged in (`file.importProject` results); never added to a comp.
     projects: Vec<Value>,
 }
 
@@ -375,7 +375,7 @@ fn prepare_import(s: &mut Session, p: &Value) -> Result<PendingImport> {
     let mut comps = vec![];
     let mut items = vec![];
     let mut errors = vec![];
-    // EffectCraft projects import as projects, as After Effects imports an .aep.
+    // Redrob Effects projects import as projects, as After Effects imports an .aep.
     let (project_paths, mut paths): (Vec<String>, Vec<String>) = paths.into_iter().partition(|x| super::import_project::is_project_path(x));
     let mut projects = vec![];
     for path in project_paths {

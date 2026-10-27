@@ -674,8 +674,8 @@ mod tests {
 
     #[test]
     fn speaks_deterministically_with_valid_samples() {
-        let a = say("basic-female", "Hello world, this is FilmCraft. Ready?", Params::default());
-        let b = say("basic-female", "Hello world, this is FilmCraft. Ready?", Params::default());
+        let a = say("basic-female", "Hello world, this is Redrob Film. Ready?", Params::default());
+        let b = say("basic-female", "Hello world, this is Redrob Film. Ready?", Params::default());
         assert_eq!(a, b);
         assert_eq!(a.sample_rate, SAMPLE_RATE);
         assert!(a.seconds() > 1.0 && a.seconds() < 8.0, "{}", a.seconds());

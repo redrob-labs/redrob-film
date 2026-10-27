@@ -38,8 +38,8 @@ pub fn agent_cwd() -> String {
 /// [`add_to_redrob_code`].
 pub fn serve_mcp(args: &[String]) -> i32 {
     let server = match args {
-        [] => redrob_film_automation::FilmcraftMcp::headless(redrob_film_engine::Session::default()),
-        [flag, addr] if flag == "--connect" => match redrob_film_automation::FilmcraftMcp::bridge(addr) {
+        [] => redrob_film_automation::FilmMcp::headless(redrob_film_engine::Session::default()),
+        [flag, addr] if flag == "--connect" => match redrob_film_automation::FilmMcp::bridge(addr) {
             Ok(s) => s,
             Err(e) => {
                 eprintln!("redrob-film mcp: {e}");
@@ -118,13 +118,13 @@ mod tests {
         let cfg = d.join("redrob").join("redrob.json");
         std::fs::create_dir_all(cfg.parent().unwrap()).unwrap();
         std::fs::write(&cfg, r#"{"model":"redrob/auto","mcp":{"other":{"type":"remote","url":"https://x"}}}"#).unwrap();
-        add_to_redrob_code(&cfg, Path::new("/opt/Redrob Film/filmcraft")).unwrap();
+        add_to_redrob_code(&cfg, Path::new("/opt/Redrob Film/redrob-film")).unwrap();
         let v: Value = serde_json::from_str(&std::fs::read_to_string(&cfg).unwrap()).unwrap();
         assert_eq!(v["model"], "redrob/auto");
         assert_eq!(v["mcp"]["other"]["url"], "https://x");
-        assert_eq!(v["mcp"]["redrob-film"], json!({"type": "local", "command": ["/opt/Redrob Film/filmcraft", "mcp"], "enabled": true}));
+        assert_eq!(v["mcp"]["redrob-film"], json!({"type": "local", "command": ["/opt/Redrob Film/redrob-film", "mcp"], "enabled": true}));
         // again: the same entry, no duplicate, no leftover temp file
-        add_to_redrob_code(&cfg, Path::new("/opt/Redrob Film/filmcraft")).unwrap();
+        add_to_redrob_code(&cfg, Path::new("/opt/Redrob Film/redrob-film")).unwrap();
         let again: Value = serde_json::from_str(&std::fs::read_to_string(&cfg).unwrap()).unwrap();
         assert_eq!(again, v);
         assert_eq!(std::fs::read_dir(cfg.parent().unwrap()).unwrap().count(), 1);
@@ -135,9 +135,9 @@ mod tests {
     fn creates_a_missing_config() {
         let d = dir("new");
         let cfg = d.join("redrob").join("redrob.json");
-        add_to_redrob_code(&cfg, Path::new("/usr/bin/filmcraft")).unwrap();
+        add_to_redrob_code(&cfg, Path::new("/usr/bin/redrob-film")).unwrap();
         let v: Value = serde_json::from_str(&std::fs::read_to_string(&cfg).unwrap()).unwrap();
-        assert_eq!(v["mcp"]["redrob-film"]["command"], json!(["/usr/bin/filmcraft", "mcp"]));
+        assert_eq!(v["mcp"]["redrob-film"]["command"], json!(["/usr/bin/redrob-film", "mcp"]));
         let _ = std::fs::remove_dir_all(&d);
     }
 
@@ -148,7 +148,7 @@ mod tests {
         std::fs::create_dir_all(&d).unwrap();
         let text = "{\n  // mine\n  \"model\": \"x\"\n}\n";
         std::fs::write(&cfg, text).unwrap();
-        let e = add_to_redrob_code(&cfg, Path::new("/usr/bin/filmcraft")).unwrap_err();
+        let e = add_to_redrob_code(&cfg, Path::new("/usr/bin/redrob-film")).unwrap_err();
         assert!(e.contains("not plain JSON"), "{e}");
         assert_eq!(std::fs::read_to_string(&cfg).unwrap(), text);
         let _ = std::fs::remove_dir_all(&d);

@@ -168,7 +168,7 @@ fn compositing_matte_blend_adjustment_3d_and_alpha_renders() {
     let refa = alpha_frame(&mut qa, stage.clone());
     assert!(px(&refa, 2, 2)[3] < 40 && px(&refa, 50, 45)[3] == 255, "render_frame transparent keeps alpha: {:?} {:?}", px(&refa, 2, 2), px(&refa, 50, 45));
     // ProRes 4444 carries alpha in the frame; WebM VP9 as a second VP9 stream in BlockAdditions
-    // (AlphaMode 1), which FilmCraft's Matroska reader decodes into the frame's alpha plane.
+    // (AlphaMode 1), which Redrob Film's Matroska reader decodes into the frame's alpha plane.
     for path in [mov, webm] {
         let r = qa.exec("file.import", json!({"paths": [path]}));
         assert_eq!(r["errors"], json!([]));

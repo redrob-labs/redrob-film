@@ -15,7 +15,7 @@ use redrob_effects_engine::render::EvalCtx;
 use serde_json::json;
 
 use super::viewer::{ViewerMap, fx2c, layers_at};
-use crate::EffectcraftApp;
+use crate::EffectsApp;
 
 /// Drags shorter than this (screen points) are clicks: a point prompt, no box.
 pub const MIN_BOX: f32 = 4.0;
@@ -26,7 +26,7 @@ fn eligible(layer: &Layer) -> bool {
 }
 
 /// The layer a prompt at comp point `cpt` goes to: a selected one under it, else the topmost.
-pub fn target<'a>(app: &EffectcraftApp, ectx: &EvalCtx<'a>, cpt: [f64; 2]) -> Option<&'a Layer> {
+pub fn target<'a>(app: &EffectsApp, ectx: &EvalCtx<'a>, cpt: [f64; 2]) -> Option<&'a Layer> {
     let hits: Vec<&Layer> = layers_at(ectx, cpt).filter(|l| eligible(l)).collect();
     let selected = &app.session.state.selected_layers;
     hits.iter().find(|l| selected.contains(&l.id)).or(hits.first()).copied()
@@ -44,7 +44,7 @@ fn outline(ectx: &EvalCtx, map: &ViewerMap, layer: &Layer) -> [Pos2; 4] {
 
 /// Hover preview at `hp` (screen): the outline of the layer that would get the matte and a
 /// crosshair where the object point would go.
-pub fn hover(app: &mut EffectcraftApp, painter: &egui::Painter, map: &ViewerMap, ectx: &EvalCtx, hp: Pos2) {
+pub fn hover(app: &mut EffectsApp, painter: &egui::Painter, map: &ViewerMap, ectx: &EvalCtx, hp: Pos2) {
     let accent = app.tokens.accent;
     let cpt = map.to_comp(hp);
     if let Some(layer) = target(app, ectx, cpt) {
@@ -67,7 +67,7 @@ pub fn hover(app: &mut EffectcraftApp, painter: &egui::Painter, map: &ViewerMap,
 }
 
 /// The box being dragged (screen `a`–`b`).
-pub fn draw_box(app: &mut EffectcraftApp, painter: &egui::Painter, a: Pos2, b: Pos2) {
+pub fn draw_box(app: &mut EffectsApp, painter: &egui::Painter, a: Pos2, b: Pos2) {
     let r = Rect::from_two_pos(a, b);
     let accent = app.tokens.accent;
     painter.rect_stroke(r, 0.0, Stroke::new(2.5, Color32::from_black_alpha(140)), StrokeKind::Middle);
@@ -78,7 +78,7 @@ pub fn draw_box(app: &mut EffectcraftApp, painter: &egui::Painter, a: Pos2, b: P
 
 /// Set the prompt from a click at `a` (screen), or a box dragged from `a` to `b`: on the
 /// target layer's Object Matte (re-prompted), or a new one with `add` or when it has none.
-pub fn apply(app: &mut EffectcraftApp, ectx: &EvalCtx, map: &ViewerMap, a: Pos2, b: Option<Pos2>, add: bool) {
+pub fn apply(app: &mut EffectsApp, ectx: &EvalCtx, map: &ViewerMap, a: Pos2, b: Option<Pos2>, add: bool) {
     let boxed = b.filter(|b| (b.x - a.x).abs() >= MIN_BOX && (b.y - a.y).abs() >= MIN_BOX);
     let center = boxed.map_or(a, |b| Rect::from_two_pos(a, b).center());
     let Some(layer) = target(app, ectx, map.to_comp(center)) else {
@@ -116,7 +116,7 @@ pub fn apply(app: &mut EffectcraftApp, ectx: &EvalCtx, map: &ViewerMap, a: Pos2,
 }
 
 /// The Object Matte a prompt on `layer` re-prompts: the selected one, else the layer's last.
-fn existing(app: &EffectcraftApp, layer: &Layer) -> Option<u64> {
+fn existing(app: &EffectsApp, layer: &Layer) -> Option<u64> {
     let fx = layer.effects()?;
     let om: Vec<u64> = fx.groups().filter(|g| is_object_matte(g)).map(|g| g.uid).collect();
     let sel = app.session.state.selected_props.iter().rev().find(|(l, u)| *l == layer.id && om.contains(u)).map(|(_, u)| *u);

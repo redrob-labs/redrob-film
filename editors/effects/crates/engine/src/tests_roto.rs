@@ -584,7 +584,7 @@ fn object_matte_mattes_persist_in_the_disk_cache() {
     use redrob_effects_effects::object_matte as om;
     use redrob_effects_render::disk_cache::Kind;
     hold_roto_cache_test_lock();
-    let dir = std::env::temp_dir().join(format!("effectcraft-om-disk-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("redrob-effects-om-disk-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     let enable = |s: &mut Session| {
         s.execute_checked("prefs.set", json!({"values": {"disk.diskCacheFolder": dir.to_string_lossy(), "disk.diskCacheEnabled": true}})).unwrap();

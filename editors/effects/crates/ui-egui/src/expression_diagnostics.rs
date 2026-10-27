@@ -436,9 +436,9 @@ mod tests {
 
     #[test]
     fn viewer_edits_do_not_wait_for_hidden_diagnostics_with_or_without_warnings() {
-        use crate::{EffectcraftApp, bench::Driver};
+        use crate::{EffectsApp, bench::Driver};
         let (s, host, entered) = fixture(false, true);
-        let mut d = Driver::new(EffectcraftApp::new(s), egui::vec2(1680., 1020.));
+        let mut d = Driver::new(EffectsApp::new(s), egui::vec2(1680., 1020.));
         for _ in 0..3 {
             d.step();
         }

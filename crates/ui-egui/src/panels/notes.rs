@@ -19,7 +19,7 @@ use egui::text::{CCursor, CCursorRange};
 use egui::{Rect, pos2, vec2};
 use serde_json::json;
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 
 /// Longest automation label (characters): the full notes are `project.notes`.
 const LABEL_CHARS: usize = 200;
@@ -57,7 +57,7 @@ fn find_all(text: &str, query: &str) -> Vec<(usize, usize)> {
 }
 
 /// Select the next (or previous) match after (before) the caret, wrapping around.
-fn find_step(app: &mut FilmcraftApp, ctx: &egui::Context, query: &str, forward: bool) {
+fn find_step(app: &mut FilmApp, ctx: &egui::Context, query: &str, forward: bool) {
     let hits = find_all(&app.session.project.notes, query);
     if hits.is_empty() {
         app.ui.status = tl!("Not found in the project notes").into();
@@ -71,7 +71,7 @@ fn find_step(app: &mut FilmcraftApp, ctx: &egui::Context, query: &str, forward: 
     }
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let inner = rect.shrink2(vec2(8.0, 6.0));

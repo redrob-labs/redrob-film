@@ -818,7 +818,7 @@ fn display_view_names(pr: &crate::Params) -> (&str, &str) {
 }
 
 /// Effect Controls' warning for effect `id`: a custom OCIO configuration that can't be read, has
-/// no such colour space, display or view, or uses transforms EffectCraft can't apply (colours
+/// no such colour space, display or view, or uses transforms Redrob Effects can't apply (colours
 /// pass through those steps, #410). `None` when the effect renders as asked.
 pub fn warning(id: &str, pr: &crate::Params) -> Option<String> {
     let xf = match custom_xf(id, pr) {

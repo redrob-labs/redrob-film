@@ -3,10 +3,10 @@
 use egui::{Align2, Color32, Rect, Sense, pos2, vec2};
 use serde_json::json;
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::theme::Tokens;
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     ui.painter().rect_filled(rect, t.radius, t.panel_bg);
     ui.painter().text(rect.min + vec2(24.0, 30.0), Align2::LEFT_CENTER, tl!("Import"), Tokens::semibold(22.0), t.text);

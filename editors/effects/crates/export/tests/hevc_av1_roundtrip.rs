@@ -1,5 +1,5 @@
 //! HEVC (MP4 `hvc1`) and AV1 (MP4 `av01`, WebM `V_AV1`) export, decoded back through
-//! EffectCraft's own import path (FilmCraft's demuxers and HEVC / AV1 decoders) and — when
+//! Redrob Effects' own import path (Redrob Film's demuxers and HEVC / AV1 decoders) and — when
 //! installed — ffprobe / ffmpeg as external oracles (skipped otherwise).
 //!
 //! The comp: 64×48 @ 10 fps, 1.2 s (12 frames), dark-blue background, a red solid of 32×48
@@ -253,7 +253,7 @@ fn av1_webm_with_opus() {
 }
 
 /// Low-bitrate WebM audio goes through Opus SILK (voice) or hybrid (audio) coding and still
-/// decodes to the tone (FilmCraft's decoder, and ffmpeg when installed).
+/// decodes to the tone (Redrob Film's decoder, and ffmpeg when installed).
 #[test]
 fn webm_low_bitrate_opus_modes() {
     let d = out_dir("opus-modes");

@@ -19,14 +19,14 @@ use serde_json::{Value, json};
 use super::DragPayload;
 use super::panel_kit as kit;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 // ---------------------------------------------------------------- Media Browser
 
 type Thumb = Option<(egui::TextureHandle, [u32; 2])>;
 
 /// Thumbnail of a file (cached per path; `None` while not decoded or not decodable).
-fn thumbnail(app: &EffectcraftApp, ctx: &egui::Context, path: &str, budget: &mut u32) -> Thumb {
+fn thumbnail(app: &EffectsApp, ctx: &egui::Context, path: &str, budget: &mut u32) -> Thumb {
     let id = egui::Id::new(("mb-thumb", path));
     if let Some(t) = ctx.data(|d| d.get_temp::<Thumb>(id)) {
         return t;
@@ -61,7 +61,7 @@ fn thumbnail(app: &EffectcraftApp, ctx: &egui::Context, path: &str, budget: &mut
     thumb
 }
 
-pub fn media_browser(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn media_browser(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let p = ui.painter().with_clip_rect(rect);
@@ -266,7 +266,7 @@ fn comment_field(ui: &mut egui::Ui, r: Rect, id: &str, text: &str) -> Option<Str
     (resp.lost_focus() && buf != text).then_some(buf)
 }
 
-pub fn metadata(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn metadata(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     p.rect_filled(rect, 0.0, t.panel_bg);
@@ -321,7 +321,7 @@ pub fn metadata(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 
 // ---------------------------------------------------------------- Progress
 
-pub fn progress(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn progress(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     p.rect_filled(rect, 0.0, t.panel_bg);
@@ -383,7 +383,7 @@ fn progress_bar(p: &egui::Painter, bar: Rect, frac: f32, t: &Tokens) {
 /// The Importing card, bottom left over the panels while files import in the background (dropped
 /// or picked in the Import dialog): the file being read, how many are left, and Cancel (#270).
 /// Returns the height it takes, so toasts sit above it.
-pub fn import_card(app: &mut EffectcraftApp, ui: &mut egui::Ui, full: Rect) -> f32 {
+pub fn import_card(app: &mut EffectsApp, ui: &mut egui::Ui, full: Rect) -> f32 {
     if app.session.tasks.is_empty() {
         return 0.0;
     }

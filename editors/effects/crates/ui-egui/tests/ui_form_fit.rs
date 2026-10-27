@@ -2,10 +2,10 @@
 use egui::{Rect, pos2, vec2};
 use egui_kittest::Harness;
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::{Dialog, EffectcraftApp, menus};
+use redrob_effects_ui_egui::{Dialog, EffectsApp, menus};
 use serde_json::json;
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, EffectsApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("missing {id}"));
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
@@ -14,7 +14,7 @@ fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
 fn project_settings_fits_the_form_width() {
     let mut session = Session::default();
     session.prefs.disk.disk_cache_enabled = false;
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(session));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(session));
     h.run_steps(4);
     let ctx = h.ctx.clone();
     menus::invoke(h.state_mut(), &ctx, "file.projectSettings", json!({})).unwrap();

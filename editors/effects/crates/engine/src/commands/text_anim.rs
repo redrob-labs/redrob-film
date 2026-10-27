@@ -1,5 +1,5 @@
 //! Text animation: Animation ▸ Animate Text / Add Text Selector, the Timeline's "Animate:" and
-//! "Add:" pop-ups, Enable Per-character 3D, and EffectCraft's own text animator presets.
+//! "Add:" pop-ups, Enable Per-character 3D, and Redrob Effects' own text animator presets.
 
 use redrob_effects_keyframe::{Keyframe, Value as KV};
 use redrob_effects_project::build::{self, Ids};

@@ -8,7 +8,7 @@
 //! - **CMX 3600 EDL** (`.edl`);
 //! - **AAF** (`.aaf`) and **OMF** (`.omf`) (embedded audio is not extracted).
 //!
-//! Parsing and writing is FilmCraft's `redrob-film-interchange` (our first-party sibling project);
+//! Parsing and writing is Redrob Film's `redrob-film-interchange` (our first-party sibling project);
 //! this crate maps its timeline model to compositions and back:
 //!
 //! - [`import`]: sequences → compositions (size, rate, duration, pixel aspect, start timecode,
@@ -20,7 +20,7 @@
 //!   placeholders.
 //! - [`export`]: a composition → one sequence with one track per layer (bottom layer = V1),
 //!   footage clips with their timing, Motion and Opacity; precomps as nested sequences; solids as
-//!   colour mattes; layers only EffectCraft can draw (text, shapes, effects, masks, 3D…) are
+//!   colour mattes; layers only Redrob Effects can draw (text, shapes, effects, masks, 3D…) are
 //!   either left out or pre-rendered by the caller (ProRes 4444 with alpha, see
 //!   [`plan_prerender`]) and referenced as media.
 //!
@@ -40,7 +40,7 @@ pub use export::{ExportOptions, ExportOutput, PrecompMode, PrerenderMode, Preren
 pub use import::{ImportOptions, ImportResult, import};
 
 pub use redrob_film_geom as fc_geom;
-/// FilmCraft's interchange crate (format readers/writers) and timeline model, re-exported so
+/// Redrob Film's interchange crate (format readers/writers) and timeline model, re-exported so
 /// tests and tools can build documents in code.
 pub use redrob_film_interchange as fc;
 pub use redrob_film_media as fc_media;

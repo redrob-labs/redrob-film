@@ -13,7 +13,7 @@ use redrob_effects_engine::render::audio::db_to_gain;
 use redrob_effects_engine::time::Tick;
 
 use super::timeline::TMap;
-use crate::EffectcraftApp;
+use crate::EffectsApp;
 
 /// Peak-summary resolution.
 pub const BINS_PER_SEC: u32 = 200;
@@ -40,7 +40,7 @@ pub fn audio_item(project: &Project, l: &Layer) -> Option<ItemId> {
 }
 
 /// The summary for `item`, starting its computation on first request.
-pub fn summary(app: &EffectcraftApp, ctx: &egui::Context, item: ItemId) -> Option<Arc<Summary>> {
+pub fn summary(app: &EffectsApp, ctx: &egui::Context, item: ItemId) -> Option<Arc<Summary>> {
     let mut m = app.waveforms.map.lock().ok()?;
     if let Some(s) = m.get(&item.0) {
         return s.clone();

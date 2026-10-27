@@ -140,4 +140,4 @@ fn no_comp(comp: Option<&Value>) -> Error {
 }
 
 pub const NEED_BRIDGE: &str =
-    "this tool drives the live app: start it with `effectcraft --control 9877` and run the MCP server as `effectcraft-cli mcp --bridge 9877`";
+    "this tool drives the live app: start it with `redrob-film --control 9877` and run the MCP server as `redrob-film-cli mcp --bridge 9877`";

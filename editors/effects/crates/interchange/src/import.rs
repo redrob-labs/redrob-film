@@ -633,7 +633,7 @@ fn interp_in(k: Keyframe, i: fp::Interpolation) -> Keyframe {
     }
 }
 
-/// Copy a FilmCraft parameter (static value or clip-time keyframes) to a property.
+/// Copy a Redrob Film parameter (static value or clip-time keyframes) to a property.
 fn set_prop(
     dp: &mut Property,
     p: &fp::Param,

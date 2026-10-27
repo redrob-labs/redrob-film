@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 pub use super::forms::{Field, form, info, open_form};
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
-use crate::{Dialog, EffectcraftApp};
+use crate::{Dialog, EffectsApp};
 
 pub use super::comp_settings::CompDraft;
 
@@ -69,7 +69,7 @@ pub struct DialogState {
     pub delete_template: Option<(String, String)>,
 }
 
-pub fn open_new_comp(app: &mut EffectcraftApp) {
+pub fn open_new_comp(app: &mut EffectsApp) {
     let n = app.session.project.comps().count() + 1;
     let last = app.dialog_state.last_new_comp.clone().unwrap_or_default();
     app.dialog_state.comp =
@@ -78,13 +78,13 @@ pub fn open_new_comp(app: &mut EffectcraftApp) {
     app.dialog = Some(Dialog::NewComp);
 }
 
-pub fn open_comp_settings(app: &mut EffectcraftApp) -> Result<(), String> {
+pub fn open_comp_settings(app: &mut EffectsApp) -> Result<(), String> {
     let cid = app.session.active_comp_id().ok_or("no composition is open")?;
     open_comp_settings_for(app, cid)
 }
 
 /// Composition Settings on `cid`, open in the viewer or not.
-pub fn open_comp_settings_for(app: &mut EffectcraftApp, cid: ItemId) -> Result<(), String> {
+pub fn open_comp_settings_for(app: &mut EffectsApp, cid: ItemId) -> Result<(), String> {
     let c = app.session.project.comp(cid).ok_or("no composition")?;
     app.dialog_state.comp = CompDraft {
         name: app.session.project.item(cid).map(|i| i.name.clone()).unwrap_or_default(),
@@ -110,7 +110,7 @@ pub fn open_comp_settings_for(app: &mut EffectcraftApp, cid: ItemId) -> Result<(
     Ok(())
 }
 
-pub fn open_new_solid(app: &mut EffectcraftApp) -> Result<(), String> {
+pub fn open_new_solid(app: &mut EffectsApp) -> Result<(), String> {
     let c = app.session.active_comp().ok_or("no composition is open")?;
     let n = app.session.project.items.values().filter(|i| matches!(i.kind, redrob_effects_engine::project::ItemKind::Solid(_))).count() + 1;
     let d = &mut app.dialog_state;
@@ -126,7 +126,7 @@ pub fn open_new_solid(app: &mut EffectcraftApp) -> Result<(), String> {
 }
 
 /// Layer ▸ Layer Settings on a solid or adjustment layer: Solid Settings on its solid.
-fn open_solid_settings(app: &mut EffectcraftApp, layer: u64, item: ItemId) -> Result<(), String> {
+fn open_solid_settings(app: &mut EffectsApp, layer: u64, item: ItemId) -> Result<(), String> {
     let s = &app.session;
     let it = s.project.item(item).ok_or("the layer's solid is missing")?;
     let ItemKind::Solid(so) = &it.kind else { return Err("not a solid".into()) };
@@ -142,7 +142,7 @@ fn open_solid_settings(app: &mut EffectcraftApp, layer: u64, item: ItemId) -> Re
 /// Layer ▸ Layer Settings without parameters: Solid Settings for solids and adjustment layers,
 /// the layer's name for nulls (cameras and lights: `dialogs_3d::route`). Returns true when a
 /// dialog opened.
-pub fn route_layer_settings(app: &mut EffectcraftApp, id: &str, params: &Value) -> Result<bool, String> {
+pub fn route_layer_settings(app: &mut EffectsApp, id: &str, params: &Value) -> Result<bool, String> {
     if id != "layer.settings" || !params.as_object().is_none_or(|m| m.keys().all(|k| k == "layer")) {
         return Ok(false);
     }
@@ -232,7 +232,7 @@ pub(crate) fn above_footer(ui: &mut egui::Ui, height: f32, footer: impl FnOnce(&
     (body, body_h)
 }
 
-pub fn show(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn show(app: &mut EffectsApp, ctx: &egui::Context) {
     let Some(d) = app.dialog else { return };
     let t = app.tokens;
     match d {
@@ -270,7 +270,7 @@ const ABOUT_TABS: [(&str, &str); 2] = [("About", "about"), ("Contributors", "con
 /// Height of the Contributors tab body (it scrolls inside it).
 const CREDITS_HEIGHT: f32 = 380.0;
 
-fn about(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+fn about(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens) {
     let mut close = false;
     let mut cmd: Option<&str> = None;
     let tab_id = egui::Id::new("about_tab");
@@ -318,7 +318,7 @@ fn about(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
 }
 
 /// The About tab: logo, version, blurb and community links.
-fn about_main(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, cmd: &mut Option<&'static str>) {
+fn about_main(app: &mut EffectsApp, ui: &mut egui::Ui, t: &Tokens, cmd: &mut Option<&'static str>) {
     let (r, _) = ui.allocate_exact_size(vec2(ui.available_width(), 96.0), Sense::hover());
     let p = ui.painter();
     p.rect_filled(r, 10.0, Color32::from_rgb(0x1b, 0x22, 0x3c));
@@ -356,7 +356,7 @@ fn about_main(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, cmd: &mut
     }
 }
 
-fn comp_settings(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens, existing: bool) {
+fn comp_settings(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens, existing: bool) {
     let mut d = app.dialog_state.comp.clone();
     let mut result = None;
     let custom = app.session.prefs.comp_presets.clone();
@@ -401,7 +401,7 @@ fn comp_settings(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens, exis
 
 /// One frame of the open dialog with `key` pressed.
 #[cfg(test)]
-pub(crate) fn press_key(app: &mut EffectcraftApp, ctx: &egui::Context, key: egui::Key, modifiers: egui::Modifiers) {
+pub(crate) fn press_key(app: &mut EffectsApp, ctx: &egui::Context, key: egui::Key, modifiers: egui::Modifiers) {
     let mut raw = egui::RawInput::default();
     raw.events.push(egui::Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers });
     let mut out = ctx.run_ui(raw, |ui| {
@@ -414,7 +414,7 @@ pub(crate) fn press_key(app: &mut EffectcraftApp, ctx: &egui::Context, key: egui
 /// The letter that answers the open confirmation with Cmd (Ctrl elsewhere): Cmd+D is Delete in
 /// Delete Items, Delete Template and Delete Preset, Cmd+R is Revert in Revert Project. The native menu bar hands these keys back
 /// while the prompt is open ([`crate::native_menu::activate`]).
-pub(crate) fn command_key(app: &EffectcraftApp) -> Option<egui::Key> {
+pub(crate) fn command_key(app: &EffectsApp) -> Option<egui::Key> {
     match app.dialog? {
         Dialog::DeleteItems | Dialog::DeleteTemplate => Some(egui::Key::D),
         Dialog::Shortcuts if super::shortcut_editor::confirming(app) => Some(egui::Key::D),
@@ -434,7 +434,7 @@ pub(crate) fn ui_enter(ctx: &egui::Context) -> bool {
 }
 
 /// Solid Settings: a new solid (Layer ▸ New ▸ Solid…) or the layer's solid (Layer Settings).
-fn solid(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+fn solid(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens) {
     let (mut close, mut ok) = (false, false);
     let ds = &app.dialog_state;
     let (mut name, mut color, mut size, mut par, mut affect_all) =
@@ -564,7 +564,7 @@ fn solid_params(d: &DialogState) -> Value {
 }
 
 /// ⌘⇧P: fuzzy search over every command (engine + UI) and effect.
-fn palette(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+fn palette(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens) {
     let mut q = app.dialog_state.palette_query.clone();
     let mut run: Option<(String, serde_json::Value)> = None;
     let mut close = false;
@@ -649,15 +649,15 @@ fn palette(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
 mod tests {
     use super::*;
 
-    fn app() -> (EffectcraftApp, egui::Context) {
+    fn app() -> (EffectsApp, egui::Context) {
         let ctx = egui::Context::default();
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         app.session.execute("comp.new", json!({"name": "Main", "width": 640, "height": 360})).unwrap();
         (app, ctx)
     }
 
-    fn frame(app: &mut EffectcraftApp, ctx: &egui::Context) {
+    fn frame(app: &mut EffectsApp, ctx: &egui::Context) {
         let mut out = ctx.run_ui(Default::default(), |ui| {
             app.auto.begin_frame();
             show(app, ui.ctx());
@@ -666,7 +666,7 @@ mod tests {
     }
 
     /// One frame with `events` in its input; returns what it asked the platform to do.
-    fn frame_with(app: &mut EffectcraftApp, ctx: &egui::Context, events: Vec<egui::Event>) -> egui::FullOutput {
+    fn frame_with(app: &mut EffectsApp, ctx: &egui::Context, events: Vec<egui::Event>) -> egui::FullOutput {
         let input = egui::RawInput { events, ..Default::default() };
         let mut out = ctx.run_ui(input, |ui| {
             app.auto.begin_frame();
@@ -715,7 +715,7 @@ mod tests {
         assert!(frame_with(&mut app, &ctx, vec![]).platform_output.ime.is_some(), "and takes it back");
     }
 
-    fn solid_item(app: &EffectcraftApp, l: u64) -> ItemId {
+    fn solid_item(app: &EffectsApp, l: u64) -> ItemId {
         match app.session.active_comp().unwrap().layer(LayerId(l)).unwrap().source {
             LayerSource::Solid { item } => item,
             _ => panic!("not a solid"),

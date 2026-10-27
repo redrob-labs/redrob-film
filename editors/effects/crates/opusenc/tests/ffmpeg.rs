@@ -22,7 +22,7 @@ fn ffmpeg_decode(exe: &str, codec: &str, file: &[u8], channels: usize, tag: &str
         eprintln!("ffmpeg has no {codec} decoder; skipping it");
         return None;
     }
-    let path = std::env::temp_dir().join(format!("effectcraft-opusenc-{}-{tag}.opus", std::process::id()));
+    let path = std::env::temp_dir().join(format!("redrob-effects-opusenc-{}-{tag}.opus", std::process::id()));
     std::fs::write(&path, file).unwrap();
     let out = Command::new(exe)
         .args(["-v", "error", "-c:a", codec, "-i"])

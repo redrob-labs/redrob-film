@@ -1,4 +1,4 @@
-//! Timeline interchange for FilmCraft: import and export of
+//! Timeline interchange for Redrob Film: import and export of
 //!
 //! - **CMX 3600 EDL** (`.edl`) with the common comment extensions (`* FROM CLIP NAME:`,
 //!   `* SOURCE FILE:`, `* LOC:`), `M2` speed lines, dissolves, wipes, key events, audio channels and

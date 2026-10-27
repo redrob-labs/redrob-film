@@ -10,10 +10,10 @@ use redrob_effects_engine::time::Tick;
 use serde_json::json;
 
 use super::panel_kit as kit;
-use crate::EffectcraftApp;
+use crate::EffectsApp;
 use crate::theme::Tokens;
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let p = ui.painter().with_clip_rect(rect);

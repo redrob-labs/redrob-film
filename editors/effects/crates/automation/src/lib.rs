@@ -1,14 +1,14 @@
 //! # redrob-effects-automation (L5)
 //!
-//! Makes EffectCraft drivable by AI agents. See `docs/agents.md`.
+//! Makes Redrob Effects drivable by AI agents. See `docs/agents.md`.
 //!
 //! * [`McpServer`]: a Model Context Protocol server (JSON-RPC 2.0, newline-delimited over stdio),
 //!   hand-rolled on `serde_json`; no async runtime, starts instantly.
 //! * [`Backend`]: where tools run. **Headless** owns an in-process [`Session`] (no window);
 //!   **bridge** forwards to a running desktop app over its JSON-lines control channel
-//!   (`effectcraft --control 9877`, `docs/control-protocol.md`), adding screenshots and UI input.
+//!   (`redrob-film --control 9877`, `docs/control-protocol.md`), adding screenshots and UI input.
 //! * [`tools`]: the tool catalogue (names, descriptions, JSON schemas) and their implementations,
-//!   shared by the MCP server and `effectcraft-cli`'s one-shot subcommands.
+//!   shared by the MCP server and `redrob-film-cli`'s one-shot subcommands.
 //!
 //! Layering: depends on `redrob-effects-engine` only (never egui); the CLI injects a fully wired
 //! session (`redrob_effects_host::session()`).

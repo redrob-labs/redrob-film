@@ -12,7 +12,7 @@ use redrob_effects_time::Tick;
 use serde_json::json;
 
 fn tmp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("effectcraft-host-reload-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("redrob-effects-host-reload-{}", std::process::id()));
     std::fs::create_dir_all(&d).unwrap();
     d.join(name).to_string_lossy().to_string()
 }

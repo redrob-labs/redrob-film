@@ -65,7 +65,7 @@ use redrob_effects_engine::Session;
 use redrob_effects_engine::project::Comp;
 use redrob_effects_engine::time::Tick;
 
-use crate::EffectcraftApp;
+use crate::EffectsApp;
 use crate::dock::PanelKind;
 
 /// Drag-and-drop payloads between panels.
@@ -84,7 +84,7 @@ pub enum DragPayload {
 /// Layers carried by a Project item drag. Dragging a selected item uses the
 /// complete selection, while dragging an unselected item uses only that item.
 /// Folders and data files are not composition layers.
-pub(crate) fn project_drop_items(app: &EffectcraftApp, dragged: u64) -> Vec<u64> {
+pub(crate) fn project_drop_items(app: &EffectsApp, dragged: u64) -> Vec<u64> {
     use redrob_effects_engine::project::{FootageKind, ItemId, ItemKind};
 
     let selected = &app.session.state.project_selection;
@@ -115,7 +115,7 @@ pub fn timecode(session: &Session, comp: &Comp, t: Tick) -> String {
 
 /// Ctrl/Cmd-click on a current-time display toggles the project's Time Display Style between
 /// Timecode and Frames, as in After Effects (through Project Settings: one undo step).
-pub(crate) fn toggle_time_display(app: &mut EffectcraftApp, resp: &egui::Response) {
+pub(crate) fn toggle_time_display(app: &mut EffectsApp, resp: &egui::Response) {
     if !(resp.clicked() && resp.ctx.input(|i| i.modifiers.command)) {
         return;
     }
@@ -131,7 +131,7 @@ pub(crate) fn space_hand(ctx: &egui::Context) -> bool {
     ctx.input(|i| i.key_down(egui::Key::Space)) && !ctx.egui_wants_keyboard_input()
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: PanelKind, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, p: PanelKind, rect: Rect) {
     match p {
         PanelKind::Composition => viewers::show(app, ui, 0, rect),
         PanelKind::Viewer(n) => viewers::show(app, ui, n, rect),
@@ -173,7 +173,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: PanelKind, rect: Rec
 }
 
 /// The ≡ panel menu (opened from a tab).
-pub fn panel_menu_popup(app: &mut EffectcraftApp, ui: &mut egui::Ui) {
+pub fn panel_menu_popup(app: &mut EffectsApp, ui: &mut egui::Ui) {
     let id = egui::Id::new("panel-menu");
     let Some((panel, pos)) = ui.ctx().data(|d| d.get_temp::<(PanelKind, egui::Pos2)>(id)) else { return };
     // The menu opens in the window that shows the panel (a panel can have its own window).

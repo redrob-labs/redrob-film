@@ -15,7 +15,7 @@ use redrob_effects_engine::{KeyRef, VertexRef};
 use serde_json::json;
 
 use super::viewer::ViewerMap;
-use crate::EffectcraftApp;
+use crate::EffectsApp;
 
 /// A vertex or tangent handle drawn this frame (masks and shape paths alike; `mask` is the path
 /// group's uid).
@@ -151,7 +151,7 @@ pub(crate) fn flatten(sp: &ShapePath, m: &Mat3, map: &ViewerMap) -> Vec<Pos2> {
 /// selected vertices show their tangent handles. Collects vertex hits and paths.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn draw_paths(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     painter: &egui::Painter,
     map: &ViewerMap,
     ectx: &EvalCtx,
@@ -317,7 +317,7 @@ pub(crate) fn parent_to_comp(ectx: &EvalCtx, l: &Layer) -> Mat3 {
 /// squares (filled when selected) and spatial Bezier tangent handles. Works through parents.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn motion_path(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     painter: &egui::Painter,
     map: &ViewerMap,
     ectx: &EvalCtx,
@@ -435,7 +435,7 @@ impl FtBox {
 
 /// Draw the free-transform box of the target path (if any) and return it for hit tests.
 pub(crate) fn draw_free_transform(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ctx: &egui::Context,
     painter: &egui::Painter,
     map: &ViewerMap,
@@ -517,7 +517,7 @@ pub(crate) enum Drag {
 }
 
 /// Start a motion-path drag at `press` (keys before tangents), selecting the key.
-pub(crate) fn begin_key_drag(app: &mut EffectcraftApp, hits: &[KeyHit], press: Pos2, cpt: [f64; 2], shift: bool) -> Option<Drag> {
+pub(crate) fn begin_key_drag(app: &mut EffectsApp, hits: &[KeyHit], press: Pos2, cpt: [f64; 2], shift: bool) -> Option<Drag> {
     let h = hits
         .iter()
         .rev()
@@ -564,7 +564,7 @@ pub(crate) fn begin_ft_drag(f: &FtBox, press: Pos2, map: &ViewerMap) -> Option<D
 
 /// Mask Feather tool: press on a feather point's handle to drag it, or on a mask path to add a
 /// feather point there and drag its radius out.
-pub(crate) fn begin_feather(app: &mut EffectcraftApp, ectx: &EvalCtx, paths: &[PathInfo], map: &ViewerMap, press: Pos2) -> Option<Drag> {
+pub(crate) fn begin_feather(app: &mut EffectsApp, ectx: &EvalCtx, paths: &[PathInfo], map: &ViewerMap, press: Pos2) -> Option<Drag> {
     let _ = ectx;
     for p in paths.iter().filter(|p| p.is_mask) {
         if let Some((i, _)) = p.feather.iter().find(|(_, h)| h.distance(press) < 7.0) {
@@ -588,14 +588,14 @@ pub(crate) fn begin_feather(app: &mut EffectcraftApp, ectx: &EvalCtx, paths: &[P
 /// point for snapping. Returns the replacement drag state.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn update(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     d: &Drag,
     cpt: [f64; 2],
     pos: Pos2,
     mods: egui::Modifiers,
     merge: &str,
     zoom: f32,
-    snap: &mut dyn FnMut(&EffectcraftApp, [f64; 2], LayerId) -> [f64; 2],
+    snap: &mut dyn FnMut(&EffectsApp, [f64; 2], LayerId) -> [f64; 2],
 ) -> Option<Drag> {
     match d.clone() {
         Drag::Key { layer, prop, time, start, press, inv } => {

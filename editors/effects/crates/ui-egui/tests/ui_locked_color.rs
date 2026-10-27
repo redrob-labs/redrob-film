@@ -3,7 +3,7 @@
 
 use egui_kittest::{Harness, TestRenderer};
 use redrob_effects_engine::{Session, render::RenderOpts, viewer::DisplayColor};
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use serde_json::{Value, json};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
@@ -31,20 +31,20 @@ impl TestRenderer for Capture {
     }
 }
 
-fn invoke(h: &mut Harness<'_, EffectcraftApp>, command: &str, params: Value) {
+fn invoke(h: &mut Harness<'_, EffectsApp>, command: &str, params: Value) {
     let ctx = h.ctx.clone();
     redrob_effects_ui_egui::menus::invoke(h.state_mut(), &ctx, command, params).unwrap();
     h.run_steps(3);
 }
 
-fn locked_center(h: &Harness<'_, EffectcraftApp>, images: &Images) -> [u8; 4] {
+fn locked_center(h: &Harness<'_, EffectsApp>, images: &Images) -> [u8; 4] {
     let (_, texture) = h.ctx.data(|d| d.get_temp::<(u64, egui::TextureHandle)>(egui::Id::new("viewer-locked"))).unwrap();
     let images = images.borrow();
     let image = images.get(&texture.id()).unwrap();
     image.pixels[(image.size[1] / 2) * image.size[0] + image.size[0] / 2].to_array()
 }
 
-fn expected_center(h: &mut Harness<'_, EffectcraftApp>) -> [u8; 4] {
+fn expected_center(h: &mut Harness<'_, EffectsApp>) -> [u8; 4] {
     let s = &mut h.state_mut().session;
     let comp = s.active_comp_id().unwrap();
     let image = s.render(comp, s.time(), RenderOpts::default());
@@ -63,7 +63,7 @@ fn locked_viewer_follows_display_profile_and_simulation() {
     s.execute("prefs.set", json!({"key": "previews.displayProfile", "value": "srgb"})).unwrap();
     s.execute("view.displayColorManagement", json!({"value": true})).unwrap();
     let images = Images::default();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).renderer(Capture(images.clone())).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).renderer(Capture(images.clone())).build_eframe(|_| EffectsApp::new(s));
     h.run_steps(3);
     invoke(&mut h, "view.splitLockedViewer", json!({}));
     let first = expected_center(&mut h);

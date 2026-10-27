@@ -7,7 +7,7 @@
 
 use serde_json::{Value, json};
 
-use crate::EffectcraftApp;
+use crate::EffectsApp;
 use crate::dock::PanelKind;
 use crate::state::{Resolution, Tool};
 use redrob_effects_engine::menus::{MenuEntry, MenuNode};
@@ -146,7 +146,7 @@ pub fn panel_command_id(p: PanelKind) -> String {
 
 /// The reveal shortcuts (P, S, R, T, A, E, M, F, L…). `add` (Shift+key) adds the property to
 /// (or removes it from) those already revealed instead of replacing them.
-pub fn reveal(app: &mut EffectcraftApp, kind: &str, now: f64, add: bool) {
+pub fn reveal(app: &mut EffectsApp, kind: &str, now: f64, add: bool) {
     // The double-press shortcuts: the same key again within 0.6 s reveals its second set (LL
     // Waveform, TT Mask Opacity, MM all mask properties, EE Expressions, RR Time Remap, AA
     // Material Options, PP paint / Roto Brush / Puppet, SS selected properties, FF missing
@@ -201,7 +201,7 @@ pub fn reveal(app: &mut EffectcraftApp, kind: &str, now: f64, add: bool) {
 
 /// Show Time Remap on the layers of a `layer.enableTimeRemap` (`layers` by id, else the
 /// selected ones) that have it now.
-fn reveal_time_remap(app: &mut EffectcraftApp, params: &Value) {
+fn reveal_time_remap(app: &mut EffectsApp, params: &Value) {
     let asked: Vec<u64> = match params.get("layers").and_then(Value::as_array) {
         Some(a) => a.iter().filter_map(Value::as_u64).collect(),
         None => app.session.state.selected_layers.iter().map(|l| l.0).collect(),
@@ -216,7 +216,7 @@ fn reveal_time_remap(app: &mut EffectcraftApp, params: &Value) {
 /// After Alt+Shift+P (A, S, R, T) the Timeline shows the property on each layer it keyed, as in
 /// After Effects: added to what a reveal shortcut shows, else with the layer's Transform twirled
 /// open, else alone like P.
-fn reveal_keyed(app: &mut EffectcraftApp, keyed: &Value, kind: &str) {
+fn reveal_keyed(app: &mut EffectsApp, keyed: &Value, kind: &str) {
     let layers: std::collections::BTreeSet<u64> = keyed.as_array().into_iter().flatten().filter_map(|k| k.get("layer").and_then(Value::as_u64)).collect();
     let Some(comp) = app.session.active_comp() else { return };
     let tl = &mut app.ui.timeline;
@@ -243,7 +243,7 @@ fn reveal_keyed(app: &mut EffectcraftApp, keyed: &Value, kind: &str) {
 }
 
 /// The layers a reveal shortcut acts on: the selected ones, else every layer of the active comp.
-fn reveal_targets(app: &EffectcraftApp) -> Vec<u64> {
+fn reveal_targets(app: &EffectsApp) -> Vec<u64> {
     if app.session.state.selected_layers.is_empty() {
         app.session.active_comp().map(|c| c.layers.iter().map(|l| l.id.0).collect()).unwrap_or_default()
     } else {
@@ -256,7 +256,7 @@ fn reveal_targets(app: &EffectcraftApp) -> Vec<u64> {
 /// they move by fractions of a comp pixel. From any panel except Project (which owns the
 /// arrow keys for its own keyboard navigation, #961); not while typing, with a dialog or
 /// menu open, or with mask points selected.
-fn nudge(app: &mut EffectcraftApp, ctx: &egui::Context, dir: &str) -> Result<Value, String> {
+fn nudge(app: &mut EffectsApp, ctx: &egui::Context, dir: &str) -> Result<Value, String> {
     let (side, n) = match dir.strip_suffix("10") {
         Some(side) => (side, 10.0),
         None => (dir, 1.0),
@@ -290,7 +290,7 @@ fn only_comp(p: &Value) -> Option<redrob_effects_engine::project::ItemId> {
 }
 
 /// Execute a UI or engine command by id.
-pub fn invoke(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, params: Value) -> Result<Value, String> {
+pub fn invoke(app: &mut EffectsApp, ctx: &egui::Context, id: &str, params: Value) -> Result<Value, String> {
     if id == "effects.copyPresetsFolderPath" {
         return frontend(app, ctx, id, params);
     }
@@ -569,7 +569,7 @@ pub fn invoke(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, params: V
         app.set_theme(ctx, k);
         return Ok(Value::Null);
     }
-    let timing = |app: &mut EffectcraftApp, op: &str| app.session.execute("layer.timing", json!({"op": op})).map_err(|e| e.to_string());
+    let timing = |app: &mut EffectsApp, op: &str| app.session.execute("layer.timing", json!({"op": op})).map_err(|e| e.to_string());
     match id {
         "playback.ramPreview" => {
             app.toggle_play_with(now, redrob_effects_engine::preview::PreviewShortcut::Numpad0);
@@ -823,7 +823,7 @@ pub fn invoke(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, params: V
 const COPY_COMMANDS: &[&str] =
     &["edit.copy", "edit.cut", "edit.copyWithPropertyLinks", "edit.copyWithRelativePropertyLinks", "edit.copyExpressionOnly", "keys.copy", "effect.copy"];
 
-/// A line for the system clipboard naming what EffectCraft copied. The system clipboard must
+/// A line for the system clipboard naming what Redrob Effects copied. The system clipboard must
 /// hold something: with nothing on it, the windowing layer sends no paste event for Ctrl+V.
 fn clipboard_note(s: &redrob_effects_engine::Session) -> String {
     let st = &s.state;
@@ -841,7 +841,7 @@ fn clipboard_note(s: &redrob_effects_engine::Session) -> String {
     }
 }
 
-pub(crate) fn run_engine(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, params: Value) -> Result<Value, String> {
+pub(crate) fn run_engine(app: &mut EffectsApp, ctx: &egui::Context, id: &str, params: Value) -> Result<Value, String> {
     // Events already queued belong to earlier invocations (`engine.execute` defers them).
     let queued = app.session.events.len();
     let mut r = app.session.execute(id, params).map_err(|e| e.to_string());
@@ -876,7 +876,7 @@ fn toggle(slot: &mut bool, p: &Value) -> Value {
 }
 
 /// Perform a frontend command (from `Event::Frontend`).
-pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Value) -> Result<Value, String> {
+pub fn frontend(app: &mut EffectsApp, ctx: &egui::Context, id: &str, p: Value) -> Result<Value, String> {
     let now = ctx.input(|i| i.time);
     let v = &mut app.ui.viewer;
     Ok(match id {
@@ -1325,7 +1325,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
 }
 
 /// Commands that need a file or folder path: ask the host's file dialog when `params` lacks one.
-fn file_dialog(app: &mut EffectcraftApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
+fn file_dialog(app: &mut EffectsApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
     enum Ask {
         Folder,
         Import,
@@ -1434,7 +1434,7 @@ fn picked_value(key: &str, paths: Vec<String>) -> Option<Value> {
 
 /// A file dialog shown without blocking ([`crate::Hooks::file_dialog_async`]) answered: run its
 /// command with the picked path (nothing when it was cancelled).
-pub(crate) fn dialog_answered(app: &mut EffectcraftApp, answer: crate::DialogAnswer) {
+pub(crate) fn dialog_answered(app: &mut EffectsApp, answer: crate::DialogAnswer) {
     let Some(v) = picked_value(answer.key, answer.paths) else { return };
     if let Err(e) = run_with_picked(app, &answer.command, answer.key, &answer.params, v) {
         app.ui.status = e;
@@ -1442,7 +1442,7 @@ pub(crate) fn dialog_answered(app: &mut EffectcraftApp, answer: crate::DialogAns
 }
 
 /// Run command `id` with the path picked for it in parameter `key`.
-fn run_with_picked(app: &mut EffectcraftApp, id: &str, key: &str, params: &Value, v: Value) -> Result<Value, String> {
+fn run_with_picked(app: &mut EffectsApp, id: &str, key: &str, params: &Value, v: Value) -> Result<Value, String> {
     let mut p = params.as_object().cloned().unwrap_or_default();
     p.insert(key.to_string(), v);
     // Picked files import in the background, with the Importing card showing progress (#270).
@@ -1486,7 +1486,7 @@ pub fn menus() -> Vec<&'static str> {
     redrob_effects_engine::menus::top_level()
 }
 
-pub(crate) fn entry_label(app: &EffectcraftApp, e: &MenuEntry) -> String {
+pub(crate) fn entry_label(app: &EffectsApp, e: &MenuEntry) -> String {
     let shown = match e.command.as_str() {
         "edit.undo" => app.session.history.undo.last().map(|u| format!("Undo {}", u.0)).unwrap_or_else(|| "Can't Undo".into()),
         "edit.redo" => app.session.history.redo.last().map(|u| format!("Redo {}", u.0)).unwrap_or_else(|| "Can't Redo".into()),
@@ -1505,13 +1505,13 @@ pub(crate) fn entry_label(app: &EffectcraftApp, e: &MenuEntry) -> String {
 }
 
 /// The entry's shortcut in the active keyboard shortcut preset.
-pub(crate) fn entry_shortcut(app: &EffectcraftApp, e: &MenuEntry) -> Option<String> {
+pub(crate) fn entry_shortcut(app: &EffectsApp, e: &MenuEntry) -> Option<String> {
     app.session.shortcuts().shortcut_of(&e.command, &e.params).map(str::to_string)
 }
 
 /// Whether panel `p` is on screen: the front tab of a floating window, or of a docked group
 /// (an open frame in a stack) that a maximized panel does not cover.
-pub(crate) fn panel_shown(app: &EffectcraftApp, p: PanelKind) -> bool {
+pub(crate) fn panel_shown(app: &EffectsApp, p: PanelKind) -> bool {
     if app.ui.floating.iter().any(|f| f.panels.get(f.active) == Some(&p)) {
         return true;
     }
@@ -1522,7 +1522,7 @@ pub(crate) fn panel_shown(app: &EffectcraftApp, p: PanelKind) -> bool {
 }
 
 /// Check-mark state of frontend toggles (engine state is answered by the engine).
-pub(crate) fn entry_checked(app: &EffectcraftApp, e: &MenuEntry) -> Option<bool> {
+pub(crate) fn entry_checked(app: &EffectsApp, e: &MenuEntry) -> Option<bool> {
     let v = &app.ui.viewer;
     let pstr = |k: &str| e.params.get(k).and_then(Value::as_str);
     match e.command.as_str() {
@@ -1553,7 +1553,7 @@ pub(crate) fn entry_checked(app: &EffectcraftApp, e: &MenuEntry) -> Option<bool>
     }
 }
 
-pub(crate) fn entry_enabled(app: &EffectcraftApp, e: &MenuEntry) -> bool {
+pub(crate) fn entry_enabled(app: &EffectsApp, e: &MenuEntry) -> bool {
     if app.ui.focused == PanelKind::Project {
         match e.command.as_str() {
             "edit.duplicate" => {
@@ -1581,7 +1581,7 @@ pub(crate) fn entry_enabled(app: &EffectcraftApp, e: &MenuEntry) -> bool {
 }
 
 /// Every menu entry, flattened with its submenu path.
-pub fn menu_items(app: &EffectcraftApp) -> Vec<MenuItem> {
+pub fn menu_items(app: &EffectsApp) -> Vec<MenuItem> {
     redrob_effects_engine::menus::entries()
         .into_iter()
         .map(|(path, e)| MenuItem {
@@ -1758,19 +1758,19 @@ fn only_shift(m: egui::Modifiers) -> bool {
 }
 
 /// Dispatch keyboard shortcuts (skipped while typing in a text field).
-pub fn handle_shortcuts(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn handle_shortcuts(app: &mut EffectsApp, ctx: &egui::Context) {
     handle_shortcuts_impl(app, ctx, false);
 }
 
 /// Tab can acquire widget focus while the current frame is drawn. Dispatch its application
 /// binding only afterward, and only when no widget owned focus before or after layout.
-pub fn handle_tab_shortcut(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn handle_tab_shortcut(app: &mut EffectsApp, ctx: &egui::Context) {
     if ctx.input(|i| i.key_pressed(egui::Key::Tab)) {
         handle_shortcuts_impl(app, ctx, true);
     }
 }
 
-fn handle_shortcuts_impl(app: &mut EffectcraftApp, ctx: &egui::Context, tab_only: bool) {
+fn handle_shortcuts_impl(app: &mut EffectsApp, ctx: &egui::Context, tab_only: bool) {
     let start = modifiers_at_start(ctx);
     // Dialog cancellation owns Escape even when a text field has keyboard focus.
     if !tab_only && app.dialog.is_some() && ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
@@ -1970,7 +1970,7 @@ fn handle_shortcuts_impl(app: &mut EffectcraftApp, ctx: &egui::Context, tab_only
 }
 
 /// Draw the in-window menu bar (the engine's AE menu tree).
-pub fn menu_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui) {
+pub fn menu_bar(app: &mut EffectsApp, ui: &mut egui::Ui) {
     let ctx = ui.ctx().clone();
     let mut clicked: Option<(String, Value)> = None;
     let mut nav = crate::menu_keys::Nav::default();
@@ -1999,7 +1999,7 @@ pub fn menu_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui) {
 
 /// The entries of top-level menu `name` (the Effect menu is the Effect Controls panel's context
 /// menu); returns the chosen command and its params.
-pub(crate) fn menu_contents(app: &mut EffectcraftApp, ui: &mut egui::Ui, name: &str) -> Option<(String, Value)> {
+pub(crate) fn menu_contents(app: &mut EffectsApp, ui: &mut egui::Ui, name: &str) -> Option<(String, Value)> {
     let mut clicked = None;
     if let Some(MenuNode::Submenu { children, .. }) =
         redrob_effects_engine::menus::menu_bar().iter().find(|n| matches!(n, MenuNode::Submenu { label, .. } if label == name))
@@ -2011,7 +2011,7 @@ pub(crate) fn menu_contents(app: &mut EffectcraftApp, ui: &mut egui::Ui, name: &
 
 /// The entries `nodes` of a menu `depth` submenus deep, registered with `nav` for the keyboard.
 fn menu_nodes(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     nodes: &[MenuNode],
     clicked: &mut Option<(String, Value)>,
@@ -2083,7 +2083,7 @@ fn menu_nodes(
 
 /// The menu bar's submenu at `path` (`["File", "Interpret Footage"]`) in a panel's context menu,
 /// with the menu bar's labels, shortcuts and enabled state; a chosen entry goes to `clicked`.
-pub(crate) fn submenu_at(app: &mut EffectcraftApp, ui: &mut egui::Ui, path: &[&str], clicked: &mut Option<(String, Value)>) {
+pub(crate) fn submenu_at(app: &mut EffectsApp, ui: &mut egui::Ui, path: &[&str], clicked: &mut Option<(String, Value)>) {
     let mut nodes = redrob_effects_engine::menus::menu_bar();
     let mut found = None;
     for label in path {
@@ -2104,7 +2104,7 @@ pub(crate) fn submenu_at(app: &mut EffectcraftApp, ui: &mut egui::Ui, path: &[&s
 }
 
 /// The menu bar's entry for `command` in a panel's context menu (see [`submenu_at`]).
-pub(crate) fn entry_for(app: &EffectcraftApp, ui: &mut egui::Ui, command: &str, clicked: &mut Option<(String, Value)>) {
+pub(crate) fn entry_for(app: &EffectsApp, ui: &mut egui::Ui, command: &str, clicked: &mut Option<(String, Value)>) {
     if let Some((_, e)) = redrob_effects_engine::menus::entries().into_iter().find(|(_, e)| e.command == command)
         && menu_entry(app, ui, e).clicked()
     {
@@ -2124,7 +2124,7 @@ fn gutter(checked: bool) -> egui::Atom<'static> {
     (if checked { "✔" } else { "" }).atom_size(egui::vec2(14.0, 14.0))
 }
 
-fn menu_entry(app: &EffectcraftApp, ui: &mut egui::Ui, e: &MenuEntry) -> egui::Response {
+fn menu_entry(app: &EffectsApp, ui: &mut egui::Ui, e: &MenuEntry) -> egui::Response {
     let (label, check, enabled) = (entry_label(app, e), gutter(entry_checked(app, e) == Some(true)), entry_enabled(app, e));
     // Edit ▸ Label's entries show the label's colour before its name.
     if e.command == "edit.label"
@@ -2210,7 +2210,7 @@ mod tests {
 
     #[test]
     fn full_screen_default_is_platform_specific() {
-        let app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let app = EffectsApp::new(redrob_effects_engine::Session::default());
         let full_screen = app.session.shortcuts().shortcut_of("view.fullScreen", &Value::Null);
         if cfg!(target_os = "macos") {
             assert_eq!(full_screen, Some("Ctrl+Cmd+F"));
@@ -2222,7 +2222,7 @@ mod tests {
 
     #[test]
     fn ui_and_menu_shortcuts_do_not_collide() {
-        let app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let app = EffectsApp::new(redrob_effects_engine::Session::default());
         let mut seen: std::collections::BTreeMap<(String, String), (String, String)> = Default::default();
         for (m, k, id, params) in bindings(&app.session) {
             let key = (format!("{m:?}"), format!("{k:?}"));
@@ -2239,12 +2239,12 @@ mod tests {
     /// it, as in After Effects.
     #[test]
     fn ctrl_backslash_maximizes_or_restores_the_window() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         let (m, k) = parse_shortcut("Cmd+\\").unwrap();
         assert!(m.command && k == egui::Key::Backslash, "{m:?} {k:?}");
         assert!(bindings(&app.session).iter().any(|b| (b.0, b.1) == (m, k) && b.2 == "window.maximizeApp"));
         let ctx = egui::Context::default();
-        let run = |app: &mut EffectcraftApp, maximized: bool| {
+        let run = |app: &mut EffectsApp, maximized: bool| {
             let input = egui::RawInput {
                 viewports: std::iter::once((egui::ViewportId::ROOT, egui::ViewportInfo { maximized: Some(maximized), ..Default::default() })).collect(),
                 ..Default::default()
@@ -2266,7 +2266,7 @@ mod tests {
     /// The default keys of the keyboard-only commands parse and reach them.
     #[test]
     fn keyboard_only_commands_are_bound() {
-        let app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let app = EffectsApp::new(redrob_effects_engine::Session::default());
         for (id, keys) in [
             ("time.workAreaStart", "Shift+Home"),
             ("time.workAreaEnd", "Shift+End"),
@@ -2304,8 +2304,8 @@ mod tests {
     #[test]
     fn timeline_keys_scroll_and_toggle_the_parent_column() {
         let ctx = egui::Context::default();
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
-        let run = |app: &mut EffectcraftApp, id: &str| invoke(app, &ctx, id, json!({})).unwrap();
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
+        let run = |app: &mut EffectsApp, id: &str| invoke(app, &ctx, id, json!({})).unwrap();
         // D and X leave a scroll for the Timeline to do when it is drawn.
         run(&mut app, "timeline.scrollToTime");
         assert_eq!(app.ui.timeline.scroll_to, Some(crate::state::ScrollTo::Time));
@@ -2322,10 +2322,10 @@ mod tests {
     #[test]
     fn viewer_keys_fit_and_step_through_open_comps() {
         let ctx = egui::Context::default();
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
-        let run = |app: &mut EffectcraftApp, id: &str| invoke(app, &ctx, id, json!({})).unwrap();
-        let new = |app: &mut EffectcraftApp, name: &str| app.session.execute("comp.new", json!({"name": name, "duration": 4})).unwrap()["comp"].as_u64();
-        let active = |app: &EffectcraftApp| app.session.state.active_comp.map(|c| c.0);
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
+        let run = |app: &mut EffectsApp, id: &str| invoke(app, &ctx, id, json!({})).unwrap();
+        let new = |app: &mut EffectsApp, name: &str| app.session.execute("comp.new", json!({"name": name, "duration": 4})).unwrap()["comp"].as_u64();
+        let active = |app: &EffectsApp| app.session.state.active_comp.map(|c| c.0);
         // With one composition open there is nothing to step to.
         let a = new(&mut app, "A");
         run(&mut app, "view.nextItem");
@@ -2348,8 +2348,8 @@ mod tests {
     #[test]
     fn panel_keys_switch_cycle_and_close() {
         let ctx = egui::Context::default();
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
-        let run = |app: &mut EffectcraftApp, id: &str| invoke(app, &ctx, id, json!({})).unwrap();
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
+        let run = |app: &mut EffectsApp, id: &str| invoke(app, &ctx, id, json!({})).unwrap();
         for name in ["A", "B"] {
             app.session.execute("comp.new", json!({"name": name, "duration": 4})).unwrap();
         }
@@ -2378,7 +2378,7 @@ mod tests {
     #[test]
     fn c_cycles_the_camera_tools() {
         let ctx = egui::Context::default();
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.ui.tool = Tool::Selection;
         let mut seen = vec![];
         for _ in 0..4 {
@@ -2390,8 +2390,8 @@ mod tests {
 
     #[test]
     fn dispatch_uses_the_active_custom_preset() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
-        let find = |app: &EffectcraftApp, id: &str| bindings(&app.session).into_iter().filter(|b| b.2 == id).map(|b| (b.0, b.1)).collect::<Vec<_>>();
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
+        let find = |app: &EffectsApp, id: &str| bindings(&app.session).into_iter().filter(|b| b.2 == id).map(|b| (b.0, b.1)).collect::<Vec<_>>();
         let (m, k) = parse_shortcut("Cmd+Alt+Shift+Y").unwrap();
         assert!(find(&app, "layer.newNull").contains(&(m, k)));
         // A UI command rebound in a custom preset.
@@ -2411,7 +2411,7 @@ mod tests {
 
     #[test]
     fn renamed_label_shows_in_the_label_menu() {
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.set_pref("labels.1.name", json!("Sunflower")).unwrap();
         let labels: Vec<String> = menu_items(&app).into_iter().filter(|i| i.id == "edit.label").map(|i| i.label).collect();
         assert!(labels.contains(&"Sunflower".to_string()), "{labels:?}");
@@ -2425,7 +2425,7 @@ mod tests {
     fn save_dialogs_offer_the_file_extension() {
         use std::cell::RefCell;
         use std::rc::Rc;
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.session.execute("comp.new", json!({"name": "A", "width": 64, "height": 36, "frameRate": 30, "duration": 1})).unwrap();
         let ctx = egui::Context::default();
         let asked: Rc<RefCell<Vec<String>>> = Rc::default();
@@ -2465,7 +2465,7 @@ mod tests {
     #[test]
     fn file_dialogs_can_answer_on_a_later_frame() {
         use std::sync::{Arc, Mutex};
-        let mut app = EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = EffectsApp::new(redrob_effects_engine::Session::default());
         app.session.execute("comp.new", json!({"name": "A", "width": 64, "height": 36, "frameRate": 30, "duration": 1})).unwrap();
         let ctx = egui::Context::default();
         app.hooks.pick_save = Some(Box::new(|_: &str| panic!("the blocking dialog is not used")));

@@ -1,5 +1,5 @@
 //! Uncompressed QuickTime video (`raw `): 8-bit RGB ("Millions of Colors", depth 24) or ARGB
-//! ("Millions of Colors+", depth 32), one frame per sample, muxed by FilmCraft's QuickTime writer
+//! ("Millions of Colors+", depth 32), one frame per sample, muxed by Redrob Film's QuickTime writer
 //! next to PCM audio like ProRes.
 //!
 //! Layout from the QuickTime File Format specification (Apple, "Video Sample Description" and

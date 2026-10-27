@@ -6,19 +6,19 @@ use std::sync::mpsc::{Sender, channel};
 
 use egui_kittest::Harness;
 use redrob_film_engine::Session;
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
 }
 
 impl Driver {
     fn new(session: Session, save_to: std::path::PathBuf) -> Self {
         let (tx, rx) = channel();
-        let mut app = FilmcraftApp::new(session).with_control(rx);
+        let mut app = FilmApp::new(session).with_control(rx);
         app.hooks.pick_save_as = Some(Box::new(move |_, exts, suggested| {
             assert!(suggested.ends_with(&format!(".{}", exts[0])), "{suggested}");
             Some(save_to.join(suggested).to_string_lossy().into_owned())

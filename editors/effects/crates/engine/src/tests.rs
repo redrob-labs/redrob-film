@@ -40,7 +40,7 @@ fn demo_layer_cache_is_transparent() {
     }
     assert!(s.layer_cache.stats().hits > 0);
     // Edit the title's glow through the command layer, then scrub again.
-    let title = s.project.comp(cid).unwrap().layers.iter().find(|l| l.name == "EFFECTCRAFT").map(|l| l.id.0).unwrap();
+    let title = s.project.comp(cid).unwrap().layers.iter().find(|l| l.name == "REDROB EFFECTS").map(|l| l.id.0).unwrap();
     s.execute("prop.set", json!({"layer": title, "path": "effects/#1/radius", "value": 5.0})).unwrap();
     for t in [3.0, 0.5] {
         check(&s, t);

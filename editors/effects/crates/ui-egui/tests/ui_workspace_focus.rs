@@ -6,7 +6,7 @@ use egui::{Event, Id, Key, Modifiers, vec2};
 use egui_kittest::Harness;
 use redrob_effects_engine::Session;
 use redrob_effects_engine::config::{ConfigStore, DirConfig, MemoryConfig};
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::dock::{DockNode, PanelKind, SplitSize};
 use redrob_effects_ui_egui::state::Tool;
 use serde_json::json;
@@ -14,7 +14,7 @@ use serde_json::json;
 #[test]
 fn named_and_current_workspaces_survive_frontend_restart() {
     let store = Arc::new(MemoryConfig::default());
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = EffectsApp::new(Session { config: Some(store.clone()), ..Default::default() });
     app.ui.dock = DockNode::Split {
         vertical: false,
         size: SplitSize::FixedA(345.0),
@@ -31,7 +31,7 @@ fn named_and_current_workspaces_survive_frontend_restart() {
     let current = app.ui.dock.clone();
     eframe::App::on_exit(&mut app);
     assert!(store.read("workspaces.json").is_some(), "workspace data must reach the configured store");
-    let mut restarted = EffectcraftApp::new(Session { config: Some(store), ..Default::default() });
+    let mut restarted = EffectsApp::new(Session { config: Some(store), ..Default::default() });
     assert_eq!(restarted.ui.workspace, "Restart layout");
     assert_eq!(restarted.ui.dock, current, "restore current unsaved divider changes independently of the named snapshot");
     assert_eq!(restarted.ui.saved_workspaces.get("Restart layout"), Some(&saved));
@@ -41,7 +41,7 @@ fn named_and_current_workspaces_survive_frontend_restart() {
     assert_eq!(restarted.ui.dock, saved, "the named snapshot is separately available after restart");
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
+fn key(h: &mut Harness<'_, EffectsApp>, key: Key, modifiers: Modifiers) {
     h.event(Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers });
     h.step();
     h.event(Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers });
@@ -52,7 +52,7 @@ fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
 fn scratch_dir(label: &str) -> std::path::PathBuf {
     static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let id = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let path = std::env::temp_dir().join(format!("effectcraft-workspace-{label}-{}-{id}", std::process::id()));
+    let path = std::env::temp_dir().join(format!("redrob-effects-workspace-{label}-{}-{id}", std::process::id()));
     std::fs::create_dir(&path).unwrap();
     path
 }
@@ -80,7 +80,7 @@ fn unreadable_native_workspace_is_preserved_after_later_layout_changes() {
         let dir = scratch_dir("preserve");
         let path = dir.join("workspaces.json");
         std::fs::write(&path, &bytes).unwrap();
-        let mut app = EffectcraftApp::new(Session { config: Some(Arc::new(DirConfig::new(&dir))), ..Default::default() });
+        let mut app = EffectsApp::new(Session { config: Some(Arc::new(DirConfig::new(&dir))), ..Default::default() });
         let ctx = egui::Context::default();
         assert!(redrob_effects_ui_egui::control::inspect(&app, &ctx)["workspaceStorageError"].is_string());
         app.set_workspace("Minimal");
@@ -102,14 +102,14 @@ fn legacy_named_workspaces_migrate_once_and_survive_actual_app_restart() {
     let store = Arc::new(MemoryConfig::default());
     let saved = redrob_effects_ui_egui::dock::workspace("Minimal");
     store.write("workspaces.json", &json!({"workspaces":{"Legacy":saved},"floating":{}}).to_string()).unwrap();
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = EffectsApp::new(Session { config: Some(store.clone()), ..Default::default() });
     assert_eq!(app.ui.saved_workspaces.get("Legacy"), Some(&saved));
     app.set_workspace("Legacy");
     let ctx = egui::Context::default();
     redrob_effects_ui_egui::menus::invoke(&mut app, &ctx, "window.saveWorkspaceAs", json!({"name":"Migrated"})).unwrap();
     let text = store.read("workspaces.json").unwrap();
     assert_eq!(serde_json::from_str::<serde_json::Value>(&text).unwrap()["version"], 1);
-    let restarted = EffectcraftApp::new(Session { config: Some(store), ..Default::default() });
+    let restarted = EffectsApp::new(Session { config: Some(store), ..Default::default() });
     assert_eq!(restarted.ui.saved_workspaces.get("Legacy"), Some(&saved));
     assert_eq!(restarted.ui.saved_workspaces.get("Migrated"), Some(&saved));
     assert_eq!(restarted.ui.workspace, "Migrated");
@@ -121,7 +121,7 @@ fn tab_and_shift_tab_traverse_toolbar_and_space_activates_only_focused_tool() {
     session.execute("comp.new", json!({"width": 160, "height": 90, "duration": 1})).unwrap();
     session.execute("layer.newSolid", json!({"name": "Keep unchanged", "color": "#ff0000"})).unwrap();
     let project = session.project.clone();
-    let mut app = EffectcraftApp::new(session);
+    let mut app = EffectsApp::new(session);
     app.ui.start_screen = false;
     app.ui.show_menu_bar = false;
     let mut h = Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(move |_| app);
@@ -162,7 +162,7 @@ fn tab_traversal_activates_an_inactive_dock_tab_without_editing_the_project() {
     session.execute("comp.new", json!({"width": 160, "height": 90, "duration": 1})).unwrap();
     session.execute("layer.newSolid", json!({"name": "Keep unchanged", "color": "#ff0000"})).unwrap();
     let project = session.project.clone();
-    let mut app = EffectcraftApp::new(session);
+    let mut app = EffectsApp::new(session);
     app.ui.start_screen = false;
     app.ui.show_menu_bar = false;
     // Leave the inactive, layer-named tab visible instead of behind the overflow control.
@@ -213,14 +213,14 @@ fn tab_traversal_activates_an_inactive_dock_tab_without_editing_the_project() {
 }
 
 struct ControlDriver {
-    h: Harness<'static, EffectcraftApp>,
+    h: Harness<'static, EffectsApp>,
     tx: std::sync::mpsc::Sender<redrob_effects_ui_egui::ControlRequest>,
 }
 
 impl ControlDriver {
     fn new() -> Self {
         let (tx, rx) = std::sync::mpsc::channel();
-        let mut app = EffectcraftApp::new(Session::default()).with_control(rx);
+        let mut app = EffectsApp::new(Session::default()).with_control(rx);
         app.ui.start_screen = false;
         app.ui.show_menu_bar = false;
         let mut driver = Self { h: Harness::builder().with_size(vec2(1200.0, 760.0)).build_eframe(move |_| app), tx };
@@ -317,7 +317,7 @@ fn control_root_divider_drag_after_toolbar_and_dock_tab_keyboard_activation() {
 fn unowned_tab_keeps_the_timeline_mini_flowchart_shortcut() {
     let mut session = Session::default();
     session.execute("comp.new", json!({"width":160,"height":90,"duration":1})).unwrap();
-    let mut app = EffectcraftApp::new(session);
+    let mut app = EffectsApp::new(session);
     app.ui.focused = PanelKind::Timeline;
     let ctx = egui::Context::default();
     let raw = egui::RawInput {
@@ -340,7 +340,7 @@ fn unowned_tab_keeps_the_timeline_mini_flowchart_shortcut() {
 #[test]
 fn deleting_the_current_workspace_saves_immediately() {
     let store = Arc::new(MemoryConfig::default());
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = EffectsApp::new(Session { config: Some(store.clone()), ..Default::default() });
     let ctx = egui::Context::default();
     redrob_effects_ui_egui::menus::invoke(&mut app, &ctx, "window.saveWorkspaceAs", json!({"name": "Gone"})).unwrap();
     redrob_effects_ui_egui::menus::invoke(&mut app, &ctx, "window.editWorkspaces", json!({"name": "Gone", "delete": true})).unwrap();
@@ -379,9 +379,9 @@ impl ConfigStore for FullDisk {
 fn failed_workspace_save_is_reported_and_retryable() {
     let store = Arc::new(FullDisk::default());
     store.full.store(true, std::sync::atomic::Ordering::Relaxed);
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = EffectsApp::new(Session { config: Some(store.clone()), ..Default::default() });
     let ctx = egui::Context::default();
-    let invoke = |app: &mut EffectcraftApp, id: &str, params| redrob_effects_ui_egui::menus::invoke(app, &ctx, id, params);
+    let invoke = |app: &mut EffectsApp, id: &str, params| redrob_effects_ui_egui::menus::invoke(app, &ctx, id, params);
     let error = invoke(&mut app, "window.saveWorkspaceAs", json!({"name": "caption craft"})).unwrap_err();
     assert!(error.contains("synthetic full disk") && error.contains("may be lost after a restart"), "{error}");
     assert_eq!(app.ui.status, error);
@@ -401,14 +401,14 @@ fn failed_workspace_save_is_reported_and_retryable() {
     invoke(&mut app, "window.workspace", json!({"name": "Captions"})).unwrap();
     invoke(&mut app, "window.saveWorkspace", json!({})).unwrap();
     assert!(redrob_effects_ui_egui::control::inspect(&app, &ctx)["workspaceStorageError"].is_null());
-    let restarted = EffectcraftApp::new(Session { config: Some(store), ..Default::default() });
+    let restarted = EffectsApp::new(Session { config: Some(store), ..Default::default() });
     assert_eq!(restarted.saved_workspace_names(), ["Captions"]);
 }
 
 /// Without a settings folder there is nowhere to keep a workspace: saving says so.
 #[test]
 fn workspace_save_without_a_settings_folder_is_reported() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = EffectsApp::new(Session::default());
     let ctx = egui::Context::default();
     let error = redrob_effects_ui_egui::menus::invoke(&mut app, &ctx, "window.saveWorkspaceAs", json!({"name": "Mine"})).unwrap_err();
     assert!(error.contains("no settings folder"), "{error}");
@@ -420,10 +420,10 @@ fn workspace_save_without_a_settings_folder_is_reported() {
 #[test]
 fn saved_workspaces_reach_the_settings_folder_and_reload() {
     let dir = scratch_dir("disk");
-    let launch = || EffectcraftApp::new(Session { config: Some(Arc::new(DirConfig::new(&dir))), ..Default::default() });
+    let launch = || EffectsApp::new(Session { config: Some(Arc::new(DirConfig::new(&dir))), ..Default::default() });
     let mut app = launch();
     let ctx = egui::Context::default();
-    let invoke = |app: &mut EffectcraftApp, id: &str, params| redrob_effects_ui_egui::menus::invoke(app, &ctx, id, params).unwrap();
+    let invoke = |app: &mut EffectsApp, id: &str, params| redrob_effects_ui_egui::menus::invoke(app, &ctx, id, params).unwrap();
     invoke(&mut app, "window.workspace", json!({"name": "Minimal"}));
     invoke(&mut app, "window.saveWorkspaceAs", json!({"name": "caption craft"}));
     let saved = app.ui.dock.clone();
@@ -444,9 +444,9 @@ fn saved_workspaces_reach_the_settings_folder_and_reload() {
 #[test]
 fn an_earlier_queued_frontend_failure_is_not_a_later_commands_result() {
     let store = Arc::new(MemoryConfig::default());
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = EffectsApp::new(Session { config: Some(store.clone()), ..Default::default() });
     let ctx = egui::Context::default();
-    let invoke = |app: &mut EffectcraftApp, id: &str, params| redrob_effects_ui_egui::menus::invoke(app, &ctx, id, params);
+    let invoke = |app: &mut EffectsApp, id: &str, params| redrob_effects_ui_egui::menus::invoke(app, &ctx, id, params);
     // An earlier failure, then a success.
     app.session.execute("window.workspace", json!({"name": "missing-old"})).unwrap();
     invoke(&mut app, "window.workspace", json!({"name": "Minimal"})).unwrap();
@@ -472,9 +472,9 @@ fn an_earlier_queued_frontend_failure_is_not_a_later_commands_result() {
 #[test]
 fn failed_save_or_delete_of_a_saved_workspace_keeps_the_file() {
     let store = Arc::new(FullDisk::default());
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = EffectsApp::new(Session { config: Some(store.clone()), ..Default::default() });
     let ctx = egui::Context::default();
-    let invoke = |app: &mut EffectcraftApp, id: &str, params| redrob_effects_ui_egui::menus::invoke(app, &ctx, id, params);
+    let invoke = |app: &mut EffectsApp, id: &str, params| redrob_effects_ui_egui::menus::invoke(app, &ctx, id, params);
     invoke(&mut app, "window.workspace", json!({"name": "Minimal"})).unwrap();
     invoke(&mut app, "window.saveWorkspaceAs", json!({"name": "Kept"})).unwrap();
     let saved = app.ui.dock.clone();
@@ -486,7 +486,7 @@ fn failed_save_or_delete_of_a_saved_workspace_keeps_the_file() {
     assert!(invoke(&mut app, "window.editWorkspaces", json!({"name": "Kept", "delete": true})).is_err());
     assert!(app.saved_workspace_names().is_empty(), "the delete applies for this session");
     assert_eq!(store.read("workspaces.json").unwrap(), before);
-    let mut restarted = EffectcraftApp::new(Session { config: Some(store), ..Default::default() });
+    let mut restarted = EffectsApp::new(Session { config: Some(store), ..Default::default() });
     assert_eq!(restarted.saved_workspace_names(), ["Kept"]);
     restarted.set_workspace("Kept");
     assert_eq!(restarted.ui.dock, saved);

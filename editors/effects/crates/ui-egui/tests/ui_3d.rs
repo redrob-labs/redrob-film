@@ -5,19 +5,19 @@
 use egui_kittest::Harness;
 use redrob_effects_engine::Session;
 use redrob_effects_engine::render::three_d::View3D;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use serde_json::json;
 
-fn app() -> EffectcraftApp {
+fn app() -> EffectsApp {
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
     s.execute("comp.open", json!({"comp": "3D Showcase"})).unwrap();
     s.execute("time.set", json!({"time": 5.0})).unwrap();
-    EffectcraftApp::new(s)
+    EffectsApp::new(s)
 }
 
 /// Step the UI until background frame renders have landed.
-fn settle(h: &mut Harness<'_, EffectcraftApp>) {
+fn settle(h: &mut Harness<'_, EffectsApp>) {
     for _ in 0..600 {
         h.step();
         if h.state().frames.inflight() == 0 && h.state().frames.last_ms.lock().map(|v| *v > 0.0).unwrap_or(false) {
@@ -49,7 +49,7 @@ fn viewer_registers_3d_controls() {
 }
 
 /// Click the centre of the automation element `id`.
-fn click_id(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click_id(h: &mut Harness<'_, EffectsApp>, id: &str) {
     let [x, y, w, hh] = h.state().auto.find(id).unwrap_or_else(|| panic!("{id} is registered")).rect;
     let p = egui::pos2(x + w / 2.0, y + hh / 2.0);
     h.input_mut().events.push(egui::Event::PointerMoved(p));
@@ -66,7 +66,7 @@ fn renderer_menu_shows_and_switches_the_comp_renderer() {
     let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| app());
     h.state_mut().session.execute("comp.settings", json!({"renderer": "classic3D"})).unwrap();
     h.run_steps(3);
-    let label = |h: &Harness<'_, EffectcraftApp>| h.state().auto.find("viewer.renderer3d").map(|e| e.label.clone());
+    let label = |h: &Harness<'_, EffectsApp>| h.state().auto.find("viewer.renderer3d").map(|e| e.label.clone());
     assert_eq!(label(&h).as_deref(), Some("Classic 3D"));
     click_id(&mut h, "viewer.renderer3d");
     click_id(&mut h, "viewer.renderer3dItem.1");
@@ -207,9 +207,9 @@ fn layout_views_draw_the_camera_and_follow_its_position() {
     s.execute("layer.setSwitch", json!({"layer": solid, "switch": "threeD", "value": true})).unwrap();
     let cam = s.execute("layer.newCamera", json!({"position": [320, 180, -300], "poi": [320, 180, 0]})).unwrap()["layer"].as_u64().unwrap();
     s.execute("view.layout", json!({"views": 4})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     settle(&mut h);
-    let centre = |h: &Harness<'_, EffectcraftApp>, view: &str| {
+    let centre = |h: &Harness<'_, EffectsApp>, view: &str| {
         let id = format!("viewer.view.{view}.camera.{cam}");
         let [x, y, w, hh] = h.state().auto.find(&id).unwrap_or_else(|| panic!("{id} is registered")).rect;
         (x + w / 2.0, y + hh / 2.0)
@@ -226,14 +226,14 @@ fn layout_views_draw_the_camera_and_follow_its_position() {
 }
 
 /// A 4-view layout over a comp with a 3D solid and a camera.
-fn four_views() -> Harness<'static, EffectcraftApp> {
+fn four_views() -> Harness<'static, EffectsApp> {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "C", "width": 640, "height": 360, "duration": 2})).unwrap();
     let solid = s.execute("layer.newSolid", json!({"color": "#ff0000", "width": 200, "height": 200})).unwrap()["layer"].as_u64().unwrap();
     s.execute("layer.setSwitch", json!({"layer": solid, "switch": "threeD", "value": true})).unwrap();
     s.execute("layer.newCamera", json!({"position": [320, 180, -300], "poi": [320, 180, 0]})).unwrap();
     s.execute("view.layout", json!({"views": 4})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectsApp::new(s));
     settle(&mut h);
     h
 }
@@ -243,8 +243,8 @@ fn four_views() -> Harness<'static, EffectcraftApp> {
 #[test]
 fn each_layout_pane_chooses_its_own_view() {
     let mut h = four_views();
-    let present = |h: &Harness<'_, EffectcraftApp>, view: &str| h.state().auto.find(&format!("viewer.view.{view}")).is_some();
-    let has_camera = |h: &Harness<'_, EffectcraftApp>, view: &str| h.state().auto.query(&format!("viewer.view.{view}.camera.")).len() == 1;
+    let present = |h: &Harness<'_, EffectsApp>, view: &str| h.state().auto.find(&format!("viewer.view.{view}")).is_some();
+    let has_camera = |h: &Harness<'_, EffectsApp>, view: &str| h.state().auto.query(&format!("viewer.view.{view}.camera.")).len() == 1;
     for p in 1..=3 {
         assert!(h.state().auto.find(&format!("viewer.view.{p}.type")).is_some(), "pane {p} has a selector");
     }

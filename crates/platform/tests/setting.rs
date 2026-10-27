@@ -17,7 +17,7 @@ fn off_uses_the_software_decoder() {
 
     redrob_film_codecs::hw::set_hardware_decoding(false);
     let d = redrob_film_codecs::make_video_decoder(&s.entry).unwrap();
-    assert_eq!(d.name(), "FilmCraft HEVC");
+    assert_eq!(d.name(), "Redrob Film HEVC");
     let bytes: std::sync::Arc<[u8]> = std::fs::read(&path).unwrap().into();
     let (g0, h0) = (redrob_film_codecs::gop_stats(), redrob_film_codecs::hw::hw_stats());
     let src = redrob_film_codecs::open_bytes("hevc_main.mp4", bytes.clone()).unwrap();
@@ -33,7 +33,7 @@ fn off_uses_the_software_decoder() {
     let hw = redrob_film_platform::hardware_decoder_for(&s.entry);
     if !hw {
         eprintln!("SKIPPED (Auto half): no hardware decoder ({available:?})");
-        assert_eq!(d.name(), "FilmCraft HEVC");
+        assert_eq!(d.name(), "Redrob Film HEVC");
         return;
     }
     // Linux has two backends (NVDEC in front of VA-API): `register` reports the front one, but

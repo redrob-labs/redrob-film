@@ -14,7 +14,7 @@ use crate::noise;
 
 const PRELUDE: &str = include_str!("prelude.js");
 /// Message of the error thrown when a request isn't answered yet (never shown to users).
-const PENDING: &str = "\u{1}effectcraft: pending host request";
+const PENDING: &str = "\u{1}redrob-effects: pending host request";
 const MAX_SCRIPTS: usize = 4096;
 /// Loop iterations one script run may make (per function call): a run re-executes once per
 /// property it reads, so this bounds the time of every pass.

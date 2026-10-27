@@ -23,7 +23,7 @@ fn layer(s: &Session, id: u64) -> redrob_effects_project::Layer {
 }
 
 fn tmp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("effectcraft-menu-tests-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("redrob-effects-menu-tests-{}", std::process::id()));
     std::fs::create_dir_all(&d).unwrap();
     d.join(name).to_string_lossy().to_string()
 }

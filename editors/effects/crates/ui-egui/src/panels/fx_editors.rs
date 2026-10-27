@@ -30,7 +30,7 @@ use serde_json::json;
 use super::effect_controls::gesture_key;
 use super::fx_widgets as fw;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 type Actions = Vec<(String, serde_json::Value)>;
 
@@ -58,7 +58,7 @@ fn set_str(actions: &mut Actions, layer: &Layer, g: &PropGroup, id: &str, v: Str
 }
 
 /// Register automation ids for a curve's control points (`<prefix>.point.<i>`).
-fn register_points(app: &mut EffectcraftApp, prefix: &str, gr: Rect, pts: &[[f32; 2]]) {
+fn register_points(app: &mut EffectsApp, prefix: &str, gr: Rect, pts: &[[f32; 2]]) {
     for (i, q) in pts.iter().enumerate() {
         let s = pos2(gr.min.x + q[0] * gr.width(), gr.max.y - q[1] * gr.height());
         app.auto.add(&format!("{prefix}.point.{i}"), Rect::from_center_size(s, vec2(9.0, 9.0)), &format!("Point {}", i + 1));
@@ -67,7 +67,7 @@ fn register_points(app: &mut EffectcraftApp, prefix: &str, gr: Rect, pts: &[[f32
 
 /// Small coloured tabs (`names[i]`, swatch `cols[i]`); returns the clicked one.
 fn tabs(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     x0: f32,
@@ -111,7 +111,7 @@ fn tabs(
     out
 }
 
-fn reset_link(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, r: Rect, id: &str) -> bool {
+fn reset_link(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, r: Rect, id: &str) -> bool {
     let t = app.tokens;
     let resp = ui.interact(r, egui::Id::new(id), Sense::click());
     p.text(r.center(), Align2::CENTER_CENTER, tr("Reset"), Tokens::ui(11.5), if resp.hovered() { t.hot_text } else { t.text_dim });
@@ -140,7 +140,7 @@ pub fn inline_height(effect: &str, path: &str, width: f32) -> f32 {
 /// Draw the editor of group `g` (at `path`) in `r`. `root`: the effect's group.
 #[allow(clippy::too_many_arguments)]
 pub fn inline_editor(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -164,7 +164,7 @@ const RGB_CURVES: [(&str, &str); 4] = [("master", "Master"), ("red", "Red"), ("g
 
 #[allow(clippy::too_many_arguments)]
 fn rgb_curves(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -271,7 +271,7 @@ fn hue_color(h: f32) -> Color32 {
 
 #[allow(clippy::too_many_arguments)]
 fn huesat_curves(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -443,7 +443,7 @@ fn wheel_point(c: Pos2, radius: f32, phase: f32) -> Pos2 {
 
 #[allow(clippy::too_many_arguments)]
 fn colorama_wheel(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -629,7 +629,7 @@ pub fn header_height(effect: &str, g: &PropGroup, width: f32) -> f32 {
 
 #[allow(clippy::too_many_arguments)]
 pub fn header_editor(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -658,7 +658,7 @@ pub fn join_map(m: &[fw::CurvePoints; 3]) -> String {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn glow_map(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, ectx: &EvalCtx, r: Rect, actions: &mut Actions) {
+fn glow_map(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, g: &PropGroup, ectx: &EvalCtx, r: Rect, actions: &mut Actions) {
     let t = app.tokens;
     let euid = g.uid;
     let prefix = format!("effectControls.effect.{euid}.glow");
@@ -771,7 +771,7 @@ pub fn add_pair(v: &[(f64, f64)]) -> (f64, f64) {
 
 #[allow(clippy::too_many_arguments)]
 fn reshape_buttons(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -836,7 +836,7 @@ fn extractor_layer(vals: &[String; 4]) -> Option<&str> {
 /// undo step, as After Effects' EXtractoR dialog does.
 #[allow(clippy::too_many_arguments)]
 fn extractor_layers(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -888,7 +888,7 @@ fn extractor_layers(
 /// An EXtractoR channel popup (in place of a text field): the layer's own R, G, B and A, then
 /// every channel of its OpenEXR footage, and (none).
 pub fn channel_popup(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     layer: &Layer,
     prop: &redrob_effects_engine::project::Property,
@@ -949,7 +949,7 @@ pub fn nearest_fraction(pts: &[[f64; 2]], closed: bool, q: [f64; 2]) -> f64 {
 /// handles; dragging a handle slides it along its outline (one undo step per drag).
 #[allow(clippy::too_many_arguments)]
 pub fn reshape_overlay(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     painter: &egui::Painter,
     map: &super::viewer::ViewerMap,
@@ -1050,7 +1050,7 @@ fn format_mesh(offs: &[(f64, f64)]) -> String {
 /// space to comp.
 #[allow(clippy::too_many_arguments)]
 pub fn mesh_warp_overlay(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     painter: &egui::Painter,
     map: &super::viewer::ViewerMap,

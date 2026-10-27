@@ -3,17 +3,17 @@
 use egui::vec2;
 use egui_kittest::Harness;
 use redrob_effects_engine::Session;
-use redrob_effects_ui_egui::EffectcraftApp;
+use redrob_effects_ui_egui::EffectsApp;
 use redrob_effects_ui_egui::dock::{PanelKind, PanelWindow};
 use serde_json::json;
 
-fn invoke(app: &mut EffectcraftApp, ctx: &egui::Context, params: serde_json::Value) -> Result<serde_json::Value, String> {
+fn invoke(app: &mut EffectsApp, ctx: &egui::Context, params: serde_json::Value) -> Result<serde_json::Value, String> {
     redrob_effects_ui_egui::menus::invoke(app, ctx, "window.panelWindow", params)
 }
 
 #[test]
 fn panel_window_command_moves_a_docked_panel_into_its_own_window_and_back() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = EffectsApp::new(Session::default());
     let ctx = egui::Context::default();
     assert!(app.ui.dock.contains(PanelKind::Project));
     assert_eq!(invoke(&mut app, &ctx, json!({"panel": "Project", "window": true})).unwrap(), json!({"window": true}));
@@ -43,7 +43,7 @@ fn panel_window_command_moves_a_docked_panel_into_its_own_window_and_back() {
 
 #[test]
 fn a_panel_in_its_own_window_leaves_the_main_window() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = EffectsApp::new(Session::default());
     app.ui.start_screen = false;
     let mut h = Harness::builder().with_size(vec2(1200.0, 760.0)).build_eframe(move |_| app);
     h.run_steps(3);
@@ -69,7 +69,7 @@ fn panel_windows_survive_restart_with_hostile_places_made_safe() {
     use redrob_effects_engine::config::MemoryConfig;
     use std::sync::Arc;
     let store = Arc::new(MemoryConfig::default());
-    let mut app = EffectcraftApp::new(Session { config: Some(store.clone()), ..Default::default() });
+    let mut app = EffectsApp::new(Session { config: Some(store.clone()), ..Default::default() });
     let ctx = egui::Context::default();
     invoke(&mut app, &ctx, json!({"panel": "Project", "window": true})).unwrap();
     let hostile = [1.0e9, -3.0e12, 1.0e9, 0.5];
@@ -79,7 +79,7 @@ fn panel_windows_survive_restart_with_hostile_places_made_safe() {
     // A window for a panel that doesn't float is dropped on load.
     app.ui.panel_windows.push(PanelWindow { panel: PanelKind::Timeline, rect: [10.0, 10.0, 300.0, 200.0] });
     eframe::App::on_exit(&mut app);
-    let restarted = EffectcraftApp::new(Session { config: Some(store), ..Default::default() });
+    let restarted = EffectsApp::new(Session { config: Some(store), ..Default::default() });
     assert_eq!(restarted.ui.panel_windows, vec![PanelWindow { panel: PanelKind::Project, rect: PanelWindow::sanitized(hostile) }]);
     let [x, y, w, h] = PanelWindow::sanitized(hostile);
     assert!(x <= 100_000.0 && y >= -100_000.0 && (160.0..=16_384.0).contains(&w) && (100.0..=16_384.0).contains(&h));

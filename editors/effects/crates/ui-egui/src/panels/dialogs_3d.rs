@@ -9,7 +9,7 @@ use redrob_effects_engine::render::three_d::camera::{PRESETS, angle_of_view, def
 use serde_json::{Value, json};
 
 use crate::theme::Tokens;
-use crate::{Dialog, EffectcraftApp};
+use crate::{Dialog, EffectsApp};
 
 #[derive(Clone, Debug, Default)]
 pub struct CameraDraft {
@@ -45,12 +45,12 @@ pub struct LightDraft {
 const KINDS: [LightKind; 4] = [LightKind::Parallel, LightKind::Spot, LightKind::Point, LightKind::Ambient];
 const FALLOFFS: [&str; 3] = ["None", "Smooth", "Inverse Square Clamped"];
 
-fn comp_w(app: &EffectcraftApp) -> f64 {
+fn comp_w(app: &EffectsApp) -> f64 {
     app.session.active_comp().map(|c| c.width as f64).unwrap_or(1920.0)
 }
 
 /// Open Camera Settings: for `layer` (existing) or a new camera.
-pub fn open_camera(app: &mut EffectcraftApp, layer: Option<u64>) -> Result<(), String> {
+pub fn open_camera(app: &mut EffectsApp, layer: Option<u64>) -> Result<(), String> {
     let comp = app.session.active_comp().ok_or("no composition is open")?.clone();
     let w = comp.width as f64;
     let t = app.session.time();
@@ -93,7 +93,7 @@ pub fn open_camera(app: &mut EffectcraftApp, layer: Option<u64>) -> Result<(), S
 }
 
 /// Open Light Settings: for `layer` (existing) or a new light.
-pub fn open_light(app: &mut EffectcraftApp, layer: Option<u64>) -> Result<(), String> {
+pub fn open_light(app: &mut EffectsApp, layer: Option<u64>) -> Result<(), String> {
     let comp = app.session.active_comp().ok_or("no composition is open")?.clone();
     let t = app.session.time();
     let d = match layer.and_then(|id| comp.layer(redrob_effects_engine::project::LayerId(id))) {
@@ -159,7 +159,7 @@ fn buttons(ui: &mut egui::Ui, t: &Tokens, ok: &mut bool, close: &mut bool) -> (e
     r
 }
 
-pub fn camera(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn camera(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens) {
     let w = comp_w(app);
     let mut d = app.dialog_state.camera.clone();
     let (mut ok, mut close) = (false, false);
@@ -252,7 +252,7 @@ pub fn camera(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
     }
 }
 
-pub fn light(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn light(app: &mut EffectsApp, ctx: &egui::Context, t: &Tokens) {
     let mut d = app.dialog_state.light.clone();
     let (mut ok, mut close) = (false, false);
     let mut rects = (egui::Rect::NOTHING, egui::Rect::NOTHING);
@@ -358,7 +358,7 @@ pub fn light(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
 
 /// Menu/shortcut routing: commands that open a 3D settings dialog when invoked without params.
 /// Returns true when a dialog was opened.
-pub fn route(app: &mut EffectcraftApp, id: &str, params: &Value) -> Result<bool, String> {
+pub fn route(app: &mut EffectsApp, id: &str, params: &Value) -> Result<bool, String> {
     if !params.as_object().is_none_or(|m| m.is_empty() || m.keys().all(|k| k == "layer")) {
         return Ok(false);
     }

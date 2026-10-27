@@ -1,4 +1,4 @@
-//! Import of documents written in code with FilmCraft's writers, and export → re-import.
+//! Import of documents written in code with Redrob Film's writers, and export → re-import.
 
 use std::collections::HashMap;
 use std::sync::Arc;

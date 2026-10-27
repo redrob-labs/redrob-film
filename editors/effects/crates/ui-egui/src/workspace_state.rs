@@ -390,7 +390,7 @@ mod tests {
         ui.saved_workspaces.insert("Two views".into(), DockNode::Tabs { panels: vec![PanelKind::Composition, PanelKind::Viewer(5)], active: 0 });
         ui.viewers.insert(2, Some(42));
         assert!(store.save(Some(&config), &ui).unwrap());
-        let mut app = crate::EffectcraftApp::new(redrob_effects_engine::Session::default());
+        let mut app = crate::EffectsApp::new(redrob_effects_engine::Session::default());
         WorkspaceStore::load(Some(&config), &mut app.ui);
         assert_eq!(app.ui.viewers.get(&2), Some(&None));
         assert_eq!(app.ui.viewers.get(&5), Some(&None));

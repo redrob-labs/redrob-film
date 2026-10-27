@@ -18,7 +18,7 @@ use crate::dock::PanelKind;
 use crate::i18n::tr;
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{EffectsApp, widgets};
 
 type Actions = Vec<(String, serde_json::Value)>;
 
@@ -51,7 +51,7 @@ fn decimals(v: f64) -> usize {
     if (v - v.round()).abs() < 1e-6 { 0 } else { 1 }
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut EffectsApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     let ctx = ui.ctx().clone();
@@ -172,7 +172,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     }
 }
 
-fn section_header(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, x0: f32, w: f32, y: f32, title: &str, auto: &str) {
+fn section_header(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, x0: f32, w: f32, y: f32, title: &str, auto: &str) {
     let t = app.tokens;
     p.text(pos2(x0, y + ROW_H / 2.0), Align2::LEFT_CENTER, title, Tokens::semibold(12.0), t.text);
     let r = Rect::from_min_size(pos2(x0, y), vec2(w, ROW_H));
@@ -191,7 +191,7 @@ fn triangle(p: &egui::Painter, c: egui::Pos2, left: bool, col: Color32) {
 
 /// One transform row: keyframe navigator or stopwatch, name, value fields.
 #[allow(clippy::too_many_arguments)]
-fn transform_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, pr: &Property, ectx: &EvalCtx, r: Rect, actions: &mut Actions) {
+fn transform_row(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, pr: &Property, ectx: &EvalCtx, r: Rect, actions: &mut Actions) {
     let t = app.tokens;
     let cy = r.center().y;
     let uid = pr.uid;
@@ -317,7 +317,7 @@ fn transform_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter,
 /// Text section; returns the y below it.
 #[allow(clippy::too_many_arguments)]
 fn text_section(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -357,7 +357,7 @@ fn text_section(
     y += 32.0;
     // Size / leading, tracking / stroke width.
     let col2 = x0 + w / 2.0;
-    let field = |app: &mut EffectcraftApp, ui: &mut egui::Ui, x: f32, y: f32, glyph: &str, key: &str, v: f64, range: (f64, f64), suffix: &str| {
+    let field = |app: &mut EffectsApp, ui: &mut egui::Ui, x: f32, y: f32, glyph: &str, key: &str, v: f64, range: (f64, f64), suffix: &str| {
         p.text(pos2(x, y + 9.0), Align2::LEFT_CENTER, glyph, Tokens::semibold(11.0), t.text_dim);
         let (r, nv, _) = widgets::hot_number_at(ui, pos2(x + 26.0, y), egui::Id::new(("props-text", key)), v, 0.5, range, decimals(v), suffix, &t);
         app.auto.add(&format!("properties.text.{key}"), r, key);
@@ -427,7 +427,7 @@ fn text_section(
 /// Paragraph section; returns the y below it.
 #[allow(clippy::too_many_arguments)]
 fn paragraph_section(
-    app: &mut EffectcraftApp,
+    app: &mut EffectsApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -495,7 +495,7 @@ fn paint_align_glyph(p: &egui::Painter, r: Rect, j: Justify, c: Color32) {
 
 /// "··· More" button that opens the full panel; returns the y below it.
 #[allow(clippy::too_many_arguments)]
-fn more_button(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, x0: f32, y: f32, id: &str, auto: &str, panel: PanelKind) -> f32 {
+fn more_button(app: &mut EffectsApp, ui: &mut egui::Ui, p: &egui::Painter, x0: f32, y: f32, id: &str, auto: &str, panel: PanelKind) -> f32 {
     let t = app.tokens;
     let r = Rect::from_min_size(pos2(x0, y), vec2(64.0, 22.0));
     let resp = ui.interact(r, egui::Id::new(id), Sense::click());
