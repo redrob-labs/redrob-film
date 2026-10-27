@@ -7,13 +7,13 @@ use std::sync::mpsc::{Sender, channel};
 
 use egui_kittest::Harness;
 use redrob_film_engine::Session;
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use redrob_film_ui_egui::panels::timeline::{max_scroll, timeline_extent};
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
 }
 
@@ -22,7 +22,7 @@ impl Driver {
         let mut session = Session::default();
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = FilmApp::new(session).with_control(rx);
         let harness = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000).build_eframe(move |_cc| app);
         let mut d = Driver { harness, tx };
         d.frames(4);
@@ -63,7 +63,7 @@ impl Driver {
 }
 
 impl Driver {
-    fn app(&mut self) -> &mut FilmcraftApp {
+    fn app(&mut self) -> &mut FilmApp {
         self.harness.state_mut()
     }
 

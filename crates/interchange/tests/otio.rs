@@ -203,7 +203,7 @@ fn project() -> (Project, redrob_film_project::ItemId) {
 }
 
 #[test]
-fn lossless_roundtrip_with_filmcraft_metadata() {
+fn lossless_roundtrip_with_redrob_film_metadata() {
     let (p, s) = project();
     let (imp, text, rep) = roundtrip(&p, s, Format::Otio, &ExportOptions::default());
     assert!(!rep.has_warnings(), "{rep}");

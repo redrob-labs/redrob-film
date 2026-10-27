@@ -17,7 +17,7 @@ use redrob_film_project::TrackId;
 use redrob_film_time::Tick;
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
 
@@ -41,7 +41,7 @@ fn draft_id() -> egui::Id {
 }
 
 /// The microphone button of an audio track header. Returns the requested action.
-pub fn header_button(app: &mut FilmcraftApp, ui: &mut egui::Ui, track: TrackId, r: Rect, visible: Rect, label: &str, t: &Tokens) -> Option<Action> {
+pub fn header_button(app: &mut FilmApp, ui: &mut egui::Ui, track: TrackId, r: Rect, visible: Rect, label: &str, t: &Tokens) -> Option<Action> {
     let recording_here = app.session.voiceover.rec.as_ref().is_some_and(|x| x.track == track);
     let resp = ui.interact(r.intersect(visible), egui::Id::new(("vo", track.0)), Sense::click());
     if resp.hovered() {
@@ -67,7 +67,7 @@ pub fn header_button(app: &mut FilmcraftApp, ui: &mut egui::Ui, track: TrackId, 
     act
 }
 
-pub fn run(app: &mut FilmcraftApp, ctx: &egui::Context, a: Action) {
+pub fn run(app: &mut FilmApp, ctx: &egui::Context, a: Action) {
     let r = match a {
         Action::Toggle(t) => toggle(app, Some(t.0)),
         Action::Settings => {
@@ -81,7 +81,7 @@ pub fn run(app: &mut FilmcraftApp, ctx: &egui::Context, a: Action) {
 }
 
 /// Start recording on `track` (None = the engine's choice), or stop the recording in progress.
-pub fn toggle(app: &mut FilmcraftApp, track: Option<u64>) -> Result<Value, String> {
+pub fn toggle(app: &mut FilmApp, track: Option<u64>) -> Result<Value, String> {
     if app.session.voiceover.recording() {
         if app.playback.playing {
             app.stop(); // runs `audio.voiceover.stop` (see `on_stop`)
@@ -104,7 +104,7 @@ pub fn toggle(app: &mut FilmcraftApp, track: Option<u64>) -> Result<Value, Strin
     Ok(r)
 }
 
-fn stop(app: &mut FilmcraftApp) -> Result<Value, String> {
+fn stop(app: &mut FilmApp) -> Result<Value, String> {
     let t = app.session.playhead();
     let r = app.session.execute("audio.voiceover.stop", json!({"time": t.0})).map_err(|e| e.to_string())?;
     app.ui.status = match r["path"].as_str() {
@@ -115,7 +115,7 @@ fn stop(app: &mut FilmcraftApp) -> Result<Value, String> {
 }
 
 /// Playback (and the audio clock) really started: capture from here.
-pub fn on_play(app: &mut FilmcraftApp) {
+pub fn on_play(app: &mut FilmApp) {
     if app.session.voiceover.recording() {
         let t = app.session.playhead();
         if let Err(e) = app.session.execute("audio.voiceover.sync", json!({"time": t.0})) {
@@ -125,7 +125,7 @@ pub fn on_play(app: &mut FilmcraftApp) {
 }
 
 /// Playback stopped: finish the take (unless it was paused: Space pauses a take, see [`space`]).
-pub fn on_stop(app: &mut FilmcraftApp) {
+pub fn on_stop(app: &mut FilmApp) {
     if app.session.voiceover.recording()
         && app.session.voiceover.paused().is_none()
         && let Err(e) = stop(app)
@@ -145,14 +145,14 @@ fn pending_id() -> egui::Id {
 
 /// Whether Space belongs to the voice-over (a take in progress, or `r` pressed during playback and
 /// waiting for Space to start recording).
-pub fn space_owned(app: &FilmcraftApp, ctx: &egui::Context) -> bool {
+pub fn space_owned(app: &FilmApp, ctx: &egui::Context) -> bool {
     app.session.voiceover.recording() || ctx.data(|d| d.get_temp::<bool>(pending_id())).unwrap_or(false)
 }
 
 /// Space (Kdenlive): while recording, pause the take (timeline playback stops, what was captured
 /// is kept); again to resume it from the pause point. After `r` during playback, Space starts the
 /// recording at the playhead.
-pub fn space(app: &mut FilmcraftApp, ctx: &egui::Context) -> Result<Value, String> {
+pub fn space(app: &mut FilmApp, ctx: &egui::Context) -> Result<Value, String> {
     if ctx.data(|d| d.get_temp::<bool>(pending_id())).unwrap_or(false) {
         ctx.data_mut(|d| d.remove::<bool>(pending_id()));
         return toggle(app, None);
@@ -174,7 +174,7 @@ pub fn space(app: &mut FilmcraftApp, ctx: &egui::Context) -> Result<Value, Strin
 
 /// The `r` key while a track is record-armed (Kdenlive): during playback it pauses playback and
 /// waits for Space to start recording there; otherwise it starts (or stops) recording.
-pub fn record_key(app: &mut FilmcraftApp, ctx: &egui::Context) -> Result<Value, String> {
+pub fn record_key(app: &mut FilmApp, ctx: &egui::Context) -> Result<Value, String> {
     if app.playback.playing && !app.session.voiceover.recording() {
         app.stop();
         ctx.data_mut(|d| d.insert_temp(pending_id(), true));
@@ -187,7 +187,7 @@ pub fn record_key(app: &mut FilmcraftApp, ctx: &egui::Context) -> Result<Value, 
 
 /// Monitoring mode follows the record-armed tracks; the input is read every frame while armed or
 /// recording, for the input meters and the live waveform.
-fn poll_input(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn poll_input(app: &mut FilmApp, ctx: &egui::Context) {
     let armed = app.session.active_sequence().is_some_and(|q| q.audio_tracks.iter().any(|t| t.mixer.record_arm));
     if armed != app.session.voiceover.monitoring() {
         let _ = app.session.execute("audio.voiceover.monitor", json!({"on": armed}));
@@ -239,7 +239,7 @@ pub fn mix_cues(buf: &mut [f32], ch: usize, cursor: i64, cues: &(Vec<i64>, Vec<f
 }
 
 /// UI commands `voiceover.recordToggle {track?}` and `voiceover.settingsDialog`.
-pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, p: &Value) -> Option<Result<Value, String>> {
+pub fn route(app: &mut FilmApp, ctx: &egui::Context, id: &str, p: &Value) -> Option<Result<Value, String>> {
     match id {
         "voiceover.recordToggle" => {
             let track = match p.get("track") {
@@ -262,7 +262,7 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, p: &Value) -
     }
 }
 
-fn open_settings(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn open_settings(app: &mut FilmApp, ctx: &egui::Context) {
     let v = app.session.execute("audio.voiceover.settings", json!({})).unwrap_or_default();
     let d = Draft {
         prefs: app.session.prefs.voice_over.clone(),
@@ -273,7 +273,7 @@ fn open_settings(app: &mut FilmcraftApp, ctx: &egui::Context) {
 }
 
 /// Every frame: the settings dialog, the countdown overlay, and the punch-out + post-roll stop.
-pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
+pub fn show(app: &mut FilmApp, ctx: &egui::Context) {
     settings_dialog(app, ctx);
     poll_input(app, ctx);
     let Some(rec) = app.session.voiceover.rec.clone() else { return };
@@ -316,7 +316,7 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
     ctx.request_repaint();
 }
 
-fn settings_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn settings_dialog(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(Some(mut d)) = ctx.data(|m| m.get_temp::<Option<Draft>>(draft_id())) else { return };
     let mut elems: Vec<(String, Rect, String)> = Vec::new();
     let mut close = false;

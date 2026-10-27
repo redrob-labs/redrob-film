@@ -1,6 +1,6 @@
 //! One project bundle for both editors: the `.rfilm` stays the Edit project, and the effects
 //! project is stored beside it as `<name>.rfilm.effects.json` (the effects project's own JSON,
-//! `Project::to_json` / `from_json`, crafts/effectcraft/crates/project/src/lib.rs L1532 / L1539).
+//! `Project::to_json` / `from_json`, editors/effects/crates/project/src/lib.rs L1532 / L1539).
 //!
 //! The Edit engine's open and save paths are not patched; the shell watches their effects on the
 //! session every frame ([`BundleTracker::observe`]):

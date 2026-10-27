@@ -21,7 +21,7 @@ use redrob_film_project::{FindOp, find::COLUMNS};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::dock::PanelKind;
 use crate::state::ClipDialogDraft;
 
@@ -51,7 +51,7 @@ impl Default for Extras {
 }
 
 /// The Welcome screen: recent projects, New / Open / Demo project, and whether it shows at startup.
-fn welcome_window(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn welcome_window(app: &mut FilmApp, ctx: &egui::Context) {
     if !app.ui.extras.welcome {
         return;
     }
@@ -115,7 +115,7 @@ fn welcome_window(app: &mut FilmcraftApp, ctx: &egui::Context) {
 }
 
 /// File ▸ Open Backup File…: the dated copies of the project with a Restore button each.
-fn backups_window(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn backups_window(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(list) = app.ui.extras.backups.clone() else { return };
     let mut restore: Option<String> = None;
     let mut open = true;
@@ -163,7 +163,7 @@ fn backups_window(app: &mut FilmcraftApp, ctx: &egui::Context) {
 
 /// Of the project items `project.delete` would remove, how many are used in a sequence, and how
 /// many timeline clips use them.
-pub fn delete_uses(app: &FilmcraftApp, params: &Value) -> (usize, usize) {
+pub fn delete_uses(app: &FilmApp, params: &Value) -> (usize, usize) {
     let pr = &app.session.project;
     let mut items: Vec<redrob_film_project::ItemId> = match params.get("items").and_then(Value::as_array) {
         Some(a) => a.iter().filter_map(Value::as_u64).map(redrob_film_project::ItemId).collect(),
@@ -192,7 +192,7 @@ pub fn delete_uses(app: &FilmcraftApp, params: &Value) -> (usize, usize) {
 }
 
 /// The warning before clearing clips the timeline uses (Kdenlive's "delete clip in use").
-fn confirm_delete_window(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn confirm_delete_window(app: &mut FilmApp, ctx: &egui::Context) {
     let Some((params, clips, uses)) = app.ui.extras.confirm_delete.clone() else { return };
     let mut answer: Option<bool> = None;
     egui::Window::new(tl!("Delete Clips In Use"))
@@ -284,18 +284,18 @@ fn dialog_command(id: &str) -> Option<&'static str> {
     })
 }
 
-fn enabled(app: &FilmcraftApp, id: &str) -> Result<(), String> {
+fn enabled(app: &FilmApp, id: &str) -> Result<(), String> {
     redrob_film_engine::find_command(id).map_or(Ok(()), |c| (c.enabled)(&app.session))
 }
 
 /// Checkmark state of this module's toggles in the menus.
-pub fn checked(app: &FilmcraftApp, id: &str) -> Option<bool> {
+pub fn checked(app: &FilmApp, id: &str) -> Option<bool> {
     (id == "view.dynamicAudioWaveforms").then_some(app.ui.extras.dynamic_waveforms)
 }
 
 /// Project Settings ▸ General ▸ Renderer is "Software Only": the Program monitor composites on
 /// the CPU.
-pub fn software_renderer(app: &FilmcraftApp) -> bool {
+pub fn software_renderer(app: &FilmApp) -> bool {
     // Settings ▸ Playback ▸ GPU processing off takes every project to the CPU renderer
     !app.session.prefs.playback.gpu_processing || app.session.project.settings.renderer == redrob_film_engine::project_tools::RENDERER_SOFTWARE
 }
@@ -303,7 +303,7 @@ pub fn software_renderer(app: &FilmcraftApp) -> bool {
 /// Hand a path to the operating system (open it in its default application, or reveal it in the
 /// file manager). The host hook does it on the desktop; otherwise the path is opened as a
 /// `file://` URL.
-pub fn open_path(app: &mut FilmcraftApp, ctx: &egui::Context, path: &str, reveal: bool) -> Result<(), String> {
+pub fn open_path(app: &mut FilmApp, ctx: &egui::Context, path: &str, reveal: bool) -> Result<(), String> {
     app.ui.extras.opened.push(path.to_string());
     if app.ui.extras.opened.len() > 50 {
         app.ui.extras.opened.remove(0);
@@ -319,12 +319,12 @@ pub fn open_path(app: &mut FilmcraftApp, ctx: &egui::Context, path: &str, reveal
 }
 
 /// Where Reveal Log Files points: `<data dir>/Logs` (the temp folder without a data directory).
-pub fn logs_dir(app: &FilmcraftApp) -> std::path::PathBuf {
+pub fn logs_dir(app: &FilmApp) -> std::path::PathBuf {
     app.session.prefs_path.as_ref().and_then(|p| p.parent()).map(|d| d.join("Logs")).unwrap_or_else(|| redrob_film_engine::temp_dir().join("Redrob Film Logs"))
 }
 
 /// Write this session's log (system report and the command journal) into [`logs_dir`].
-fn write_session_log(app: &FilmcraftApp) -> Result<std::path::PathBuf, String> {
+fn write_session_log(app: &FilmApp) -> Result<std::path::PathBuf, String> {
     let dir = logs_dir(app);
     std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     let path = dir.join(format!("session-{}.log", std::process::id()));
@@ -337,7 +337,7 @@ fn write_session_log(app: &FilmcraftApp) -> Result<std::path::PathBuf, String> {
 }
 
 /// The engine's report plus the GPU adapter (wgpu) when the GPU compositor is on.
-pub fn system_report(app: &FilmcraftApp) -> Value {
+pub fn system_report(app: &FilmApp) -> Value {
     let mut r = redrob_film_engine::project_tools::system_report();
     let gpu = app.gpu.as_ref().map(|g| {
         let i = g.render_state.adapter.get_info();
@@ -354,7 +354,7 @@ pub fn system_report(app: &FilmcraftApp) -> Value {
 }
 
 /// Menu / shortcut entry points. Returns None for ids this module doesn't handle.
-pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, params: &Value) -> Option<Result<Value, String>> {
+pub fn route(app: &mut FilmApp, ctx: &egui::Context, id: &str, params: &Value) -> Option<Result<Value, String>> {
     let empty = params.as_object().is_none_or(|m| m.is_empty());
     // UI commands
     match id {
@@ -462,7 +462,7 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, params: &Val
 }
 
 /// Initial parameters (and display info) of a dialog.
-fn defaults(app: &mut FilmcraftApp, cmd: &str, id: &str) -> Result<(Value, Value), String> {
+fn defaults(app: &mut FilmApp, cmd: &str, id: &str) -> Result<(Value, Value), String> {
     let s = &mut app.session;
     Ok(match cmd {
         "edit.find" => {
@@ -654,7 +654,7 @@ fn pairs(v: &[&str]) -> Vec<(String, String)> {
 }
 
 /// Draw the open dialog, if any.
-pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
+pub fn show(app: &mut FilmApp, ctx: &egui::Context) {
     confirm_delete_window(app, ctx);
     backups_window(app, ctx);
     welcome_window(app, ctx);
@@ -1171,7 +1171,7 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
 }
 
 /// Run the dialog's command(s). `Ok(Some(text))` keeps the dialog open with a message (Find).
-fn run(app: &mut FilmcraftApp, d: &ClipDialogDraft) -> Result<Option<String>, String> {
+fn run(app: &mut FilmApp, d: &ClipDialogDraft) -> Result<Option<String>, String> {
     let s = &mut app.session;
     let p = &d.params;
     match d.command.as_str() {
@@ -1239,11 +1239,11 @@ fn run(app: &mut FilmcraftApp, d: &ClipDialogDraft) -> Result<Option<String>, St
 /// Search bins in the Project panel's list view: one row per search bin (`project.searchBin.<id>`),
 /// expanded to its live matches. Right-click: Delete.
 pub fn search_bin_rows(
-    app: &mut FilmcraftApp,
+    app: &mut FilmApp,
     ui: &mut egui::Ui,
     row: &mut usize,
     actions: &mut Vec<(String, Value)>,
-    draw_items: &mut dyn FnMut(&mut FilmcraftApp, &mut egui::Ui, &redrob_film_project::Bin, &mut usize, &mut Vec<(String, Value)>),
+    draw_items: &mut dyn FnMut(&mut FilmApp, &mut egui::Ui, &redrob_film_project::Bin, &mut usize, &mut Vec<(String, Value)>),
 ) {
     let t = app.tokens;
     for sb in app.session.project.search_bins.clone() {

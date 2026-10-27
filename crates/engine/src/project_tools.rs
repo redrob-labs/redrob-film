@@ -883,6 +883,7 @@ fn pair_p(p: &Value, k: &str) -> Option<(f64, f64)> {
     Some((a.first()?.as_f64()?.clamp(0.0, 50.0), a.get(1)?.as_f64()?.clamp(0.0, 50.0)))
 }
 
+// legacy: renderer names are stored in project settings
 pub const RENDERER_GPU: &str = "FilmCraft GPU Acceleration (wgpu)";
 pub const RENDERER_SOFTWARE: &str = "FilmCraft Software Only (CPU)";
 
@@ -1093,6 +1094,7 @@ fn update_metadata(s: &mut Session, p: &Value) -> Result<Value> {
         let Some(path) = media_of(&s.project, id).and_then(|(_, m)| file_path(m)) else { continue };
         let side = sidecar_path(path);
         if let Ok(old) = s.services.read_file(&side)
+            // legacy: XMP packets written by older versions carry this CreatorTool
             && !String::from_utf8_lossy(&old).contains("xmp:CreatorTool=\"FilmCraft\"")
         {
             skipped.push(json!({"item": id.0, "path": side, "reason": "an XMP file written by another application exists"}));

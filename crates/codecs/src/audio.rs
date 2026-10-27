@@ -897,7 +897,7 @@ mod surround_order_tests {
     }
 
     /// #721: 5.1 AAC (configuration 6, coded C L R Ls Rs LFE) decodes to WAV/SMPTE order
-    /// L R C LFE Ls Rs, as the rest of FilmCraft and the AAC export path expect.
+    /// L R C LFE Ls Rs, as the rest of Redrob Film and the AAC export path expect.
     #[test]
     fn aac_51_decodes_in_wav_order() {
         let rate = 48_000u32;

@@ -178,6 +178,7 @@ pub fn poll(s: &mut Session) {
 fn finish(s: &mut Session, pe: PostExport, res: std::result::Result<redrob_film_export::Report, String>) {
     if pe.after.keep_log {
         let log = json!({
+            // legacy: the format id of render logs other tools read
             "format": "filmcraft.render-log",
             "sequence": pe.sequence_name,
             "startedUnix": pe.started_unix,
@@ -241,6 +242,7 @@ fn output_add(s: &mut Session, p: &Value) -> Result<Value> {
 // render scripts
 // ---------------------------------------------------------------------------------------------
 
+// legacy: the format id in saved render scripts
 pub const SCRIPT_FORMAT: &str = "filmcraft.render-script";
 
 /// A render script: an export saved to run later.

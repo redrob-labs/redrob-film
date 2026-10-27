@@ -433,7 +433,7 @@ impl FrameServer {
             let services = services.clone();
             let rp = repaint.clone();
             let pv = previews.clone();
-            std::thread::Builder::new().name(format!("filmcraft-frames-{i}")).spawn(move || worker(sh, pool, services, pv, rp)).ok();
+            std::thread::Builder::new().name(format!("redrob-film-frames-{i}")).spawn(move || worker(sh, pool, services, pv, rp)).ok();
         }
         #[cfg(target_arch = "wasm32")]
         let _ = workers;

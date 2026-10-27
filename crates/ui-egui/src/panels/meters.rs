@@ -3,12 +3,12 @@
 
 use egui::{Align2, Rect, pos2, vec2};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::theme::Tokens;
 
 /// Feed the loudness meter with exactly the programme audio played since the last frame
 /// (consecutive, non-overlapping blocks, so gating and integration are correct). Seeks reset it.
-pub(crate) fn feed_loudness(app: &mut FilmcraftApp) {
+pub(crate) fn feed_loudness(app: &mut FilmApp) {
     if !app.playback.playing {
         return;
     }
@@ -45,7 +45,7 @@ fn lufs_text(v: f64) -> String {
     if v.is_finite() && v > -70.0 { format!("{v:.1}") } else { "—".into() }
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     // levels of the Mix as it plays (fast attack, 20 dB/s release, peak hold)
     let st = super::mixer::poll_meters(app, ui).get(&redrob_film_render::mixer::MASTER.0).cloned().unwrap_or_else(|| vec![super::mixer::METER_IDLE; 2]);

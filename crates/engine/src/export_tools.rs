@@ -35,6 +35,7 @@ use serde_json::{Value, json};
 use crate::commands::{CommandSpec, always, bad, bool_p, f64_p, has_seq, str_p, time_p, u64_p};
 use crate::{EngineError, Event, Result, Session};
 
+// legacy: the format id in saved export-preset files
 pub const FILE_FORMAT: &str = "filmcraft.export-presets";
 const LIBRARY_FILE: &str = "export-presets.json";
 

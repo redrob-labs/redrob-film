@@ -1,7 +1,7 @@
-# The one pull-request workflow. `checks` (seconds) runs the repository scripts: brand, upstream
-# boundary, packaging and the release-target matrix. `changes` decides whether the PR touches any
+# The one pull-request workflow. `checks` (seconds) runs the repository scripts: brand, packaging
+# and the release-target matrix. `changes` decides whether the PR touches any
 # Rust input at all; `rust` runs formatting, clippy and the FAST tests of OUR crates (the shell
-# `filmcraft`, the engine and the egui UI): library and binary unit tests with `--profile ci` (root
+# `redrob-film-app`, the engine and the egui UI): library and binary unit tests with `--profile ci` (root
 # Cargo.toml: every dependency at opt-level 0, no incremental), minus the slow ffprobe export and
 # multicam suites. The full suite (the ~60 egui_kittest UI binaries in crates/ui-egui/tests and the
 # skipped modules) runs when CI is started by hand (Actions > CI > Run workflow), on Linux in `rust`
@@ -24,7 +24,7 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
   RUST_BACKTRACE: 1
-  # Our crates and the shell. Not `--workspace`: that would lint and test the effectcraft subtree too.
+  # Our crates and the shell. Not `--workspace`: that would lint and test the Effects editor crates too.
   OUR_CRATES: -p redrob-film-app -p redrob-film-ui-egui -p redrob-film-engine
 
 jobs:
@@ -33,14 +33,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # check_upstream_boundary.py walks back to the upstream base commit
       - name: Repository scripts
         run: |
           python3 scripts/check_brand.py
-          python3 scripts/check_upstream_boundary.py
-          python3 scripts/check_no_upstream_services.py
-          python3 tools/rebrand_crafts.py --check
           # A version bump that leaves Cargo.lock behind passes every PR check and only fails the
           # release build (`--locked`). Resolving the lock here takes seconds and runs on every PR.
           cargo metadata --locked --format-version 1 >/dev/null

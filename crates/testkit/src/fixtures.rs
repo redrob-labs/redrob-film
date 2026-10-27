@@ -122,7 +122,7 @@ mod tests {
 
     #[test]
     fn generate_is_cached_and_atomic() {
-        let dir = std::env::temp_dir().join(format!("filmcraft-testkit-gen-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("redrob-film-testkit-gen-{}", std::process::id()));
         let out = dir.join("f.bin");
         let _ = std::fs::remove_file(&out);
         assert!(generate(&out, |_| false).is_none());

@@ -19,21 +19,21 @@ iconography, images or other Adobe assets; open licences only; every asset attri
 | `assets/fonts/Inter-Italic.ttf` | The Inter Project Authors | https://github.com/rsms/inter | OFL-1.1 (`assets/fonts/OFL-Inter.txt`) |
 | `assets/fonts/NotoSerif-Regular.ttf` | The Noto Project Authors | https://github.com/notofonts/latin-greek-cyrillic | OFL-1.1 (`assets/fonts/OFL-NotoSerif.txt`) |
 | `assets/fonts/JetBrainsMono-Regular.ttf` | The JetBrains Mono Project Authors | https://github.com/JetBrains/JetBrainsMono | OFL-1.1 (`assets/fonts/OFL-JetBrainsMono.txt`) |
-| `docs/images/filmcraft-hero.png` | FilmCraft contributors | Original work: FilmCraft screenshot; NASA Apollo 11 film and TV footage (images.nasa.gov; US Government work, public domain; NASA does not endorse this project), subtitles from the NASA Apollo 11 air-to-ground transcript (public domain), CC0 Chopin (Musopen) | MIT OR Apache-2.0; footage and transcript public domain |
-| `docs/images/filmcraft-color.png` | FilmCraft contributors | Original work: FilmCraft screenshot; frames from Charade (1963, public domain) | MIT OR Apache-2.0; film frames public domain |
-| `docs/images/filmcraft-keyframes.png` | FilmCraft contributors | Original work: FilmCraft screenshot; frames from Night of the Living Dead (1968, public domain) | MIT OR Apache-2.0; film frames public domain |
-| `docs/images/filmcraft-export.png` | FilmCraft contributors | Original work: FilmCraft screenshot; frame from Night of the Living Dead (1968, public domain) | MIT OR Apache-2.0; film frames public domain |
-| `docs/images/filmcraft-assembly.png` | FilmCraft contributors | Original work: FilmCraft screenshot; frames from Carnival of Souls (1962), Night of the Living Dead (1968), thumbnails of all demo media | MIT OR Apache-2.0; film frames public domain |
-| `docs/images/filmcraft-lumetri.png` | FilmCraft contributors | Original work: FilmCraft UI crop (Lumetri Color panel) | MIT OR Apache-2.0 |
-| `docs/images/filmcraft-scopes.png` | FilmCraft contributors | Original work: FilmCraft UI crop (scopes of a Charade (1963) frame, public domain) | MIT OR Apache-2.0 |
-| `docs/images/filmcraft-effects.png` | FilmCraft contributors | Original work: FilmCraft screenshot crop; NASA Earth Views (US Government work, public domain) | MIT OR Apache-2.0; footage public domain |
-| `docs/images/filmcraft-timeline.png` | FilmCraft contributors | Original work: FilmCraft UI crop; thumbnails from Night of the Living Dead (1968) and Carnival of Souls (1962), CC0 Chopin waveform | MIT OR Apache-2.0; film frames public domain |
+| `docs/images/redrob-film-hero.png` | FilmCraft contributors | Original work: FilmCraft screenshot; NASA Apollo 11 film and TV footage (images.nasa.gov; US Government work, public domain; NASA does not endorse this project), subtitles from the NASA Apollo 11 air-to-ground transcript (public domain), CC0 Chopin (Musopen) | MIT OR Apache-2.0; footage and transcript public domain |
+| `docs/images/redrob-film-color.png` | FilmCraft contributors | Original work: FilmCraft screenshot; frames from Charade (1963, public domain) | MIT OR Apache-2.0; film frames public domain |
+| `docs/images/redrob-film-keyframes.png` | FilmCraft contributors | Original work: FilmCraft screenshot; frames from Night of the Living Dead (1968, public domain) | MIT OR Apache-2.0; film frames public domain |
+| `docs/images/redrob-film-export.png` | FilmCraft contributors | Original work: FilmCraft screenshot; frame from Night of the Living Dead (1968, public domain) | MIT OR Apache-2.0; film frames public domain |
+| `docs/images/redrob-film-assembly.png` | FilmCraft contributors | Original work: FilmCraft screenshot; frames from Carnival of Souls (1962), Night of the Living Dead (1968), thumbnails of all demo media | MIT OR Apache-2.0; film frames public domain |
+| `docs/images/redrob-film-lumetri.png` | FilmCraft contributors | Original work: FilmCraft UI crop (Lumetri Color panel) | MIT OR Apache-2.0 |
+| `docs/images/redrob-film-scopes.png` | FilmCraft contributors | Original work: FilmCraft UI crop (scopes of a Charade (1963) frame, public domain) | MIT OR Apache-2.0 |
+| `docs/images/redrob-film-effects.png` | FilmCraft contributors | Original work: FilmCraft screenshot crop; NASA Earth Views (US Government work, public domain) | MIT OR Apache-2.0; footage public domain |
+| `docs/images/redrob-film-timeline.png` | FilmCraft contributors | Original work: FilmCraft UI crop; thumbnails from Night of the Living Dead (1968) and Carnival of Souls (1962), CC0 Chopin waveform | MIT OR Apache-2.0; film frames public domain |
 
 ## Golden test images
 
 Reference frames for the renderer golden tests (`crates/golden`), rendered by FilmCraft itself from
 procedural demo footage (`crates/media/src/generators.rs`); no external media. Regenerate with
-`FILMCRAFT_BLESS=1 cargo test -p filmcraft-golden`.
+`REDROB_FILM_BLESS=1 cargo test -p redrob-film-golden`.
 
 | Asset | Author | Source | Licence |
 |---|---|---|---|

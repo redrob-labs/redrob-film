@@ -66,7 +66,7 @@ pub mod workspaces;
 use egui::{Align2, Color32, Rect};
 use redrob_film_project::ItemId;
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::dock::PanelKind;
 use crate::theme::Tokens;
 
@@ -80,7 +80,7 @@ pub fn eta_suffix(job: &serde_json::Value) -> String {
     job["etaSeconds"].as_f64().and_then(|s| std::time::Duration::try_from_secs_f64(s).ok()).map(left_text).unwrap_or_default()
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, p: PanelKind, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, p: PanelKind, rect: Rect) {
     match p {
         PanelKind::Program if !app.session.state.edit_points.is_empty() => trim_monitor::show(app, ui, rect),
         PanelKind::Program => monitor::show(app, ui, rect, monitor::Which::Program),
@@ -132,7 +132,7 @@ enum DragPayload {
 }
 
 fn payload_id() -> egui::Id {
-    egui::Id::new("filmcraft-drag-payload")
+    egui::Id::new("redrob-film-drag-payload")
 }
 
 pub fn start_drag_source(ui: &egui::Ui, source: source_drag::SourceDrag) {
@@ -199,7 +199,7 @@ pub fn clear_drag(ui: &egui::Ui) {
 }
 
 /// Draw the drag ghost near the pointer and clear the payload after release.
-pub fn drag_ghost(app: &FilmcraftApp, ui: &egui::Ui) {
+pub fn drag_ghost(app: &FilmApp, ui: &egui::Ui) {
     let Some(pl) = payload(ui) else { return };
     let ctx = ui.ctx();
     if let Some(p) = ctx.pointer_hover_pos() {
@@ -247,7 +247,7 @@ pub fn drag_ghost(app: &FilmcraftApp, ui: &egui::Ui) {
 }
 
 /// The panel "≡" menu.
-pub fn panel_menu_popup(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
+pub fn panel_menu_popup(app: &mut FilmApp, ui: &mut egui::Ui) {
     drag_ghost(app, ui);
     // bins opened in new windows (Project panel)
     project::floating(app, ui.ctx());

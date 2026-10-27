@@ -104,7 +104,7 @@ engine decodes a context-coded bin without branching on its outcome.
 
 ### Draft mode
 
-`Decoder::set_draft(true)` (reduced-resolution playback only; FilmCraft enables it with Settings ▸
+`Decoder::set_draft(true)` (reduced-resolution playback only; Redrob Film enables it with Settings ▸
 Playback ▸ Draft decoding while the Program monitor plays at 1/2 or 1/4 resolution) skips the
 deblocking filter (8.7) of non-reference pictures (`nal_ref_idc` 0). No picture is predicted from
 a non-reference picture, and deblocking never changes the motion data that direct prediction

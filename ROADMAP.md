@@ -98,7 +98,7 @@ The first Redrob Film release (the release workflow checks that this section exi
   `ai.redrob.film`, console product `film` ([docs/console-product-id.md](docs/console-product-id.md)),
   installers and release assets `redrob-film-<version>-…`. Upstream crate names, `REDROB_FILM_*`
   environment variables, `.rfilm` and the MIME type are unchanged.
-- **Effects mode.** storytold/effectcraft is a git subtree under `crafts/effectcraft/` (pinned in
+- **Effects mode.** storytold/effectcraft is a git subtree under `editors/effects/` (pinned in
   `upstream-base.json`), hosted as the second editor of the one window: Edit / Effects buttons in the
   top bar, the Mode menu, one project bundle.
 - **Hand-offs.** Mode ▸ Send Selection to Effects (selected clips, the in/out range or the whole
@@ -114,7 +114,7 @@ The first Redrob Film release (the release workflow checks that this section exi
   x64 (msi, portable zip). Removed: Windows x86 / arm64, Linux aarch64, AppImage, rpm, Flatpak, the web
   app, FreeBSD. Pull-request CI runs fmt / clippy / tests on our crates with `--profile ci`.
 
-## Premiere parity (upstream measure)
+## Premiere parity
 
 **Stage: alpha** · next: beta, ~19 points of ready-for-real-work and ~400–700 h away, plus opening Premiere's `.prproj` ([why](docs/target-app-parity.md#stage); passes the [core-workflow gate](docs/roadmap.md#alpha-gate))
 

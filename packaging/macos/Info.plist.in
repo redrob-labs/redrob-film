@@ -24,9 +24,9 @@
   <string>@SHORT_VERSION@</string>
   <key>CFBundleVersion</key>
   <string>@SHORT_VERSION@</string>
-  <key>FilmCraftVersion</key>
+  <key>RedrobFilmVersion</key>
   <string>@VERSION@</string>
-  <key>FilmCraftBuildCommit</key>
+  <key>RedrobFilmBuildCommit</key>
   <string>@BUILD_SHA@</string>
   <key>CFBundleIconFile</key>
   <string>Redrob Film</string>

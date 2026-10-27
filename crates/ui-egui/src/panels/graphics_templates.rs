@@ -28,7 +28,7 @@ use redrob_film_time::Tick;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::theme::Tokens;
 
 /// One candidate property in the Export As Motion Graphics Template dialog.
@@ -88,7 +88,7 @@ fn lib_id() -> egui::Id {
 }
 
 /// The template library, re-read at most every two seconds (or after [`invalidate`]).
-fn cached_library(app: &FilmcraftApp, ctx: &egui::Context) -> Vec<LibraryEntry> {
+fn cached_library(app: &FilmApp, ctx: &egui::Context) -> Vec<LibraryEntry> {
     let now = ctx.input(|i| i.time);
     if let Some(Lib(l)) = ctx.data(|d| d.get_temp::<Lib>(lib_id()))
         && now - l.0 < 2.0
@@ -132,7 +132,7 @@ fn tab_button(ui: &mut egui::Ui, r: Rect, label: &str, on: bool, t: &Tokens) -> 
 }
 
 /// The Essential Graphics panel: Browse and Edit tabs.
-pub fn essential_graphics(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn essential_graphics(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let tab = match app.ui.gfx_templates.tab.as_str() {
         "browse" => "browse",
@@ -161,7 +161,7 @@ pub fn essential_graphics(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect)
     }
 }
 
-fn browse(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+fn browse(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let lib = cached_library(app, &ctx);
@@ -331,7 +331,7 @@ fn row_label(ui: &mut egui::Ui, label: &str, t: &Tokens) -> egui::Ui {
 /// The template's editable properties (Essential Graphics ▸ Edit for a graphic made from a
 /// template). Returns false when the graphic has no template.
 pub fn template_controls(
-    app: &FilmcraftApp,
+    app: &FilmApp,
     ui: &mut egui::Ui,
     clip: ClipId,
     it: &TrackItem,
@@ -453,7 +453,7 @@ pub fn template_controls(
 }
 
 /// Responsive Design – Time (intro / outro and roll / crawl), shown with no layer selected.
-pub fn responsive_time(app: &FilmcraftApp, ui: &mut egui::Ui, clip: ClipId, it: &TrackItem, autos: &mut Elems, actions: &mut Vec<(String, Value)>) {
+pub fn responsive_time(app: &FilmApp, ui: &mut egui::Ui, clip: ClipId, it: &TrackItem, autos: &mut Elems, actions: &mut Vec<(String, Value)>) {
     let t = app.tokens;
     let rate = app.session.sequence_rate();
     let m = it.graphic.as_deref().cloned().unwrap_or_default();
@@ -516,7 +516,7 @@ pub fn responsive_time(app: &FilmcraftApp, ui: &mut egui::Ui, clip: ClipId, it: 
 
 /// Responsive Design – Position for the selected layer: Pin To and the pinned edges.
 pub fn responsive_position(
-    app: &FilmcraftApp,
+    app: &FilmApp,
     ui: &mut egui::Ui,
     clip: ClipId,
     it: &TrackItem,
@@ -585,7 +585,7 @@ pub fn responsive_position(
 // ------------------------------------------------------------------------------------------------
 
 /// Menu / shortcut entry points of this module (None for other ids).
-pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, params: &Value) -> Option<Result<Value, String>> {
+pub fn route(app: &mut FilmApp, ctx: &egui::Context, id: &str, params: &Value) -> Option<Result<Value, String>> {
     let empty = params.as_object().is_none_or(|m| m.is_empty());
     match id {
         "graphics.template.install" if params.get("path").is_none() => {
@@ -627,12 +627,12 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, params: &Val
 }
 
 /// Draw this module's dialogs.
-pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
+pub fn show(app: &mut FilmApp, ctx: &egui::Context) {
     export_dialog(app, ctx);
     replace_dialog(app, ctx);
 }
 
-fn export_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn export_dialog(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut d) = app.ui.gfx_templates.export.clone() else { return };
     let mut elems: Elems = Vec::new();
     let mut action: Option<bool> = None;
@@ -710,7 +710,7 @@ fn export_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
     }
 }
 
-fn replace_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn replace_dialog(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut d) = app.ui.gfx_templates.replace.clone() else { return };
     let used = redrob_film_engine::graphic_templates::fonts_used(&app.session);
     let mut elems: Elems = Vec::new();

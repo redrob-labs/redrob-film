@@ -20,7 +20,7 @@ use redrob_film_time::Tick;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::theme::Tokens;
 
 /// What an editor window edits.
@@ -38,7 +38,7 @@ pub fn has_editor(effect: &str) -> bool {
 }
 
 /// Open (or raise) the editor for a target.
-pub fn open(app: &mut FilmcraftApp, target: FxTarget) {
+pub fn open(app: &mut FilmApp, target: FxTarget) {
     if !app.ui.audio_fx_editors.contains(&target) {
         app.ui.audio_fx_editors.push(target);
     }
@@ -46,7 +46,7 @@ pub fn open(app: &mut FilmcraftApp, target: FxTarget) {
 
 /// The edited effect instance (current project state), its media time at the playhead, and a
 /// display label.
-fn resolve(app: &FilmcraftApp, target: &FxTarget) -> Option<(EffectInstance, Tick, String)> {
+fn resolve(app: &FilmApp, target: &FxTarget) -> Option<(EffectInstance, Tick, String)> {
     let seq = app.session.active_sequence()?;
     let ph = app.session.playhead();
     match target {
@@ -160,7 +160,7 @@ impl Ed<'_> {
 }
 
 /// Show every open editor window.
-pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
+pub fn show(app: &mut FilmApp, ctx: &egui::Context) {
     let targets = app.ui.audio_fx_editors.clone();
     let mut close = Vec::new();
     for target in targets {

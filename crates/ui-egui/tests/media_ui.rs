@@ -15,13 +15,13 @@ use redrob_film_engine::project::{ItemKind, Label, MediaClip, MediaRef, Project,
 use redrob_film_media::generators::GeneratorSource;
 use redrob_film_media::{DemoScene, Generator, MediaSource};
 use redrob_film_time::{FrameRate, Tick, TimeRange};
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use redrob_film_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 fn tmp_dir(name: &str) -> PathBuf {
     let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-    let d = std::env::temp_dir().join(format!("filmcraft-ui-{name}-{}-{nanos}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("redrob-film-ui-{name}-{}-{nanos}", std::process::id()));
     std::fs::create_dir_all(&d).unwrap();
     d
 }
@@ -96,7 +96,7 @@ fn moved_project(root: &Path) -> String {
 }
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, FilmApp>,
     tx: Sender<ControlRequest>,
     snapshots: Option<PathBuf>,
 }
@@ -104,7 +104,7 @@ struct Driver {
 impl Driver {
     fn new(session: Session) -> Self {
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = FilmApp::new(session).with_control(rx);
         let snapshots = std::env::var_os("REDROB_FILM_UI_SNAPSHOT_DIR").map(PathBuf::from);
         let mut b = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000);
         if snapshots.is_some() {
@@ -158,7 +158,7 @@ impl Driver {
         v.as_array().unwrap().iter().filter_map(|e| e["id"].as_str().map(str::to_string)).collect()
     }
 
-    fn app(&mut self) -> &mut FilmcraftApp {
+    fn app(&mut self) -> &mut FilmApp {
         self.harness.state_mut()
     }
 
@@ -366,7 +366,7 @@ fn link_media_large_lists_and_long_paths_keep_actions_on_screen() {
             s.offline.missing.push(id);
         }
         s.project = Arc::new(p);
-        let mut app = FilmcraftApp::new(s);
+        let mut app = FilmApp::new(s);
         app.ui.link_media = Some(Default::default());
         let mut builder = Harness::builder().with_size(egui::vec2(width, height)).with_max_steps(10_000);
         let snapshots = std::env::var_os("REDROB_FILM_UI_SNAPSHOT_DIR").map(PathBuf::from);

@@ -11,7 +11,7 @@ use redrob_film_time::Tick;
 use serde_json::{Value, json};
 
 use super::timeline::Layout;
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::dock::PanelKind;
 use crate::icons::Icon;
 use crate::theme::Tokens;
@@ -60,7 +60,7 @@ fn block_rect(c: &redrob_film_project::Caption, row: Rect, layout: &Layout, drag
 }
 
 /// Paint headers and caption blocks.
-pub fn paint(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, area: Rect, layout: &Layout, t: &Tokens) {
+pub fn paint(app: &mut FilmApp, ui: &mut egui::Ui, seq: &Sequence, area: Rect, layout: &Layout, t: &Tokens) {
     if seq.caption_tracks.is_empty() {
         return;
     }
@@ -169,7 +169,7 @@ pub fn paint(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, area: Re
 
 /// Pointer interaction on caption blocks (call after the timeline's own interaction so captions
 /// are on top).
-pub fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, area: Rect, layout: &Layout) {
+pub fn interact(app: &mut FilmApp, ui: &mut egui::Ui, seq: &Sequence, area: Rect, layout: &Layout) {
     let ctx = ui.ctx().clone();
     let rate = seq.settings.frame_rate;
     let drag = drag_state(&ctx);
@@ -201,7 +201,7 @@ pub fn interact(app: &mut FilmcraftApp, ui: &mut egui::Ui, seq: &Sequence, area:
 }
 
 fn interact_block(
-    app: &mut FilmcraftApp,
+    app: &mut FilmApp,
     ui: &mut egui::Ui,
     tr: &CaptionTrack,
     c: &redrob_film_project::Caption,
@@ -289,7 +289,7 @@ fn interact_block(
     }
 }
 
-fn run(app: &mut FilmcraftApp, ui: &egui::Ui, actions: Vec<(String, Value)>) {
+fn run(app: &mut FilmApp, ui: &egui::Ui, actions: Vec<(String, Value)>) {
     let ctx = ui.ctx().clone();
     for (cmd, p) in actions {
         if let Err(e) = crate::menus::invoke(app, &ctx, &cmd, p) {

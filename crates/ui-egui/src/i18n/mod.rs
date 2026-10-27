@@ -169,7 +169,7 @@ thread_local! {
     static CURRENT: Cell<Language> = const { Cell::new(Language::En) };
 }
 
-/// Set the language for drawing. `FilmcraftApp::frame` calls this at the start of every frame from
+/// Set the language for drawing. `FilmApp::frame` calls this at the start of every frame from
 /// the UI state, so widgets translate without every call site carrying the language around.
 pub fn set_current(lang: Language) {
     CURRENT.with(|c| c.set(lang));
@@ -405,7 +405,7 @@ mod tests {
 
     #[test]
     fn spanish_translates_every_menu_label() {
-        let app = crate::FilmcraftApp::new(redrob_film_engine::Session::default());
+        let app = crate::FilmApp::new(redrob_film_engine::Session::default());
         let mut missing: Vec<String> = Vec::new();
         let mut need = |text: &str| {
             if translatable(text) && !Language::Es.has(text) && !missing.iter().any(|m| m == text) {
@@ -429,7 +429,7 @@ mod tests {
     /// (a renamed command would otherwise leave a dead entry and an untranslated menu item).
     #[test]
     fn portuguese_entries_are_menu_labels() {
-        let app = crate::FilmcraftApp::new(redrob_film_engine::Session::default());
+        let app = crate::FilmApp::new(redrob_film_engine::Session::default());
         let items = crate::menus::menu_items(&app);
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
         let (entries, _) = catalog::parse_entries(include_str!("pt-br.tsv"));
@@ -459,7 +459,7 @@ mod tests {
     /// The Simplified Chinese catalog is complete: every menu label and every `tl!` literal.
     #[test]
     fn chinese_translates_every_menu_label_and_tl_literal() {
-        let app = crate::FilmcraftApp::new(redrob_film_engine::Session::default());
+        let app = crate::FilmApp::new(redrob_film_engine::Session::default());
         let mut missing: Vec<String> = Vec::new();
         let mut need = |text: &str| {
             if translatable(text) && !Language::ZhCn.has(text) && !missing.iter().any(|m| m == text) {
@@ -488,7 +488,7 @@ mod tests {
     /// and is refused (the interface stays as it was) without one.
     #[test]
     fn chinese_switches_and_persists_or_is_refused_without_a_font() {
-        let mut app = crate::FilmcraftApp::new(redrob_film_engine::Session::default());
+        let mut app = crate::FilmApp::new(redrob_film_engine::Session::default());
         let ctx = egui::Context::default();
         let r = crate::menus::invoke(&mut app, &ctx, "app.language.chinese", serde_json::json!({}));
         if !chinese_font_available() {
@@ -509,7 +509,7 @@ mod tests {
         let prefs = serde_json::to_string(&app.session.prefs).unwrap();
         let mut restarted = redrob_film_engine::Session::default();
         restarted.prefs = serde_json::from_str(&prefs).unwrap();
-        assert_eq!(crate::FilmcraftApp::new(restarted).ui.language, Language::ZhCn);
+        assert_eq!(crate::FilmApp::new(restarted).ui.language, Language::ZhCn);
         crate::menus::invoke(&mut app, &ctx, "app.language.english", serde_json::json!({})).unwrap();
         set_current(Language::En);
     }
@@ -731,7 +731,7 @@ mod tests {
             push(&mut out, &p.description);
         }
         // every command (Keyboard Shortcuts dialog, History panel) and the shortcut contexts
-        let app = crate::FilmcraftApp::new(redrob_film_engine::Session::default());
+        let app = crate::FilmApp::new(redrob_film_engine::Session::default());
         for c in app.session.shortcuts.commands() {
             push(&mut out, &c.label);
             push(&mut out, &c.category);
@@ -766,7 +766,7 @@ mod tests {
 
     #[test]
     fn language_commands_switch_and_persist_without_a_document() {
-        let mut app = crate::FilmcraftApp::new(redrob_film_engine::Session::default());
+        let mut app = crate::FilmApp::new(redrob_film_engine::Session::default());
         let ctx = egui::Context::default();
         crate::menus::invoke(&mut app, &ctx, "app.language.japanese", serde_json::json!({})).unwrap();
         assert_eq!(app.ui.language, Language::Ja);
@@ -778,7 +778,7 @@ mod tests {
         let prefs = serde_json::to_string(&app.session.prefs).unwrap();
         let mut restarted = redrob_film_engine::Session::default();
         restarted.prefs = serde_json::from_str(&prefs).unwrap();
-        assert_eq!(crate::FilmcraftApp::new(restarted).ui.language, Language::Es);
+        assert_eq!(crate::FilmApp::new(restarted).ui.language, Language::Es);
         assert!(crate::menus::menu_items(&app).iter().any(|it| it.id == "app.language.spanish" && it.checked == Some(true)));
         crate::menus::invoke(&mut app, &ctx, "app.language.portuguese", serde_json::json!({})).unwrap();
         assert_eq!(app.ui.language, Language::PtBr);
@@ -798,7 +798,7 @@ mod tests {
         let prefs = serde_json::to_string(&app.session.prefs).unwrap();
         let mut restarted = redrob_film_engine::Session::default();
         restarted.prefs = serde_json::from_str(&prefs).unwrap();
-        assert_eq!(crate::FilmcraftApp::new(restarted).ui.language, Language::Uk);
+        assert_eq!(crate::FilmApp::new(restarted).ui.language, Language::Uk);
         let result = crate::menus::invoke(&mut app, &ctx, "app.language.german", serde_json::json!({})).unwrap();
         assert_eq!(result, serde_json::json!("de"));
         assert_eq!((app.ui.language, current()), (Language::De, Language::De));
@@ -818,7 +818,7 @@ mod tests {
         let prefs = serde_json::to_string(&app.session.prefs).unwrap();
         let mut restarted = redrob_film_engine::Session::default();
         restarted.prefs = serde_json::from_str(&prefs).unwrap();
-        assert_eq!(crate::FilmcraftApp::new(restarted).ui.language, Language::De);
+        assert_eq!(crate::FilmApp::new(restarted).ui.language, Language::De);
         let result = crate::menus::invoke(&mut app, &ctx, "app.language.french", serde_json::json!({})).unwrap();
         assert_eq!(result, serde_json::json!("fr"));
         assert_eq!((app.ui.language, current()), (Language::Fr, Language::Fr));
@@ -835,7 +835,7 @@ mod tests {
         let prefs = serde_json::to_string(&app.session.prefs).unwrap();
         let mut restarted = redrob_film_engine::Session::default();
         restarted.prefs = serde_json::from_str(&prefs).unwrap();
-        assert_eq!(crate::FilmcraftApp::new(restarted).ui.language, Language::Fr);
+        assert_eq!(crate::FilmApp::new(restarted).ui.language, Language::Fr);
         crate::menus::invoke(&mut app, &ctx, "app.language.english", serde_json::json!({})).unwrap();
         assert_eq!(app.ui.language, Language::En);
         set_current(Language::En);
@@ -886,11 +886,11 @@ mod tests {
         let ctx = egui::Context::default();
         let session = redrob_film_engine::Session::default();
         assert_eq!(session.prefs.general.interface_language, "system");
-        let mut app = crate::FilmcraftApp::new(session);
+        let mut app = crate::FilmApp::new(session);
         app.apply_prefs(&ctx);
         assert_eq!(app.ui.language, Language::En, "no host hook");
 
-        let mut app = crate::FilmcraftApp::new(redrob_film_engine::Session::default());
+        let mut app = crate::FilmApp::new(redrob_film_engine::Session::default());
         let asked = std::rc::Rc::new(std::cell::Cell::new(0));
         let count = asked.clone();
         app.hooks.system_languages = Some(Box::new(move || {
@@ -916,7 +916,7 @@ mod tests {
 
     #[test]
     fn ukrainian_entries_cover_the_original_menu_catalog() {
-        let app = crate::FilmcraftApp::new(redrob_film_engine::Session::default());
+        let app = crate::FilmApp::new(redrob_film_engine::Session::default());
         let items = crate::menus::menu_items(&app);
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
         let (entries, _) = catalog::parse_entries(include_str!("uk.tsv"));
@@ -936,7 +936,7 @@ mod tests {
     /// and the native macOS Settings menu); every entry must still be a menu label.
     #[test]
     fn german_entries_cover_the_original_menu_catalog() {
-        let app = crate::FilmcraftApp::new(redrob_film_engine::Session::default());
+        let app = crate::FilmApp::new(redrob_film_engine::Session::default());
         let items = crate::menus::menu_items(&app);
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
         let (entries, _) = catalog::parse_entries(include_str!("de.tsv"));
@@ -986,7 +986,7 @@ mod tests {
 
     #[test]
     fn russian_entries_cover_the_original_menu_catalog() {
-        let app = crate::FilmcraftApp::new(redrob_film_engine::Session::default());
+        let app = crate::FilmApp::new(redrob_film_engine::Session::default());
         let items = crate::menus::menu_items(&app);
         let known = |text: &str| crate::menus::MENUS.contains(&text) || items.iter().any(|it| it.label == text || it.path.iter().any(|p| p == text));
         let (entries, _) = catalog::parse_entries(include_str!("ru.tsv"));
@@ -1047,7 +1047,7 @@ mod tests {
 
     #[test]
     fn japanese_needs_an_installed_font() {
-        let mut app = crate::FilmcraftApp::new(redrob_film_engine::Session::default());
+        let mut app = crate::FilmApp::new(redrob_film_engine::Session::default());
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &crate::theme::Tokens::for_kind(crate::theme::ThemeKind::default()));
         let r = crate::menus::invoke(&mut app, &ctx, "app.language.japanese", serde_json::json!({}));

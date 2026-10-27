@@ -12,7 +12,7 @@ use redrob_film_time::Tick;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::dock::PanelKind;
 
 /// Saved with the interface state.
@@ -130,16 +130,16 @@ pub struct ImportDraft {
 }
 
 /// Whether `id` passes the Effects panel's filters.
-pub fn passes_filters(app: &FilmcraftApp, d: &redrob_film_project::EffectDef) -> bool {
+pub fn passes_filters(app: &FilmApp, d: &redrob_film_project::EffectDef) -> bool {
     let f = &app.ui.fx;
     (!f.only_accelerated || d.accelerated) && (!f.only_float32 || d.float32) && (!f.only_yuv || d.yuv)
 }
 
-pub fn is_favorite(app: &FilmcraftApp, id: &str) -> bool {
+pub fn is_favorite(app: &FilmApp, id: &str) -> bool {
     app.ui.fx.favorites.iter().any(|f| f == id)
 }
 
-pub fn toggle_favorite(app: &mut FilmcraftApp, id: &str) {
+pub fn toggle_favorite(app: &mut FilmApp, id: &str) {
     if is_favorite(app, id) {
         app.ui.fx.favorites.retain(|f| f != id);
     } else {
@@ -148,7 +148,7 @@ pub fn toggle_favorite(app: &mut FilmcraftApp, id: &str) {
 }
 
 /// The Effects panel's right-click menu of an effect: favourite and description.
-pub fn effect_menu(app: &mut FilmcraftApp, resp: &egui::Response, id: &str) {
+pub fn effect_menu(app: &mut FilmApp, resp: &egui::Response, id: &str) {
     resp.context_menu(|ui| {
         let fav = is_favorite(app, id);
         let b = ui.button(if fav { tl!("Remove from Favorites") } else { tl!("Add to Favorites") });
@@ -166,7 +166,7 @@ pub fn effect_menu(app: &mut FilmcraftApp, resp: &egui::Response, id: &str) {
 }
 
 /// The Effects panel's description pane: what the selected effect is and what it controls.
-pub fn description_pane(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: egui::Rect) {
+pub fn description_pane(app: &mut FilmApp, ui: &mut egui::Ui, rect: egui::Rect) {
     let t = app.tokens;
     ui.painter().rect_filled(rect, 0.0, t.panel_bg);
     ui.painter().line_segment([rect.left_top(), rect.right_top()], egui::Stroke::new(1.0, t.separator));
@@ -203,7 +203,7 @@ pub fn description_pane(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: egui::R
 }
 
 /// Clip context menu (Timeline): Insert an Effect ▸ favourites, and Effects Enabled.
-pub fn timeline_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, clips: &[(u64, TrackKind, bool, bool)]) {
+pub fn timeline_menu(app: &mut FilmApp, ui: &mut egui::Ui, clips: &[(u64, TrackKind, bool, bool)]) {
     if clips.is_empty() {
         return;
     }
@@ -285,7 +285,7 @@ pub fn timeline_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, clips: &[(u64, T
 
 /// UI routes: Sequence ▸ Add Effect…, and Copy / Paste of keyframes while Effect Controls has
 /// focus and keyframes are selected (otherwise Copy and Paste act on clips as usual).
-pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, params: &Value) -> Option<Result<Value, String>> {
+pub fn route(app: &mut FilmApp, ctx: &egui::Context, id: &str, params: &Value) -> Option<Result<Value, String>> {
     let plain = params.as_object().is_none_or(|m| m.is_empty());
     match id {
         "sequence.addEffectDialog" => {
@@ -334,13 +334,13 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, params: &Val
 }
 
 /// Whether Copy / Paste act on graphic layers: the Program monitor or Essential Graphics has focus.
-fn graphics_focus(app: &FilmcraftApp) -> bool {
+fn graphics_focus(app: &FilmApp) -> bool {
     matches!(app.ui.focused, PanelKind::Program | PanelKind::EssentialGraphics)
 }
 
 /// Copy the selected keyframes (Ctrl+C in Effect Controls). The text form goes on the system
 /// clipboard too, for Import Keyframes… in another project.
-pub fn copy_keyframes(app: &mut FilmcraftApp, ctx: &egui::Context) -> Result<Value, String> {
+pub fn copy_keyframes(app: &mut FilmApp, ctx: &egui::Context) -> Result<Value, String> {
     let seq = app.session.active_sequence().ok_or("no sequence")?;
     let mut groups: Vec<CopiedKeyframes> = Vec::new();
     for k in &app.ui.keyframe_selection {
@@ -377,7 +377,7 @@ pub fn copy_keyframes(app: &mut FilmcraftApp, ctx: &egui::Context) -> Result<Val
 /// Paste the copied keyframes at the playhead onto the selected clip (Ctrl+V in Effect Controls):
 /// the earliest lands on the playhead, the others keep their spacing; each parameter goes to the
 /// clip's effect of the same kind.
-pub fn paste_keyframes(app: &mut FilmcraftApp) -> Result<Value, String> {
+pub fn paste_keyframes(app: &mut FilmApp) -> Result<Value, String> {
     let clip = app.session.state.selection.first().copied().ok_or("select a clip first")?;
     let seq = app.session.active_sequence().ok_or("no sequence")?;
     let (_, it) = seq.find_item(clip).ok_or("select a clip first")?;
@@ -410,7 +410,7 @@ pub fn paste_keyframes(app: &mut FilmcraftApp) -> Result<Value, String> {
 }
 
 /// Copy a parameter's keyframes to the system clipboard (Copy Keyframes to Clipboard).
-pub fn export_param(app: &mut FilmcraftApp, ctx: &egui::Context, clip: u64, effect: usize, param: &str, mask: Option<usize>) {
+pub fn export_param(app: &mut FilmApp, ctx: &egui::Context, clip: u64, effect: usize, param: &str, mask: Option<usize>) {
     let mut p = json!({"clip": clip, "effect": effect, "param": param});
     if let Some(m) = mask {
         p["mask"] = json!(m);
@@ -427,7 +427,7 @@ pub fn export_param(app: &mut FilmcraftApp, ctx: &egui::Context, clip: u64, effe
 }
 
 /// Open Import Keyframes… for a parameter, offering the last export.
-pub fn open_import(app: &mut FilmcraftApp, clip: u64, effect: usize, param: &str, mask: Option<usize>) {
+pub fn open_import(app: &mut FilmApp, clip: u64, effect: usize, param: &str, mask: Option<usize>) {
     let text = app.ui.fx.last_export.clone();
     app.ui.fx.import = Some(ImportDraft { clip, effect, param: param.to_string(), mask, text, clip_times: true, ..Default::default() });
 }
@@ -435,7 +435,7 @@ pub fn open_import(app: &mut FilmcraftApp, clip: u64, effect: usize, param: &str
 /// Automatic keyframes: rewrite a value change made while playing so it writes a keyframe at the
 /// playhead (or, with the limit on, onto the automatic keyframe written less than
 /// [`AUTO_KEYFRAME_FRAMES`] frames ago).
-pub fn auto_keyframe(app: &mut FilmcraftApp, p: &mut Value) {
+pub fn auto_keyframe(app: &mut FilmApp, p: &mut Value) {
     if !app.ui.fx.auto_keyframes || !app.playback.playing || p.get("mask").is_some_and(|m| !m.is_null()) {
         return;
     }
@@ -469,7 +469,7 @@ pub fn auto_keyframe(app: &mut FilmcraftApp, p: &mut Value) {
 
 /// Automatic keyframes for a `graphics.set` made while playing (a layer dragged on the Program
 /// monitor): its animatable properties get keyframes at the playhead, with the same limit.
-pub fn auto_keyframe_graphics(app: &mut FilmcraftApp, p: &mut Value) {
+pub fn auto_keyframe_graphics(app: &mut FilmApp, p: &mut Value) {
     if !app.ui.fx.auto_keyframes || !app.playback.playing {
         return;
     }
@@ -489,7 +489,7 @@ pub fn auto_keyframe_graphics(app: &mut FilmcraftApp, p: &mut Value) {
     app.ui.fx.last_auto.push((key, at.0));
 }
 
-pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
+pub fn show(app: &mut FilmApp, ctx: &egui::Context) {
     add_effect_dialog(app, ctx);
     import_dialog(app, ctx);
     char_picker(app, ctx);
@@ -499,7 +499,7 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
 
 /// Graphics and Titles ▸ Patterns…: save the selected graphic layers as a named pattern, insert a
 /// pattern into the selected graphic (where it was drawn), delete patterns.
-fn patterns_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn patterns_dialog(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut name) = app.ui.fx.patterns_dialog.clone() else { return };
     let mut open = true;
     let mut save = false;
@@ -556,7 +556,7 @@ fn patterns_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
 }
 
 /// View ▸ Grid…: lines over the Program monitor picture (count and colour); graphics snap to them.
-fn grid_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn grid_dialog(app: &mut FilmApp, ctx: &egui::Context) {
     if !app.ui.fx.grid_dialog {
         return;
     }
@@ -591,7 +591,7 @@ const SPECIAL_CHARACTERS: &str = "©®™℗°±×÷≈≠≤≥∞√∑µπΩ�
 
 /// Insert `s` into the text layer being edited (at the caret, over the selection), or at the end of
 /// the selected text layer's text.
-pub fn insert_text(app: &mut FilmcraftApp, s: &str) -> Result<(), String> {
+pub fn insert_text(app: &mut FilmApp, s: &str) -> Result<(), String> {
     let seq = app.session.active_sequence().ok_or("no sequence")?;
     let (clip, layer, range) = match &app.ui.gfx_edit {
         Some(ed) => (ed.clip, ed.layer, Some((ed.caret.min(ed.anchor), ed.caret.max(ed.anchor)))),
@@ -627,7 +627,7 @@ pub fn insert_text(app: &mut FilmcraftApp, s: &str) -> Result<(), String> {
 }
 
 /// Insert Special Character…: a grid of symbols and a field for any Unicode code point (hex).
-fn char_picker(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn char_picker(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut code) = app.ui.fx.char_picker.clone() else { return };
     let mut open = true;
     let mut pick: Option<String> = None;
@@ -676,7 +676,7 @@ fn char_picker(app: &mut FilmcraftApp, ctx: &egui::Context) {
 
 /// Sequence ▸ Add Effect…: effects by folder (favourites first), searchable; applies to the
 /// selected clips.
-fn add_effect_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn add_effect_dialog(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut q) = app.ui.fx.add_effect.clone() else { return };
     let mut open = true;
     let mut apply: Option<String> = None;
@@ -739,7 +739,7 @@ fn add_effect_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
 
 /// Import Keyframes…: paste keyframe data (an export from Copy Keyframes to Clipboard or Ctrl+C),
 /// choose where it goes and how it maps, then OK writes it onto the parameter.
-fn import_dialog(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn import_dialog(app: &mut FilmApp, ctx: &egui::Context) {
     let Some(mut d) = app.ui.fx.import.clone() else { return };
     let mut open = true;
     let mut ok = false;

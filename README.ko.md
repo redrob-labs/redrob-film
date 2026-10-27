@@ -5,11 +5,10 @@
 
 English: [README.md](./README.md)
 
-> **포크 안내.** 이 저장소는 [storytold/filmcraft](https://github.com/storytold/filmcraft) 태그 `v0.6.0`의
-> 하드 포크입니다. 어디서 갈라졌고, 무엇을 소유하지 않으며, 상류를 어떻게 흡수하는지는
-> [UPSTREAM.ko.md](./UPSTREAM.ko.md)에, 기계가 읽는 핀은 [`upstream-base.json`](./upstream-base.json)에 있습니다.
-> 상류 저작권 표기는 [NOTICE](./NOTICE)에 원문 그대로 두고 그 아래에 우리 줄을 추가했습니다.
-> 상류의 ArtCraft 상표는 제거했고, `assets/brand/`의 레드롭 마크는 레드롭의 상표입니다.
+> **출처.** 레드롭 필름은 오픈소스 코드에서 출발해 이 저장소에서 독자적으로 개발합니다. 그 코드와는 더 이상
+> 동기화하지 않습니다. 어디서 왔는지, 기존 파일을 읽으려고 남겨 둔 옛 이름이 무엇인지는
+> [SOURCE_ORIGINS.md](./SOURCE_ORIGINS.md)에 있습니다. 원 저작권 표기는 [NOTICE](./NOTICE)에 그대로 두고 그 아래에
+> 우리 줄을 추가했습니다. `assets/brand/`의 레드롭 마크는 레드롭의 상표입니다.
 
 ## 무엇인가
 
@@ -45,7 +44,7 @@ cargo run --release -p redrob-film-cli -- commands     # 엔진 명령 전체 �
 cargo run --release -p redrob-film-cli -- mcp          # MCP 서버(헤드리스)
 ```
 
-Cargo 패키지 이름은 상류 동기화가 깔끔하도록 상류의 `filmcraft*`를 유지합니다. 실행 파일, 앱 ID(`ai.redrob.film`), 설치 프로그램과 사람이 보는 모든 것은 레드롭 필름의 것입니다.
+Cargo 패키지는 `redrob-film-*`(Edit 모드, 앱, CLI)와 `redrob-effects-*`(Effects 편집기, `editors/effects/`)입니다. 제품 실행 파일은 `redrob-film` 하나이고, 명령줄 도구 `redrob-film-cli`가 따로 있습니다. 앱 ID는 `ai.redrob.film`입니다.
 
 ## 레드롭 코드에서 제어
 
@@ -65,13 +64,12 @@ Cargo 패키지 이름은 상류 동기화가 깔끔하도록 상류의 `filmcra
 ## 브랜치와 기여
 
 - 기본 브랜치 `develop`, 릴리스 브랜치 `main`. 브랜치 이름은 `feat/ fix/ chore/ docs/ test/ refactor/ perf/ ci/ build/ sync/ hotfix/ release/` 접두사를 따르며, redrob-labs 공용 gitflow 워크플로가 검사합니다(모든 레포가 같은 목록).
-- 상류 동기화는 `sync/upstream-<tag>` 브랜치로, 머지 커밋으로만 합칩니다.
 - 조직 공통 규약: [redrob-labs/.github](https://github.com/redrob-labs/.github)의 CONTRIBUTING.ko.md와 FORKS.ko.md.
 
 ## 라이선스
 
 MIT 또는 Apache-2.0 중 선택([LICENSE-MIT](./LICENSE-MIT), [LICENSE-APACHE](./LICENSE-APACHE)).
-저작권 표기는 [NOTICE](./NOTICE)에 있습니다. 상류 표기 아래에 우리 표기를 추가했습니다:
+저작권 표기는 [NOTICE](./NOTICE)에 있습니다. 원 저작자 표기 아래에 우리 표기를 추가했습니다:
 
 ```
 Copyright (c) 2026 ArtCraft Team and the FilmCraft contributors.

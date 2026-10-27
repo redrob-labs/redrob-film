@@ -312,7 +312,7 @@ pub(crate) const EXPORT_SAVE_DIALOGS: [(&str, &str, &str); 7] = [
     ("file.exportSelectionProject", "Redrob Film Project", "rfilm"),
 ];
 
-pub struct FilmcraftApp {
+pub struct FilmApp {
     pub session: Session,
     pub ui: UiState,
     pub tokens: Tokens,
@@ -468,7 +468,7 @@ pub fn gpu_compositor_unsupported(adapter: &eframe::wgpu::Adapter) -> Option<Str
     None
 }
 
-impl FilmcraftApp {
+impl FilmApp {
     /// Enable the GPU compositor on the eframe wgpu device.
     pub fn set_wgpu(&mut self, rs: eframe::egui_wgpu::RenderState) {
         if let Some(why) = gpu_compositor_unsupported(&rs.adapter) {
@@ -550,7 +550,7 @@ impl FilmcraftApp {
     }
 }
 
-impl FilmcraftApp {
+impl FilmApp {
     pub fn new(mut session: Session) -> Self {
         session.shortcuts.register_external(menus::external_commands());
         let recovery = !session.recovery_candidates().is_empty();
@@ -2234,7 +2234,7 @@ impl FilmcraftApp {
     }
 }
 
-impl FilmcraftApp {
+impl FilmApp {
     /// The "Redrob Film hit an error" window after a caught UI panic. Automation ids:
     /// `error.dismiss`, `error.save`.
     fn error_window(&mut self, ctx: &egui::Context) {
@@ -2295,7 +2295,7 @@ impl FilmcraftApp {
     }
 }
 
-impl eframe::App for FilmcraftApp {
+impl eframe::App for FilmApp {
     fn raw_input_hook(&mut self, _ctx: &egui::Context, raw_input: &mut egui::RawInput) {
         if !self.synthetic.is_empty() {
             // Pointer events go one per frame so egui sees press → moves → release as a real drag
@@ -2676,7 +2676,7 @@ mod audio_recovery_tests {
 
         let mut session = Session::default();
         session.execute("file.newSequence", json!({"width":16,"height":16})).unwrap();
-        let mut app = FilmcraftApp::new(session);
+        let mut app = FilmApp::new(session);
         let starts = Arc::new(AtomicUsize::new(0));
         app.audio = Some(Box::new(Device { ready: true, starts: starts.clone(), reading: Some(0) }));
         app.play(2.0);
@@ -2691,7 +2691,7 @@ mod audio_recovery_tests {
         let mut session = Session::default();
         session.execute("file.newSequence", json!({"width":16,"height":16})).unwrap();
         let ctx = egui::Context::default();
-        let mut app = FilmcraftApp::new(session);
+        let mut app = FilmApp::new(session);
         let starts = Arc::new(AtomicUsize::new(0));
         app.audio = Some(Box::new(Device { ready: false, starts: starts.clone(), reading: Some(0) }));
         app.apply_prefs(&ctx);
@@ -2712,7 +2712,7 @@ mod audio_recovery_tests {
         let mut session = Session::default();
         session.execute("file.openDemoProject", json!({})).unwrap();
         let ctx = egui::Context::default();
-        let mut app = FilmcraftApp::new(session);
+        let mut app = FilmApp::new(session);
         app.audio = Some(Box::new(Device { ready: true, starts: Arc::new(AtomicUsize::new(0)), reading: None }));
         let displayed = app.session.sequence_rate().tick_of(48);
         app.session.set_playhead(displayed);
@@ -2736,7 +2736,7 @@ mod audio_recovery_tests {
         let mut session = Session::default();
         session.execute("file.openDemoProject", json!({})).unwrap();
         let ctx = egui::Context::default();
-        let mut app = FilmcraftApp::new(session);
+        let mut app = FilmApp::new(session);
         app.audio = Some(Box::new(Device { ready: true, starts: Arc::new(AtomicUsize::new(0)), reading: Some(0) }));
         app.session.set_playhead(Tick::ZERO);
         app.play(1.0);

@@ -326,7 +326,7 @@ pub fn big_sequence(s: &mut Session, item: ItemId, name: &str, seed: u64) -> (It
 // ------------------------------------------------------------------------------------ timeline UI
 
 struct Ui {
-    harness: egui_kittest::Harness<'static, redrob_film_ui_egui::FilmcraftApp>,
+    harness: egui_kittest::Harness<'static, redrob_film_ui_egui::FilmApp>,
     tx: std::sync::mpsc::Sender<redrob_film_ui_egui::control::ControlRequest>,
 }
 
@@ -368,7 +368,7 @@ pub fn timeline(o: &Opts) -> Vec<Value> {
         let item = playback::import(&mut s, &path);
         let (_, clips) = big_sequence(&mut s, item, "Timeline 1000", 7);
         let (tx, rx) = std::sync::mpsc::channel();
-        let app = redrob_film_ui_egui::FilmcraftApp::new(s).with_control(rx);
+        let app = redrob_film_ui_egui::FilmApp::new(s).with_control(rx);
         let mut b = egui_kittest::Harness::builder().with_size(egui::vec2(1920.0, 1080.0)).with_max_steps(100_000);
         if gpu {
             b = b.wgpu();
@@ -454,7 +454,7 @@ pub fn export(o: &Opts) -> Vec<Value> {
         return Vec::new();
     };
     let secs = if o.quick { 3.0 } else { 8.0 };
-    let dir = std::env::temp_dir().join(format!("filmcraft-bench-export-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("redrob-film-bench-export-{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("tmp dir");
     let mut rows = Vec::new();
     // Scenes: (id, format, label, extension, effects-heavy). `--only` matches the id exactly here,
@@ -567,7 +567,7 @@ pub fn project(o: &Opts) -> Vec<Value> {
     for k in 0..5 {
         clips += big_sequence(&mut s, item, &format!("Sequence {}", k + 1), 11 + k as u64).1;
     }
-    let dir = std::env::temp_dir().join(format!("filmcraft-bench-project-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("redrob-film-bench-project-{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("tmp dir");
     let file = dir.join("big.rfilm");
     let n = o.repeat.max(3);

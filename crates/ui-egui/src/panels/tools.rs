@@ -3,11 +3,11 @@
 
 use egui::{Rect, Sense, pos2, vec2};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::icons;
 use crate::state::Tool;
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let mut y = rect.min.y + 4.0;
     let size = 32.0;
@@ -83,7 +83,7 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
 mod tests {
     use super::*;
 
-    fn frame(app: &mut FilmcraftApp, ctx: &egui::Context, time: f64, events: Vec<egui::Event>) {
+    fn frame(app: &mut FilmApp, ctx: &egui::Context, time: f64, events: Vec<egui::Event>) {
         app.auto.begin_frame();
         let mut out = ctx.run_ui(
             egui::RawInput { time: Some(time), events, screen_rect: Some(Rect::from_min_size(egui::Pos2::ZERO, vec2(1000.0, 800.0))), ..Default::default() },
@@ -94,7 +94,7 @@ mod tests {
 
     #[test]
     fn long_press_type_selects_vertical_without_selecting_on_release() {
-        let mut app = FilmcraftApp::new(redrob_film_engine::Session::default());
+        let mut app = FilmApp::new(redrob_film_engine::Session::default());
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens);
         frame(&mut app, &ctx, 0.0, vec![]);

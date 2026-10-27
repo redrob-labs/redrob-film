@@ -1,10 +1,10 @@
 //! Redrob Film desktop app.
 //!
 //! The window is a shell ([`shell`]) hosting two editors as modes: Edit (the timeline editor,
-//! `FilmcraftApp`) and Effects (the compositor, `EffectcraftApp`), with a shared AI dock
+//! `FilmApp`) and Effects (the compositor, `EffectsApp`), with a shared AI dock
 //! ([`ai`]), hand-offs between them ([`handoff`]) and one project bundle ([`bundle`]).
 //!
-//! Usage: `filmcraft [--control <port>] [--demo|--empty] [--recover|--no-recover] [--data-dir <dir>]
+//! Usage: `redrob-film [--control <port>] [--demo|--empty] [--recover|--no-recover] [--data-dir <dir>]
 //! [--safe-mode] [project.rfilm | media files…]`; `--help` prints the options, `--version` the version. An
 //! unknown option is an error (exit code 2), not a file to open.
 //!
@@ -65,7 +65,7 @@ use args::{Cli, Launch};
 use chrono::TimeZone;
 use redrob_film_engine::Session;
 use redrob_film_engine::autosave::{AutosaveConfig, default_data_dir};
-use redrob_film_ui_egui::FilmcraftApp;
+use redrob_film_ui_egui::FilmApp;
 use serde_json::json;
 
 /// Reverse-DNS app id: Linux `.desktop` file, hicolor icon name and Wayland app id.
@@ -242,7 +242,7 @@ fn main() -> eframe::Result {
                     Err(e) => log::error!("recovery failed: {e}"),
                 }
             }
-            let mut app = FilmcraftApp::new(session);
+            let mut app = FilmApp::new(session);
             if recover == Some(false) {
                 app.dialog = None;
             }

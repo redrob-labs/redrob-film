@@ -214,6 +214,7 @@ pub const PREMIERE: &[Entry] = &[
     ("graphics.leadingDown", "Alt+Down", ""),
     ("graphics.leadingUp5", "Alt+Shift+Up", ""),
     ("graphics.leadingDown5", "Alt+Shift+Down", ""),
+    // legacy: command id stored in saved shortcut files
     ("help.filmcraftHelp", "F1", ""),
     ("app.quit", "Cmd+Q", ""),
     ("clip.setPosterFrame", "Cmd+P", ""),

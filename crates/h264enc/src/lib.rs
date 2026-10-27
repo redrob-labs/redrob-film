@@ -298,7 +298,7 @@ const LOG2_MAX_FRAME_NUM: u32 = 8;
 const LOG2_MAX_POC_LSB: u32 = 8;
 
 /// The bitrate a level must allow for constant quality `crf`, which has no bitrate cap. It
-/// assumes the worst footage: about 3 bits per pixel at CRF 0 (FilmCraft's CRF 0 exports of real
+/// assumes the worst footage: about 3 bits per pixel at CRF 0 (Redrob Film's CRF 0 exports of real
 /// camera footage measured 1.7 on average and 2.4 in their busiest second), halving every 6 steps
 /// (one doubling of the quantiser step). The default CRF 23 keeps 1080p30 at level 4.
 fn crf_level_kbps(crf: f32, mbw: usize, mbh: usize, fps: f64) -> u32 {

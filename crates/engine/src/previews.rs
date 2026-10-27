@@ -793,7 +793,7 @@ pub fn render(s: &mut Session, mode: RenderMode, p: &Value) -> Result<Value> {
     if wait || cfg!(target_arch = "wasm32") {
         run();
     } else {
-        std::thread::Builder::new().name("filmcraft-render-previews".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+        std::thread::Builder::new().name("redrob-film-render-previews".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
     }
     Ok(json!({"job": id, "segments": nseg, "frames": frames}))
 }
@@ -879,7 +879,7 @@ pub fn render_audio(s: &mut Session, p: &Value) -> Result<Value> {
     if p.get("wait").and_then(Value::as_bool).unwrap_or(false) || cfg!(target_arch = "wasm32") {
         run();
     } else {
-        std::thread::Builder::new().name("filmcraft-render-audio".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
+        std::thread::Builder::new().name("redrob-film-render-audio".into()).spawn(run).map_err(|e| EngineError::Other(e.to_string()))?;
     }
     Ok(json!({"job": id, "segments": nseg, "samples": total}))
 }

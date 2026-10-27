@@ -7,7 +7,7 @@ use redrob_film_project::{ClipId, EffectInstance, ParamKind, ParamValue, TrackIt
 use redrob_film_time::Tick;
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::icons::{self, Icon};
 use crate::state::KeyframeRef;
 use crate::theme::Tokens;
@@ -58,12 +58,12 @@ fn keyframe_exists(it: &TrackItem, k: &KeyframeRef) -> bool {
     param.is_some_and(|p| p.keyframes.iter().any(|kf| kf.time == k.time))
 }
 
-fn selected_clip(app: &FilmcraftApp) -> Option<(ClipId, TrackItem, TrackKind)> {
+fn selected_clip(app: &FilmApp) -> Option<(ClipId, TrackItem, TrackKind)> {
     selected_clips(app).into_iter().next()
 }
 
 /// The selected clip (video first) and, for a video clip, the selected audio linked to it.
-fn selected_clips(app: &FilmcraftApp) -> Vec<(ClipId, TrackItem, TrackKind)> {
+fn selected_clips(app: &FilmApp) -> Vec<(ClipId, TrackItem, TrackKind)> {
     let Some(seq) = app.session.active_sequence() else { return Vec::new() };
     let picked: Vec<(ClipId, &TrackItem, TrackKind)> = app
         .session
@@ -85,7 +85,7 @@ fn selected_clips(app: &FilmcraftApp) -> Vec<(ClipId, TrackItem, TrackKind)> {
     out
 }
 
-pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let clips = selected_clips(app);
     // keep only selected keyframes that still exist on a clip shown here
@@ -343,7 +343,7 @@ pub(crate) fn fit_to_row(ui: &mut egui::Ui) {
 }
 
 /// Premiere's "Custom Setup ▸ Edit…" row: opens the effect's Clip Fx Editor window.
-fn custom_setup_row(app: &mut FilmcraftApp, ui: &mut egui::Ui, body: Rect, lane: &Rect, clip: ClipId, idx: usize, effect: &str) {
+fn custom_setup_row(app: &mut FilmApp, ui: &mut egui::Ui, body: Rect, lane: &Rect, clip: ClipId, idx: usize, effect: &str) {
     let t = app.tokens;
     let (r, _) = ui.allocate_exact_size(vec2(body.width(), ROW_H), Sense::hover());
     row_line(ui, r, lane, &t);
@@ -359,7 +359,7 @@ fn custom_setup_row(app: &mut FilmcraftApp, ui: &mut egui::Ui, body: Rect, lane:
     }
 }
 
-fn seq_name(app: &FilmcraftApp) -> String {
+fn seq_name(app: &FilmApp) -> String {
     app.session.state.active_sequence.and_then(|s| app.session.project.item(s)).map(|i| i.name.clone()).unwrap_or_default()
 }
 
@@ -420,7 +420,7 @@ fn paint_ruler(p: &egui::Painter, ruler: Rect, it: &TrackItem, rate: redrob_film
 /// Returns whether the diamond was clicked; the arrows queue their own `playhead.set`.
 #[allow(clippy::too_many_arguments)]
 fn keyframe_nav(
-    app: &mut FilmcraftApp,
+    app: &mut FilmApp,
     ui: &mut egui::Ui,
     at: Pos2,
     param: Option<&redrob_film_project::Param>,
@@ -469,7 +469,7 @@ fn keyframe_nav(
 /// the clip does not have yet (Crop) is applied first.
 #[allow(clippy::too_many_arguments)]
 fn properties_nav(
-    app: &mut FilmcraftApp,
+    app: &mut FilmApp,
     ui: &mut egui::Ui,
     row: Rect,
     clip: ClipId,
@@ -497,7 +497,7 @@ fn properties_nav(
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn param_row(
-    app: &mut FilmcraftApp,
+    app: &mut FilmApp,
     ui: &mut egui::Ui,
     body: Rect,
     clip: ClipId,
@@ -840,7 +840,7 @@ pub(crate) fn param_row(
 /// at the playhead, and the clipboard export / import of the parameter's keyframes.
 #[allow(clippy::too_many_arguments)]
 fn keyframe_menu(
-    app: &mut FilmcraftApp,
+    app: &mut FilmApp,
     ui: &mut egui::Ui,
     clip: ClipId,
     idx: usize,
@@ -914,7 +914,7 @@ fn keyframe_menu(
 }
 
 /// Lumetri Color panel: edits (or adds) the Lumetri effect on the selected clip, grouped by section.
-pub fn lumetri_panel(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn lumetri_panel(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let Some((clip, it, _)) = selected_clip(app) else {
         crate::dock::placeholder(ui, rect, &t, tl!("Select a clip to grade"));
@@ -990,7 +990,7 @@ pub fn lumetri_panel(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
 }
 
 /// Properties panel (Premiere 26): a compact inspector for the selected clip.
-pub fn properties_panel(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn properties_panel(app: &mut FilmApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let clips = selected_clips(app);
     let Some((clip, it, kind)) = clips.first().cloned() else {
@@ -1012,7 +1012,7 @@ pub fn properties_panel(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
         ui.painter().text(pos2(r.min.x + 18.0, r.center().y), Align2::LEFT_CENTER, label, Tokens::ui(12.0), t.text_dim);
         r
     };
-    let section = |ui: &mut egui::Ui, app: &mut FilmcraftApp, name: &str, reset: Option<(usize, u64)>, actions: &mut Vec<(String, Value)>| -> bool {
+    let section = |ui: &mut egui::Ui, app: &mut FilmApp, name: &str, reset: Option<(usize, u64)>, actions: &mut Vec<(String, Value)>| -> bool {
         ui.add_space(4.0);
         let key = format!("props:{name}");
         let open = !app.ui.collapsed_fx.contains(&key);
@@ -1158,7 +1158,7 @@ pub fn properties_panel(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
 /// clip's standard effects at once; the clip's fx badge is struck through while it is off) and the
 /// options menu (keyframes on the Timeline, automatic keyframes, comparing with/without effects).
 /// Automation ids `effectControls.stackEnabled`, `effectControls.options`.
-fn stack_header(app: &mut FilmcraftApp, ui: &mut egui::Ui, hr: Rect, clip: ClipId, it: &TrackItem, actions: &mut Vec<(String, Value)>) {
+fn stack_header(app: &mut FilmApp, ui: &mut egui::Ui, hr: Rect, clip: ClipId, it: &TrackItem, actions: &mut Vec<(String, Value)>) {
     let t = app.tokens;
     let standard: Vec<&EffectInstance> =
         it.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic) && !redrob_film_project::graphic::is_layer(e)).collect();
@@ -1258,7 +1258,7 @@ fn zone_bar(ui: &egui::Ui, row: Rect, lane: &Rect, it: &TrackItem, za: Tick, zb:
 
 /// More of an effect's right-click menu: move it in the stack, its zone, the stack switch.
 #[allow(clippy::too_many_arguments)]
-fn effect_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, clip: ClipId, idx: usize, e: &EffectInstance, it: &TrackItem, actions: &mut Vec<(String, Value)>) {
+fn effect_menu(app: &mut FilmApp, ui: &mut egui::Ui, clip: ClipId, idx: usize, e: &EffectInstance, it: &TrackItem, actions: &mut Vec<(String, Value)>) {
     let Some(def) = e.def() else { return };
     let standard = !def.intrinsic && !redrob_film_project::graphic::is_layer(e);
     if standard {
@@ -1307,7 +1307,7 @@ fn effect_menu(app: &mut FilmcraftApp, ui: &mut egui::Ui, clip: ClipId, idx: usi
 /// one undo step, which the first change of each press begins (#201); typed values and clicks stay
 /// separate steps. A drag value only changes once the mouse moves, after the press frame, so the
 /// press that already began a step is remembered by its start time.
-fn run(app: &mut FilmcraftApp, ctx: &egui::Context, actions: Vec<(String, Value)>) {
+fn run(app: &mut FilmApp, ctx: &egui::Context, actions: Vec<(String, Value)>) {
     let (down, press) = ctx.input(|i| (i.pointer.any_down(), i.pointer.press_start_time()));
     let key = egui::Id::new("effect-controls-drag-step");
     for (mut cmd, mut p) in actions {
@@ -1360,7 +1360,7 @@ fn graph_components(v: &ParamValue) -> Vec<f64> {
 /// Keyframes drag vertically (value); Bezier influence handles drag horizontally.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn graph_rows(
-    app: &mut FilmcraftApp,
+    app: &mut FilmApp,
     ui: &mut egui::Ui,
     body: Rect,
     clip: ClipId,
@@ -1581,9 +1581,9 @@ mod drag_undo_tests {
         let mut s = redrob_film_engine::Session::default();
         s.execute("file.openDemoProject", json!({})).unwrap();
         let clip = s.active_sequence().unwrap().video_tracks[0].items[0].id.0;
-        let mut app = crate::FilmcraftApp::new(s);
+        let mut app = crate::FilmApp::new(s);
         let ctx = egui::Context::default();
-        let opacity = |app: &crate::FilmcraftApp| {
+        let opacity = |app: &crate::FilmApp| {
             let q = app.session.active_sequence().unwrap();
             let it = q.find_item(redrob_film_project::ClipId(clip)).unwrap().1;
             it.effects.iter().find(|e| e.effect == "opacity").unwrap().params["opacity"].value.as_f64().unwrap()
@@ -1592,7 +1592,7 @@ mod drag_undo_tests {
         let pos = egui::pos2(10.0, 10.0);
         let button = |pressed| egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers: Default::default() };
         let mut time = 0.0;
-        let mut frame = |app: &mut crate::FilmcraftApp, events: Vec<egui::Event>, value: Option<f64>| {
+        let mut frame = |app: &mut crate::FilmApp, events: Vec<egui::Event>, value: Option<f64>| {
             time += 0.1;
             let raw = egui::RawInput { time: Some(time), events, ..Default::default() };
             let mut out = ctx.run_ui(raw, |ui| {
@@ -1638,7 +1638,7 @@ mod lane_tests {
         s.execute("timeline.select", json!({"clips": [clip.0]})).unwrap();
         s.execute("effects.toggleAnimation", json!({"clip": clip.0, "effect": "motion", "param": "scale"})).unwrap();
         let seq = s.state.active_sequence.unwrap();
-        let mut app = crate::FilmcraftApp::new(s);
+        let mut app = crate::FilmApp::new(s);
         let ctx = context();
         for duration in [0, -5 * redrob_film_time::TICKS_PER_SECOND] {
             let project = std::sync::Arc::make_mut(&mut app.session.project);
@@ -1716,7 +1716,7 @@ mod graph_drag_tests {
     use redrob_film_project::{Interpolation, Keyframe, Param};
 
     struct Driver {
-        app: FilmcraftApp,
+        app: FilmApp,
         ctx: egui::Context,
         clip: ClipId,
         time: f64,
@@ -1739,7 +1739,7 @@ mod graph_drag_tests {
             a.interp = Interpolation::Bezier;
             b.interp = Interpolation::Bezier;
             it.effects.iter_mut().find(|e| e.effect == "motion").unwrap().params.insert(param.into(), Param { value: from, keyframes: vec![a, b] });
-            let app = FilmcraftApp::new(session);
+            let app = FilmApp::new(session);
             let ctx = egui::Context::default();
             crate::theme::install(&ctx, &app.tokens);
             Self { app, ctx, clip, time: 0.0, param }

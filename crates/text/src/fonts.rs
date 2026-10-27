@@ -24,7 +24,7 @@ pub static JETBRAINS_MONO_REGULAR: &[u8] = include_bytes!("../../../assets/fonts
 pub static NOTO_SERIF_REGULAR: &[u8] = include_bytes!("../../../assets/fonts/NotoSerif-Regular.ttf");
 
 /// A font from the optional craft-fonts build input (empty unless built with `CRAFT_FONTS_DIR`; see
-/// `build.rs` and storytold/craft-fonts `docs/integration.md`).
+/// `build.rs` and the craft-fonts repository's `docs/integration.md`).
 pub struct CraftFont {
     pub family: &'static str,
     pub style: &'static str,
@@ -584,7 +584,7 @@ mod tests {
 
     #[test]
     fn covers_text_does_not_keep_file_bytes() {
-        let path = std::env::temp_dir().join(format!("filmcraft-covers-text-{}.ttf", std::process::id()));
+        let path = std::env::temp_dir().join(format!("redrob-film-covers-text-{}.ttf", std::process::id()));
         std::fs::write(&path, INTER_REGULAR).expect("write temp font");
         let info = FaceInfo {
             family: "Inter".into(),

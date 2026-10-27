@@ -23,7 +23,7 @@ pub fn url_for(command: &str) -> Option<&'static str> {
 /// [`HostHooks::open_url`](crate::HostHooks::open_url) opens it; without the hook, or when it
 /// fails, it goes through `ctx.open_url`, which only does something on the web: the native egui
 /// backend is built without its `links` feature, so there it would only log (#642).
-pub fn open(app: &mut crate::FilmcraftApp, ctx: &egui::Context, url: &str) {
+pub fn open(app: &mut crate::FilmApp, ctx: &egui::Context, url: &str) {
     if let Some(f) = app.hooks.open_url.as_mut() {
         match f(url) {
             Ok(()) => return,
@@ -58,7 +58,7 @@ mod tests {
         use std::rc::Rc;
         let opened: Rc<RefCell<Vec<String>>> = Rc::default();
         let rec = opened.clone();
-        let mut app = crate::FilmcraftApp::new(redrob_film_engine::Session::default());
+        let mut app = crate::FilmApp::new(redrob_film_engine::Session::default());
         app.hooks.open_url = Some(Box::new(move |u: &str| {
             rec.borrow_mut().push(u.to_string());
             Ok(())

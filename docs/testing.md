@@ -158,7 +158,7 @@ Each codec README has the full fixture matrix and the measured results.
   writes one contact-sheet PNG per folder for eyeballing (never commit them).
 - **Blessing:** `REDROB_FILM_BLESS=1 cargo test -p redrob-film-golden` rewrites the references (and
   writes a `.attribution` sidecar for any new one; it prints the `ATTRIBUTION.md` row to add).
-  References are original work rendered by FilmCraft, must stay under 50 KB (enforced on bless),
+  References are original work rendered by Redrob Film, must stay under 50 KB (enforced on bless),
   and every one needs its sidecar and index row (`cargo xtask assets`). Look at a re-blessed PNG
   before committing it.
 - The same scenes run through `plan_frame` + `GpuCompositor` when a GPU adapter exists
@@ -171,7 +171,7 @@ Each codec README has the full fixture matrix and the measured results.
 
 ### Scripted UI tests (headless)
 
-`crates/ui-egui/tests/scripted.rs` runs the real `FilmcraftApp` under
+`crates/ui-egui/tests/scripted.rs` runs the real `FilmApp` under
 [`egui_kittest`](https://docs.rs/egui_kittest) (`build_eframe`): no window, no GPU, no OS event loop.
 A small `Driver` opens the demo project, sends requests through the same control channel agents use
 (`ControlRequest` → `control::handle`, exactly as the TCP server does) and steps egui frames until

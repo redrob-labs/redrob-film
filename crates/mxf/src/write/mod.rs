@@ -794,6 +794,7 @@ impl<W: Write + Seek> MxfWriter<W> {
             .p(0x3C01, &utf16(&cfg.company))
             .p(0x3C02, &utf16(&cfg.product))
             .p(0x3C04, &utf16(&cfg.version))
+            // legacy: the product UID written into MXF identification sets
             .p(0x3C05, &hash128(b"FilmCraft MXF writer"))
             .p(0x3C06, &ts);
         s.write(&mut out);

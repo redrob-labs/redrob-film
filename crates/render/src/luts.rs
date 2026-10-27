@@ -3,7 +3,7 @@
 //! Lumetri stores a LUT reference as text:
 //! * `""` — none;
 //! * `lib:<id>` — a LUT in the project's LUT library (`Project::luts`, imported `.cube`/`.3dl`);
-//! * `builtin:<id>` — a LUT FilmCraft generates from code: camera log → Rec. 709 conversions
+//! * `builtin:<id>` — a LUT Redrob Film generates from code: camera log → Rec. 709 conversions
 //!   (from the published curves in `redrob-film-color`; input is video-range normalised, as camera
 //!   LUTs expect) and the procedural Creative looks.
 //!

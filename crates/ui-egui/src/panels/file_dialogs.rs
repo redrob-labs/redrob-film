@@ -8,7 +8,7 @@ use egui::{Color32, CornerRadius, Frame, Margin, RichText, Stroke, Ui, vec2};
 use serde_json::json;
 
 use crate::theme::Tokens;
-use crate::{Dialog, FilmcraftApp};
+use crate::{Dialog, FilmApp};
 
 /// Dialog-local state.
 #[derive(Default)]
@@ -20,7 +20,7 @@ fn modal_frame(t: &Tokens) -> Frame {
     Frame::new().fill(t.panel_bg).stroke(Stroke::new(1.0, t.separator)).corner_radius(CornerRadius::same(10)).inner_margin(Margin::same(0))
 }
 
-fn button(app: &mut FilmcraftApp, ui: &mut Ui, id: &str, label: &str, primary: bool) -> bool {
+fn button(app: &mut FilmApp, ui: &mut Ui, id: &str, label: &str, primary: bool) -> bool {
     let t = app.tokens;
     let text = RichText::new(label).size(13.0).color(if primary { Color32::WHITE } else { t.text });
     let b = egui::Button::new(text)
@@ -33,7 +33,7 @@ fn button(app: &mut FilmcraftApp, ui: &mut Ui, id: &str, label: &str, primary: b
     r.clicked()
 }
 
-pub fn show_recovery(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool {
+pub fn show_recovery(app: &mut FilmApp, ctx: &egui::Context) -> bool {
     let t = app.tokens;
     let list = app.session.execute("file.recoveryList", json!({})).unwrap_or_default();
     let items = list.as_array().cloned().unwrap_or_default();
@@ -104,7 +104,7 @@ pub fn show_recovery(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool {
     open && !app.session.recovery_candidates().is_empty()
 }
 
-pub fn show_revert(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool {
+pub fn show_revert(app: &mut FilmApp, ctx: &egui::Context) -> bool {
     let t = app.tokens;
     let file = app.session.path.as_deref().and_then(|p| std::path::Path::new(p).file_name()).map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
     let mut open = true;
@@ -134,7 +134,7 @@ pub fn show_revert(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool {
 }
 
 /// Draw the dialog if it is one of ours; returns Some(still open).
-pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context, d: Dialog) -> Option<bool> {
+pub fn show(app: &mut FilmApp, ctx: &egui::Context, d: Dialog) -> Option<bool> {
     match d {
         Dialog::Preferences => Some(crate::panels::settings::show(app, ctx)),
         Dialog::Recovery => Some(show_recovery(app, ctx)),

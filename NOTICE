@@ -4,10 +4,14 @@ Licensed under the MIT License or the Apache License, Version 2.0, at your optio
 (LICENSE-MIT, LICENSE-APACHE).
 
 Redrob Film
-Redrob Film is an agent-driven video editor derived from FilmCraft
-(https://github.com/storytold/filmcraft). It is a rebranded and extended
-distribution of that work; files taken from upstream keep their license, and
-the full license texts are retained in LICENSE-MIT and LICENSE-APACHE.
+Redrob Film is an agent-driven video editor. Its code came from FilmCraft
+(https://github.com/storytold/filmcraft) at tag v0.6.0, commit
+2ff3f5e266838700c292a35aaf762e3d4dcef980, and its Effects editor (editors/effects/) from
+EffectCraft (https://github.com/storytold/effectcraft) at commit
+0311bdc34d0dc10c2d18ff7875b4f52d483e5e27. Neither is synced any more: Redrob Film is
+developed on its own from that point. Files taken from them keep their license, and the
+full license texts are retained in LICENSE-MIT and LICENSE-APACHE (and, for the Effects
+editor, in editors/effects/ beside its own NOTICE). See SOURCE_ORIGINS.md.
 Modifications and Redrob Film branding:
 Copyright (c) 2026-present Janghoon Lee (Redrob) and contributors
 Licensed under the MIT License or the Apache License, Version 2.0, at your option.
@@ -16,9 +20,9 @@ Upstream's ArtCraft name, wordmark and logos (its docs/brand/) are trademarks of
 as upstream's NOTICE requires of a fork, they are removed from this distribution.
 
 The Redrob name, symbol, app tile and lockup (assets/brand/, and the icons derived from them in
-assets/app-icon/ and apps/filmcraft-web/web/) are trademarks of Redrob (McKinley Rice, Inc.). They
-are not covered by the license above; a fork or modified version that is not Redrob's must remove
-them. See assets/brand/README.md.
+assets/app-icon/) are trademarks of Redrob (McKinley Rice, Inc.). They are not covered by the
+license above; a fork or modified version that is not Redrob's must remove them. See
+assets/brand/README.md.
 
 Third-party material
 

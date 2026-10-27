@@ -194,7 +194,7 @@ fn large_project_roundtrip_and_timing() {
     let decode_ms = t0.elapsed().as_secs_f64() * 1000.0;
     assert_eq!(back.project, p);
     let t0 = std::time::Instant::now();
-    let dir = std::env::temp_dir().join(format!("filmcraft-big-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("redrob-film-big-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     redrob_film_format::atomic_write(&dir.join("big.rfilm"), &compact).unwrap();
     let write_ms = t0.elapsed().as_secs_f64() * 1000.0;

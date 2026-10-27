@@ -1,4 +1,4 @@
-// FilmCraft GPU compositor.
+// Redrob Film GPU compositor.
 // Layers are drawn as transformed quads; the fragment shader samples the source (YUV planes or
 // RGBA) with manual bilinear filtering (textureLoad, so any float format works) and N×N
 // supersampling over the pixel footprint when minifying, converts to linear light, premultiplies

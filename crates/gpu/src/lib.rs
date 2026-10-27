@@ -277,7 +277,7 @@ fn prepare_layers(layers: &[PlanLayer]) -> PreparedPlan {
 impl GpuCompositor {
     pub fn new(device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("filmcraft-composite"),
+            label: Some("redrob-film-composite"),
             source: wgpu::ShaderSource::Wgsl(include_str!("composite.wgsl").into()),
         });
         let layer_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -425,7 +425,7 @@ impl GpuCompositor {
             return s.1.clone();
         }
         let t = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("filmcraft-target"),
+            label: Some("redrob-film-target"),
             size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
             mip_level_count: 1,
             sample_count: 1,
@@ -441,7 +441,7 @@ impl GpuCompositor {
 
     fn plane_texture(&mut self, w: u32, h: u32, format: wgpu::TextureFormat, bytes: &[u8], bpp: u32) -> wgpu::TextureView {
         let t = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("filmcraft-plane"),
+            label: Some("redrob-film-plane"),
             size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
             mip_level_count: 1,
             sample_count: 1,
@@ -812,7 +812,7 @@ impl GpuCompositor {
             layout: &self.final_bgl,
             entries: &[wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&accum_view) }],
         });
-        let mut enc = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("filmcraft-composite") });
+        let mut enc = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("redrob-film-composite") });
         // Runs of fixed-function layers draw in one pass. A layer that reads the destination
         // ends it, copies the accumulator under its quad into the backdrop and draws on its own.
         let accum_tex = self.accum.as_ref().map(|a| a.0.clone());
@@ -922,7 +922,7 @@ impl GpuCompositor {
         }
         let t = std::time::Instant::now();
         self.render_plan(plan, prep, true, false);
-        let mut enc = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("filmcraft-composite-export") });
+        let mut enc = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("redrob-film-composite-export") });
         let size = self.copy_accumulator(&mut enc)?;
         self.queue.submit([enc.finish()]);
         export_renderer::timing::add_submit(t.elapsed());

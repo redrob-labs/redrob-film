@@ -69,7 +69,7 @@ into the shared `Frame` (`OnceLock` per CTB row). Motion compensation of later p
 row on exactly the reference rows it reads. Samples are stored as `u16` internally for all bit
 depths.
 
-Draft mode (`Decoder::set_draft(true)`; FilmCraft enables it with Settings ▸ Playback ▸ Draft
+Draft mode (`Decoder::set_draft(true)`; Redrob Film enables it with Settings ▸ Playback ▸ Draft
 decoding while the Program monitor plays at 1/2 or 1/4): sub-layer non-reference pictures
 (TRAIL_N, RASL_N, ...) of the highest temporal sub-layer — no later picture predicts from them,
 and TMVP reads only reference pictures — skip deblocking and SAO and are flagged

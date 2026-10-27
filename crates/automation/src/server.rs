@@ -33,7 +33,7 @@ fn join_error(e: tokio::task::JoinError) -> AutomationError {
 }
 
 #[derive(Clone)]
-pub struct FilmcraftMcp {
+pub struct FilmMcp {
     backend: Arc<Backend>,
     tool_router: ToolRouter<Self>,
 }
@@ -194,7 +194,7 @@ fn wrap(r: Result<Value, AutomationError>) -> Result<CallToolResult, McpError> {
     })
 }
 
-impl FilmcraftMcp {
+impl FilmMcp {
     pub fn headless(session: Session) -> Self {
         Self { backend: Arc::new(Backend::Headless(Arc::new(Mutex::new(session)))), tool_router: Self::tool_router() }
     }
@@ -302,7 +302,7 @@ impl FilmcraftMcp {
 }
 
 #[tool_router]
-impl FilmcraftMcp {
+impl FilmMcp {
     #[tool(
         title = "List commands",
         description = "List every command (id, label, menu path, shortcut, parameter doc, enabled now). Menus, shortcuts, panels and timeline gestures all map to these ids.",
@@ -549,9 +549,9 @@ impl FilmcraftMcp {
     }
 }
 
-impl FilmcraftMcp {
+impl FilmMcp {
     async fn screenshot(&self, b: &BridgeClient, panel: Option<String>, max: u32) -> Result<CallToolResult, McpError> {
-        let path = std::env::temp_dir().join(format!("filmcraft-mcp-{}.png", std::process::id()));
+        let path = std::env::temp_dir().join(format!("redrob-film-mcp-{}.png", std::process::id()));
         if let Err(e) = b.call("ui.screenshot", json!({"path": path.to_string_lossy(), "panel": panel})).await {
             return Ok(fail(e));
         }
@@ -572,7 +572,7 @@ impl FilmcraftMcp {
     }
 }
 
-impl FilmcraftMcp {
+impl FilmMcp {
     /// The first argument `tool` doesn't take, as a message naming the ones it does.
     fn unknown_arg(&self, tool: &str, args: Option<&rmcp::model::JsonObject>) -> Option<String> {
         let def = self.tool_router.get(tool)?;
@@ -601,7 +601,7 @@ fn cache_hints(context: &rmcp::service::RequestContext<rmcp::RoleServer>, ttl_ms
 }
 
 #[tool_handler(router = self.tool_router)]
-impl ServerHandler for FilmcraftMcp {
+impl ServerHandler for FilmMcp {
     fn get_info(&self) -> rmcp::model::ServerConfig {
         rmcp::model::ServerConfig::new(rmcp::model::ServerCapabilities::builder().enable_tools().enable_resources().build())
             .with_server_info(rmcp::model::Implementation::new("redrob-film", env!("CARGO_PKG_VERSION")))
@@ -698,7 +698,7 @@ mod tests {
     async fn headless_commands_and_render() {
         let mut s = Session::default();
         s.execute("file.openDemoProject", json!({})).unwrap();
-        let m = FilmcraftMcp::headless(s);
+        let m = FilmMcp::headless(s);
         let v = m.run("sequence.addEditAllTracks", json!({"seconds": 2.0})).await.unwrap();
         assert!(v["cuts"].as_u64().unwrap() >= 2);
         let r = m.render_frame(Parameters(RenderParams { seconds: Some(1.0), max_side: Some(320) })).await.unwrap();
@@ -710,7 +710,7 @@ mod tests {
     /// the frame at `seconds`.
     #[tokio::test]
     async fn rendering_at_a_time_does_not_move_the_playhead() {
-        let m = FilmcraftMcp::headless(demo());
+        let m = FilmMcp::headless(demo());
         m.run("sequence.selectionFollowsPlayhead", json!({"on": true})).await.unwrap();
         m.run("playhead.set", json!({"seconds": 1.0})).await.unwrap();
         let before = m.run("sequence.inspect", json!({})).await.unwrap();
@@ -737,7 +737,7 @@ mod tests {
             use tokio::io::AsyncBufReadExt;
             let (tx, server_in) = tokio::io::duplex(1 << 22);
             let (server_out, rx) = tokio::io::duplex(1 << 22);
-            tokio::spawn(FilmcraftMcp::headless(s).serve_io(server_in, server_out));
+            tokio::spawn(FilmMcp::headless(s).serve_io(server_in, server_out));
             Self { tx, rx: tokio::io::BufReader::new(rx).lines() }
         }
         async fn send(&mut self, line: &str) {
@@ -764,7 +764,7 @@ mod tests {
     /// #499: `media_import` takes `paths` (a required array), and forwards `bin` / `image_sequence` to `file.import`.
     #[test]
     fn media_import_schema_and_params() {
-        let m = FilmcraftMcp::headless(Session::default());
+        let m = FilmMcp::headless(Session::default());
         let def = m.tool_router.get("media_import").unwrap();
         let schema = Value::Object((*def.input_schema).clone());
         assert_eq!(schema["properties"]["paths"]["type"], "array", "{schema}");
@@ -896,7 +896,7 @@ mod tests {
     /// it, deletes the partial file and sends no response.
     #[tokio::test(flavor = "multi_thread")]
     async fn export_progress_and_cancel() {
-        let dir = std::env::temp_dir().join(format!("filmcraft-mcp-progress-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("redrob-film-mcp-progress-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let mut c = Client::start(demo());
         c.init().await;
@@ -988,7 +988,7 @@ mod tests {
     /// "session lock poisoned" until the server was restarted.
     #[tokio::test(flavor = "multi_thread")]
     async fn a_poisoned_session_lock_keeps_serving() {
-        let m = FilmcraftMcp::headless(demo());
+        let m = FilmMcp::headless(demo());
         let Backend::Headless(s) = &*m.backend else { panic!("headless backend") };
         let s = s.clone();
         let _ = std::thread::spawn(move || {

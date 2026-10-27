@@ -19,7 +19,7 @@ use redrob_film_time::{Tick, TimeDisplay, format_time};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use crate::FilmcraftApp;
+use crate::FilmApp;
 use crate::dock::PanelKind;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -44,16 +44,16 @@ pub struct KpUi {
 }
 
 /// The caption edit window's text size (Text panel ▸ Captions zoom).
-pub fn caption_font_size(app: &FilmcraftApp) -> f32 {
+pub fn caption_font_size(app: &FilmApp) -> f32 {
     if app.ui.kp.caption_font > 0.0 { app.ui.kp.caption_font } else { 12.5 }
 }
 
 /// The transcript's text size (Text panel ▸ Transcript zoom).
-pub fn transcript_font_size(app: &FilmcraftApp) -> f32 {
+pub fn transcript_font_size(app: &FilmApp) -> f32 {
     if app.ui.kp.transcript_font > 0.0 { app.ui.kp.transcript_font } else { 13.0 }
 }
 
-pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, _params: &Value) -> Option<Result<Value, String>> {
+pub fn route(app: &mut FilmApp, ctx: &egui::Context, id: &str, _params: &Value) -> Option<Result<Value, String>> {
     match id {
         "window.commandBar" => {
             app.ui.kp.command_bar = Some((String::new(), 0));
@@ -80,7 +80,7 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, _params: &Va
 }
 
 /// The clip keyframe commands act on: the selected keyframe's clip, else the first selected clip.
-fn target_clip(app: &FilmcraftApp) -> Option<(u64, TrackItem)> {
+fn target_clip(app: &FilmApp) -> Option<(u64, TrackItem)> {
     let q = app.session.active_sequence()?;
     let clip = app.ui.keyframe_selection.first().map(|k| k.clip).or_else(|| app.session.state.selection.first().map(|c| c.0))?;
     let (_, it) = q.find_item(redrob_film_project::ClipId(clip))?;
@@ -91,7 +91,7 @@ fn timeline_time_of(it: &TrackItem, m: Tick) -> Tick {
     it.start + Tick(((m - it.source_in).0 as f64 / it.speed.abs().max(1e-6)) as i64)
 }
 
-fn go_keyframe(app: &mut FilmcraftApp, next: bool) -> Result<Value, String> {
+fn go_keyframe(app: &mut FilmApp, next: bool) -> Result<Value, String> {
     let (_, it) = target_clip(app).ok_or_else(|| tl!("Select a clip first").to_string())?;
     let mut times: Vec<Tick> = it
         .effects
@@ -112,7 +112,7 @@ fn go_keyframe(app: &mut FilmcraftApp, next: bool) -> Result<Value, String> {
     }
 }
 
-fn toggle_keyframe(app: &mut FilmcraftApp) -> Result<Value, String> {
+fn toggle_keyframe(app: &mut FilmApp) -> Result<Value, String> {
     let (clip, it) = target_clip(app).ok_or_else(|| tl!("Select a clip first").to_string())?;
     let (effect, param, mask) = match app.ui.keyframe_selection.first() {
         Some(k) => (k.effect, k.param.clone(), k.mask),
@@ -131,7 +131,7 @@ fn toggle_keyframe(app: &mut FilmcraftApp) -> Result<Value, String> {
 
 /// Keys of the focused Effect Controls panel with keyframes selected: Left / Right move them one
 /// frame, Alt+Left / Alt+Right go to the previous / next keyframe. Returns true when a key was used.
-pub fn effect_controls_keys(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool {
+pub fn effect_controls_keys(app: &mut FilmApp, ctx: &egui::Context) -> bool {
     if app.ui.focused != PanelKind::EffectControls || app.ui.keyframe_selection.is_empty() || ctx.egui_wants_keyboard_input() {
         return false;
     }
@@ -181,14 +181,14 @@ pub fn effect_controls_keys(app: &mut FilmcraftApp, ctx: &egui::Context) -> bool
     true
 }
 
-pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
+pub fn show(app: &mut FilmApp, ctx: &egui::Context) {
     command_bar(app, ctx);
     caption_import(app, ctx);
 }
 
 /// Import Captions: the text encoding of the file (Automatic detects UTF-8, UTF-16 with a byte
 /// order mark, else Windows-1252).
-fn caption_import(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn caption_import(app: &mut FilmApp, ctx: &egui::Context) {
     let Some((path, mut enc)) = app.ui.kp.caption_import.clone() else { return };
     let mut open = true;
     let mut done = false;
@@ -227,7 +227,7 @@ fn caption_import(app: &mut FilmcraftApp, ctx: &egui::Context) {
 
 /// Find Action…: every menu command (and every frontend command) by its label, menu path or id;
 /// Enter or a click runs it.
-fn command_bar(app: &mut FilmcraftApp, ctx: &egui::Context) {
+fn command_bar(app: &mut FilmApp, ctx: &egui::Context) {
     let Some((mut q, mut hi)) = app.ui.kp.command_bar.clone() else { return };
     let mut entries: Vec<(String, String, Option<String>)> = crate::menus::menu_items(app)
         .into_iter()

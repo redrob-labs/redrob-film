@@ -35,7 +35,7 @@ pub(crate) fn fnv(s: &[u8], h: u64) -> u64 {
 }
 
 fn timestamp() -> Vec<u8> {
-    // 1970-01-01 00:00:00.00: FilmCraft writes reproducible files
+    // 1970-01-01 00:00:00.00: Redrob Film writes reproducible files
     let mut v = 1970i16.to_le_bytes().to_vec();
     v.extend_from_slice(&[1, 1, 0, 0, 0, 0]);
     v
@@ -490,6 +490,7 @@ fn composition_mob(
                         .with(pid::DATA_DEFINITION, weak(path::DATA_DEFS, dd))
                         .data_prop(pid::LENGTH, n.to_le_bytes().to_vec())
                         .with(pid::OPERATION, weak(path::OPERATION_DEFS, op))
+                        // legacy: AAF tagged-value name the reader matches
                         .with(pid::COMPONENT_USER_COMMENTS, Value::StrongVec(vec![tagged("FilmCraft Effect", &x.effect)]));
                     if op == def::VIDEO_DISSOLVE {
                         *uses_varying = true;
@@ -552,6 +553,7 @@ fn composition_mob(
     mob.with(pid::SLOTS, Value::StrongVec(slots)).with(
         pid::MOB_USER_COMMENTS,
         Value::StrongVec(vec![
+            // legacy: AAF tagged-value names the reader matches
             tagged("FilmCraft Frame Size", &format!("{}x{}", comp.width, comp.height)),
             tagged("FilmCraft Audio Sample Rate", &comp.sample_rate.to_string()),
         ]),
