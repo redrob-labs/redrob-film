@@ -86,7 +86,7 @@ start the next frame before the loop filter is done; frame-parallel / error-resi
 suite decodes every fixture with 1, 3 and all threads. Samples are `u16` internally for every bit
 depth.
 
-Draft mode (`Decoder::set_draft(true)`; FilmCraft enables it with Settings ▸ Playback ▸ Draft
+Draft mode (`Decoder::set_draft(true)`; Redrob Film enables it with Settings ▸ Playback ▸ Draft
 decoding while the Program monitor plays at 1/2 or 1/4): frames with `refresh_frame_flags` 0 —
 no reference slot receives them, so nothing predicts from their samples — skip the loop filter
 and are flagged `Picture::draft`. The loop filter changes neither mode info, segmentation map nor

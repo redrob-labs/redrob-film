@@ -1,6 +1,6 @@
 # redrob-film-h264enc
 
-A clean-room, pure-Rust H.264/AVC encoder for FilmCraft's export path, written from the public
+A clean-room, pure-Rust H.264/AVC encoder for Redrob Film's export path, written from the public
 ITU-T H.264 specification (04/2013 edition) and general encoder literature. Layer L0: it depends only on
 `redrob-film-bitstream`, `thiserror` and (optionally, feature `threads`, on by default) `rayon`. No `unsafe`,
 builds for `wasm32-unknown-unknown` with or without `threads`.

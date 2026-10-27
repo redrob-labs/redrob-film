@@ -1,6 +1,6 @@
 # redrob-film-tts-text
 
-Text-to-speech text front end for FilmCraft (L2, phases P2a + P2b). Takes a
+Text-to-speech text front end for Redrob Film (L2, phases P2a + P2b). Takes a
 narration script and returns plain spoken words, structured as tokens: `Word`,
 `Pause` (from `[pause 1s]` markers), `SentenceEnd` and `Punct`
 (`normalize`), and turns those words into Kokoro phoneme symbols (`phonemize`).

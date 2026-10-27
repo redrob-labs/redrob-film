@@ -2,7 +2,7 @@
 
 > **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** trivial (status line, revision history and roadmap link added; content checked against the crate list) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
-FilmCraft is a Cargo workspace of small crates with strictly enforced layering. The engine is
+Redrob Film is a Cargo workspace of small crates with strictly enforced layering. The engine is
 headless: every feature can be reached without a window, and the egui UI is one client among the
 CLI, the JSON control channel and the MCP server.
 
@@ -32,7 +32,7 @@ Design principles:
      codecs/containers: isobmff · matroska · mxf · cfb · mpegts · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · prores · dnx · apv · aac · ac3 · opus
 ```
 
-Crates are named `filmcraft-<dir>` (`crates/time` is `redrob-film-time`). The apps are `filmcraft`
+Crates are named `redrob-film-<dir>` (`crates/time` is `redrob-film-time`). The apps are `redrob-film`
 and `redrob-film-cli`.
 
 | Crate | Layer | Purpose |
@@ -76,8 +76,8 @@ and `redrob-film-cli`.
 | `engine` | L4 | `Session`, command registry, undo history, media pool, jobs, interchange glue |
 | `ui-egui` | L5 | the egui frontend: docking, panels, timeline, monitors, playback, control-channel handlers |
 | `automation` | L5 | MCP server (`rmcp`, stdio), headless or bridged to the running app |
-| `platform` | L5 | OS media FFI only: hardware video decoding (VideoToolbox H.264 / HEVC on macOS; Media Foundation / Direct3D 11 H.264 / HEVC / VP9 / AV1 on Windows; VA-API H.264 / HEVC on Linux, with our own parsers and DPBs driving the stateless hardware; a no-op elsewhere) behind `codecs::VideoDecoder`, with transparent fallback to our decoders, and hardware H.264 encoding (VideoToolbox, opt-in) and H.265 encoding (VideoToolbox, the only H.265 encoder; the format exists only where a hardware encoder does) and NVIDIA NVENC H.264 (Windows and 64-bit Linux, opt-in) and H.265 (Windows, FilmCraft's only H.265 encoder there) encoding behind `export::VideoEncoder`; H.264 declines to the built-in encoder for what the hardware does not take. The one crate allowed `unsafe` ([ADR 0001](adr/0001-platform-ffi.md), [README](../crates/platform/README.md)) |
-| `filmcraft` | L6 | desktop binary: eframe/wgpu window, cpal audio output, file dialogs, native macOS menu, TCP control server |
+| `platform` | L5 | OS media FFI only: hardware video decoding (VideoToolbox H.264 / HEVC on macOS; Media Foundation / Direct3D 11 H.264 / HEVC / VP9 / AV1 on Windows; VA-API H.264 / HEVC on Linux, with our own parsers and DPBs driving the stateless hardware; a no-op elsewhere) behind `codecs::VideoDecoder`, with transparent fallback to our decoders, and hardware H.264 encoding (VideoToolbox, opt-in) and H.265 encoding (VideoToolbox, the only H.265 encoder; the format exists only where a hardware encoder does) and NVIDIA NVENC H.264 (Windows and 64-bit Linux, opt-in) and H.265 (Windows, Redrob Film's only H.265 encoder there) encoding behind `export::VideoEncoder`; H.264 declines to the built-in encoder for what the hardware does not take. The one crate allowed `unsafe` ([ADR 0001](adr/0001-platform-ffi.md), [README](../crates/platform/README.md)) |
+| `redrob-film` | L6 | desktop binary: eframe/wgpu window, cpal audio output, file dialogs, native macOS menu, TCP control server |
 | `redrob-film-cli` | L6 | headless CLI: `exec`, `run`, `inspect`, `describe`, `commands`, `import`, `export`, `render`, `probe`, `mcp`; `--bridge` targets the running app |
 
 ### What `cargo xtask layers` enforces
@@ -90,13 +90,11 @@ are exempt):
 |---|---|
 | Every crate has a layer | A new crate fails the check until it is added to `LAYERS`. |
 | Only downward edges | A crate may not depend on a crate in a higher layer. |
-| Same-layer edges are listed | From L1 up, a same-layer edge must be in `SAME_LAYER`: `media→frame`, `project→media`, `project→frame`, `gpu→render`, `export→render`, `cli→filmcraft`, plus a few reserved for planned crates. |
+| Same-layer edges are listed | From L1 up, a same-layer edge must be in `SAME_LAYER`: `media→frame`, `project→media`, `project→frame`, `gpu→render`, `export→render`, `cli→redrob-film`, plus a few reserved for planned crates. |
 | L0 codecs stay standalone | L0 crates other than `time`, `geom`, `color`, `bitstream`, `testkit` may depend on no workspace crate except `redrob-film-bitstream`. External crates such as `thiserror` and `rayon` are allowed. |
 | No UI/OS crates below L5 | `egui`, `eframe`, `egui-wgpu`, `winit`, `rfd`, `cpal`, `muda` are allowed only in L5 and L6. |
 
-`cargo xtask wasm` runs `cargo check --target wasm32-unknown-unknown` on every L0–L4 crate and the
-egui UI, so everything up to the engine stays portable (the browser app itself was removed with the
-release trim; Redrob Film ships for Linux x86_64, macOS and Windows x64 only, [releasing.md](releasing.md)).
+There are no web builds: Redrob Film ships for Linux x86_64, macOS and Windows x64 only, [releasing.md](releasing.md)).
 `unsafe_code = "forbid"` applies workspace-wide, except in `platform`
 (`deny`, allowed only on its FFI modules; [ADR 0001](adr/0001-platform-ffi.md)).
 
@@ -432,7 +430,7 @@ stereo / mono track ──5.1 panner───┼─► 5.1 submix / 5.1 Mix ─�
   `MixerStrip::lanes` (`pan51.x`, `pan51.y` −100…100, `pan51.center` 0…100 %, `pan51.lfe` dB): a
   lane without keyframes stores the static value, so no new project fields were needed and the
   puck is automatable like any lane.
-- **Maths** (`audio_dsp::channels`). 5.1 order is L, R, C, LFE, Ls, Rs everywhere inside FilmCraft.
+- **Maths** (`audio_dsp::channels`). 5.1 order is L, R, C, LFE, Ls, Rs everywhere inside Redrob Film.
   Downmix is ITU-R BS.775 (`Lo = L + k·C + k·Ls`, `Ro = R + k·C + k·Rs`, mono
   `M = k·L + k·R + C + ½·Ls + ½·Rs`, `k = 1/√2`, LFE omitted); upmix puts mono on C and stereo on
   L/R. The panner splits a point source front/rear and left/right with the sine/cosine
@@ -721,7 +719,7 @@ All of these dispatch the same command ids.
 |---|---|---|
 | UI | `ui-egui` menus, shortcuts, panels | `menus::invoke` → engine or UI command |
 | CLI | `redrob-film-cli` | `exec <id> key=value…`, `run script.jsonl` (one `{"id","params"}` per line), `inspect`, `import`, `export`, `render`, `probe`; `--save`, `--bridge` |
-| Control channel | `filmcraft --control <port>` | JSON lines on loopback TCP: engine commands plus synthetic input, inspection and screenshots of the live UI |
+| Control channel | `redrob-film --control <port>` | JSON lines on loopback TCP: engine commands plus synthetic input, inspection and screenshots of the live UI |
 | MCP | `redrob-film-cli mcp` | stdio MCP server: headless in-process session, or `--bridge` to the control channel |
 
 - **Automation ids.** Every interactive widget calls `app.auto.add(id, rect, label)` each frame

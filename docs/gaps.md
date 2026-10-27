@@ -41,7 +41,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   interpolation and audio effect counts once it exists; nothing renders the same project in
   Premiere and Redrob Film and compares frames or samples. Effects described as approximations
   count the same as exact ones.
-- **Evidence:** catalogue tests check names and folders only. EffectCraft's live After Effects
+- **Evidence:** catalogue tests check names and folders only. Redrob Effects's live After Effects
   comparison (its gaps.md G1) found real bugs in features marked done on its first run.
 - **Impact:** "ready for real work" stays an estimate; colour and effect differences surface only
   when a user notices.
@@ -123,7 +123,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   - *CI:* `rust-desktop` runs clippy and the tests on macOS 14 and Windows 2022, with the same
     "did any Rust input change" skip. Formatting is checked on Linux only.
   - *Still open:* checks on macOS 12, Intel UHD and Windows 11 machines; the triage pass over
-    upstream crash reports (#380, #413, #439, #477, #582, #687). An adapter that crashes the driver
+    crash reports (#380, #413, #439, #477, #582, #687). An adapter that crashes the driver
     during instance creation is caught only on the next start (by safe mode), not in the same one.
 
 ## G5. Hardware acceleration is partial
@@ -166,8 +166,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   black (#432); only the first audio track imported (#397, #416, #601; multi-stream support landed
   in #361, reporters not yet confirmed); bitrate target produced 6.1 Mb/s for 40 (#371). Each has
   a corpus entry carrying its issue number.
-- **Done when:** corpus fetched pinned and sha256-verified (as PhotoCraft's `cargo xtask corpus`,
-  craftrules `standards/test-corpora.md`), runs green before each release, ≥ 50 files. **20–40 h left.**
+- **Done when:** corpus fetched pinned and sha256-verified (a `cargo xtask corpus`),
+  runs green before each release, ≥ 50 files. **20–40 h left.**
 
 ## G7. No measured parity tool in CI
 
@@ -309,7 +309,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G20. The web app shell
 
-- **Closed (2026-10-15):** Redrob Film does not ship a browser build. `apps/filmcraft-web` and the web
+- **Closed (2026-10-15):** Redrob Film does not ship a browser build. `apps/redrob-film-web` and the web
   packaging were removed with the release trim to three desktop targets ([releasing.md](releasing.md)).
 
 ## Revision history
@@ -317,6 +317,6 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-10 | major | Created from ROADMAP.md's "Where we are lacking" (2026-10-05); re-ranked against Premiere 26.5.2 and the 188 open issues; added `.prproj`, 10-bit / 4:2:2 camera decode, launch crashes and missing PR CI, localization, delivery formats |
-| 2026-10-19 | minor | 0.4.0: G16 idle repaint fix and G17 audio reopen / keep-alive recorded with measured numbers (Linux); G20 marked closed in the table; FilmCraft → Redrob Film in the prose |
+| 2026-10-19 | minor | 0.4.0: G16 idle repaint fix and G17 audio reopen / keep-alive recorded with measured numbers (Linux); G20 marked closed in the table; Redrob Film → Redrob Film in the prose |
 | 2026-10-19 | minor | G6: real-world media corpus manifest (106 entries), generator, engine acceptance harness (run by hand); left: a green run, real originals, pins |
 | 2026-10-19 | minor | G2: `.prproj` import (open, import, drag and drop, CLI) with an import report; tests with hand-written fixtures and an opt-in real-project directory; left: gate run, easing, blend modes, graphics, export |

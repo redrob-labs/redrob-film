@@ -1,6 +1,6 @@
-# Driving EffectCraft from agents
+# Driving Redrob Effects from agents
 
-Everything in EffectCraft is an engine command with a stable id and JSON params. Menus, shortcuts,
+Everything in Redrob Effects is an engine command with a stable id and JSON params. Menus, shortcuts,
 panel gestures, the CLI, the control channel and MCP all go through the same commands, so anything a
 user can do, an agent can do too. There are three ways in:
 
@@ -8,12 +8,12 @@ user can do, an agent can do too. There are three ways in:
 |---|---|---|
 | **MCP** (`redrob-effects-cli mcp`) | Claude Code and other MCP clients | no (headless), or yes with `--bridge` |
 | **CLI** (`redrob-effects-cli exec/get/set/...`) | one-shot scripting and CI; JSON output with `--json` | no |
-| **Control channel** (`effectcraft --control 9877`) | driving and seeing the live UI; see [control-protocol.md](control-protocol.md) | yes |
+| **Control channel** (`redrob-film --control 9877`) | driving and seeing the live UI; see [control-protocol.md](control-protocol.md) | yes |
 
 ## Find the presets folder
 
 The native Effects & Presets panel's options menu includes **Copy Presets Folder Path**. It copies
-the folder the panel scans: `EC_PRESETS_DIR` when set, otherwise `~/Documents/EffectCraft/Presets`
+the folder the panel scans: `EC_PRESETS_DIR` when set, otherwise `~/Documents/Redrob Film/Presets`
 using `HOME` or `USERPROFILE`. Relative paths are resolved to an absolute path. The folder may
 not exist yet; this action does not create it.
 Over the live UI control channel, `ui.menu.invoke {"id":"effects.copyPresetsFolderPath"}` copies
@@ -27,21 +27,21 @@ Code, add a `.mcp.json` at the project root:
 ```json
 {
   "mcpServers": {
-    "effectcraft": {
-      "command": "/path/to/effectcraft/target/release/redrob-effects-cli",
+    "redrob-effects": {
+      "command": "/path/to/redrob-effects/target/release/redrob-effects-cli",
       "args": ["mcp"]
     }
   }
 }
 ```
 
-This repository ships a ready-made [`.mcp.json`](../.mcp.json): `effectcraft` (headless, demo
-project loaded) and `effectcraft-app` (bridged to a desktop app started with `--control 9877`). Both
+This repository ships a ready-made [`.mcp.json`](../.mcp.json): `redrob-effects` (headless, demo
+project loaded) and `redrob-effects-app` (bridged to a desktop app started with `--control 9877`). Both
 run through `cargo run --release`, so the first start compiles; run
 `cargo build --release -p redrob-effects-cli` once beforehand to avoid an MCP startup timeout.
 
 You can also register it from the command line:
-`claude mcp add effectcraft -- /path/to/target/release/redrob-effects-cli mcp`. Other clients (Claude
+`claude mcp add redrob-effects -- /path/to/target/release/redrob-effects-cli mcp`. Other clients (Claude
 Desktop, Cursor and the like) take the same `command` and `args`.
 
 - **Headless** (`["mcp"]`): an in-process session with no window. Add `"--demo"` or
@@ -49,7 +49,7 @@ Desktop, Cursor and the like) take the same `command` and `args`.
   unless you add `"--gpu"` (`["mcp", "--gpu"]`), which attaches the GPU compositor on a device of
   its own; if no adapter is usable the server says why and exits. `get_project`'s `renderer`
   (`render.backend`) reports `active` (`gpu` / `cpu`) and, on the CPU, `why`.
-- **Bridge** (`["mcp", "--bridge", "9877"]`): drives a running `effectcraft --control 9877`, so you
+- **Bridge** (`["mcp", "--bridge", "9877"]`): drives a running `redrob-film --control 9877`, so you
   see every change live. Bridge mode adds `screenshot` and the `ui_*` tools.
 
 After a broken connection, the bridge retries explicitly read-only control queries once.
@@ -63,15 +63,15 @@ The release packages ship `redrob-effects-cli` alongside the desktop app, so no 
 
 | Install | CLI |
 |---|---|
-| Windows (MSI) | `C:\Program Files\EffectCraft\redrob-effects-cli.exe` by default (wherever you installed it otherwise), not on `PATH` |
+| Windows (MSI) | `C:\Program Files\Redrob Effects\redrob-effects-cli.exe` by default (wherever you installed it otherwise), not on `PATH` |
 | Linux (deb, rpm) | `/usr/bin/redrob-effects-cli` |
 | macOS | the separate `redrob-effects-cli-<version>-macos-<arch>.zip` release asset (the `.app` holds only the desktop app) |
 
 ```sh
 # Windows, default install folder
-claude mcp add effectcraft -- "C:\Program Files\EffectCraft\redrob-effects-cli.exe" mcp
+claude mcp add redrob-effects -- "C:\Program Files\Redrob Effects\redrob-effects-cli.exe" mcp
 # Linux, or macOS with the CLI unzipped onto PATH
-claude mcp add effectcraft -- redrob-effects-cli mcp
+claude mcp add redrob-effects -- redrob-effects-cli mcp
 ```
 
 The server speaks JSON-RPC 2.0 over stdio, one message per line, and supports MCP protocol versions
@@ -86,7 +86,7 @@ and transport errors also flush outstanding changes. Queries do not rotate the s
 A failed checkpoint adds a warning to the tool reply; the edit remains in memory and the next
 call retries. Use `save_project {path}` to a writable location before disconnecting if warned.
 
-Each server has its own folder under `<config directory>/EffectCraft Auto-Save/MCP/` (or
+Each server has its own folder under `<config directory>/Redrob Effects Auto-Save/MCP/` (or
 `<custom Auto-Save folder>/MCP/`). The maximum-version setting applies within that folder.
 `--autosave` enables these checkpoints regardless of the desktop's Auto-Save toggle and interval;
 it reads settings without writing desktop preferences, shortcuts or crash-recovery state.
@@ -207,8 +207,7 @@ Things that tripped up a long agent-driven session (a multi-scene 3D piece built
   `get_property` and `render_frame` take comp time. Those tools and the engine keyframe commands
   default to layer time; pass `timeBase: "comp"` to supply comp seconds on offset or
   stretched layers. `run_script`'s `setValueAtTime` and `keyTime` also use comp time. Without an
-  explicit engine time base, subtract the layer's start time before keying an unstretched layer
-  ([#257](https://github.com/storytold/effectcraft/issues/257)).
+  explicit engine time base, subtract the layer's start time before keying an unstretched layer.
 - **Moving a layer in time.** `execute_command layer.timing {"layers":["Scene 2"],"start":5.1}` sets
   the start time in comp seconds and moves the in and out points with it.
 - **Loops in scripts.** `run_script` can call any engine command with `app.run(id, params)`, for
@@ -220,8 +219,7 @@ Things that tripped up a long agent-driven session (a multi-scene 3D piece built
   or call `save_project {"path": …}` after each milestone.
 - **Environment light.** `layer.newLight` also accepts `"kind":"Environment"`: an equirectangular
   image that metallic surfaces reflect. Set its `lightOptions/source` to a footage, comp or solid
-  layer by layer id; with no source it uses the comp's Environment Layer (`layer.environment`)
-  ([#261](https://github.com/storytold/effectcraft/issues/261)).
+  layer by layer id; with no source it uses the comp's Environment Layer (`layer.environment`).
 
 ### Cookbook (from end-to-end QA)
 
@@ -558,7 +556,7 @@ On Linux and the BSDs the system font folders are `/usr/share/fonts`, `/usr/loca
 every `<dir>` the fontconfig configuration names (`/etc/fonts/fonts.conf` with its includes,
 `~/.config/fontconfig/fonts.conf`) and, in the Flatpak, the host's fonts under `/run/host`. The
 Flatpak can't see other folders; grant one with
-`flatpak override --user --filesystem=<dir>:ro --env=REDROB_EFFECTS_FONT_DIRS=<dir> ai.storyteller.effectcraft`.
+`flatpak override --user --filesystem=<dir>:ro --env=REDROB_EFFECTS_FONT_DIRS=<dir> ai.storyteller.redrob-effects`.
 
 In expressions, `text.sourceText.style` / `getStyleAt(i, t)` read styles and the setters
 (`setFontSize(v, start?, count?)`, `setFillColor`, `setText`, `setJustification`…) return a
@@ -714,7 +712,7 @@ not read or written.
 
 ## Seeing the UI
 
-To work on the UI, start the app with `cargo run -p effectcraft -- --control 9877` (add `--demo` to
+To work on the UI, start the app with `cargo run -p redrob-effects -- --control 9877` (add `--demo` to
 open the demo project; without it the app starts with an empty project) and use MCP bridge
 mode or the raw control channel. A good loop is: `ui_elements` to find an id, `ui_click` or `ui_drag`
 to act, then `screenshot {"panel":"Timeline"}` to check the result. `render_frame` shows the

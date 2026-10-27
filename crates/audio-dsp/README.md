@@ -1,6 +1,6 @@
 # redrob-film-audio-dsp
 
-Real-time audio DSP for FilmCraft. Layer **L1**, **no dependencies**, compiles for
+Real-time audio DSP for Redrob Film. Layer **L1**, **no dependencies**, compiles for
 `wasm32-unknown-unknown`, no `unsafe`. Clean-room: written from the public standards
 (ITU-R BS.1770-4, EBU R128 / Tech 3341 / Tech 3342) and textbook DSP (RBJ cookbook biquads,
 Householder FDN, phase vocoder, spectral subtraction with the statistical late-reverberation

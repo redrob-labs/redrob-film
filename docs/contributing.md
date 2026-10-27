@@ -9,7 +9,6 @@ of the crate you will change.
 | | All platforms |
 |---|---|
 | Rust | stable ≥ 1.95 (edition 2024; egui 0.36 requires it), via [rustup](https://rustup.rs) |
-| wasm target | `rustup target add wasm32-unknown-unknown` (for `cargo xtask wasm`) |
 | Components | `rustup component add rustfmt clippy` |
 | ffmpeg + ffprobe (optional) | test oracle and fixture generator only; tests skip without it |
 
@@ -39,11 +38,11 @@ cargo run --release -p redrob-film-cli -- mcp --demo    # headless MCP server on
 |---|---|
 | `REDROB_FILM_CONTROL_PORT` | Same as `--control <port>` |
 | `REDROB_FILM_CPU_COMPOSITE=1` | Disables the GPU compositor |
-| `REDROB_FILM_DEV_DESKTOP_ENTRY=1` | Linux, opt-in: a run from a source tree installs a user-level desktop entry (and the icons from `assets/app-icon`) so the taskbar shows the FilmCraft icon. Nothing is written without it; packaged runs never write one |
+| `REDROB_FILM_DEV_DESKTOP_ENTRY=1` | Linux, opt-in: a run from a source tree installs a user-level desktop entry (and the icons from `assets/app-icon`) so the taskbar shows the Redrob Film icon. Nothing is written without it; packaged runs never write one |
 | `REDROB_FILM_DATA_DIR` | Same as `--data-dir <dir>`: auto-save, crash recovery, settings and logs |
 | `RUST_LOG` | Log levels for standard error and the log file (see [Logs](#logs)) |
 
-`filmcraft --help` lists the app's options. An option it does not know, or a control port that is
+`redrob-film --help` lists the app's options. An option it does not know, or a control port that is
 not a number (from `--control` or from `REDROB_FILM_CONTROL_PORT`), is an error on stderr with exit
 code 2 instead of a window.
 
@@ -52,27 +51,27 @@ playback and codec speed, use `--release`.
 
 ### Logs
 
-The desktop app writes its `log` records to standard error and to `Logs/filmcraft.log` in the data
-directory (`~/.local/share/filmcraft/Logs/` or `$XDG_DATA_HOME/filmcraft/Logs/` on Linux,
-`~/Library/Application Support/FilmCraft/Logs/` on macOS, `%APPDATA%\FilmCraft\Logs\` on Windows,
+The desktop app writes its `log` records to standard error and to `Logs/redrob-film.log` in the data
+directory (`~/.local/share/redrob-film/Logs/` or `$XDG_DATA_HOME/redrob-film/Logs/` on Linux,
+`~/Library/Application Support/Redrob Film/Logs/` on macOS, `%APPDATA%\Redrob Film\Logs\` on Windows,
 or under `--data-dir` / `REDROB_FILM_DATA_DIR`), next to the crash logs; Help ▸ Reveal Log Files opens
 the folder. A start from a desktop menu or the Dock has no terminal, so this file is what to attach
 to a bug report: GPU compositor fallbacks, audio output problems, panicked frame jobs and container
-warnings all land there. Each launch moves the previous log to `filmcraft.1.log` (and that one to
-`filmcraft.2.log`), so the log of a run that crashed survives the next start. The file stops growing
+warnings all land there. Each launch moves the previous log to `redrob-film.1.log` (and that one to
+`redrob-film.2.log`), so the log of a run that crashed survives the next start. The file stops growing
 at 16 MiB. `--help`, `--version` and command-line errors write no file.
 
-By default FilmCraft's own crates log at `info` and everything else at `warn`. `RUST_LOG` replaces
+By default Redrob Film's own crates log at `info` and everything else at `warn`. `RUST_LOG` replaces
 that with env_logger-style directives, for example `RUST_LOG=debug`,
 `RUST_LOG=warn,redrob_film_codecs=trace` or `RUST_LOG=info,wgpu_core=warn`; a directive ending in `*`
-covers every target starting with it (`filmcraft*=debug`). The logger is
+covers every target starting with it (`redrob-film*=debug`). The logger is
 `apps/redrob-film-app/src/logging.rs`; the realtime audio callbacks do not log. The web app logs to the
 browser console instead.
 
 ### Building with craft-fonts
 
 Font assets live in [storytold/craft-fonts](https://github.com/storytold/craft-fonts), never in this
-repo ([standard](https://github.com/storytold/craftrules/blob/main/standards/fonts.md)). It is an optional build input, not a Cargo
+repo. It is an optional build input, not a Cargo
 dependency:
 
 ```sh
@@ -86,7 +85,7 @@ resolve from there. `crates/text/build.rs` reads its `fonts/manifest.txt` and em
 Regular, to keep the wasm small). The Japanese ones become the last fallback of every UI font family
 (`crates/ui-egui/src/theme.rs`, BIZ UDPGothic first) and fallback faces in the text engine (Gothic
 for sans text, Mincho for serif text). Without `CRAFT_FONTS_DIR`, `CRAFT_FONTS` is empty and
-FilmCraft uses its bundled and system fonts. A `CRAFT_FONTS_DIR` that is not a checkout is a build
+Redrob Film uses its bundled and system fonts. A `CRAFT_FONTS_DIR` that is not a checkout is a build
 warning, or an error with `CRAFT_FONTS_REQUIRED=1` (release builds set both). Tests on these fonts'
 glyphs skip when it is empty; when you touch fonts, run the gates both with and without it.
 
@@ -110,11 +109,10 @@ Every commit must pass all of these:
 | Tests | `cargo test --workspace` |
 | Layering | `cargo xtask layers` |
 | Assets | `cargo xtask assets` |
-| wasm | `cargo xtask wasm` (checks every L0–L4 crate and `redrob-film-ui-egui` for `wasm32-unknown-unknown`) |
 | All of the above | `cargo xtask ci` (runs clippy and tests with `--release`) |
 
 Pull-request CI (`.github/workflows/ci.yml`) runs the first three on our crates only (`-p redrob-film-app -p
-redrob-film-ui-egui -p redrob-film-engine`, not the effectcraft subtree) with `--profile ci`, which compiles
+redrob-film-ui-egui -p redrob-film-engine`, not the redrob-effects subtree) with `--profile ci`, which compiles
 every dependency at opt-level 0: `cargo clippy -p redrob-film-app -p redrob-film-ui-egui -p redrob-film-engine
 --all-targets --locked --profile ci -- -D warnings` reproduces it locally.
 
@@ -267,14 +265,14 @@ In short:
   traced or "inspired-by" copies.
 - Open licences only (MIT, Apache-2.0, BSD, ISC, zlib, OFL, CC0, CC BY, CC BY-SA, or your own
   work under MIT OR Apache-2.0). No NC or ND licences. If the licence is unclear, leave the asset out.
-- Screenshots show only FilmCraft (or other open projects) with media we generated or that is
+- Screenshots show only Redrob Film (or other open projects) with media we generated or that is
   openly licensed.
 
 - **Fonts live in [storytold/craft-fonts](https://github.com/storytold/craft-fonts), not here.**
   Don't commit new font files to this repo (the Latin UI fonts already in `assets/fonts/` stay): add
   the font to craft-fonts (file, licence, manifest line, `ATTRIBUTION.md` row) and use it through
   `redrob_film_text::fonts::CRAFT_FONTS`. See [Building with craft-fonts](#building-with-craft-fonts)
-  and [`craftrules/standards/fonts.md`](https://github.com/storytold/craftrules/blob/main/standards/fonts.md).
+
 
 For each asset file `X`, commit a sidecar `X.attribution`. This is the real one for
 `assets/fonts/Inter-Regular.ttf`:

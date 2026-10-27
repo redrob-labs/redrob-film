@@ -1,6 +1,6 @@
 # redrob-film-captions
 
-Caption files and caption burn-in for FilmCraft (layer L2: depends on `redrob-film-time`,
+Caption files and caption burn-in for Redrob Film (layer L2: depends on `redrob-film-time`,
 `redrob-film-color`, `redrob-film-project`, `redrob-film-text` and `roxmltree` for TTML).
 
 The caption *model* (caption tracks in a sequence, captions, track style) lives in

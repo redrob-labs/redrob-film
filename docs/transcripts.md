@@ -1,6 +1,6 @@
 # Transcripts and text-based editing
 
-FilmCraft's Text panel ▸ **Transcript** tab shows the dialogue of the open sequence as text. Select
+Redrob Film's Text panel ▸ **Transcript** tab shows the dialogue of the open sequence as text. Select
 words to mark In/Out, then extract or lift them; remove filler words and long pauses in one step;
 turn the transcript into captions. Every action is an engine command (`transcript.*`), so the CLI,
 the control channel and MCP agents can do the same.
@@ -45,7 +45,7 @@ statistics (`redrob_film_speech::diarize`); no model is involved.
 
 Both are **optional features**, off by default and never built for the web:
 
-- `whisper` (on `redrob-film-speech`, `redrob-film-engine`, and the `filmcraft` / `redrob-film-cli`
+- `whisper` (on `redrob-film-speech`, `redrob-film-engine`, and the `redrob-film` / `redrob-film-cli`
   apps, where it also enables downloads): candle inference.
 - `download` (`speech-download` on the engine): HTTPS downloads with rustls + RustCrypto and the
   operating system's certificate verifier.

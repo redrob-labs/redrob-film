@@ -1,4 +1,4 @@
-# Contributing to FilmCraft
+# Contributing to Redrob Film
 
 Thanks for helping. Before you start:
 

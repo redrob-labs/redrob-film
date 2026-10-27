@@ -23,7 +23,7 @@ to a 12 GB footprint, 10.8 GB of it live heap in three piles.
    `MediaPool::open_file` fell back to `read_file` and every clip's bytes stayed in memory for as
    long as its source was open. `FsServices::reader` now returns a
    `redrob_film_media::reader::FileReader`: the file stays open and containers read their index and
-   then single samples with positional reads, as upstream's web host did through `BlobReader`.
+   then single samples with positional reads.
    Formats decoded in one go (stills, WAV, MPEG elementary streams) are still
    read whole through the reader.
 2. **A decoder per clip, for good (3.5 GB), MEM2.** Every source kept its decoder once it had
@@ -341,7 +341,7 @@ compositor and the decoders, not by the encoder, so a different hardware codec d
 
 ### Quality per bit
 
-30 s with a banner (15–45 s of that timeline), exported by FilmCraft as ProRes 422 HQ (the reference)
+30 s with a banner (15–45 s of that timeline), exported by Redrob Film as ProRes 422 HQ (the reference)
 and by each encoder at several bitrates; ffmpeg's `psnr` and `ssim` of the decoded 4:2:0 pictures against
 the reference. Average PSNR over the three planes, and SSIM (higher is better):
 

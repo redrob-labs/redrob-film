@@ -1,6 +1,6 @@
 # redrob-film-speech
 
-Speech-to-text for FilmCraft's Text panel ▸ Transcript (L2). User-facing behaviour, commands and
+Speech-to-text for Redrob Film's Text panel ▸ Transcript (L2). User-facing behaviour, commands and
 model handling: [docs/transcripts.md](../../docs/transcripts.md).
 
 - `Transcriber` trait (mono 16 kHz in, word-timed `redrob_film_project::Transcript` out) and
@@ -10,8 +10,7 @@ model handling: [docs/transcripts.md](../../docs/transcripts.md).
 - `whisper` (feature `whisper`): Whisper inference on candle (CPU, pure Rust).
 - `mel`, `vad`, `diarize`: log-mel front end, word-bound tightening, MFCC-clustering speaker labels.
 
-Both features are off by default and are never enabled for wasm (`cargo xtask wasm` checks the
-crate without them).
+Both features are off by default.
 
 ## References
 
