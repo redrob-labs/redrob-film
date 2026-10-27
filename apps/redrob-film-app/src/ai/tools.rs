@@ -22,7 +22,7 @@ pub const SEND_SELECTION_TO_EFFECTS: &str = "mode.sendSelectionToEffects";
 pub const PLACE_COMPOSITION_ON_TIMELINE: &str = "mode.placeCompositionOnTimeline";
 /// `mode.status {}`: which mode is active, which editors exist, what the hand-offs could do.
 pub const STATUS: &str = "mode.status";
-/// `effects.run {id, params?}`: run an Effects engine command (crafts/effectcraft/crates/engine/
+/// `effects.run {id, params?}`: run an Effects engine command (editors/effects/crates/engine/
 /// src/commands/*.rs; `effects.run {id: "command.list"}` lists them) on the Effects session.
 pub const EFFECTS_RUN: &str = "effects.run";
 

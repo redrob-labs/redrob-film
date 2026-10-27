@@ -33,7 +33,7 @@ FORBIDDEN = re.compile(
 SURFACES = (
     "crates/ui-egui/src/", "apps/filmcraft/src/", "apps/filmcraft-cli/src/",
     "crates/engine/src/", "crates/automation/src/", "packaging/", ".github/workflows/",
-    "crafts/effectcraft/crates/",
+    "editors/effects/crates/",
 )
 # Kept on purpose: written into or read back from files, so changing them breaks existing projects
 # and interchange round trips. SOURCE_ORIGINS.md lists them.
@@ -53,8 +53,8 @@ COMMENT = re.compile(r"^\s*(//|#|<!--|\*|/\*|;|REM\b)")
 # attribution files and the scripts that know them.
 IDENT_SKIP_FILES = (
     "NOTICE", "ATTRIBUTION.md", "LICENSE-APACHE", "LICENSE-MIT", "SOURCE_ORIGINS.md",
-    "CHANGELOG.md", "crafts/effectcraft/NOTICE", "crafts/effectcraft/ATTRIBUTION.md", "crafts/effectcraft/LICENSE-APACHE",
-    "crafts/effectcraft/LICENSE-MIT", "scripts/check_brand.py",
+    "CHANGELOG.md", "editors/effects/NOTICE", "editors/effects/ATTRIBUTION.md", "editors/effects/LICENSE-APACHE",
+    "editors/effects/LICENSE-MIT", "scripts/check_brand.py",
 )
 IDENT_SKIP_SUFFIXES = (".png", ".jpg", ".ico", ".icns", ".tiff", ".svg", ".ttf", ".otf", ".attribution", ".lock", ".fcproj", ".ecproj")
 LEGACY = re.compile(r"(//|#|<!--)\s*legacy:")
@@ -68,7 +68,7 @@ IDENT_KEEP = re.compile(r"filmcraft\.(project|graphicsTemplate|export-presets)|\
 def old_crate_names():
     """The upstream names of every crate in the tree, derived from the Redrob names in place."""
     out = set()
-    for pat in ("crates/*/Cargo.toml", "apps/*/Cargo.toml", "crafts/effectcraft/crates/*/Cargo.toml"):
+    for pat in ("crates/*/Cargo.toml", "apps/*/Cargo.toml", "editors/effects/crates/*/Cargo.toml"):
         for m in ROOT.glob(pat):
             name = re.search(r'^name\s*=\s*"([^"]+)"', m.read_text(), re.M)
             if not name:

@@ -2,8 +2,8 @@
 # transitions, titles, colour correction, masks, effect stacks/zones/presets, keyframing.
 # Source: https://docs.kdenlive.org (manual only; clean room, PARITY-RULES.md).
 # film: full = our timeline does what the manual describes; partial = subset / different model /
-# only in Effects mode (crafts/effectcraft, reachable as a composition clip); none = missing.
-# Evidence is our file:line (registry entry) from grepping crates/ and crafts/effectcraft.
+# only in Effects mode (editors/effects, reachable as a composition clip); none = missing.
+# Evidence is our file:line (registry entry) from grepping crates/ and editors/effects.
 
 [[row]]
 id = "K3-001"
@@ -92,7 +92,7 @@ group = "Video effects / Alpha, Mask and Keying"
 feature = "Despill"
 manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/despill.html"
 film = "full"
-evidence = "crates/project/src/effect.rs:689 (ultra_key, Spill Suppression group); crafts/effectcraft/crates/effects/src/keying.rs:682 (ec.key.spill, Effects mode)"
+evidence = "crates/project/src/effect.rs:689 (ultra_key, Spill Suppression group); editors/effects/crates/effects/src/keying.rs:682 (ec.key.spill, Effects mode)"
 gap = "none"
 
 [[row]]
@@ -146,7 +146,7 @@ group = "Video effects / Alpha, Mask and Keying"
 feature = "Object Mask"
 manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/object_mask.html"
 film = "partial"
-evidence = "crafts/effectcraft/crates/effects/src/object_matte.rs:41 (Effects mode); crates/project/src/effect/kdx.rs:256 (k_shape_alpha applies a rendered matte file)"
+evidence = "editors/effects/crates/effects/src/object_matte.rs:41 (Effects mode); crates/project/src/effect/kdx.rs:256 (k_shape_alpha applies a rendered matte file)"
 gap = "AI (SAM) segmentation runs only in Effects mode; on the timeline its rendered matte is applied with Shape Alpha / Track Matte, there is no in-clip object mask generator"
 
 [[row]]
@@ -227,7 +227,7 @@ group = "Video effects / Alpha, Mask and Keying"
 feature = "Spill Suppress"
 manual = "https://docs.kdenlive.org/en/effects_and_filters/video_effects/alpha_mask_keying/spillsuppress.html"
 film = "full"
-evidence = "crates/project/src/effect.rs:689 (ultra_key); crafts/effectcraft/crates/effects/src/keying.rs:682 (ec.key.spill, Effects mode)"
+evidence = "crates/project/src/effect.rs:689 (ultra_key); editors/effects/crates/effects/src/keying.rs:682 (ec.key.spill, Effects mode)"
 gap = "none"
 
 [[row]]
@@ -2342,7 +2342,7 @@ group = "Effects / Effects tab"
 feature = "Download new effects from KDE Store"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effects-tab"
 film = "none"
-evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+evidence = "no match in crates/ or editors/effects (grep of effect registries)"
 gap = "by design: an offline product with no online asset store; new effects ship with releases"
 
 [[row]]
@@ -2450,7 +2450,7 @@ group = "Effects / Effect functions"
 feature = "Open effect documentation"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#effect-functions"
 film = "none"
-evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+evidence = "no match in crates/ or editors/effects (grep of effect registries)"
 gap = "no per-effect documentation pages exist to open (offline product); the Effects panel's description pane (effect_stack.rs:169) is the in-app help"
 
 [[row]]
@@ -2513,7 +2513,7 @@ group = "Effects / Applying"
 feature = "Effect on a Project Bin clip (all instances)"
 manual = "https://docs.kdenlive.org/en/effects_and_filters.html#where-to-apply-an-effect"
 film = "none"
-evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+evidence = "no match in crates/ or editors/effects (grep of effect registries)"
 gap = "effects live on timeline clips (Paste Attributes and effect presets carry one setup to many clips); a project-item effect stack that every instance renders would need its own target in the render path and in every effects.* command, not done this round"
 
 [[row]]
@@ -2873,7 +2873,7 @@ group = "Compositions / Tab"
 feature = "Download new wipes"
 manual = "https://docs.kdenlive.org/en/compositing/compositions.html"
 film = "none"
-evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+evidence = "no match in crates/ or editors/effects (grep of effect registries)"
 gap = "by design: an offline product with no online store; wipes ship as the Luma Wipe methods and any greyscale image file"
 
 [[row]]
@@ -2882,7 +2882,7 @@ group = "Compositions / Adding"
 feature = "Add composition by clip corner dot"
 manual = "https://docs.kdenlive.org/en/compositing/compositions.html"
 film = "none"
-evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+evidence = "no match in crates/ or editors/effects (grep of effect registries)"
 gap = "Premiere model: transitions are dropped on edit points or added from the clip menu (Insert a Transition); no corner dot on clips"
 
 [[row]]
@@ -3638,7 +3638,7 @@ group = "Titles / Workspace"
 feature = "Coordinate origin +X/-X, +Y/-Y"
 manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_manage_workspace.html"
 film = "none"
-evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+evidence = "no match in crates/ or editors/effects (grep of effect registries)"
 gap = "positions are always measured from the frame's top-left corner, as in Premiere; there is no choice of axis direction"
 
 [[row]]
@@ -3683,7 +3683,7 @@ group = "Titles / File"
 feature = "Download title templates from store"
 manual = "https://docs.kdenlive.org/en/titles_and_graphics/titles/title_file_operations.html"
 film = "none"
-evidence = "no match in crates/ or crafts/effectcraft (grep of effect registries)"
+evidence = "no match in crates/ or editors/effects (grep of effect registries)"
 gap = "by design: an offline product with no online store; templates ship built in or as .fcgt files"
 
 [[row]]

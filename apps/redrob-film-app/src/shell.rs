@@ -8,7 +8,7 @@
 //!
 //! Fonts and styles: each editor installs its own fonts and style on the shared `egui::Context`
 //! once (`theme::install` in `FilmcraftApp::logic`, crates/ui-egui/src/lib.rs L1926, and in
-//! `EffectcraftApp::logic`, crafts/effectcraft/crates/ui-egui/src/lib.rs L1872), replacing the
+//! `EffectcraftApp::logic`, editors/effects/crates/ui-egui/src/lib.rs L1872), replacing the
 //! other's. A switch while one editor's definitions are live would make the other draw with
 //! `FontFamily::Name(..)` families egui has not got, which panics. So the shell records each
 //! editor's definitions as it installs them, installs the union ([`merge_fonts`]) and applies a
@@ -371,10 +371,10 @@ impl ShellApp {
         self.status = Some(Status::new(text, error));
     }
 
-    /// The Effects editor, created on demand: `redrob_effects_host::session()` (crafts/effectcraft/
+    /// The Effects editor, created on demand: `redrob_effects_host::session()` (editors/effects/
     /// crates/host/src/lib.rs L84: media, import, expressions, scripting, export) and
-    /// `EffectcraftApp::new` (crafts/effectcraft/crates/ui-egui/src/lib.rs L367), with the file
-    /// dialogs effectcraft's own main.rs gives it (crafts/effectcraft/apps/effectcraft/src/main.rs
+    /// `EffectcraftApp::new` (editors/effects/crates/ui-egui/src/lib.rs L367), with the file
+    /// dialogs effectcraft's own main.rs gives it (editors/effects/apps/effectcraft/src/main.rs
     /// L264-L300). Its control server and native menu are not used: the shell's channel and the
     /// one window's menus are.
     pub(crate) fn ensure_effects(&mut self) -> &mut EffectcraftApp {
@@ -406,7 +406,7 @@ impl ShellApp {
             d.set_file_name(file).save_file().map(|p| p.to_string_lossy().to_string())
         }));
         // The same `Box<dyn Fn(&egui::Context) -> Option<egui::Theme>>` both UI crates declare
-        // (crates/ui-egui/src/lib.rs L167, crafts/effectcraft/crates/ui-egui/src/lib.rs L106).
+        // (crates/ui-egui/src/lib.rs L167, editors/effects/crates/ui-egui/src/lib.rs L106).
         app.hooks.system_theme = crate::appearance::service();
         app
     }
@@ -559,7 +559,7 @@ impl ShellApp {
     /// The bundle's name and whether either editor has unsaved changes: the Edit project's file
     /// name (its `Session::path`), else its project name; dirty when the Edit session is
     /// (`Session::is_dirty`, crates/engine/src/lib.rs L650) or the effects session is
-    /// (crafts/effectcraft/crates/engine/src/lib.rs L823).
+    /// (editors/effects/crates/engine/src/lib.rs L823).
     pub fn active_document(&self) -> Option<(String, bool)> {
         let s = &self.edit.session;
         let name = s.path.as_deref().map(file_name).or_else(|| Some(s.project.name.clone()).filter(|n| !n.is_empty()));
@@ -568,7 +568,7 @@ impl ShellApp {
     }
 
     /// The window title is the shell's ([`window_title`]). The Effects editor sends its own on a
-    /// document change (crafts/effectcraft/crates/ui-egui/src/lib.rs L1663); the window reports
+    /// document change (editors/effects/crates/ui-egui/src/lib.rs L1663); the window reports
     /// it back the next frame and the shell sets its own again.
     ///
     /// Only a title the window actually reports counts: winit returns an empty title on X11 and
