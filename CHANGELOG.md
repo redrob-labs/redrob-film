@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0 -- 2026-11-08
+
+### Added
+
+- After Effects projects open: an `.aep` or `.aepx` opened, picked in Open or dropped on the window
+  imports into Redrob Effects (File ▸ Import ▸ After Effects Project in Effects). What the import
+  cannot carry over is listed before it runs. The reader and importer are ported from upstream
+  EffectCraft (#2558 and its follow-ups, SOURCE_ORIGINS.md).
+
 ## 0.7.0 -- 2026-10-28
 
 ### Changed

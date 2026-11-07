@@ -1,0 +1,20 @@
+[package]
+name = "redrob-effects-aep"
+description = "After Effects projects: the .aep (RIFX 'Egg!') / .aepx container as a lossless chunk tree with a typed view, and its import into a Redrob Effects project, which reports everything it does not carry over"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+redrob-effects-time = { workspace = true }
+redrob-effects-color = { workspace = true }
+redrob-effects-keyframe = { workspace = true }
+redrob-effects-project = { workspace = true }
+redrob-effects-effects = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+

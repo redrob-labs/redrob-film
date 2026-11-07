@@ -356,6 +356,11 @@ pub fn invoke(app: &mut EffectsApp, ctx: &egui::Context, id: &str, params: Value
     if crate::panels::delete_items::guard(app, id, &params) {
         return Ok(json!({"dialog": "deleteItems"}));
     }
+    // An After Effects import with a path that loses something asks first (the menu's file
+    // dialog asks in `run_with_picked`).
+    if params.get("path").is_some() && crate::panels::aep_losses::guard(app, id, &params)? {
+        return Ok(json!({"dialog": "aepLosses"}));
+    }
     // J / K and Select All Keyframes act on what the Timeline shows (its revealed properties).
     if matches!(id, "time.nextKey" | "time.previousKey" | "keys.selectAll")
         && ["visible", "layers", "layer", "prop"].iter().all(|k| params.get(*k).is_none())
@@ -1348,6 +1353,7 @@ fn file_dialog(app: &mut EffectsApp, id: &str, params: &Value) -> Option<Result<
         "view.importGuides" => ("path", Ask::Open(&["json"])),
         "file.exportLottie" => ("path", Ask::Save("Animation.json")),
         "file.importLottie" => ("path", Ask::Open(&["json", "lottie"])),
+        "file.importAep" => ("path", Ask::Open(&["aep", "aepx"])),
         "file.importProject" => ("path", Ask::Open(&["rfx", "rfxx"])),
         "file.importTimeline" => ("path", Ask::Open(&["xml", "fcpxml", "otio", "edl", "aaf", "omf"])),
         "render.saveCurrentPreview" => ("path", Ask::Save("Preview.mp4")),
@@ -1456,6 +1462,15 @@ fn run_with_picked(app: &mut EffectsApp, id: &str, key: &str, params: &Value, v:
         || matches!(id, "file.import" | "file.importMultiple") && crate::panels::forms::open_import_sequence(app, &picked)
     {
         return Ok(json!({"dialog": id}));
+    }
+    // An After Effects import that loses something asks first (`panels::aep_losses`).
+    match crate::panels::aep_losses::guard(app, id, &picked) {
+        Ok(true) => return Ok(json!({"dialog": id})),
+        Ok(false) => {}
+        Err(e) => {
+            app.ui.status = e.clone();
+            return Err(e);
+        }
     }
     // Save (untitled) becomes Save As.
     let id = if id == "file.save" { "file.saveAs" } else { id };

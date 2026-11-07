@@ -208,6 +208,11 @@ fn main() -> eframe::Result {
             session.voiceover.input = Some(Box::new(audio_in::CpalIn::new(&session.prefs.audio_hardware.device_class)));
             // a Premiere Pro project (.prproj) opens as a new project too (G2)
             let is_project = |f: &str| f.ends_with(".rfilm") || f.ends_with(".fcproj") || f.to_ascii_lowercase().ends_with(".prproj"); // legacy: .fcproj still opens
+            // an After Effects project (.aep / .aepx) opens in Effects (shell::ShellApp::open_pending_aep)
+            let aep_inbox = shell::AepInbox::default();
+            if let Ok(mut q) = aep_inbox.lock() {
+                q.extend(files.iter().filter(|f| shell::is_aep_path(f)).cloned());
+            }
             let project = files.iter().find(|f| is_project(f)).cloned();
             let project_given = project.clone();
             if let Some(p) = project {
@@ -231,7 +236,7 @@ fn main() -> eframe::Result {
             } else if demo {
                 let _ = session.execute("file.openDemoProject", json!({}));
             }
-            let media: Vec<String> = files.iter().filter(|f| !is_project(f)).cloned().collect();
+            let media: Vec<String> = files.iter().filter(|f| !is_project(f) && !shell::is_aep_path(f)).cloned().collect();
             if !media.is_empty() {
                 let _ = session.execute("file.import", json!({"paths": media}));
             }
@@ -333,12 +338,22 @@ fn main() -> eframe::Result {
                     .pick_file()
                     .map(|p| p.to_string_lossy().to_string())
             }));
-            app.hooks.pick_open_project = Some(Box::new(|| {
-                rfd::FileDialog::new()
+            let picked_aep = aep_inbox.clone();
+            app.hooks.pick_open_project = Some(Box::new(move || {
+                let path = rfd::FileDialog::new()
                     .add_filter(redrob_film_ui_egui::i18n::t("Redrob Film Project"), &file_filters::extensions(&["rfilm", "fcproj"])) // legacy: .fcproj still opens
                     .add_filter(redrob_film_ui_egui::i18n::t("Premiere Pro Project"), &file_filters::extensions(&["prproj"]))
+                    .add_filter(redrob_film_ui_egui::i18n::t("After Effects Project"), &file_filters::extensions(&["aep", "aepx"]))
                     .pick_file()
-                    .map(|p| p.to_string_lossy().to_string())
+                    .map(|p| p.to_string_lossy().to_string())?;
+                // An After Effects project is not an Edit project: the shell opens it in Effects.
+                if shell::is_aep_path(&path) {
+                    if let Ok(mut q) = picked_aep.lock() {
+                        q.push(path);
+                    }
+                    return None;
+                }
+                Some(path)
             }));
             #[cfg(target_os = "macos")]
             {
@@ -375,7 +390,7 @@ fn main() -> eframe::Result {
                 }));
             }
             // One window, two modes: the Edit editor built above, Effects on its first switch.
-            Ok(Box::new(shell::ShellApp::new(app, Some(rx), edit_tx).with_app_bridge(bridge)))
+            Ok(Box::new(shell::ShellApp::new(app, Some(rx), edit_tx).with_app_bridge(bridge).with_aep_inbox(aep_inbox)))
         }),
     );
     // The window could not be created (no usable GPU / graphics driver, no display): say so
