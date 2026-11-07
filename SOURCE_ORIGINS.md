@@ -10,7 +10,19 @@ Redrob Film's code came from two MIT OR Apache-2.0 projects and is no longer syn
 | Effects editor (`editors/effects/`) | [EffectCraft](https://github.com/storytold/effectcraft) | commit `0311bdc34d0dc10c2d18ff7875b4f52d483e5e27` |
 
 From those commits on, the code is developed here; nothing is pulled from or merged with the
-original repositories. Their copyright lines stay unchanged in [`NOTICE`](./NOTICE),
+original repositories. The one exception is a port, listed below, taken by hand onto our tree.
+
+## Ports taken later
+
+| Part | Came from | Upstream changes |
+|---|---|---|
+| After Effects project reader and importer (`editors/effects/crates/aep/`, `file.importAep`, the Effects editor's import prompt `panels/aep_losses.rs`, `editors/effects/docs/aep-format.md`, `editors/effects/docs/aep-import.md`) | [EffectCraft](https://github.com/storytold/effectcraft) `crates/aep/src` at commit `93cce09f3cc248d10360dd8a6dd86d658ce3747e` | #2558 (`bb78d55825adc879ae522c18ac57c4ce5690318d`, the reader and importer), #3134 (`3768ff40a300758e9055ab87bfaaeea6d4bd774e`, effect values stored as default-state records), #2594 (`ce9eaec65015a5508c72af0e2351cd02612c9450`, only its small changes to the shared container and import files; its export module is not ported), #3119 (`ab3674cc2b48d312f55d2966f311b016e56cb5ca`, five more effect mappings), #3136 (`93cce09f3cc248d10360dd8a6dd86d658ce3747e`, the After Effects version in the report) |
+
+Left out of that port: upstream's `.aep` export (#2594, `crates/aep/src/export`), its test corpus,
+fixture generator and `xtask aep-corpus`, the developer examples (`aepdump`, `stubicc`) and the
+integration tests that need the corpus. Upstream's document-path policy (`doc_path`) is not in this
+tree, so `file.importAep` finds stored footage paths the way `file.importProject` does. Upstream's
+crate and docs renamed `EffectCraft` to `Redrob Effects` and `effectcraft-*` to `redrob-effects-*`. Their copyright lines stay unchanged in [`NOTICE`](./NOTICE),
 [`LICENSE-MIT`](./LICENSE-MIT), `editors/effects/NOTICE` and `editors/effects/LICENSE-*`, with ours
 added beside them. Per-asset attribution stays in [`ATTRIBUTION.md`](./ATTRIBUTION.md) and
 `editors/effects/ATTRIBUTION.md`.
@@ -51,6 +63,8 @@ are old files kept as they were written.
 ## 한국어 요약
 
 레드롭 필름의 코드는 FilmCraft(`v0.6.0`, `2ff3f5e`)와 EffectCraft(`0311bdc`)에서 왔고, 그 뒤로는 이
-저장소에서 독자적으로 개발하며 원 저장소와 동기화하지 않습니다. 원 저작권 표기는 `NOTICE`와 `LICENSE-*`에
+저장소에서 독자적으로 개발하며 원 저장소와 동기화하지 않습니다. 예외로 After Effects 프로젝트 읽기·가져오기
+(`editors/effects/crates/aep/`)는 EffectCraft `93cce09`(#2558, #3134, #3119, #3136)에서 손으로 옮겨 왔고,
+`.aep` 내보내기와 테스트 자료는 옮기지 않았습니다. 원 저작권 표기는 `NOTICE`와 `LICENSE-*`에
 그대로 두고 우리 줄을 덧붙였습니다. 위 목록의 옛 이름은 사용자가 이미 가진 파일이나 다른 프로그램이 쓰는
 인터페이스에 들어 있어 남겨 두었고, 코드에서는 모두 `// legacy:`로 표시했습니다.
