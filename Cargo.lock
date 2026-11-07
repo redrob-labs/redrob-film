@@ -4944,6 +4944,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "redrob-effects-aep"
+version = "0.7.0"
+dependencies = [
+ "redrob-effects-color",
+ "redrob-effects-effects",
+ "redrob-effects-keyframe",
+ "redrob-effects-project",
+ "redrob-effects-time",
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "redrob-effects-automation"
 version = "0.7.0"
 dependencies = [
@@ -4996,6 +5009,7 @@ dependencies = [
  "kurbo",
  "log",
  "rayon",
+ "redrob-effects-aep",
  "redrob-effects-color",
  "redrob-effects-effects",
  "redrob-effects-geom",

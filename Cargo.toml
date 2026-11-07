@@ -91,6 +91,7 @@ redrob-effects-media = { path = "editors/effects/crates/media" }
 redrob-effects-export = { path = "editors/effects/crates/export" }
 redrob-effects-expr = { path = "editors/effects/crates/expr" }
 redrob-effects-lottie = { path = "editors/effects/crates/lottie" }
+redrob-effects-aep = { path = "editors/effects/crates/aep" }
 redrob-effects-interchange = { path = "editors/effects/crates/interchange" }
 redrob-effects-pdf = { path = "editors/effects/crates/pdf" }
 redrob-effects-psd = { path = "editors/effects/crates/psd" }

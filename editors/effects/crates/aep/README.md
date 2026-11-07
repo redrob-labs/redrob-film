@@ -1,0 +1,51 @@
+# redrob-effects-aep
+
+After Effects projects (`.aep`, `.aepx`) in one crate, the way `redrob-effects-lottie` handles Lottie:
+
+- `container`: reads and writes the container as a lossless chunk tree, with a typed, read-only
+  view (below; its API is re-exported at the crate root);
+- `import`: maps the typed view into a Redrob Effects project and reports everything it does not
+  import ([`docs/aep-import.md`](../../docs/aep-import.md)).
+
+No file access: callers pass bytes, so the crate builds for wasm32.
+
+The crate is ported from the upstream Effects editor (see `SOURCE_ORIGINS.md` at the repository
+root for the commits). Upstream's `.aep` export, its test corpus and its fixture tooling are not
+part of the port.
+
+## Container
+
+An `.aep` is a `RIFX` container (big-endian RIFF) with form type `Egg!`: chunks of a 4-byte id, a
+big-endian `u32` size and a body padded to an even length; `LIST` chunks start with a 4-byte list
+type followed by chunks. `parse` builds the tree, `write` serialises it, and for every input that
+parses, `write(parse(x)) == x` byte for byte (container and chunk sizes are recomputed from the
+tree; pad bytes, odd bodies and the bytes after the container, an XMP packet, are kept).
+
+The XML form of a project (`.aepx`) is read into the same tree by `read_aepx` (a small bounded
+XML tokenizer, no dependency); `parse_any` picks the reader by content, so the typed view and the
+importer take either form. The mapping is in `docs/aep-format.md`, section 1.
+
+Bodies that look like lists but are not chunk sequences (for example `LIST btdk`, raw text) stay
+opaque rather than failing the parse. Input is untrusted: sizes are checked against the remaining
+input, nesting and chunk count are bounded (`Limits`), nothing is allocated from a declared size,
+and truncated or damaged files return `Err` (or, inside the container, an opaque body).
+
+The container layer decodes no chunk body. On top of it, a typed view (`Project`, `Item`, `Comp`,
+`Layer`, `Property`, ...) reads the fields whose layout was verified against the values the test
+files were made with. Every accessor returns `Option`/an empty list on damaged data and never
+panics. Which fields are verified, which are not decoded, and how it was found is in
+[`docs/aep-format.md`](../../docs/aep-format.md).
+
+## Specifications
+
+Public specifications used for parts the format embeds:
+
+- ICC.1:2010: the profile description of a working-space profile (a v2 `desc` or a v4 `mluc`
+  tag), from which the working space's name is read (`container/settings.rs`).
+- RFC 4648 (base64): the profile data in the project's colour settings JSON.
+
+## Clean room
+
+Upstream built the reader from its own observations: project files generated with After Effects,
+one change per file, compared byte by byte. No source code or format documentation of another
+`.aep` reader or writer was used, and no Adobe asset is used.
