@@ -4,6 +4,7 @@ pub mod anim_tools;
 pub mod camera_tracker_ui;
 pub mod comp_settings;
 pub mod content_fill_panel;
+pub mod aep_losses;
 pub mod delete_items;
 pub mod dialogs;
 pub mod dialogs_3d;

@@ -24,6 +24,7 @@ redrob-effects-segment = { workspace = true }
 redrob-effects-track = { workspace = true }
 redrob-effects-model = { workspace = true }
 redrob-effects-lottie = { workspace = true }
+redrob-effects-aep = { workspace = true }
 redrob-effects-interchange = { workspace = true }
 redrob-effects-psd = { workspace = true }
 kurbo = { workspace = true }
