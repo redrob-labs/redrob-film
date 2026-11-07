@@ -307,6 +307,20 @@ pub struct ShellApp {
     close_approved: bool,
     /// The Redrob Code app bridge (`app_bridge.rs`), registered while the window lives.
     app_bridge: Option<crate::app_bridge::BridgeHandle>,
+    /// After Effects projects to open in Effects ([`ShellApp::open_pending_aep`]): from the
+    /// command line, the Open dialog (main.rs) and files dropped on the window.
+    aep_inbox: AepInbox,
+}
+
+/// After Effects projects waiting to open in Effects; the Edit editor's Open dialog hook (main.rs)
+/// fills it too, so it is shared.
+pub type AepInbox = Arc<std::sync::Mutex<Vec<String>>>;
+
+/// Whether `path` is an After Effects project (`.aep` or its XML form `.aepx`): it opens in
+/// Effects, as Premiere Pro projects open in Edit.
+pub fn is_aep_path(path: &str) -> bool {
+    let lower = path.to_ascii_lowercase();
+    lower.ends_with(".aep") || lower.ends_with(".aepx")
 }
 
 impl ShellApp {
@@ -332,6 +346,43 @@ impl ShellApp {
             last_reported_title: None,
             close_approved: false,
             app_bridge: None,
+            aep_inbox: AepInbox::default(),
+        }
+    }
+
+    /// Share `inbox` with whoever queues After Effects projects to open (main.rs).
+    pub fn with_aep_inbox(mut self, inbox: AepInbox) -> Self {
+        self.aep_inbox = inbox;
+        self
+    }
+
+    /// Open the queued After Effects projects: switch to Effects and run its File ▸ Import ▸
+    /// After Effects Project… (`file.importAep`). An import that would lose something shows the
+    /// Effects editor's prompt with the report first; one that cannot read the file says why on the
+    /// status line.
+    fn open_pending_aep(&mut self, ctx: &egui::Context) {
+        let paths = self.aep_inbox.lock().map(|mut q| std::mem::take(&mut *q)).unwrap_or_default();
+        for path in paths {
+            self.set_mode(Mode::Effects);
+            let name = file_name(&path);
+            let r = redrob_effects_ui_egui::menus::invoke(self.ensure_effects(), ctx, "file.importAep", json!({"path": path}));
+            match r {
+                Ok(v) if v.get("dialog").is_some() => self.set_status(format!("{name}: some parts cannot be imported exactly; see the list in Effects"), false),
+                Ok(v) => {
+                    let report = &v["report"];
+                    let count = |k: &str| report[k].as_array().map_or(0, Vec::len);
+                    let mut notes = vec![];
+                    if count("missingFootage") > 0 {
+                        notes.push(format!("{} missing footage file(s)", count("missingFootage")));
+                    }
+                    if count("missingFonts") > 0 {
+                        notes.push(format!("{} font(s) not installed", count("missingFonts")));
+                    }
+                    let tail = if notes.is_empty() { String::new() } else { format!(" ({})", notes.join(", ")) };
+                    self.set_status(format!("Opened {name} in Effects{tail}"), false);
+                }
+                Err(e) => self.set_status(format!("Cannot open {name}: {e}"), true),
+            }
         }
     }
 
@@ -792,6 +843,7 @@ impl eframe::App for ShellApp {
             ctx.request_repaint();
         }
         self.service_control();
+        self.open_pending_aep(ctx);
         // Once, in every mode: a window bigger than its monitor's work area is maximized into it,
         // so its title bar can be reached.
         redrob_effects_ui_egui::fit_window(ctx);
@@ -807,6 +859,18 @@ impl eframe::App for ShellApp {
     }
 
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw: &mut egui::RawInput) {
+        // After Effects projects dropped on the window open in Effects, in either mode; neither
+        // editor imports them as footage.
+        let inbox = self.aep_inbox.clone();
+        raw.dropped_files.retain(|f| match f.path.as_ref().map(|p| p.to_string_lossy().to_string()) {
+            Some(p) if is_aep_path(&p) => {
+                if let Ok(mut q) = inbox.lock() {
+                    q.push(p);
+                }
+                false
+            }
+            _ => true,
+        });
         // Only the active editor sees the raw input (synthetic events, pointer wrap).
         match self.mode() {
             Mode::Edit => eframe::App::raw_input_hook(&mut self.edit, ctx, raw),
