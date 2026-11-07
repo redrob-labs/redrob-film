@@ -2,6 +2,13 @@
 
 ## Changes
 
+## 0.8.0
+
+After Effects projects open in Redrob Film.
+
+- **Open .aep and .aepx.** Open, drop or double-click an After Effects project and it imports into
+  Effects. What the import cannot carry over is listed first.
+
 ## 0.7.0
 
 Redrob Film is its own code now.
