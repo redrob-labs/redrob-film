@@ -862,8 +862,8 @@ impl eframe::App for ShellApp {
         // After Effects projects dropped on the window open in Effects, in either mode; neither
         // editor imports them as footage.
         let inbox = self.aep_inbox.clone();
-        raw.dropped_files.retain(|f| match f.path.as_ref().map(|p| p.to_string_lossy().to_string()) {
-            Some(p) if is_aep_path(&p) => {
+        raw.dropped_files.retain(|f| match f.path().to_string_lossy().to_string() {
+            p if is_aep_path(&p) => {
                 if let Ok(mut q) = inbox.lock() {
                     q.push(p);
                 }

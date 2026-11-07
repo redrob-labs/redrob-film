@@ -317,7 +317,10 @@ fn report_beyond_limit<'v>(limit: Option<(f64, f64)>, values: impl Iterator<Item
     let Some((lo, hi)) = limit else { return };
     let beyond: Vec<f64> = values.filter_map(|v| if let Value::Scalar(x) = v { Some(*x) } else { None }).filter(|x| *x < lo || *x > hi).collect();
     if let Some(x) = beyond.first() {
-        col.lose(LossCategory::Effects, format!("{here}: parameter {label} is {x}, Redrob Effects' effect uses {lo} to {hi} (rendered as the nearest of them)"));
+        col.lose(
+            LossCategory::Effects,
+            format!("{here}: parameter {label} is {x}, Redrob Effects' effect uses {lo} to {hi} (rendered as the nearest of them)"),
+        );
     }
 }
 

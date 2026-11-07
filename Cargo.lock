@@ -5009,6 +5009,7 @@ dependencies = [
  "kurbo",
  "log",
  "rayon",
+ "redrob-effects-aep",
  "redrob-effects-color",
  "redrob-effects-effects",
  "redrob-effects-geom",
