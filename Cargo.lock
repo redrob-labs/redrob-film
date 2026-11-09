@@ -5537,6 +5537,7 @@ dependencies = [
  "image",
  "redrob-effects-engine",
  "redrob-effects-host",
+ "redrob-film-audio-dsp",
  "redrob-film-engine",
  "redrob-film-handoff",
  "redrob-film-project",

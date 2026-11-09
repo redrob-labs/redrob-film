@@ -591,6 +591,43 @@ pub struct ReviewParams {
     pub fps: Option<f64>,
 }
 
+#[derive(Debug, Default, Deserialize, JsonSchema)]
+pub struct BeatsParams {
+    /// The music's project item id (from media_import).
+    pub item: u64,
+    /// Source seconds to start from (default 0).
+    #[serde(default)]
+    pub from: Option<f64>,
+    /// Source seconds to stop at (default the end; at most 600 s after `from`).
+    #[serde(default)]
+    pub to: Option<f64>,
+    /// Snap the times to this frame rate (default the active sequence's; 0 for raw seconds).
+    #[serde(default)]
+    pub fps: Option<f64>,
+}
+
+/// Mono samples of `item`'s sound from `from` to `to` source seconds, at `rate`.
+fn item_audio(edit: &Session, item: u64, from: f64, to: Option<f64>, rate: u32) -> Result<(Vec<f32>, f64), AutomationError> {
+    let other = AutomationError::Other;
+    let src = edit.source(redrob_film_project::ItemId(item)).ok_or_else(|| other(format!("no media for item {item}")))?;
+    if !src.info().has_audio() {
+        return Err(other(format!("item {item} has no sound")));
+    }
+    let length = src.info().duration.seconds();
+    let from = from.clamp(0.0, length);
+    let to = to.unwrap_or(length).clamp(from, (from + 600.0).min(length));
+    let mut out = Vec::with_capacity(((to - from) * f64::from(rate)) as usize);
+    let (mut at, end) = ((from * f64::from(rate)) as i64, (to * f64::from(rate)) as i64);
+    while at < end {
+        let n = (end - at).min(i64::from(rate) * 10) as usize;
+        let buf = src.audio(at, n, rate).map_err(|e| other(format!("reading item {item}'s sound: {e}")))?;
+        let ch = buf.channels.len().max(1) as f32;
+        out.extend((0..n).map(|i| buf.channels.iter().map(|c| c.get(i).copied().unwrap_or(0.0)).sum::<f32>() / ch));
+        at += n as i64;
+    }
+    Ok((out, from))
+}
+
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct ContactSheetParams {
     /// How many frames, evenly spaced (default 12, 2–30).
@@ -1010,6 +1047,36 @@ impl FilmMcp {
                 Content::image(base64::engine::general_purpose::STANDARD.encode(png), "image/png"),
             ]),
             Ok((report, None)) => ok_json(&report),
+            Err(e) => fail(e),
+        })
+    }
+
+    #[tool(
+        title = "Find the music's beats",
+        description = "Where a music item's beats, bars (4/4 downbeats) and hits fall, its tempo, and how it ends (lastHit: the last chord; silentFrom: where it has died away), in the item's source seconds, snapped to the sequence's frames. Cut on beats, change scenes on bars, land titles on hits. To end on the music's own ending, place the music so lastHit falls where the end card lands, and keep it until silentFrom. A beat at source time b is on the timeline at clip start + (b - sourceIn). Example: {\"item\":4,\"from\":150,\"to\":190}",
+        annotations(read_only_hint = true, destructive_hint = false, idempotent_hint = true, open_world_hint = false)
+    )]
+    async fn music_beats(&self, Parameters(p): Parameters<BeatsParams>) -> Result<CallToolResult, McpError> {
+        let Backend::Headless(s) = &*self.backend else {
+            return Ok(fail("music_beats needs the headless engine (redrob-film-cli mcp)"));
+        };
+        let s = s.clone();
+        let r = tokio::task::spawn_blocking(move || -> Result<Value, AutomationError> {
+            let g = s.lock().unwrap_or_else(PoisonError::into_inner);
+            let rate = 22050;
+            let (samples, from) = item_audio(&g, p.item, p.from.unwrap_or(0.0), p.to, rate)?;
+            let fps = p.fps.or_else(|| g.active_sequence().map(|q| q.settings.frame_rate.as_f64()));
+            let b = crate::beats::analyze(&samples, rate, from)
+                .ok_or_else(|| AutomationError::Other("no steady beat found: give at least 3 s of music with a pulse".into()))?;
+            let mut out = b.json(fps.filter(|f| *f > 0.0));
+            out["from"] = json!(from);
+            out["to"] = json!(from + samples.len() as f64 / f64::from(rate));
+            Ok(out)
+        })
+        .await
+        .unwrap_or_else(|e| Err(join_error(e)));
+        Ok(match r {
+            Ok(v) => ok_json(&v),
             Err(e) => fail(e),
         })
     }
@@ -1451,6 +1518,33 @@ mod tests {
         assert_ne!(r.is_error, Some(true), "{r:?}");
         assert!(m.run("effects.run", json!({"id": "no.such.command"})).await.is_err());
         assert!(m.run("mode.switch", json!({"mode": "photo"})).await.is_err());
+    }
+
+    /// `music_beats` reads an imported track's sound and answers with its tempo and beats.
+    #[tokio::test]
+    async fn music_beats_finds_the_tempo_of_an_imported_track() {
+        // a click on every beat at 120 BPM for 12 s
+        let rate = crate::sfx::RATE as usize;
+        let mut s = vec![0.0f32; rate * 12];
+        for k in 0..24 {
+            let at = k * rate / 2;
+            for i in 0..rate / 20 {
+                let t = i as f32 / rate as f32;
+                s[at + i] += 0.6 * (-t * 40.0).exp() * (std::f32::consts::TAU * 1500.0 * t).sin();
+            }
+        }
+        let path = std::env::temp_dir().join(format!("film-mcp-beats-{}.wav", std::process::id()));
+        std::fs::write(&path, crate::sfx::wav(&s)).unwrap();
+        let mut sess = Session::default();
+        let item = sess.execute("file.import", json!({"paths": [path.to_string_lossy()]})).unwrap()["items"][0].as_u64().unwrap();
+        let m = FilmMcp::headless(sess);
+        let r = m.music_beats(Parameters(BeatsParams { item, from: Some(1.0), to: None, fps: Some(0.0) })).await.unwrap();
+        assert_ne!(r.is_error, Some(true), "{r:?}");
+        let text: String = r.content.iter().filter_map(|c| c.as_text().map(|t| t.text.clone())).collect();
+        let v: Value = serde_json::from_str(&text).unwrap();
+        assert!((v["bpm"].as_f64().unwrap() - 120.0).abs() < 2.0, "{v}");
+        assert!(v["beats"][0].as_f64().unwrap() >= 1.0, "times are source seconds from `from`: {v}");
+        let _ = std::fs::remove_file(path);
     }
 
     #[tokio::test]

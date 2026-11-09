@@ -57,6 +57,12 @@ rules by default; the notes say how to do the same by hand with `effects.run`.
     every `fail` (each one names the time and the fix), and repeat. Stop after 3 rounds and report
     what is left. Leave headroom in the mix (source clips at -3 dB, a `boom` no hotter than
     -10 dB) and export with `loudnessLufs` -14.
+19. **Cut to the music.** When the sound is a music bed, run `music_beats` on it and cut on its
+    beats, change scenes on bars, land titles on hits. Lay the music as one continuous clip, never
+    a piece per shot, and footage without its own sound (`timeline.place` `audio: false`). End on
+    the track's own ending: start the music so `ending.lastHit` falls where the end card lands, and
+    keep it to `silentFrom`. Dialogue goes on its own track under the picture it was spoken over,
+    with the music ducked 8-10 dB beneath it.
 
 ## 30-second short, a structure that works
 
@@ -79,6 +85,8 @@ rules by default; the notes say how to do the same by hand with `effects.run`.
   `blurIn`, `typewriter`, `bounceInWords`, `scramble`, `dropInLines`), exits, the look
   (`darken`, `vignette`, `grain`, `kenBurns`), `fadeOut` and `place` to put it on the
   timeline. It returns `cues`: the entrance times with a suggested sound for each.
+- `music_beats` gives a music item's tempo, beats, bars, hits and ending, in its source seconds
+  snapped to the sequence's frames.
 - `sfx_add` places synthesised sound effects (whoosh, hit, riser, shimmer, click, boom,
   reverse) with their accents on the given times; pass it the `cues` of `scene_build`.
 - Music: `clip.audioGain` {mode: "set", db: -4} for the bed; for the fade-out,
