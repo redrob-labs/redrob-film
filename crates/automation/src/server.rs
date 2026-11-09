@@ -84,6 +84,85 @@ fn mode_command(
     }
 }
 
+/// `scene_build` on the headless backend: make the composition (from the Edit selection, or empty),
+/// run [`crate::scene::plan`]'s batch in it as one undo step, and place it on the timeline when asked.
+fn build_scene(edit: &mut Session, effects: &mut Option<redrob_effects_engine::Session>, spec: &Value) -> Result<Value, AutomationError> {
+    use redrob_film_handoff as h;
+    let other = AutomationError::Other;
+    let session = effects.get_or_insert_with(redrob_effects_host::session);
+    let name = spec.get("name").and_then(Value::as_str).unwrap_or("Scene").to_string();
+    let from_selection = spec.get("footage").and_then(Value::as_str) == Some("selection");
+    // where the footage sat on the timeline, to put the scene back over it
+    let mut origin: Option<(i64, Value)> = None;
+    let mut frame = crate::scene::Frame::of(spec);
+    if from_selection {
+        let seq = edit.active_sequence().ok_or_else(|| other("open a sequence and select the clips to build on".into()))?;
+        let sel = edit.state.selection.clone();
+        for (ti, track) in seq.video_tracks.iter().enumerate() {
+            for c in track.items.iter().filter(|c| sel.contains(&c.id)) {
+                if origin.as_ref().is_none_or(|(t, _)| c.start.0 < *t) {
+                    origin = Some((c.start.0, json!(format!("V{}", ti + 1))));
+                }
+            }
+        }
+        if origin.is_none() {
+            return Err(other("footage \"selection\": select the clips to build on first (timeline.select)".into()));
+        }
+        h::timeline_to_composition(edit, session, &json!({"name": name})).map_err(other)?;
+        let info = session.execute("comp.info", json!({})).map_err(|e| other(e.to_string()))?;
+        frame.width = info["width"].as_u64().unwrap_or(1080) as u32;
+        frame.height = info["height"].as_u64().unwrap_or(1920) as u32;
+        frame.fps = info["frameRate"].as_f64().unwrap_or(30.0);
+        frame.duration = info["duration"].as_f64().unwrap_or(frame.duration);
+    } else {
+        let mut bg = json!({"name": name, "width": frame.width, "height": frame.height, "frameRate": frame.fps, "duration": frame.duration, "open": true});
+        if let Some(c) = spec.get("background").and_then(Value::as_str) {
+            bg["background"] = json!(c);
+        }
+        session.execute("comp.new", bg).map_err(|e| other(e.to_string()))?;
+    }
+    // the footage layers and their current scale (the framing the hand-off kept)
+    let info = session.execute("comp.info", json!({})).map_err(|e| other(e.to_string()))?;
+    let mut footage = Vec::new();
+    for l in info["layers"].as_array().cloned().unwrap_or_default() {
+        if l["type"] != "Footage" {
+            continue;
+        }
+        let Some(id) = l["id"].as_u64() else { continue };
+        let scale = session
+            .execute("prop.get", json!({"layer": id, "path": "transform/scale"}))
+            .ok()
+            .and_then(|v| v.get("value").cloned().or(Some(v)))
+            .and_then(|v| v.get(0).and_then(Value::as_f64))
+            .unwrap_or(100.0);
+        footage.push((id, scale));
+    }
+    let steps = crate::scene::plan(spec, &frame, &footage).map_err(AutomationError::BadRequest)?;
+    let n = steps.len();
+    session
+        .execute("engine.batch", json!({"steps": steps, "label": format!("Build Scene {name}"), "atomic": true}))
+        .map_err(|e| other(format!("scene_build: {e}")))?;
+    let comp = session.active_comp_id().map(|c| c.0);
+    let mut out = json!({"comp": comp, "name": name, "steps": n, "width": frame.width, "height": frame.height, "duration": frame.duration, "footageLayers": footage.len()});
+    match spec.get("place") {
+        None | Some(Value::Null) | Some(Value::Bool(false)) => {
+            out["next"] = json!("not placed: run mode.placeCompositionOnTimeline, or scene_build with place: true");
+        }
+        Some(p) => {
+            let (at, track) = match (p.get("seconds").and_then(Value::as_f64), &origin) {
+                (Some(sec), _) => (redrob_film_time::Tick::from_seconds_f64(sec).0, p.get("track").cloned().unwrap_or(json!("V1"))),
+                (None, Some((t, tr))) => (*t, p.get("track").cloned().unwrap_or(tr.clone())),
+                (None, None) => (edit.playhead().0, p.get("track").cloned().unwrap_or(json!("V1"))),
+            };
+            edit.execute("playhead.set", json!({"time": at})).map_err(AutomationError::from)?;
+            let line = h::composition_to_timeline(edit, session, &json!({"track": track})).map_err(other)?;
+            out["placed"] = json!(line);
+            out["next"] = json!("render_contact_sheet over the scene's span to check it");
+        }
+    }
+    Ok(out)
+}
+
 /// A panic payload as text.
 fn panic_message(p: Box<dyn std::any::Any + Send>) -> String {
     p.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| p.downcast_ref::<String>().cloned()).unwrap_or_else(|| "panic".into())
@@ -239,6 +318,53 @@ pub struct ElementsParams {
     pub prefix: Option<String>,
 }
 
+#[derive(Debug, Deserialize, serde::Serialize, JsonSchema)]
+pub struct SceneParams {
+    /// Composition name.
+    #[serde(default)]
+    pub name: Option<String>,
+    /// "selection": the selected Edit clips become the background footage (their framing kept);
+    /// omit for a graphics-only scene.
+    #[serde(default)]
+    pub footage: Option<String>,
+    /// Without footage: "#hex" or ["#top", "#bottom"] for a vertical gradient (default near-black).
+    #[serde(default)]
+    pub background: Option<Value>,
+    /// Frame size and timing without footage (defaults 1080x1920, 30 fps, 4 s); footage scenes take
+    /// the selection's.
+    #[serde(default)]
+    pub width: Option<u32>,
+    #[serde(default)]
+    pub height: Option<u32>,
+    #[serde(default)]
+    pub fps: Option<f64>,
+    #[serde(default)]
+    pub duration: Option<f64>,
+    /// Colours and font: {"text": "#ffffff", "hero": "#ffc46b", "font": "Inter"}.
+    #[serde(default)]
+    pub theme: Option<Value>,
+    /// The finish: {"darken": 0..0.9 (wash over footage, default 0.28), "vignette": 0..100 (45),
+    /// "grain": 0..100 (4), "kenBurns": push-in % over the scene (6)}.
+    #[serde(default)]
+    pub look: Option<Value>,
+    /// Bottom to top. Each: {"type": "text"|"bar"|"box", "text", "role": "hero"|"title"|"body"|
+    /// "label"|"cta", "y"/"x": 0..1 of the frame (y kept in the 9:16 safe band 0.14-0.65), "size",
+    /// "color", "in"/"out" (s), "enter": "rise"|"drop"|"slide"|"pop"|"fade"|"grow"|"none" or a text
+    /// preset ("trackingIn", "fadeUpCharacters", "blurIn", "typewriter", "bounceInWords",
+    /// "scramble", "dropInLines"), "exit": "fade"|"fall"|"none", "glow": bool (default: hero only),
+    /// "width"/"height" for bar and box}.
+    pub layers: Vec<Value>,
+    /// Seconds between entrances (default 0.14) and the first entrance (default 0.15).
+    #[serde(default)]
+    pub stagger: Option<f64>,
+    #[serde(default)]
+    pub start: Option<f64>,
+    /// Put the composition on the timeline: true (for footage scenes: over the clips it came from;
+    /// otherwise at the playhead on V1) or {"seconds": f64, "track": "V2"}.
+    #[serde(default)]
+    pub place: Option<Value>,
+}
+
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct ContactSheetParams {
     /// How many frames, evenly spaced (default 12, 2–30).
@@ -266,10 +392,10 @@ fn sheet_times(from: f64, to: f64, count: u32) -> Vec<f64> {
 /// Black bars of a frame as fractions of its height / width: (top, bottom, left, right). A row or
 /// column counts as bar while at most 2 % of its pixels are brighter than near-black, so dark scenes
 /// with a few lights are not taken for bars; an all-black frame reports no bars.
-fn black_bars(f: &image::RgbaImage) -> (f32, f32, f32, f32) {
+fn black_bars(f: &image::RgbaImage) -> Option<(f32, f32, f32, f32)> {
     let (w, h) = f.dimensions();
     if w == 0 || h == 0 {
-        return (0.0, 0.0, 0.0, 0.0);
+        return None;
     }
     let lit = |x: u32, y: u32| {
         let p = f.get_pixel(x, y).0;
@@ -279,18 +405,28 @@ fn black_bars(f: &image::RgbaImage) -> (f32, f32, f32, f32) {
     let col_bar = |x: u32| (0..h).filter(|&y| lit(x, y)).count() as u32 * 50 <= h;
     let top = (0..h).take_while(|&y| row_bar(y)).count() as u32;
     if top == h {
-        return (0.0, 0.0, 0.0, 0.0);
+        return None;
     }
+    // A letterbox ends on a hard edge; a vignette or a dark scene fades out. Keep a bar only when
+    // the picture just inside it is clearly brighter than the bar itself.
+    let row_mean = |y: u32| (0..w).map(|x| f.get_pixel(x, y).0[..3].iter().map(|c| u32::from(*c)).sum::<u32>()).sum::<u32>() as f32 / (w * 3) as f32;
+    let col_mean = |x: u32| (0..h).map(|y| f.get_pixel(x, y).0[..3].iter().map(|c| u32::from(*c)).sum::<u32>()).sum::<u32>() as f32 / (h * 3) as f32;
+    let edge = |bar: u32, inside: f32, at_bar: f32| if bar > 0 && inside > at_bar * 2.0 + 12.0 { bar } else { 0 };
+    let top = edge(top, row_mean((top + 2).min(h - 1)), row_mean(top.saturating_sub(1)));
     let bottom = (0..h).rev().take_while(|&y| row_bar(y)).count() as u32;
+    let bottom = edge(bottom, row_mean(h.saturating_sub(bottom + 3)), row_mean(h - bottom.max(1)));
     let left = (0..w).take_while(|&x| col_bar(x)).count() as u32;
+    let left = edge(left, col_mean((left + 2).min(w - 1)), col_mean(left.saturating_sub(1)));
     let right = (0..w).rev().take_while(|&x| col_bar(x)).count() as u32;
-    (top as f32 / h as f32, bottom as f32 / h as f32, left as f32 / w as f32, right as f32 / w as f32)
+    let right = edge(right, col_mean(w.saturating_sub(right + 3)), col_mean(w - right.max(1)));
+    Some((top as f32 / h as f32, bottom as f32 / h as f32, left as f32 / w as f32, right as f32 / w as f32))
 }
 
 /// One line on the bars the contact sheet found: the typical (median) bar on each side over the
-/// frames that are not all black, so a fade does not hide letterboxing baked into the footage.
-fn bars_note(times: &[f64], bars: &[(f32, f32, f32, f32)]) -> String {
-    let lit: Vec<&(f32, f32, f32, f32)> = bars.iter().filter(|b| **b != (0.0, 0.0, 0.0, 0.0)).collect();
+/// frames that are not all black (`None`), so a fade does not hide letterboxing baked into the
+/// footage, and frames without bars count as no bar.
+fn bars_note(times: &[f64], bars: &[Option<(f32, f32, f32, f32)>]) -> String {
+    let lit: Vec<&(f32, f32, f32, f32)> = bars.iter().flatten().collect();
     let median = |pick: fn(&(f32, f32, f32, f32)) -> f32| {
         let mut v: Vec<f32> = lit.iter().map(|b| pick(b)).collect();
         v.sort_by(f32::total_cmp);
@@ -627,6 +763,36 @@ impl FilmMcp {
     }
 
     #[tool(
+        title = "Motion guide",
+        description = "The motion-design rules for titles, promos and shorts (easing, stagger, holds, layer stack, safe zones, a 30 s structure) and which Film tools apply them. Read it once before building motion graphics.",
+        annotations(read_only_hint = true, destructive_hint = false, idempotent_hint = true, open_world_hint = false)
+    )]
+    async fn motion_guide(&self) -> Result<CallToolResult, McpError> {
+        Ok(CallToolResult::success(vec![Content::text(crate::scene::GUIDE)]))
+    }
+
+    #[tool(
+        title = "Build a scene",
+        description = "Build a finished motion-graphics composition in ONE call from a description in design terms: background (the selected footage or a gradient), text by role (hero/title/body/label/cta) and bars, each with an entrance (eased, staggered) and an exit, plus the look (wash, vignette, grain, Ken Burns drift). The motion guide's rules are the defaults. `place` puts it on the timeline. Then look at it with render_contact_sheet and rebuild with changed values if needed. Example: {\"footage\":\"selection\",\"layers\":[{\"text\":\"SINTEL\",\"role\":\"hero\",\"enter\":\"trackingIn\"},{\"text\":\"잃어버린 친구를 찾아\",\"role\":\"body\"},{\"type\":\"bar\"}],\"place\":true}",
+        annotations(read_only_hint = false, destructive_hint = false, idempotent_hint = false, open_world_hint = false)
+    )]
+    async fn scene_build(&self, Parameters(p): Parameters<SceneParams>) -> Result<CallToolResult, McpError> {
+        let Backend::Headless(s) = &*self.backend else {
+            return Ok(fail("scene_build needs the headless engine (redrob-film-cli mcp)"));
+        };
+        let (s, fx) = (s.clone(), self.effects.clone());
+        let spec = serde_json::to_value(&p).unwrap_or_default();
+        let r = tokio::task::spawn_blocking(move || -> Result<Value, AutomationError> {
+            let mut edit = s.lock().unwrap_or_else(PoisonError::into_inner);
+            let mut effects = fx.lock().unwrap_or_else(PoisonError::into_inner);
+            build_scene(&mut edit, &mut effects, &spec)
+        })
+        .await
+        .unwrap_or_else(|e| Err(join_error(e)));
+        wrap(r)
+    }
+
+    #[tool(
         title = "Render a contact sheet",
         description = "Frames of the active sequence, evenly spaced from `from` to `to` (default: all of it), tiled in one PNG with their times listed. Look at one before choosing ranges or crops (what is in the footage, letterbox bars, where the subject is) and again after editing, before you describe the result.",
         annotations(read_only_hint = true, destructive_hint = false, idempotent_hint = true, open_world_hint = false)
@@ -638,7 +804,7 @@ impl FilmMcp {
         let s = s.clone();
         let tile = p.tile.unwrap_or(240).clamp(64, 640);
         #[allow(clippy::type_complexity)]
-        let r = tokio::task::spawn_blocking(move || -> Result<(Vec<u8>, Vec<f64>, Vec<(f32, f32, f32, f32)>), AutomationError> {
+        let r = tokio::task::spawn_blocking(move || -> Result<(Vec<u8>, Vec<f64>, Vec<Option<(f32, f32, f32, f32)>>), AutomationError> {
             let g = s.lock().unwrap_or_else(PoisonError::into_inner);
             let q = g.active_sequence().ok_or_else(|| AutomationError::Other("no sequence".into()))?;
             let (w, h) = (q.settings.width, q.settings.height);
@@ -916,14 +1082,23 @@ mod tests {
                 f.put_pixel(x, y, image::Rgba([120, 90, 60, 255]));
             }
         }
-        let (t, b, l, r) = black_bars(&f);
+        let (t, b, l, r) = black_bars(&f).unwrap();
         assert!((t - 0.12).abs() < 0.011 && (b - 0.12).abs() < 0.011 && l == 0.0 && r == 0.0, "{t} {b} {l} {r}");
         // all black (a fade) reports no bars, and the note ignores it
+        // a vignette: edges fade to near-black, no hard edge, so no bars
+        let vig = image::RgbaImage::from_fn(100, 100, |x, y| {
+            let d = ((x as f32 - 50.0).powi(2) + (y as f32 - 50.0).powi(2)).sqrt() / 70.0;
+            let v = (60.0 * (1.0 - d).max(0.0)) as u8;
+            image::Rgba([v, v, v, 255])
+        });
+        assert_eq!(black_bars(&vig), Some((0.0, 0.0, 0.0, 0.0)));
         let dark = image::RgbaImage::from_pixel(50, 50, image::Rgba([0, 0, 0, 255]));
-        assert_eq!(black_bars(&dark), (0.0, 0.0, 0.0, 0.0));
-        let note = bars_note(&[0.0, 1.0, 2.0], &[(0.0, 0.0, 0.0, 0.0), (0.12, 0.12, 0.0, 0.0), (0.12, 0.12, 0.0, 0.0)]);
+        assert_eq!(black_bars(&dark), None);
+        let note = bars_note(&[0.0, 1.0, 2.0], &[None, Some((0.12, 0.12, 0.0, 0.0)), Some((0.12, 0.12, 0.0, 0.0))]);
         assert!(note.contains("top 12%") && note.contains("1.32x"), "{note}");
-        assert!(bars_note(&[0.0], &[(0.0, 0.0, 0.0, 0.0)]).contains("none"));
+        assert!(bars_note(&[0.0], &[None]).contains("none"));
+        // two of three frames without bars: the typical frame has none
+        assert!(bars_note(&[0.0, 1.0, 2.0], &[Some((0.0, 0.0, 0.0, 0.0)), Some((0.0, 0.0, 0.0, 0.0)), Some((0.12, 0.12, 0.0, 0.0))]).contains("none"));
     }
 
     #[test]
