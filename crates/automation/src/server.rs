@@ -171,6 +171,82 @@ pub struct ElementsParams {
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]
+pub struct ContactSheetParams {
+    /// How many frames, evenly spaced (default 12, 2–30).
+    #[serde(default)]
+    pub count: Option<u32>,
+    /// Longest side of each frame in the sheet (default 240).
+    #[serde(default)]
+    pub tile: Option<u32>,
+    /// First time in seconds (default 0).
+    #[serde(default)]
+    pub from: Option<f64>,
+    /// Last time in seconds (default: the end of the active sequence).
+    #[serde(default)]
+    pub to: Option<f64>,
+}
+
+/// The times of a contact sheet: `count` points from `from` to just before `to`, centred in their
+/// slices so the first and last frames are not the black edges of the range.
+fn sheet_times(from: f64, to: f64, count: u32) -> Vec<f64> {
+    let n = count.clamp(2, 30);
+    let span = (to - from).max(0.0);
+    (0..n).map(|i| from + span * (i as f64 + 0.5) / n as f64).collect()
+}
+
+/// Black bars of a frame as fractions of its height / width: (top, bottom, left, right). A row or
+/// column counts as bar while at most 2 % of its pixels are brighter than near-black, so dark scenes
+/// with a few lights are not taken for bars; an all-black frame reports no bars.
+fn black_bars(f: &image::RgbaImage) -> (f32, f32, f32, f32) {
+    let (w, h) = f.dimensions();
+    if w == 0 || h == 0 {
+        return (0.0, 0.0, 0.0, 0.0);
+    }
+    let lit = |x: u32, y: u32| {
+        let p = f.get_pixel(x, y).0;
+        u16::from(p[0]) + u16::from(p[1]) + u16::from(p[2]) > 3 * 24
+    };
+    let row_bar = |y: u32| (0..w).filter(|&x| lit(x, y)).count() as u32 * 50 <= w;
+    let col_bar = |x: u32| (0..h).filter(|&y| lit(x, y)).count() as u32 * 50 <= h;
+    let top = (0..h).take_while(|&y| row_bar(y)).count() as u32;
+    if top == h {
+        return (0.0, 0.0, 0.0, 0.0);
+    }
+    let bottom = (0..h).rev().take_while(|&y| row_bar(y)).count() as u32;
+    let left = (0..w).take_while(|&x| col_bar(x)).count() as u32;
+    let right = (0..w).rev().take_while(|&x| col_bar(x)).count() as u32;
+    (top as f32 / h as f32, bottom as f32 / h as f32, left as f32 / w as f32, right as f32 / w as f32)
+}
+
+/// One line on the bars the contact sheet found: the typical (median) bar on each side over the
+/// frames that are not all black, so a fade does not hide letterboxing baked into the footage.
+fn bars_note(times: &[f64], bars: &[(f32, f32, f32, f32)]) -> String {
+    let lit: Vec<&(f32, f32, f32, f32)> = bars.iter().filter(|b| **b != (0.0, 0.0, 0.0, 0.0)).collect();
+    let median = |pick: fn(&(f32, f32, f32, f32)) -> f32| {
+        let mut v: Vec<f32> = lit.iter().map(|b| pick(b)).collect();
+        v.sort_by(f32::total_cmp);
+        v.get(v.len() / 2).copied().unwrap_or(0.0)
+    };
+    let (t, b, l, r) = (median(|x| x.0), median(|x| x.1), median(|x| x.2), median(|x| x.3));
+    if t.max(b).max(l).max(r) < 0.02 {
+        return format!("black bars: none (checked {} frames)", times.len());
+    }
+    let picture_h = (1.0 - t - b).max(0.01);
+    let picture_w = (1.0 - l - r).max(0.01);
+    format!(
+        "black bars (typical over {} frames): top {:.0}%, bottom {:.0}%, left {:.0}%, right {:.0}% - the picture fills only {:.0}% x {:.0}% of the frame; to fill the frame, scale up by at least {:.2}x on top of the current scale",
+        lit.len(),
+        t * 100.0,
+        b * 100.0,
+        l * 100.0,
+        r * 100.0,
+        picture_w * 100.0,
+        picture_h * 100.0,
+        (1.0 / picture_h).max(1.0 / picture_w)
+    )
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
 pub struct ControlParams {
     /// Any control-channel method (e.g. `ui.set`, `ui.scroll`, `ui.timeline.hit`, `ui.playback`).
     pub method: String,
@@ -467,6 +543,59 @@ impl FilmMcp {
     }
 
     #[tool(
+        title = "Render a contact sheet",
+        description = "Frames of the active sequence, evenly spaced from `from` to `to` (default: all of it), tiled in one PNG with their times listed. Look at one before choosing ranges or crops (what is in the footage, letterbox bars, where the subject is) and again after editing, before you describe the result.",
+        annotations(read_only_hint = true, destructive_hint = false, idempotent_hint = true, open_world_hint = false)
+    )]
+    async fn render_contact_sheet(&self, Parameters(p): Parameters<ContactSheetParams>) -> Result<CallToolResult, McpError> {
+        let Backend::Headless(s) = &*self.backend else {
+            return Ok(fail("render_contact_sheet needs the headless engine; call render_frame at several times instead"));
+        };
+        let s = s.clone();
+        let tile = p.tile.unwrap_or(240).clamp(64, 640);
+        #[allow(clippy::type_complexity)]
+        let r = tokio::task::spawn_blocking(move || -> Result<(Vec<u8>, Vec<f64>, Vec<(f32, f32, f32, f32)>), AutomationError> {
+            let g = s.lock().unwrap_or_else(PoisonError::into_inner);
+            let q = g.active_sequence().ok_or_else(|| AutomationError::Other("no sequence".into()))?;
+            let (w, h) = (q.settings.width, q.settings.height);
+            let end = q.duration().seconds();
+            let from = p.from.unwrap_or(0.0).clamp(0.0, end);
+            let to = p.to.unwrap_or(end).clamp(from, end);
+            let times = sheet_times(from, to, p.count.unwrap_or(12));
+            let scale = render_scale(tile, w, h);
+            let mut frames = Vec::with_capacity(times.len());
+            let mut bars = Vec::with_capacity(times.len());
+            for &t in &times {
+                let img = g.try_render_program_at(scale, redrob_film_time::Tick::from_seconds_f64(t)).map_err(|e| AutomationError::Other(e.to_string()))?;
+                let f =
+                    image::RgbaImage::from_raw(img.w as u32, img.h as u32, img.over_black_rgba8()).ok_or_else(|| AutomationError::Other("bad image".into()))?;
+                bars.push(black_bars(&f));
+                frames.push(f);
+            }
+            let (fw, fh) = frames.first().map_or((1, 1), |f| (f.width(), f.height()));
+            let cols = (times.len() as f64).sqrt().ceil() as u32;
+            let rows = (times.len() as u32).div_ceil(cols);
+            let gap = 4;
+            let mut sheet = image::RgbaImage::from_pixel(cols * (fw + gap) + gap, rows * (fh + gap) + gap, image::Rgba([40, 40, 40, 255]));
+            for (i, f) in frames.iter().enumerate() {
+                let (c, r) = (i as u32 % cols, i as u32 / cols);
+                image::imageops::overlay(&mut sheet, f, i64::from(gap + c * (fw + gap)), i64::from(gap + r * (fh + gap)));
+            }
+            let png = png_rgba(sheet.width(), sheet.height(), sheet.into_raw(), 0)?;
+            Ok((png, times, bars))
+        })
+        .await
+        .unwrap_or_else(|e| Err(join_error(e)));
+        Ok(match r {
+            Ok((png, times, bars)) => {
+                let list: Vec<String> = times.iter().map(|t| format!("{t:.1}s")).collect();
+                png_result(&png, &format!("contact sheet, left to right then top to bottom: {}\n{}", list.join(", "), bars_note(&times, &bars)))
+            }
+            Err(e) => fail(e),
+        })
+    }
+
+    #[tool(
         title = "Live app: UI state",
         description = "Live app: UI state (tool, workspace, panels, timeline zoom, playback, selection, fps).",
         annotations(read_only_hint = true, destructive_hint = false, idempotent_hint = true, open_world_hint = false)
@@ -584,7 +713,7 @@ impl FilmMcp {
     }
 }
 
-const INSTRUCTIONS: &str = "Redrob Film video editor (Premiere Pro-class). Every edit is an engine command: `command_list` to discover ids/params, `command_run` to execute (undoable; `command_batch` runs several). `doc_inspect` (or `project_inspect`/`sequence_inspect`) returns ids you can pass to commands; `render_preview` shows the result. In bridge mode the `ui_*` tools drive the live app: `ui_elements` lists clickable ids, `ui_click`/`ui_drag`/`ui_key` operate it, `ui_screenshot` shows it. Time is in ticks: 254016000000 per second (commands also accept `seconds`, `frame` or `timecode`).";
+const INSTRUCTIONS: &str = "Redrob Film video editor (Premiere Pro-class). Every edit is an engine command: `command_list` to discover ids/params, `command_run` to execute (undoable; `command_batch` runs several). `doc_inspect` (or `project_inspect`/`sequence_inspect`) returns ids you can pass to commands; `render_preview` shows the result. Look before you cut and before you report: `render_contact_sheet` over the source shows what each part holds (titles, letterbox bars, where the subject sits), and over the edit afterwards shows what you made; never describe a frame, crop or caption you have not seen. In bridge mode the `ui_*` tools drive the live app: `ui_elements` lists clickable ids, `ui_click`/`ui_drag`/`ui_key` operate it, `ui_screenshot` shows it. Time is in ticks: 254016000000 per second (commands also accept `seconds`, `frame` or `timecode`).";
 
 /// Resources: the project (as `doc_inspect`) and the command catalog (as `command_list`).
 const DOCUMENT_URI: &str = "redrob-film://document";
@@ -692,6 +821,42 @@ mod tests {
         assert_eq!(render_scale(960, 1920, 1080), 0.5);
         assert_eq!(render_scale(960, 640, 360), 1.0);
         assert_eq!(render_scale(960, 0, 0), 1.0);
+    }
+
+    #[test]
+    fn black_bars_measure_letterbox_and_ignore_dark_scenes() {
+        // 100x100: rows 0..12 and 88..100 black, a lit picture between
+        let mut f = image::RgbaImage::from_pixel(100, 100, image::Rgba([0, 0, 0, 255]));
+        for y in 12..88 {
+            for x in 0..100 {
+                f.put_pixel(x, y, image::Rgba([120, 90, 60, 255]));
+            }
+        }
+        let (t, b, l, r) = black_bars(&f);
+        assert!((t - 0.12).abs() < 0.011 && (b - 0.12).abs() < 0.011 && l == 0.0 && r == 0.0, "{t} {b} {l} {r}");
+        // all black (a fade) reports no bars, and the note ignores it
+        let dark = image::RgbaImage::from_pixel(50, 50, image::Rgba([0, 0, 0, 255]));
+        assert_eq!(black_bars(&dark), (0.0, 0.0, 0.0, 0.0));
+        let note = bars_note(&[0.0, 1.0, 2.0], &[(0.0, 0.0, 0.0, 0.0), (0.12, 0.12, 0.0, 0.0), (0.12, 0.12, 0.0, 0.0)]);
+        assert!(note.contains("top 12%") && note.contains("1.32x"), "{note}");
+        assert!(bars_note(&[0.0], &[(0.0, 0.0, 0.0, 0.0)]).contains("none"));
+    }
+
+    #[test]
+    fn sheet_times_are_centred_in_their_slices() {
+        assert_eq!(sheet_times(0.0, 10.0, 2), vec![2.5, 7.5]);
+        assert_eq!(sheet_times(0.0, 10.0, 100).len(), 30);
+    }
+
+    #[tokio::test]
+    async fn contact_sheet_renders_the_sequence_in_one_png() {
+        let mut s = Session::default();
+        s.execute("file.openDemoProject", json!({})).unwrap();
+        let m = FilmMcp::headless(s);
+        let r = m.render_contact_sheet(Parameters(ContactSheetParams { count: Some(4), tile: Some(96), from: None, to: None })).await.unwrap();
+        assert_ne!(r.is_error, Some(true), "{r:?}");
+        let text = format!("{:?}", r.content);
+        assert!(text.contains("image/png") && text.contains("contact sheet") && text.contains("black bars"), "{text}");
     }
 
     #[tokio::test]
