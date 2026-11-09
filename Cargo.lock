@@ -5494,6 +5494,7 @@ dependencies = [
  "redrob-film-export",
  "redrob-film-frame",
  "redrob-film-gpu",
+ "redrob-film-handoff",
  "redrob-film-media",
  "redrob-film-platform",
  "redrob-film-project",
@@ -5534,7 +5535,10 @@ version = "0.8.0"
 dependencies = [
  "base64 0.22.1",
  "image",
+ "redrob-effects-engine",
+ "redrob-effects-host",
  "redrob-film-engine",
+ "redrob-film-handoff",
  "redrob-film-time",
  "rmcp",
  "schemars",
@@ -5813,6 +5817,24 @@ dependencies = [
  "redrob-film-bitstream",
  "redrob-film-testkit",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "redrob-film-handoff"
+version = "0.8.0"
+dependencies = [
+ "redrob-effects-color",
+ "redrob-effects-engine",
+ "redrob-effects-project",
+ "redrob-effects-render",
+ "redrob-effects-time",
+ "redrob-film-color",
+ "redrob-film-engine",
+ "redrob-film-frame",
+ "redrob-film-media",
+ "redrob-film-project",
+ "redrob-film-time",
+ "serde_json",
 ]
 
 [[package]]

@@ -48,6 +48,7 @@ redrob-effects-color = { workspace = true }
 redrob-effects-text = { workspace = true }
 # `redrob-film mcp`: the MCP server the built-in agent (Redrob Code) starts from this same executable.
 redrob-film-automation = { workspace = true }
+redrob-film-handoff = { workspace = true }
 # The Redrob Code app bridge (`app_bridge.rs`): this window's tools, served to the shared daemon.
 redrob-app-bridge = { git = "https://github.com/redrob-labs/redrob-code", tag = "v0.7.0" }
 tokio = { version = "1", features = ["rt-multi-thread"] }

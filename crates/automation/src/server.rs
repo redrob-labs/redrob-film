@@ -19,6 +19,71 @@ pub enum Backend {
     Bridge(Arc<BridgeClient>),
 }
 
+/// The mode commands on the headless backend, as the app's shell answers them (apps/redrob-film-app/
+/// src/shell.rs `service_control`): Effects commands, the two hand-offs, the mode, and `command.list`
+/// with the mode commands appended. The Effects session starts on first use.
+fn mode_command(
+    edit: &mut Session,
+    effects: &mut Option<redrob_effects_engine::Session>,
+    mode: &mut &'static str,
+    id: &str,
+    params: Value,
+) -> Result<Value, AutomationError> {
+    use redrob_film_handoff as h;
+    let other = AutomationError::Other;
+    match id {
+        "command.list" => {
+            let list = edit.execute("command.list", params).map_err(AutomationError::from)?;
+            let mut all = list.as_array().cloned().unwrap_or_default();
+            all.extend(h::catalogue(h::can_send_selection(edit), h::can_place_composition(edit, effects.as_ref())));
+            Ok(Value::Array(all))
+        }
+        h::SWITCH_MODE => {
+            let want = params.get("mode").and_then(Value::as_str).unwrap_or("").trim().to_ascii_lowercase();
+            *mode = match want.as_str() {
+                "edit" | "editor" | "timeline" => "edit",
+                "effects" | "effect" | "fx" | "composition" => {
+                    effects.get_or_insert_with(redrob_effects_host::session);
+                    "effects"
+                }
+                _ => return Err(other("mode: \"edit\" or \"effects\"".into())),
+            };
+            Ok(json!({"mode": *mode}))
+        }
+        h::EFFECTS_RUN => {
+            let cmd = params
+                .get("id")
+                .or(params.get("command"))
+                .and_then(Value::as_str)
+                .ok_or_else(|| other("need `id` (an Effects command id)".into()))?
+                .to_string();
+            let p = params.get("params").cloned().unwrap_or(json!({}));
+            let session = effects.get_or_insert_with(redrob_effects_host::session);
+            session.execute(&cmd, p).map_err(|e| other(e.to_string()))
+        }
+        h::SEND_SELECTION_TO_EFFECTS => {
+            let session = effects.get_or_insert_with(redrob_effects_host::session);
+            let line = h::timeline_to_composition(edit, session, &params).map_err(other)?;
+            *mode = "effects";
+            Ok(json!({"ok": true, "message": line, "mode": "effects", "comp": session.active_comp_id().map(|c| c.0)}))
+        }
+        h::PLACE_COMPOSITION_ON_TIMELINE => {
+            let session = effects.as_ref().ok_or_else(|| other("no composition: build one with effects.run first".into()))?;
+            let line = h::composition_to_timeline(edit, session, &params).map_err(other)?;
+            *mode = "edit";
+            Ok(json!({"ok": true, "message": line, "mode": "edit"}))
+        }
+        h::STATUS => Ok(json!({
+            "mode": *mode,
+            "editors": if effects.is_some() { json!(["edit", "effects"]) } else { json!(["edit"]) },
+            "activeComposition": effects.as_ref().and_then(|e| e.active_comp_id()).map(|c| c.0),
+            "canSendSelection": h::can_send_selection(edit),
+            "canPlaceComposition": h::can_place_composition(edit, effects.as_ref()),
+        })),
+        _ => Err(other(format!("unknown mode command {id}"))),
+    }
+}
+
 /// A panic payload as text.
 fn panic_message(p: Box<dyn std::any::Any + Send>) -> String {
     p.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| p.downcast_ref::<String>().cloned()).unwrap_or_else(|| "panic".into())
@@ -35,6 +100,10 @@ fn join_error(e: tokio::task::JoinError) -> AutomationError {
 #[derive(Clone)]
 pub struct FilmMcp {
     backend: Arc<Backend>,
+    /// Headless only: the Effects editor's session, created on the first mode command that needs
+    /// it, and the mode an agent last switched to (there is no window to show it in).
+    effects: Arc<Mutex<Option<redrob_effects_engine::Session>>>,
+    mode: Arc<Mutex<&'static str>>,
     tool_router: ToolRouter<Self>,
 }
 
@@ -272,10 +341,20 @@ fn wrap(r: Result<Value, AutomationError>) -> Result<CallToolResult, McpError> {
 
 impl FilmMcp {
     pub fn headless(session: Session) -> Self {
-        Self { backend: Arc::new(Backend::Headless(Arc::new(Mutex::new(session)))), tool_router: Self::tool_router() }
+        Self {
+            backend: Arc::new(Backend::Headless(Arc::new(Mutex::new(session)))),
+            effects: Arc::default(),
+            mode: Arc::new(Mutex::new("edit")),
+            tool_router: Self::tool_router(),
+        }
     }
     pub fn bridge(addr: &str) -> Result<Self, AutomationError> {
-        Ok(Self { backend: Arc::new(Backend::Bridge(Arc::new(BridgeClient::new(addr)?))), tool_router: Self::tool_router() })
+        Ok(Self {
+            backend: Arc::new(Backend::Bridge(Arc::new(BridgeClient::new(addr)?))),
+            effects: Arc::default(),
+            mode: Arc::new(Mutex::new("edit")),
+            tool_router: Self::tool_router(),
+        })
     }
 
     pub async fn serve_stdio(self) -> Result<(), AutomationError> {
@@ -339,11 +418,16 @@ impl FilmMcp {
     pub async fn run(&self, id: &str, params: Value) -> Result<Value, AutomationError> {
         match &*self.backend {
             Backend::Headless(s) => {
-                let s = s.clone();
+                let (s, fx, mode) = (s.clone(), self.effects.clone(), self.mode.clone());
                 let id = id.to_string();
                 tokio::task::spawn_blocking(move || {
                     // A command that panicked earlier poisoned the lock; the session is still usable.
                     let mut g = s.lock().unwrap_or_else(PoisonError::into_inner);
+                    if redrob_film_handoff::ALL.contains(&id.as_str()) || id == "command.list" {
+                        // edit lock first, then effects: every path takes them in this order
+                        let mut e = fx.lock().unwrap_or_else(PoisonError::into_inner);
+                        return mode_command(&mut g, &mut e, &mut mode.lock().unwrap_or_else(PoisonError::into_inner), &id, params);
+                    }
                     g.execute(&id, params).map_err(AutomationError::from)
                 })
                 .await
@@ -406,7 +490,7 @@ impl FilmMcp {
 
     #[tool(
         title = "Run a command",
-        description = "Run a command by id with JSON params, e.g. {\"id\":\"timeline.razor\",\"params\":{\"seconds\":3.5}} or {\"id\":\"effects.apply\",\"params\":{\"effect\":\"Gaussian Blur\"}}. Undoable edits land in History.",
+        description = "Run a command by id with JSON params, e.g. {\"id\":\"timeline.razor\",\"params\":{\"seconds\":3.5}} or {\"id\":\"effects.apply\",\"params\":{\"effect\":\"Gaussian Blur\"}}. Undoable edits land in History. Motion graphics (After Effects-style compositions: text layers with animation presets, shapes, keyframes, expressions, glow): select clips, run `mode.sendSelectionToEffects`, build with `effects.run` {id, params} (e.g. layer.newText, layer.applyTextPreset, layer.newShape, anim.applyBuiltinPreset, effect.apply, prop.set; `effects.run` {id:\"command.list\"} lists all), then `mode.placeCompositionOnTimeline` puts the result back at the playhead.",
         annotations(read_only_hint = false, destructive_hint = true, idempotent_hint = false, open_world_hint = false)
     )]
     async fn command_run(&self, Parameters(p): Parameters<RunParams>) -> Result<CallToolResult, McpError> {
@@ -846,6 +930,43 @@ mod tests {
     fn sheet_times_are_centred_in_their_slices() {
         assert_eq!(sheet_times(0.0, 10.0, 2), vec![2.5, 7.5]);
         assert_eq!(sheet_times(0.0, 10.0, 100).len(), 30);
+    }
+
+    /// The headless server reaches Effects the way the app's AI dock does: a clip goes to a
+    /// composition, an Effects command adds a text layer, and the composition comes back to the
+    /// timeline, picture and all.
+    #[tokio::test]
+    async fn headless_mode_commands_round_trip_through_effects() {
+        // a still on disk: the hand-off sends clips with a media file behind them
+        let path = std::env::temp_dir().join(format!("film-mcp-effects-{}.png", std::process::id()));
+        image::RgbaImage::from_pixel(320, 180, image::Rgba([30, 90, 160, 255])).save(&path).unwrap();
+        let mut s = Session::default();
+        let item = s.execute("file.import", json!({"paths": [path.to_string_lossy()]})).unwrap()["items"][0].as_u64().unwrap();
+        s.execute("file.newSequence", json!({"name": "v", "width": 320, "height": 180})).unwrap();
+        s.execute("timeline.place", json!({"item": item, "track": "V1", "seconds": 0.0})).unwrap();
+        let m = FilmMcp::headless(s);
+        let list = m.run("command.list", json!({})).await.unwrap();
+        let ids: Vec<&str> = list.as_array().unwrap().iter().filter_map(|c| c["id"].as_str()).collect();
+        for id in redrob_film_handoff::ALL {
+            assert!(ids.contains(&id), "{id} listed");
+        }
+        assert_eq!(m.run("mode.status", json!({})).await.unwrap()["editors"], json!(["edit"]));
+        let seq = m.run("sequence.inspect", json!({})).await.unwrap();
+        let clip = seq["video"][0]["items"][0]["clip"].as_u64().unwrap();
+        m.run("timeline.select", json!({"clips": [clip]})).await.unwrap();
+        let sent = m.run("mode.sendSelectionToEffects", json!({"name": "Titles"})).await.unwrap();
+        assert_eq!(sent["mode"], "effects", "{sent}");
+        let text = m.run("effects.run", json!({"id": "layer.newText", "params": {"text": "Hello", "size": 120}})).await.unwrap();
+        assert!(text["layer"].as_u64().is_some(), "{text}");
+        let info = m.run("effects.run", json!({"id": "comp.info"})).await.unwrap();
+        assert_eq!(info["layers"].as_array().unwrap().len(), 2, "{info}");
+        m.run("playhead.set", json!({"seconds": 0.0})).await.unwrap();
+        let placed = m.run("mode.placeCompositionOnTimeline", json!({"track": "V1"})).await.unwrap();
+        assert_eq!(placed["mode"], "edit", "{placed}");
+        let r = m.render_frame(Parameters(RenderParams { seconds: Some(0.5), max_side: Some(96) })).await.unwrap();
+        assert_ne!(r.is_error, Some(true), "{r:?}");
+        assert!(m.run("effects.run", json!({"id": "no.such.command"})).await.is_err());
+        assert!(m.run("mode.switch", json!({"mode": "photo"})).await.is_err());
     }
 
     #[tokio::test]

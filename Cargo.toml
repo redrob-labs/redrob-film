@@ -54,6 +54,7 @@ redrob-film-format = { path = "crates/format" }
 redrob-film-engine = { path = "crates/engine" }
 redrob-film-ui-egui = { path = "crates/ui-egui" }
 redrob-film-automation = { path = "crates/automation" }
+redrob-film-handoff = { path = "crates/handoff" }
 redrob-film-platform = { path = "crates/platform" }
 redrob-film-testkit = { path = "crates/testkit" }
 

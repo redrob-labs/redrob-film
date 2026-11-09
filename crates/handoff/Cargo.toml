@@ -1,0 +1,26 @@
+[package]
+name = "redrob-film-handoff"
+description = "Redrob Film: hand-offs between Edit (the timeline) and Effects (compositions), shared by the app and the headless MCP server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+redrob-film-color = { workspace = true }
+redrob-film-engine = { workspace = true }
+redrob-film-frame = { workspace = true }
+redrob-film-media = { workspace = true }
+redrob-film-project = { workspace = true }
+redrob-film-time = { workspace = true }
+redrob-effects-engine = { workspace = true }
+redrob-effects-project = { workspace = true }
+redrob-effects-render = { workspace = true }
+redrob-effects-time = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+redrob-effects-color = { workspace = true }
