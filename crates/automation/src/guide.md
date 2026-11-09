@@ -47,10 +47,16 @@ rules by default; the notes say how to do the same by hand with `effects.run`.
     audio (`timeline.place` with `audioTrack`), never under a continuous bed taken from another
     part of the source: the voice then plays seconds away from the lips and the captions. Soften
     the audio cuts with `sequence.applyAudioTransition` (`constant_power`, 4-8 frames).
-17. **Captions come from the words as they play.** `transcript.generate` on the source, then
-    `transcript.inspect` on the cut sequence: its paragraphs are in sequence time, through every
-    cut. Place each caption from its paragraph's start to its end (+0.3 s). Whisper base can
-    repeat a line over music; keep a line once and drop text with no voice under it.
+17. **Captions come from the words as they play.** Run `review_video` on the cut before adding
+    captions: its `speech.lines` are the sentences heard in the final mix, in sequence time. Place
+    one caption per line from 0.1 s before its start to 0.3 s after its end, in Pretendard with an
+    outline. Never time captions by hand.
+18. **Review by measurement before showing anyone.** Survey the source first: `review_video` on a
+    sequence holding the whole source lists its own fast cuts, black stretches and spoken lines,
+    so every chosen range can hold one source shot. After the edit, run `review_video` again, fix
+    every `fail` (each one names the time and the fix), and repeat. Stop after 3 rounds and report
+    what is left. Leave headroom in the mix (source clips at -3 dB, a `boom` no hotter than
+    -10 dB) and export with `loudnessLufs` -14.
 
 ## 30-second short, a structure that works
 
@@ -64,6 +70,9 @@ rules by default; the notes say how to do the same by hand with `effects.run`.
 
 ## Tools
 
+- `review_video` checks the active sequence by measurement (captions against speech, source
+  cuts inside a range, flashes, black frames, the first frame, the ending, peaks, caption fonts)
+  and returns findings with times and fixes, the heard lines, and a sheet of the flagged frames.
 - `scene_build` builds a whole composition from a description (see its schema): background or
   the selected footage, roles (`hero`, `title`, `body`, `label`, `cta`), entrances (`rise`,
   `drop`, `slide`, `pop`, `fade`, `grow`, or a text preset: `trackingIn`, `fadeUpCharacters`,

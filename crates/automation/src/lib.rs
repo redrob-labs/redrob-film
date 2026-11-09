@@ -12,6 +12,7 @@
 
 pub mod bridge;
 pub mod long_job;
+pub mod review;
 pub mod scene;
 pub mod server;
 pub mod sfx;

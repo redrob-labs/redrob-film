@@ -166,6 +166,192 @@ fn build_scene(edit: &mut Session, effects: &mut Option<redrob_effects_engine::S
     Ok(out)
 }
 
+/// Read a PCM WAV (16/24/32-bit integer or 32-bit float) as mono f32 and its rate.
+fn read_wav_mono(bytes: &[u8]) -> Option<(Vec<f32>, u32)> {
+    if bytes.len() < 12 || &bytes[..4] != b"RIFF" || &bytes[8..12] != b"WAVE" {
+        return None;
+    }
+    let (mut i, mut fmt, mut data) = (12usize, None, None);
+    while i + 8 <= bytes.len() {
+        let id = &bytes[i..i + 4];
+        let len = u32::from_le_bytes(bytes[i + 4..i + 8].try_into().ok()?) as usize;
+        let body = bytes.get(i + 8..(i + 8 + len).min(bytes.len()))?;
+        if id == b"fmt " && body.len() >= 16 {
+            let u16_at = |o: usize| u16::from_le_bytes([body[o], body[o + 1]]);
+            fmt = Some((u16_at(0), u16_at(2).max(1) as usize, u32::from_le_bytes(body[4..8].try_into().ok()?), u16_at(14) as usize));
+        } else if id == b"data" {
+            data = Some(body);
+        }
+        i += 8 + len + (len & 1);
+    }
+    let ((format, ch, rate, bits), data) = (fmt?, data?);
+    let bps = bits / 8;
+    if bps == 0 {
+        return None;
+    }
+    let frame = bps * ch;
+    let sample = |b: &[u8]| -> f32 {
+        match (format, bits) {
+            (3, 32) => f32::from_le_bytes([b[0], b[1], b[2], b[3]]),
+            (_, 16) => f32::from(i16::from_le_bytes([b[0], b[1]])) / 32768.0,
+            (_, 24) => ((i32::from(b[0]) | i32::from(b[1]) << 8 | i32::from(b[2]) << 16) << 8 >> 8) as f32 / 8_388_608.0,
+            (_, 32) => i32::from_le_bytes([b[0], b[1], b[2], b[3]]) as f32 / 2_147_483_648.0,
+            _ => 0.0,
+        }
+    };
+    let out = data.chunks_exact(frame).map(|f| f.chunks_exact(bps).map(sample).sum::<f32>() / ch as f32).collect();
+    Some((out, rate))
+}
+
+/// `review_video` on the headless backend (see [`crate::review`] for the checks).
+fn review_sequence(edit: &mut Session, p: &ReviewParams) -> Result<(Value, Option<Vec<u8>>), AutomationError> {
+    use crate::review;
+    let other = AutomationError::Other;
+    let t_all = std::time::Instant::now();
+    let seq = edit.active_sequence().ok_or_else(|| other("open a sequence first".into()))?.clone();
+    let dur = seq.duration().seconds();
+    if dur <= 0.0 {
+        return Err(other("the sequence is empty".into()));
+    }
+    let (w, h) = (seq.settings.width, seq.settings.height);
+    // edit points and transitions on every video track
+    let mut edits: Vec<f64> = Vec::new();
+    let mut transitions: Vec<(f64, f64)> = Vec::new();
+    for tr in &seq.video_tracks {
+        for c in &tr.items {
+            edits.push(c.start.seconds());
+            edits.push(c.end().seconds());
+        }
+        for t in &tr.transitions {
+            transitions.push((t.start.seconds(), t.end().seconds()));
+        }
+    }
+    edits.sort_by(f64::total_cmp);
+    edits.dedup_by(|a, b| (*a - *b).abs() < 1e-3);
+
+    // 1. picture: small luma samples
+    let fps = p.fps.unwrap_or(12.0).clamp(2.0, 30.0);
+    let step = 1.0 / fps;
+    let n = ((dur * fps).floor() as usize).clamp(2, 1800);
+    let scale = (96.0 / f64::from(w.max(h))) as f32;
+    let mut frames = Vec::with_capacity(n);
+    for i in 0..n {
+        let t = (i as f64 * step).min(dur - step * 0.5);
+        let img = edit.try_render_program_at(scale.max(0.02), redrob_film_time::Tick::from_seconds_f64(t)).map_err(|e| other(e.to_string()))?;
+        let rgba = img.over_black_rgba8();
+        let (iw, ih) = (img.w.max(1), img.h.max(1));
+        let lum: Vec<u8> = rgba.as_chunks::<4>().0.iter().map(|p| ((u32::from(p[0]) * 54 + u32::from(p[1]) * 183 + u32::from(p[2]) * 19) >> 8) as u8).collect();
+        let mean = lum.iter().map(|v| u32::from(*v)).sum::<u32>() as f32 / lum.len().max(1) as f32;
+        // 8x8 grid of means
+        let mut grid = Vec::with_capacity(64);
+        for gy in 0..8 {
+            for gx in 0..8 {
+                let (x0, x1, y0, y1) = (gx * iw / 8, ((gx + 1) * iw / 8).max(gx * iw / 8 + 1), gy * ih / 8, ((gy + 1) * ih / 8).max(gy * ih / 8 + 1));
+                let mut sum = 0u32;
+                let mut cnt = 0u32;
+                for y in y0..y1.min(ih) {
+                    for x in x0..x1.min(iw) {
+                        sum += u32::from(lum[y * iw + x]);
+                        cnt += 1;
+                    }
+                }
+                grid.push((sum / cnt.max(1)) as u8);
+            }
+        }
+        frames.push(review::FrameSample { t, luma: mean, grid });
+    }
+    let mut findings = review::picture(&frames, step, &edits, &transitions, dur);
+
+    // 2. sound: the mix as a WAV
+    let dir = std::env::temp_dir().join(format!("redrob-film-review-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).map_err(|e| other(e.to_string()))?;
+    let wav = dir.join("mix.wav");
+    edit.execute("file.exportMedia", json!({"path": wav.to_string_lossy(), "format": "wav", "range": "entire", "wait": true}))
+        .map_err(AutomationError::from)?;
+    let bytes = std::fs::read(&wav).map_err(|e| other(e.to_string()))?;
+    let (samples, rate) = read_wav_mono(&bytes).ok_or_else(|| other("could not read the mixed WAV".into()))?;
+    findings.extend(review::sound_and_ending(&samples, rate, &frames, &edits, dur));
+
+    // 3. captions and their faces
+    let mut cues: Vec<(f64, f64, String)> = Vec::new();
+    let mut faces = Vec::new();
+    for tr in seq.caption_tracks.iter().filter(|t| t.enabled) {
+        let mut sample = String::new();
+        for c in &tr.captions {
+            cues.push((c.start.seconds(), c.end().seconds(), c.plain_lines().join(" ")));
+            sample.push_str(&c.plain_lines().join(" "));
+        }
+        faces.push((tr.name.clone(), tr.style.font.clone(), tr.style.background, tr.style.outline, sample));
+    }
+    findings.extend(review::caption_faces(&faces));
+    let mut speech_note = json!(null);
+    if p.speech.unwrap_or(true) {
+        let model = p.model.clone().unwrap_or_else(|| "whisper-small".into());
+        let _ = edit.execute("transcript.downloadModel", json!({"model": model}));
+        let imported = edit.execute("file.import", json!({"paths": [wav.to_string_lossy()]})).map_err(AutomationError::from)?;
+        if let Some(item) = imported["items"].get(0).and_then(Value::as_u64) {
+            let generated = edit.execute("transcript.generate", json!({"items": [item], "model": model, "language": "auto"}));
+            let words: Vec<(f64, f64, String)> = edit
+                .project
+                .transcripts
+                .get(&redrob_film_project::ItemId(item))
+                .map(|t| t.words.iter().map(|w| (w.start.seconds(), w.end.seconds(), w.text.clone())).collect())
+                .unwrap_or_default();
+            // words longer than they can be spoken (DTW spread over music) move to the voice band's peak
+            let words = review::fit_words(&words, &review::voice_envelope(&samples, rate));
+            // a lone short word far from the rest is usually a misplaced first word: fold it into the next line
+            let lines = review::speech_lines(&words, 0.6);
+            speech_note = json!({"model": model, "lines": lines.iter().map(|(a, b, t)| json!({"start": (a * 100.0).round() / 100.0, "end": (b * 100.0).round() / 100.0, "text": t})).collect::<Vec<_>>(), "error": generated.err().map(|e| e.to_string())});
+            if !cues.is_empty() || !lines.is_empty() {
+                findings.extend(review::captions(&cues, &lines));
+            }
+            let _ = edit.execute("project.delete", json!({"items": [item]}));
+        }
+    }
+    findings.sort_by(|a, b| (a.severity != "fail").cmp(&(b.severity != "fail")).then(a.start.total_cmp(&b.start)));
+
+    // 4. a sheet of the flagged moments (plus the first and last frame)
+    let mut times: Vec<f64> = vec![0.0];
+    times.extend(findings.iter().filter(|f| f.end > f.start).map(|f| (f.start + f.end) / 2.0));
+    times.push((dur - step).max(0.0));
+    times.sort_by(f64::total_cmp);
+    times.dedup_by(|a, b| (*a - *b).abs() < 0.4);
+    times.truncate(16);
+    let tile = (240.0 / f64::from(w.max(h))) as f32;
+    let mut tiles = Vec::new();
+    for t in &times {
+        if let Ok(img) = edit.try_render_program_at(tile, redrob_film_time::Tick::from_seconds_f64(*t))
+            && let Some(f) = image::RgbaImage::from_raw(img.w as u32, img.h as u32, img.over_black_rgba8())
+        {
+            tiles.push(f);
+        }
+    }
+    let png = if tiles.is_empty() {
+        None
+    } else {
+        let (fw, fh) = (tiles[0].width(), tiles[0].height());
+        let cols = (tiles.len() as f64).sqrt().ceil() as u32;
+        let rows = (tiles.len() as u32).div_ceil(cols);
+        let mut sheet = image::RgbaImage::from_pixel(cols * (fw + 4) + 4, rows * (fh + 4) + 4, image::Rgba([40, 40, 40, 255]));
+        for (i, f) in tiles.iter().enumerate() {
+            image::imageops::overlay(&mut sheet, f, i64::from(4 + (i as u32 % cols) * (fw + 4)), i64::from(4 + (i as u32 / cols) * (fh + 4)));
+        }
+        png_rgba(sheet.width(), sheet.height(), sheet.into_raw(), 0).ok()
+    };
+    let _ = std::fs::remove_dir_all(&dir);
+    let fails = findings.iter().filter(|f| f.severity == "fail").count();
+    let report = json!({
+        "verdict": if fails == 0 { "pass" } else { "fix the fails and review again" },
+        "fails": fails,
+        "warnings": findings.len() - fails,
+        "findings": findings.iter().map(review::Finding::json).collect::<Vec<_>>(),
+        "speech": speech_note,
+        "sheet": times.iter().map(|t| (t * 100.0).round() / 100.0).collect::<Vec<_>>(),
+        "seconds": (t_all.elapsed().as_secs_f64() * 10.0).round() / 10.0,
+    });
+    Ok((report, png))
+}
+
 /// A panic payload as text.
 fn panic_message(p: Box<dyn std::any::Any + Send>) -> String {
     p.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| p.downcast_ref::<String>().cloned()).unwrap_or_else(|| "panic".into())
@@ -389,6 +575,20 @@ pub struct SfxParams {
     /// Audio tracks to use, e.g. ["A2", "A3"] (default); overlapping sounds go to the next one.
     #[serde(default)]
     pub tracks: Option<Vec<String>>,
+}
+
+#[derive(Debug, Default, Deserialize, JsonSchema)]
+pub struct ReviewParams {
+    /// Transcribe the mix to check captions against speech (default true; the first run downloads
+    /// the Whisper model).
+    #[serde(default)]
+    pub speech: Option<bool>,
+    /// Whisper model for the speech check (default "whisper-small": base misplaces lines by seconds).
+    #[serde(default)]
+    pub model: Option<String>,
+    /// Frame samples per second for the picture checks (default 12).
+    #[serde(default)]
+    pub fps: Option<f64>,
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]
@@ -789,6 +989,32 @@ impl FilmMcp {
     }
 
     #[tool(
+        title = "Review the edit",
+        description = "Check the active sequence the way a reviewer would, by measurement, BEFORE showing or exporting it: captions with no voice under them or far off their line, spoken lines without a caption (transcribes the mix), the source's own fast cuts flashing inside a chosen range, one-frame flashes, black frames, a black first frame, an ending that stops instead of fading, peaks over -1 dBFS, level jumps between shots, and thin or mixed caption fonts. Returns findings (fail/warn, time span, how to fix) and a contact sheet of the flagged moments. Fix every fail and run it again; stop after 3 rounds and report what is left.",
+        annotations(read_only_hint = true, destructive_hint = false, idempotent_hint = true, open_world_hint = false)
+    )]
+    async fn review_video(&self, Parameters(p): Parameters<ReviewParams>) -> Result<CallToolResult, McpError> {
+        let Backend::Headless(s) = &*self.backend else {
+            return Ok(fail("review_video needs the headless engine (redrob-film-cli mcp)"));
+        };
+        let s = s.clone();
+        let r = tokio::task::spawn_blocking(move || -> Result<(Value, Option<Vec<u8>>), AutomationError> {
+            let mut g = s.lock().unwrap_or_else(PoisonError::into_inner);
+            review_sequence(&mut g, &p)
+        })
+        .await
+        .unwrap_or_else(|e| Err(join_error(e)));
+        Ok(match r {
+            Ok((report, Some(png))) => CallToolResult::success(vec![
+                Content::text(serde_json::to_string_pretty(&report).unwrap_or_default()),
+                Content::image(base64::engine::general_purpose::STANDARD.encode(png), "image/png"),
+            ]),
+            Ok((report, None)) => ok_json(&report),
+            Err(e) => fail(e),
+        })
+    }
+
+    #[tool(
         title = "Add sound effects",
         description = "Place synthesised sound effects (no files or licences needed) so each accent lands on its cue: whoosh (cuts, moves), hit (a title landing, a beat), riser (into a payoff; ends on the cue), shimmer (a logo or end card), click (small elements), boom (the biggest moment, once), reverse (into a title). scene_build returns its entrance times as `cues` for this. Example: {\"cues\":[{\"kind\":\"riser\",\"seconds\":12.0},{\"kind\":\"hit\",\"seconds\":12.0,\"gain_db\":-3}]}",
         annotations(read_only_hint = false, destructive_hint = false, idempotent_hint = false, open_world_hint = false)
@@ -856,7 +1082,7 @@ impl FilmMcp {
 
     #[tool(
         title = "Build a scene",
-        description = "Build a finished motion-graphics composition in ONE call from a description in design terms: background (the selected footage or a gradient), text by role (hero/title/body/label/cta) and bars, each with an entrance (eased, staggered) and an exit, plus the look (wash, vignette, grain, Ken Burns drift). The motion guide's rules are the defaults. `place` puts it on the timeline. Then look at it with render_contact_sheet and rebuild with changed values if needed. Example: {\"footage\":\"selection\",\"layers\":[{\"text\":\"SINTEL\",\"role\":\"hero\",\"enter\":\"trackingIn\"},{\"text\":\"잃어버린 친구를 찾아\",\"role\":\"body\"},{\"type\":\"bar\"}],\"place\":true}",
+        description = "Build a finished motion-graphics composition in ONE call from a description in design terms: background (the selected footage or a gradient), text by role (hero/title/body/label/cta) and bars, each with an entrance (eased, staggered) and an exit, plus the look (wash, vignette, grain, Ken Burns drift). The motion guide's rules are the defaults. `place` puts it on the timeline. Then look at it with render_contact_sheet and rebuild with changed values if needed. When the edit is done, run review_video and fix its fails before showing or exporting it. Example: {\"footage\":\"selection\",\"layers\":[{\"text\":\"SINTEL\",\"role\":\"hero\",\"enter\":\"trackingIn\"},{\"text\":\"잃어버린 친구를 찾아\",\"role\":\"body\"},{\"type\":\"bar\"}],\"place\":true}",
         annotations(read_only_hint = false, destructive_hint = false, idempotent_hint = false, open_world_hint = false)
     )]
     async fn scene_build(&self, Parameters(p): Parameters<SceneParams>) -> Result<CallToolResult, McpError> {
