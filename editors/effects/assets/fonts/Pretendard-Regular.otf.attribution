@@ -1,0 +1,10 @@
+asset:        Pretendard-Regular.otf
+title:        Pretendard Regular (Korean and Latin text face)
+author:       Kil Hyung-jin (orioncactus) and the Pretendard contributors
+source:       https://github.com/orioncactus/pretendard (release v1.3.9, public/static)
+license:      OFL-1.1
+license-file: editors/effects/assets/fonts/OFL-Pretendard.txt
+added:        2026-11-09 by Claude (agent) for Janghoon Lee
+notes:        Unmodified font file, embedded via include_bytes! in the text engine so Korean captions and titles
+              render in one designed face on every platform instead of a system fallback (a hairline Noto Sans KR Thin
+              on a bare Linux host, a Chinese face elsewhere).

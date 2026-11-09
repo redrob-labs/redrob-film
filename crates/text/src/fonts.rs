@@ -22,6 +22,10 @@ pub static INTER_BOLD: &[u8] = include_bytes!("../../../assets/fonts/Inter-Bold.
 pub static INTER_ITALIC: &[u8] = include_bytes!("../../../assets/fonts/Inter-Italic.ttf");
 pub static JETBRAINS_MONO_REGULAR: &[u8] = include_bytes!("../../../assets/fonts/JetBrainsMono-Regular.ttf");
 pub static NOTO_SERIF_REGULAR: &[u8] = include_bytes!("../../../assets/fonts/NotoSerif-Regular.ttf");
+/// Korean (and Latin) text face, so Hangul captions and titles look designed on every platform.
+pub static PRETENDARD_REGULAR: &[u8] = include_bytes!("../../../assets/fonts/Pretendard-Regular.otf");
+pub static PRETENDARD_SEMIBOLD: &[u8] = include_bytes!("../../../assets/fonts/Pretendard-SemiBold.otf");
+pub static PRETENDARD_BOLD: &[u8] = include_bytes!("../../../assets/fonts/Pretendard-Bold.otf");
 
 /// A font from the optional craft-fonts build input (empty unless built with `CRAFT_FONTS_DIR`; see
 /// `build.rs` and the craft-fonts repository's `docs/integration.md`).
@@ -286,7 +290,18 @@ fn db() -> &'static RwLock<Db> {
     static DB: OnceLock<RwLock<Db>> = OnceLock::new();
     DB.get_or_init(|| {
         let mut db = Db { faces: Vec::new(), scanned: false };
-        for b in [INTER_REGULAR, INTER_MEDIUM, INTER_SEMIBOLD, INTER_BOLD, INTER_ITALIC, JETBRAINS_MONO_REGULAR, NOTO_SERIF_REGULAR] {
+        for b in [
+            INTER_REGULAR,
+            INTER_MEDIUM,
+            INTER_SEMIBOLD,
+            INTER_BOLD,
+            INTER_ITALIC,
+            JETBRAINS_MONO_REGULAR,
+            NOTO_SERIF_REGULAR,
+            PRETENDARD_REGULAR,
+            PRETENDARD_SEMIBOLD,
+            PRETENDARD_BOLD,
+        ] {
             for n in read_faces_bytes(b) {
                 push(&mut db, info_from(n, FaceData::Static(b), "bundled"));
             }
@@ -745,10 +760,14 @@ pub fn fallback_for(c: char, prefer: FaceId) -> FaceId {
     }
     let faces = all_faces();
     // prefer a face of the same italic-ness that is bundled (cheap)
-    for f in faces.iter().filter(|f| f.info.origin == "bundled") {
-        if f.has_char(c) {
-            return f.id;
-        }
+    // Pretendard is bundled for Hangul only: its kana and ideographs would give Japanese and Chinese
+    // text Korean glyph shapes, so those keep their own script's families below.
+    let hangul = matches!(c as u32, 0x1100..=0x11FF | 0x3130..=0x318F | 0xA960..=0xA97F | 0xAC00..=0xD7FF);
+    let mut covering: Vec<&Arc<Face>> =
+        faces.iter().filter(|f| f.info.origin == "bundled" && f.has_char(c) && (hangul || !f.info.family.eq_ignore_ascii_case("Pretendard"))).collect();
+    covering.sort_by_key(|f| (f.info.italic != p.info.italic, f.info.weight.abs_diff(p.info.weight)));
+    if let Some(f) = covering.first() {
+        return f.id;
     }
     // then the craft-fonts faces (Japanese): Mincho for serif text, Gothic otherwise, nearest weight
     let serif = is_serif(&p.info.family);
