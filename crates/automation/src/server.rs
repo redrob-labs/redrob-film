@@ -137,7 +137,7 @@ fn build_scene(edit: &mut Session, effects: &mut Option<redrob_effects_engine::S
             .unwrap_or(100.0);
         footage.push((id, scale));
     }
-    let steps = crate::scene::plan(spec, &frame, &footage).map_err(AutomationError::BadRequest)?;
+    let (steps, cues) = crate::scene::plan(spec, &frame, &footage).map_err(AutomationError::BadRequest)?;
     let n = steps.len();
     session
         .execute("engine.batch", json!({"steps": steps, "label": format!("Build Scene {name}"), "atomic": true}))
@@ -146,6 +146,7 @@ fn build_scene(edit: &mut Session, effects: &mut Option<redrob_effects_engine::S
     let mut out = json!({"comp": comp, "name": name, "steps": n, "width": frame.width, "height": frame.height, "duration": frame.duration, "footageLayers": footage.len()});
     match spec.get("place") {
         None | Some(Value::Null) | Some(Value::Bool(false)) => {
+            out["cues"] = json!(cues.iter().map(|c| json!({"kind": c.kind, "compSeconds": c.seconds})).collect::<Vec<_>>());
             out["next"] = json!("not placed: run mode.placeCompositionOnTimeline, or scene_build with place: true");
         }
         Some(p) => {
@@ -157,7 +158,9 @@ fn build_scene(edit: &mut Session, effects: &mut Option<redrob_effects_engine::S
             edit.execute("playhead.set", json!({"time": at})).map_err(AutomationError::from)?;
             let line = h::composition_to_timeline(edit, session, &json!({"track": track})).map_err(other)?;
             out["placed"] = json!(line);
-            out["next"] = json!("render_contact_sheet over the scene's span to check it");
+            let base = redrob_film_time::Tick(at).seconds();
+            out["cues"] = json!(cues.iter().map(|c| json!({"kind": c.kind, "seconds": base + c.seconds})).collect::<Vec<_>>());
+            out["next"] = json!("render_contact_sheet over the scene's span to check it; sfx_add with `cues` for sound");
         }
     }
     Ok(out)
@@ -351,9 +354,12 @@ pub struct SceneParams {
     /// "label"|"cta", "y"/"x": 0..1 of the frame (y kept in the 9:16 safe band 0.14-0.65), "size",
     /// "color", "in"/"out" (s), "enter": "rise"|"drop"|"slide"|"pop"|"fade"|"grow"|"none" or a text
     /// preset ("trackingIn", "fadeUpCharacters", "blurIn", "typewriter", "bounceInWords",
-    /// "scramble", "dropInLines"), "exit": "fade"|"fall"|"none", "glow": bool (default: hero only),
+    /// "scramble", "dropInLines"), "exit": "fade"|"fall"|"none", "exitDuration": s (default 0.3), "glow": bool (default: hero only),
     /// "width"/"height" for bar and box}.
     pub layers: Vec<Value>,
+    /// Seconds of fade to black at the end of the scene (an end card that breathes out).
+    #[serde(default, rename = "fadeOut")]
+    pub fade_out: Option<f64>,
     /// Seconds between entrances (default 0.14) and the first entrance (default 0.15).
     #[serde(default)]
     pub stagger: Option<f64>,
@@ -363,6 +369,26 @@ pub struct SceneParams {
     /// otherwise at the playhead on V1) or {"seconds": f64, "track": "V2"}.
     #[serde(default)]
     pub place: Option<Value>,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
+pub struct SfxCue {
+    /// whoosh | hit | riser | shimmer | click | boom | reverse.
+    pub kind: String,
+    /// Sequence time in seconds where the sound's accent lands (a whoosh's loudest point, a riser's
+    /// end, a hit's attack): the moment of the cut or of the title arriving.
+    pub seconds: f64,
+    /// Gain in dB (default -6; a music bed under it usually wants -4 to -8).
+    #[serde(default)]
+    pub gain_db: Option<f64>,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
+pub struct SfxParams {
+    pub cues: Vec<SfxCue>,
+    /// Audio tracks to use, e.g. ["A2", "A3"] (default); overlapping sounds go to the next one.
+    #[serde(default)]
+    pub tracks: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]
@@ -760,6 +786,63 @@ impl FilmMcp {
                 shot
             }
         }
+    }
+
+    #[tool(
+        title = "Add sound effects",
+        description = "Place synthesised sound effects (no files or licences needed) so each accent lands on its cue: whoosh (cuts, moves), hit (a title landing, a beat), riser (into a payoff; ends on the cue), shimmer (a logo or end card), click (small elements), boom (the biggest moment, once), reverse (into a title). scene_build returns its entrance times as `cues` for this. Example: {\"cues\":[{\"kind\":\"riser\",\"seconds\":12.0},{\"kind\":\"hit\",\"seconds\":12.0,\"gain_db\":-3}]}",
+        annotations(read_only_hint = false, destructive_hint = false, idempotent_hint = false, open_world_hint = false)
+    )]
+    async fn sfx_add(&self, Parameters(p): Parameters<SfxParams>) -> Result<CallToolResult, McpError> {
+        let tracks = p.tracks.filter(|t| !t.is_empty()).unwrap_or_else(|| vec!["A2".into(), "A3".into()]);
+        let dir = crate::sfx::cache_dir();
+        let mut items: std::collections::HashMap<&'static str, u64> = std::collections::HashMap::new();
+        // the end of the last sound on each track, to keep sounds from overwriting each other
+        let mut busy = vec![f64::NEG_INFINITY; tracks.len()];
+        let mut placed = Vec::new();
+        let mut cues = p.cues;
+        cues.sort_by(|a, b| a.seconds.total_cmp(&b.seconds));
+        for cue in cues {
+            let Some(kind) = crate::sfx::Kind::parse(&cue.kind) else {
+                return Ok(fail(format!("unknown kind {:?}: whoosh, hit, riser, shimmer, click, boom or reverse", cue.kind)));
+            };
+            let item = match items.get(kind.name()) {
+                Some(i) => *i,
+                None => {
+                    let path = match crate::sfx::file(&dir, kind) {
+                        Ok(p) => p,
+                        Err(e) => return Ok(fail(format!("writing the {} sound: {e}", kind.name()))),
+                    };
+                    let r = match self.run("file.import", json!({"paths": [path.to_string_lossy()]})).await {
+                        Ok(r) => r,
+                        Err(e) => return Ok(fail(e)),
+                    };
+                    let Some(i) = r["items"].get(0).and_then(Value::as_u64) else {
+                        return Ok(fail(format!("importing the {} sound failed: {r}", kind.name())));
+                    };
+                    items.insert(kind.name(), i);
+                    i
+                }
+            };
+            let start = (cue.seconds - kind.accent()).max(0.0);
+            let end = start + f64::from(kind.seconds());
+            let slot =
+                busy.iter().position(|b| *b <= start + 1e-6).unwrap_or_else(|| busy.iter().enumerate().fold(0, |m, (i, b)| if *b < busy[m] { i } else { m }));
+            busy[slot] = end;
+            let r = match self.run("timeline.place", json!({"item": item, "track": tracks[slot], "seconds": start, "video": false})).await {
+                Ok(r) => r,
+                Err(e) => return Ok(fail(format!("placing {} at {:.2}s: {e}", kind.name(), cue.seconds))),
+            };
+            let clip = r["clips"].get(0).and_then(Value::as_u64);
+            let gain = cue.gain_db.unwrap_or(-6.0).clamp(-60.0, 12.0);
+            if let Some(c) = clip
+                && gain.abs() > 1e-9
+            {
+                let _ = self.run("clip.audioGain", json!({"clips": [c], "mode": "set", "db": gain})).await;
+            }
+            placed.push(json!({"kind": kind.name(), "cue": cue.seconds, "start": start, "track": tracks[slot], "clip": clip, "gainDb": gain}));
+        }
+        Ok(ok_json(&json!({"placed": placed})))
     }
 
     #[tool(

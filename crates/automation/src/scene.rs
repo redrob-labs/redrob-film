@@ -70,11 +70,21 @@ impl Frame {
     }
 }
 
+/// A sound cue the scene suggests: composition time of the accent and the `sfx_add` kind.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Cue {
+    pub seconds: f64,
+    pub kind: &'static str,
+}
+
 /// Batch steps that build the scene into the open composition, whose footage layers (already in
 /// it, bottom of the stack) are `footage` with their current uniform scale. Each step is
-/// `{command, params}`; `"$N.layer"` refers to step N's new layer (engine.batch, 1-based).
-pub fn plan(spec: &Value, frame: &Frame, footage: &[(u64, f64)]) -> Result<Vec<Value>, String> {
+/// `{command, params}`; `"$N.layer"` refers to step N's new layer (engine.batch, 1-based). Also
+/// the sound cues of the entrances (a hit and a reverse swell on the hero landing, a whoosh on
+/// other text, a click on bars) and of the fade-out.
+pub fn plan(spec: &Value, frame: &Frame, footage: &[(u64, f64)]) -> Result<(Vec<Value>, Vec<Cue>), String> {
     let mut steps: Vec<Value> = Vec::new();
+    let mut cues: Vec<Cue> = Vec::new();
     let push = |steps: &mut Vec<Value>, command: &str, params: Value| -> String {
         steps.push(json!({"command": command, "params": params}));
         format!("${}.layer", steps.len())
@@ -180,6 +190,18 @@ pub fn plan(spec: &Value, frame: &Frame, footage: &[(u64, f64)]) -> Result<Vec<V
         let ease = |steps: &mut Vec<Value>, path: &str, t: f64, side: &str, influence: f64| {
             steps.push(json!({"command": "keys.setEase", "params": {"layer": id, "path": path, "time": t, "side": side, "influence": influence}}));
         };
+        // where the entrance lands, for the sound: presets build over about a second
+        let land = t_in + if TEXT_PRESETS.contains(&enter.as_str()) { 0.9 } else { len * 0.7 };
+        if enter != "none" {
+            match kind.as_str() {
+                "text" if r.hero => {
+                    cues.push(Cue { seconds: land, kind: "reverse" });
+                    cues.push(Cue { seconds: land, kind: "hit" });
+                }
+                "text" => cues.push(Cue { seconds: t_in + len * 0.4, kind: "whoosh" }),
+                _ => cues.push(Cue { seconds: t_in + len * 0.5, kind: "click" }),
+            }
+        }
         match enter.as_str() {
             "none" => {}
             p if TEXT_PRESETS.contains(&p) && kind == "text" => {
@@ -219,8 +241,9 @@ pub fn plan(spec: &Value, frame: &Frame, footage: &[(u64, f64)]) -> Result<Vec<V
         // exits are shorter than entrances and ease in
         let exit = text(l, "exit").unwrap_or_else(|| "fade".into());
         let life = t_out - t_in;
-        if exit != "none" && t_out >= dur - 1e-6 && life > len + 0.5 {
-            let (a, b) = (life - 0.3, life);
+        let exit_len = num(l, "exitDuration").unwrap_or(0.3).clamp(0.1, 3.0);
+        if exit != "none" && t_out >= dur - 1e-6 && life > len + exit_len + 0.2 {
+            let (a, b) = (life - exit_len, life);
             key(&mut steps, "transform/opacity", a, json!(100.0));
             key(&mut steps, "transform/opacity", b, json!(0.0));
             ease(&mut steps, "transform/opacity", a, "out", 70.0);
@@ -239,7 +262,18 @@ pub fn plan(spec: &Value, frame: &Frame, footage: &[(u64, f64)]) -> Result<Vec<V
         }
     }
 
-    // 4. the grade on top: vignette and grain
+    // 4. a fade to black at the end (an ending that breathes instead of cutting off)
+    if let Some(fade) = num(spec, "fadeOut").filter(|f| *f > 0.0).map(|f| f.min(dur)) {
+        let black = push(&mut steps, "layer.newSolid", json!({"name": "Fade Out", "color": "#000000", "width": frame.width, "height": frame.height}));
+        for (t, v) in [(0.0, 0.0), (dur - fade, 0.0), (dur, 100.0)] {
+            steps.push(json!({"command": "prop.addKey", "params": {"layer": black, "path": "transform/opacity", "time": t, "timeBase": "comp", "value": v}}));
+        }
+        steps.push(
+            json!({"command": "keys.setEase", "params": {"layer": black, "path": "transform/opacity", "time": dur - fade, "side": "out", "influence": 60}}),
+        );
+    }
+
+    // 5. the grade on top: vignette and grain
     let vignette = num(&look, "vignette").unwrap_or(45.0).clamp(0.0, 100.0);
     let grain = num(&look, "grain").unwrap_or(4.0).clamp(0.0, 100.0);
     if vignette > 0.0 || grain > 0.0 {
@@ -256,7 +290,8 @@ pub fn plan(spec: &Value, frame: &Frame, footage: &[(u64, f64)]) -> Result<Vec<V
             steps.push(json!({"command": "prop.set", "params": {"layer": grade, "path": format!("effects/#{slot}/amount"), "value": grain}}));
         }
     }
-    Ok(steps)
+    cues.sort_by(|a, b| a.seconds.total_cmp(&b.seconds));
+    Ok((steps, cues))
 }
 
 #[cfg(test)]
@@ -275,8 +310,10 @@ mod tests {
             {"text": "a short film", "role": "body"},
             {"type": "bar"},
         ]});
-        let steps = plan(&spec, &Frame::of(&spec), &[]).unwrap();
+        let (steps, cues) = plan(&spec, &Frame::of(&spec), &[]).unwrap();
         let c = cmds(&steps);
+        let kinds: Vec<&str> = cues.iter().map(|c| c.kind).collect();
+        assert!(kinds.contains(&"hit") && kinds.contains(&"whoosh") && kinds.contains(&"click"), "{kinds:?}");
         assert_eq!(c[0], "layer.newSolid", "background first");
         assert!(c.contains(&"effect.apply"), "gradient, glow, grade");
         assert_eq!(c.iter().filter(|x| **x == "layer.newText").count(), 2);
@@ -296,7 +333,7 @@ mod tests {
     #[test]
     fn text_stays_in_the_safe_band_and_footage_drifts() {
         let spec = json!({"duration": 3, "layers": [{"text": "TOP", "y": 0.0}, {"text": "LOW", "y": 0.99}]});
-        let steps = plan(&spec, &Frame::of(&spec), &[(7, 234.0)]).unwrap();
+        let (steps, _) = plan(&spec, &Frame::of(&spec), &[(7, 234.0)]).unwrap();
         let ys: Vec<f64> = steps.iter().filter(|s| s["command"] == "layer.newText").map(|s| s["params"]["position"][1].as_f64().unwrap()).collect();
         assert!((ys[0] - 0.14 * 1920.0).abs() < 1e-6 && (ys[1] - 0.65 * 1920.0).abs() < 1e-6, "{ys:?}");
         let drift: Vec<&Value> = steps.iter().filter(|s| s["command"] == "prop.addKey" && s["params"]["layer"] == 7).collect();
@@ -308,9 +345,18 @@ mod tests {
     #[test]
     fn presets_are_used_by_name_and_empty_scenes_are_refused() {
         let spec = json!({"layers": [{"text": "Hi", "enter": "trackingIn"}]});
-        let steps = plan(&spec, &Frame::of(&spec), &[]).unwrap();
+        let (steps, _) = plan(&spec, &Frame::of(&spec), &[]).unwrap();
         assert!(steps.iter().any(|s| s["command"] == "layer.applyTextPreset" && s["params"]["preset"] == "trackingIn"));
         assert!(plan(&json!({}), &Frame::of(&json!({})), &[]).is_err());
         assert!(GUIDE.contains("ease"), "the guide ships");
+        // a fade-out is a black layer keyed to full opacity at the end
+        let spec = json!({"duration": 4, "fadeOut": 1.2, "layers": [{"text": "End"}]});
+        let (steps, _) = plan(&spec, &Frame::of(&spec), &[]).unwrap();
+        let keys: Vec<f64> = steps
+            .iter()
+            .filter(|s| s["command"] == "prop.addKey" && s["params"]["path"] == "transform/opacity" && s["params"]["timeBase"] == "comp")
+            .map(|s| s["params"]["time"].as_f64().unwrap())
+            .collect();
+        assert_eq!(keys, vec![0.0, 2.8, 4.0]);
     }
 }

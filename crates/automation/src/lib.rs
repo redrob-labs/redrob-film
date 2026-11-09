@@ -14,6 +14,7 @@ pub mod bridge;
 pub mod long_job;
 pub mod scene;
 pub mod server;
+pub mod sfx;
 
 pub use bridge::BridgeClient;
 pub use server::FilmMcp;

@@ -30,6 +30,19 @@ rules by default; the notes say how to do the same by hand with `effects.run`.
     result after. Fix what you see (text touching edges, black bars, an element visible before its
     entrance) and look again. Never describe a frame you have not seen.
 
+13. **Transitions: mostly hard cuts.** Trailers and good shorts cut; the cut is the rhythm.
+    Spins, pops, flips, cubes and page turns read as a template. Use at most two or three
+    transitions in 30 s, each with a reason: `light_leak` or `flash` (6-10 frames) on a hit,
+    `film_dissolve` or `blur_dissolve` (12-18 frames) for a change of place or time,
+    `dip_to_black` (16-24 frames) before the end card. Never the same one twice in a row.
+14. **Endings breathe.** Hold the end card at least 2 s after it lands, then fade to black over
+    1-1.5 s (`scene_build` `fadeOut`), and fade the music out over the last 2 s. Never end on a
+    cut to black or with the music still at full level.
+15. **Sound is half of the feel.** A sound on every major hit, nowhere else: a `reverse` swell and a
+    `hit` on the hero title, a `riser` into the payoff with a `boom` on it, a `shimmer` on the end
+    card. Accents land on the frame (`sfx_add` places them so). Keep the music bed 3-6 dB down
+    under the effects, and do not put a whoosh on every cut.
+
 ## 30-second short, a structure that works
 
 | Time | Part | What happens |
@@ -46,7 +59,12 @@ rules by default; the notes say how to do the same by hand with `effects.run`.
   the selected footage, roles (`hero`, `title`, `body`, `label`, `cta`), entrances (`rise`,
   `drop`, `slide`, `pop`, `fade`, `grow`, or a text preset: `trackingIn`, `fadeUpCharacters`,
   `blurIn`, `typewriter`, `bounceInWords`, `scramble`, `dropInLines`), exits, the look
-  (`darken`, `vignette`, `grain`, `kenBurns`) and `place` to put it on the timeline.
+  (`darken`, `vignette`, `grain`, `kenBurns`), `fadeOut` and `place` to put it on the
+  timeline. It returns `cues`: the entrance times with a suggested sound for each.
+- `sfx_add` places synthesised sound effects (whoosh, hit, riser, shimmer, click, boom,
+  reverse) with their accents on the given times; pass it the `cues` of `scene_build`.
+- Music: `clip.audioGain` {mode: "set", db: -4} for the bed; for the fade-out,
+  `effects.toggleAnimation` then `effects.setParam` on the clip's `volume` / `level` at two times.
 - `clip.fillFrame` fills a vertical frame from horizontal footage and crops baked-in letterbox.
 - Edit transitions with motion (`sequence.applyVideoTransition`): `pull_motion`,
   `travel_motion`, `spin_motion`, `pop_motion`, `blur_dissolve`, `additive_dissolve`.
