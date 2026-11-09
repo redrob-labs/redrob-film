@@ -43,6 +43,15 @@ rules by default; the notes say how to do the same by hand with `effects.run`.
     card. Accents land on the frame (`sfx_add` places them so). Keep the music bed 3-6 dB down
     under the effects, and do not put a whoosh on every cut.
 
+16. **Dialogue stays on its picture.** When a shot has someone speaking, place it with its own
+    audio (`timeline.place` with `audioTrack`), never under a continuous bed taken from another
+    part of the source: the voice then plays seconds away from the lips and the captions. Soften
+    the audio cuts with `sequence.applyAudioTransition` (`constant_power`, 4-8 frames).
+17. **Captions come from the words as they play.** `transcript.generate` on the source, then
+    `transcript.inspect` on the cut sequence: its paragraphs are in sequence time, through every
+    cut. Place each caption from its paragraph's start to its end (+0.3 s). Whisper base can
+    repeat a line over music; keep a line once and drop text with no voice under it.
+
 ## 30-second short, a structure that works
 
 | Time | Part | What happens |
