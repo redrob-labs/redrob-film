@@ -207,13 +207,19 @@ pub fn captions(cues: &[(f64, f64, String)], speech: &[(f64, f64, String)]) -> V
     out
 }
 
+/// What Whisper writes over instrumental music instead of words ("Music", "[Music]", "♪").
+fn is_music_tag(t: &str) -> bool {
+    let w: String = t.to_lowercase().chars().filter(|c| c.is_alphanumeric()).collect();
+    w.is_empty() || matches!(w.as_str(), "music" | "musicplaying" | "instrumental" | "applause" | "upbeatmusic" | "dramaticmusic")
+}
+
 /// Merge transcript words (start, end, text) into lines: a gap over `gap` s starts a new line.
 /// Words with no duration or with repeated text right after an identical line (a known Whisper
 /// hallucination over music) are dropped.
 pub fn speech_lines(words: &[(f64, f64, String)], gap: f64) -> Vec<(f64, f64, String)> {
     let mut lines: Vec<(f64, f64, String)> = Vec::new();
     for (s, e, t) in words {
-        if e - s <= 0.0 || t.trim().is_empty() {
+        if e - s <= 0.0 || t.trim().is_empty() || is_music_tag(t) {
             continue;
         }
         match lines.last_mut() {
@@ -488,6 +494,8 @@ mod tests {
             (1.0, 1.4, "I'm".to_string()),
             (1.4, 2.0, "searching".to_string()),
             (5.0, 5.0, "x".to_string()),
+            (5.2, 5.9, "[Music]".to_string()),
+            (5.9, 6.0, "♪".to_string()),
             (6.0, 6.4, "I'm".to_string()),
             (6.4, 7.0, "searching.".to_string()),
         ];
