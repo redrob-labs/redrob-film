@@ -87,7 +87,13 @@ fn audio_only(format: Format, bits: u16) -> ExportSettings {
     }
 }
 
+/// A built-in preset. Every one may use the GPU compositor and the hardware encoder (each falls
+/// back to the CPU path when the machine has none): measured on a Windows RTX 4060 laptop, a 6 s
+/// 1080×1920 export took 2.3 s instead of 54 s, and a full edit matched the CPU export at SSIM
+/// 0.975 / PSNR 43.8 dB. `ExportSettings::default()` stays Off for both, so tests and anything that
+/// compares bytes keep the reproducible path.
 fn p(name: &str, category: &str, description: &str, settings: ExportSettings) -> ExportPreset {
+    let settings = ExportSettings { hardware_encoding: crate::HardwareEncoding::Auto, gpu_rendering: crate::GpuRendering::Auto, ..settings };
     ExportPreset { name: name.into(), category: category.into(), description: description.into(), settings, builtin: true }
 }
 

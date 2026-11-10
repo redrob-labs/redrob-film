@@ -527,11 +527,19 @@ fn jobs_and_queue_items_report_the_time_they_have_left() {
 }
 
 #[test]
-fn hardware_encoding_is_off_unless_asked_for() {
+fn exports_use_the_gpu_and_hardware_encoder_unless_told_not_to() {
     use redrob_film_export::HardwareEncoding::{Auto, Off};
     let s = demo();
     let setting = |p: Value| crate::export_tools::settings_from_params(&s, &p, "file.exportMedia").map(|(_, st)| st.hardware_encoding);
-    assert_eq!(setting(json!({"path": "x.mp4"})).unwrap(), Off);
+    let both =
+        |p: Value| crate::export_tools::settings_from_params(&s, &p, "file.exportMedia").map(|(_, st)| (st.hardware_encoding, st.gpu_rendering)).unwrap();
+    // with no preset, and with every built-in preset, both are Auto (each falls back to the CPU)
+    assert_eq!(both(json!({"path": "x.mp4"})), (Auto, redrob_film_export::GpuRendering::Auto));
+    for preset in redrob_film_export::presets::builtin_presets() {
+        assert_eq!((preset.settings.hardware_encoding, preset.settings.gpu_rendering), (Auto, redrob_film_export::GpuRendering::Auto), "{}", preset.name);
+    }
+    assert_eq!(both(json!({"path": "x.mp4", "gpuRendering": "off", "hardwareEncoding": "off"})), (Off, redrob_film_export::GpuRendering::Off));
+    assert_eq!(setting(json!({"path": "x.mp4"})).unwrap(), Auto);
     assert_eq!(setting(json!({"path": "x.mp4", "hardwareEncoding": "auto"})).unwrap(), Auto);
     assert_eq!(setting(json!({"path": "x.mp4", "hardwareEncoding": "off"})).unwrap(), Off);
     // a boolean is understood too: true is auto
