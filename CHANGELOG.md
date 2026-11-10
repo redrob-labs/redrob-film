@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.9.0 -- 2026-11-10
+
+### Added
+
+- MCP tools for finished shorts: `review_video` checks a cut by measurement (captions against the
+  speech it transcribes, the source's own fast cuts, flashes, black frames, the first frame, the
+  ending, peaks, level jumps, caption fonts) and says where and how to fix each finding;
+  `music_beats` finds a track's tempo, beats, bars, hits and ending; `scene_build` makes a whole
+  motion-graphics composition in one call, with `motion_guide` for the rules; `sfx_add` places
+  synthesised sound effects on cues; `render_contact_sheet` shows a span in one image.
+- Effects compositions over the headless MCP server (`effects.run`, `mode.*`).
+- Fill Frame fills a vertical frame, crops letterbox baked into the footage and keeps a focus
+  point in frame.
+- Pretendard (OFL) is bundled for Hangul, so Korean titles and captions render in one designed
+  face on every machine.
+
+### Changed
+
+- Exports use the GPU compositor and the hardware encoder (NVENC, VideoToolbox) when the machine
+  has them, with every built-in preset and without one; each falls back to the CPU. On a Windows
+  RTX 4060 laptop a 6 s 1080×1920 export took 2.3 s instead of 54 s.
+- Whisper transcription is on by default, and word times stay inside the segment they were decoded
+  in, so captions no longer start seconds early over music.
+
 ## 0.8.0 -- 2026-11-08
 
 ### Added

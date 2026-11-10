@@ -2,6 +2,17 @@
 
 ## Changes
 
+## 0.9.0
+
+An AI agent can make a finished 9:16 short, and check it before anyone sees it.
+
+- **Review by measurement.** `review_video` checks captions against the speech, the source's own
+  fast cuts, flashes, the first frame, the ending and the sound, and says how to fix each finding.
+- **Cut to the music.** `music_beats` finds the beats, bars and the track's own ending.
+- **Scenes and sound in one call.** `scene_build`, `sfx_add`, and Fill Frame for vertical video.
+- **Korean in one face.** Pretendard is bundled for Hangul.
+- **Faster exports.** The GPU and the hardware encoder are used when the machine has them.
+
 ## 0.8.0
 
 After Effects projects open in Redrob Film.
