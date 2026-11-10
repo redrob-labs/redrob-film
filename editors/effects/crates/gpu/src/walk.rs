@@ -220,6 +220,9 @@ fn draw_layer(e: &mut Enc, r: &Renderer, ctx: &EvalCtx, layer: &Layer, canvas: &
     if let Some(done) = draw_resident_fx(e, r, ctx, layer, canvas, opacity) {
         return done;
     }
+    if let Some(done) = draw_picture(e, r, ctx, layer, canvas, opacity) {
+        return done;
+    }
     let Some(st) = r.styled_layer(ctx, layer) else { return Some(()) };
     if st.plain {
         return composite_layer(e, r, ctx, layer, &st.body, canvas, opacity);
@@ -363,6 +366,46 @@ fn draw_adjustment(e: &mut Enc, r: &Renderer, ctx: &EvalCtx, layer: &Layer, canv
     }
     *canvas = ops::adjust_mix(e, canvas, &adjusted, &matte, opacity);
     Some(())
+}
+
+/// A footage layer without effects or layer styles whose source is the decoded picture as it is
+/// (`Renderer::footage_picture`) and needs no conversion to the blending space: the picture
+/// uploads as decoded, is quantised to the project's depth here, and is placed. The usual way
+/// copied the frame into a layer buffer, quantised it on the CPU and kept it in the layer cache,
+/// where a movie's frame is never asked for again. Upstream EffectCraft #3333 (2320255c).
+/// `None`: not this kind of layer; `Some(None)`: the GPU failed.
+fn draw_picture(e: &mut Enc, r: &Renderer, ctx: &EvalCtx, layer: &Layer, canvas: &mut GpuImage, opacity: f32) -> Option<Option<()>> {
+    if !PICTURES.load(std::sync::atomic::Ordering::Relaxed) {
+        return None;
+    }
+    if (layer.switches.effects && layer.effects().is_some_and(|f| !f.children.is_empty())) || styles::active(ctx, layer) || r.pipe().to_blend().is_some() {
+        return None;
+    }
+    let p = r.footage_picture(ctx, layer)?;
+    if p.img.is_empty() {
+        return Some(Some(()));
+    }
+    let Some(mut src) = e.g.upload_image(&p.img) else { return Some(None) };
+    if let Some(l) = r.pipe().levels {
+        src = ops::quantize(e, &src, l);
+    }
+    // The placement only reads the buffer's size, offset and scale.
+    let shape = Buf { img: Image { width: p.img.width, height: p.img.height, data: Vec::new() }, offset: [0.0; 2], scale: p.scale };
+    Some(composite_src(e, r, ctx, layer, &shape, src, canvas, opacity))
+}
+
+/// [`draw_picture`] on; tests turn it off to compare.
+pub(crate) static PICTURES: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
+
+/// [`composite_layer`] of a GPU image `src` shaped like `shape`.
+#[allow(clippy::too_many_arguments)]
+fn composite_src(e: &mut Enc, r: &Renderer, ctx: &EvalCtx, layer: &Layer, shape: &Buf, src: GpuImage, canvas: &mut GpuImage, opacity: f32) -> Option<()> {
+    if r.track_matte(ctx, layer).is_none() && !layer.preserve_transparency {
+        *canvas = place_src(e, r, ctx, layer, shape, src, canvas, layer.blend_mode, opacity, r.pipe().levels)?;
+        return Some(());
+    }
+    let iso = place_src(e, r, ctx, layer, shape, src, &e.zeros(canvas.width, canvas.height), BlendMode::Normal, 1.0, None)?;
+    composite_iso(e, r, ctx, layer, iso, canvas, opacity)
 }
 
 fn composite_layer(e: &mut Enc, r: &Renderer, ctx: &EvalCtx, layer: &Layer, buf: &Arc<Buf>, canvas: &mut GpuImage, opacity: f32) -> Option<()> {

@@ -223,7 +223,20 @@ pub struct CompSource {
     cpu_cache: redrob_effects_render::LayerCache,
     /// The compositor this composition's frames render on ([`CompSource::compositor`]).
     choice: std::sync::Mutex<Choice>,
+    /// Frames rendering now ([`CompSource::render`] lets [`GPU_FRAMES`] / [`CPU_FRAMES`] in), and
+    /// its condition; `decided` is `choice`'s.
+    busy: std::sync::Mutex<usize>,
+    changed: std::sync::Condvar,
+    decided: std::sync::Condvar,
 }
+
+/// Frames of one composition rendering at once on the GPU compositor. An export asks for a frame
+/// on every thread (16 on the PC); all of them on the GPU at once took 1.2 s each, and the CPU
+/// conversions of 16 footage frames fought the GPU work for the cores. Two and four came out the
+/// same on the RTX 4060 laptop; one was slower.
+const GPU_FRAMES: usize = 4;
+/// The same for the CPU compositor, which already renders each frame on every core.
+const CPU_FRAMES: usize = 2;
 
 /// How far a placed composition is in choosing its compositor.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -346,12 +359,38 @@ impl CompSource {
             gpu_cache: redrob_effects_render::LayerCache::new(COMP_CACHE_BYTES),
             cpu_cache: redrob_effects_render::LayerCache::new(COMP_CACHE_BYTES),
             choice: std::sync::Mutex::new(Choice::Undecided),
+            busy: std::sync::Mutex::new(0),
+            changed: std::sync::Condvar::new(),
+            decided: std::sync::Condvar::new(),
         })
     }
 
     /// A frame at comp time `t` and `scale` on compositor `on`, with that compositor's layer cache,
-    /// rendered on [`effects_pool`] from a thread of its own (see there).
-    fn render(&self, on: Compositor, t: i64, scale: f64) -> redrob_effects_render::Image {
+    /// rendered on [`effects_pool`] from a thread of its own (see there), once fewer than
+    /// [`GPU_FRAMES`] / [`CPU_FRAMES`] of this composition are rendering. Waiting here holds no
+    /// export renderer: export frames read their sources before they take one
+    /// (`FrameRenderer::ahead`).
+    fn render(&self, on: Compositor, t: i64, scale: f64) -> (u32, u32, Vec<u8>) {
+        let cap = if on == Compositor::Gpu { GPU_FRAMES } else { CPU_FRAMES };
+        {
+            let mut busy = self.busy.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            while *busy >= cap {
+                busy = self.changed.wait(busy).unwrap_or_else(std::sync::PoisonError::into_inner);
+            }
+            *busy += 1;
+        }
+        struct Done<'a>(&'a CompSource);
+        impl Drop for Done<'_> {
+            fn drop(&mut self) {
+                *self.0.busy.lock().unwrap_or_else(std::sync::PoisonError::into_inner) -= 1;
+                self.0.changed.notify_all();
+            }
+        }
+        let _done = Done(self);
+        self.render_on_pool(on, t, scale)
+    }
+
+    fn render_on_pool(&self, on: Compositor, t: i64, scale: f64) -> (u32, u32, Vec<u8>) {
         let Some(pool) = effects_pool() else { return self.render_here(on, t, scale) };
         let frame = std::thread::scope(|s| {
             std::thread::Builder::new().name("effects-frame".into()).spawn_scoped(s, || pool.install(|| self.render_here(on, t, scale))).map(|h| h.join())
@@ -364,22 +403,34 @@ impl CompSource {
         }
     }
 
-    fn render_here(&self, on: Compositor, t: i64, scale: f64) -> redrob_effects_render::Image {
+    /// The frame as straight-alpha RGBA8 (`(width, height, bytes)`). On the GPU it is converted
+    /// there and read back at 4 bytes a pixel (`Gpu::render_rgba8`); a frame the GPU declines, and
+    /// every CPU frame, is converted from the float image (`Image::to_rgba8`).
+    fn render_here(&self, on: Compositor, t: i64, scale: f64) -> (u32, u32, Vec<u8>) {
         let gpu = effects_gpu().filter(|_| on == Compositor::Gpu);
         let backend = if gpu.is_some() { redrob_effects_render::Backend::Gpu } else { redrob_effects_render::Backend::Cpu };
         let opts = redrob_effects_render::RenderOpts { scale, backend, ..Default::default() };
         let mut r = redrob_effects_render::Renderer::new(&self.project, self.footage.as_ref(), opts);
         r.cache = Some(if gpu.is_some() { &self.gpu_cache } else { &self.cpu_cache });
         r.accel = gpu.map(|g| g as &dyn redrob_effects_render::Accelerator);
-        r.comp_frame(self.comp, redrob_effects_time::Tick(t))
+        let t = redrob_effects_time::Tick(t);
+        if let Some(g) = gpu
+            && let Some(frame) = g.render_rgba8(&r, self.comp, t)
+        {
+            return frame;
+        }
+        let image = if gpu.is_some() { r.comp_frame_cpu(self.comp, t) } else { r.comp_frame(self.comp, t) };
+        (image.width, image.height, image.to_rgba8())
     }
 
     /// The compositor this composition renders on: the CPU without a GPU, the one
     /// `REDROB_FILM_EFFECTS_GPU` names, else the faster of the two measured on the first frame
     /// requested and the next [`PROBE_FRAMES`] (upstream EffectCraft #3335). A footage-only scene
     /// renders faster on the CPU (the GPU pays uploads and readbacks every frame); Glow and other
-    /// heavy effects faster on the GPU. Frames requested while another request measures render on
-    /// the GPU (so a CPU choice leaves those few frames from the GPU's compositor).
+    /// heavy effects faster on the GPU. Frames requested while another request measures wait for
+    /// its choice: rendering meanwhile, they slowed the measurement down and came from a
+    /// compositor that might not be chosen. (The wait holds no lock and no export renderer; the
+    /// measuring request renders on [`effects_pool`], which an export frame never waits on.)
     fn compositor(&self, t: i64, scale: f64, frame: i64, last: i64) -> Compositor {
         let Some(gpu) = effects_gpu() else { return Compositor::Cpu };
         if let Some(c) = effects_gpu_env() {
@@ -387,29 +438,53 @@ impl CompSource {
         }
         {
             let mut slot = self.choice.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
-            match *slot {
-                Choice::Decided(c) => return c,
-                Choice::Measuring => return Compositor::Gpu,
-                Choice::Undecided => *slot = Choice::Measuring,
+            loop {
+                match *slot {
+                    Choice::Decided(c) => return c,
+                    Choice::Measuring => slot = self.decided.wait(slot).unwrap_or_else(std::sync::PoisonError::into_inner),
+                    Choice::Undecided => break,
+                }
+            }
+            *slot = Choice::Measuring;
+        }
+        // A measurement that panics leaves the GPU chosen rather than the other frames waiting.
+        struct Settle<'a>(&'a CompSource);
+        impl Drop for Settle<'_> {
+            fn drop(&mut self) {
+                let mut slot = self.0.choice.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                if *slot == Choice::Measuring {
+                    *slot = Choice::Decided(Compositor::Gpu);
+                }
+                self.0.decided.notify_all();
             }
         }
+        let _settle = Settle(self);
         let frames = if frame > 0 { last / frame + 1 } else { 0 };
         let c = if frames < PROBE_MIN_FRAMES {
             Compositor::Gpu
         } else {
-            let timed = |on: Compositor| {
+            // `lose`: the ms a frame at which this side has lost; it stops once its frames so far
+            // average that over all PROBE_FRAMES (the rest could not bring it back), and reports
+            // the average of the frames it rendered.
+            let timed = |on: Compositor, lose: Option<f64>| {
                 let _warm = self.render(on, t, scale);
                 let t0 = std::time::Instant::now();
+                let mut done = 0;
                 for i in 1..=PROBE_FRAMES {
                     let at = t + i * frame;
                     // Near the end the measured frames are the ones before `t` instead.
                     let at = if at > last { t - i * frame } else { at };
                     let _ = self.render(on, at.clamp(0, last), scale);
+                    done = i;
+                    if lose.is_some_and(|l| t0.elapsed().as_secs_f64() * 1e3 / PROBE_FRAMES as f64 >= l) {
+                        break;
+                    }
                 }
-                t0.elapsed().as_secs_f64() * 1e3 / PROBE_FRAMES as f64
+                t0.elapsed().as_secs_f64() * 1e3 / done.max(1) as f64
             };
-            let gpu_ms = timed(Compositor::Gpu);
-            let cpu_ms = timed(Compositor::Cpu);
+            let gpu_ms = timed(Compositor::Gpu, None);
+            // The CPU wins only below `gpu_ms * MARGIN` (`pick_compositor`).
+            let cpu_ms = timed(Compositor::Cpu, Some(gpu_ms * redrob_effects_render::AutoPick::MARGIN));
             // A GPU that stopped meanwhile rendered its frames on the CPU: it is no choice.
             let gpu_ms = gpu.context().check_health().is_ok().then_some(gpu_ms);
             let c = pick_compositor(gpu_ms, Some(cpu_ms));
@@ -447,9 +522,7 @@ impl MediaSource for CompSource {
         // The layer cache keeps still layers (washes, settled titles) between frames, which also
         // spares their upload to the GPU.
         let on = self.compositor(t, scale, v.frame_rate.frame_duration().0, last);
-        let image = self.render(on, t, scale);
-        let (w, h) = (image.width, image.height);
-        let data = image.to_rgba8();
+        let (w, h, data) = self.render(on, t, scale);
         let expected = (w as usize).checked_mul(h as usize).and_then(|n| n.checked_mul(4));
         if w == 0 || h == 0 || expected != Some(data.len()) {
             return Err(MediaError::Decode(format!("composition frame has an inconsistent size ({w}×{h}, {} bytes)", data.len())));

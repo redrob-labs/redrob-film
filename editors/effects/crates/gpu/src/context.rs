@@ -46,6 +46,12 @@ const POOL_BUDGET: usize = 768 << 20;
 /// Readback staging buffers kept for reuse across sizes (bytes).
 const STAGING_BUDGET: u64 = 256 << 20;
 
+/// The pool owner of uploaded textures: never registered by an [`Enc`] (their ids start at 1),
+/// so an upload takes only from the shared free list ([`Pool::take`], textures no open encoder
+/// can read) and gives its texture back through the guarded [`Pool::release`]. Upstream
+/// EffectCraft #3333 (2320255c).
+const UPLOAD_OWNER: u64 = 0;
+
 /// A GPU image: premultiplied RGBA f32 in a texture (cheap to clone; immutable once written).
 /// Working images come from the context's texture pool and go back to it when the last clone
 /// is dropped.
@@ -292,10 +298,14 @@ pub struct GpuContext {
     display: wgpu::ComputePipeline,
     /// The display texture's next mip level from the one above (`display.wgsl` `mip`).
     display_mip: wgpu::ComputePipeline,
+    /// Premultiplied f32 → straight RGBA8 (an export frame, see [`Enc::read_rgba8`]).
+    display_straight: wgpu::ComputePipeline,
     dummy: wgpu::Texture,
     dummy_tex: wgpu::TextureView,
     dummy_buf: wgpu::Buffer,
     uploads: Mutex<Uploads>,
+    /// RGBA8 targets of [`Enc::read_rgba8`], kept for the next frame of the same size.
+    rgba8: Mutex<Vec<wgpu::Texture>>,
     upload_budget: std::sync::atomic::AtomicUsize,
     upload_full_warned: std::sync::atomic::AtomicBool,
     pool: Arc<Mutex<Pool>>,
@@ -611,6 +621,7 @@ impl GpuContext {
         };
         let display = display_pipeline("display")?;
         let display_mip = display_pipeline("mip")?;
+        let display_straight = display_pipeline("straight")?;
         let dummy = init_resource(&device, "dummy texture", || {
             device.create_texture(&wgpu::TextureDescriptor {
                 label: Some("dummy"),
@@ -639,10 +650,12 @@ impl GpuContext {
             display_bgl,
             display,
             display_mip,
+            display_straight,
             dummy_tex,
             dummy,
             dummy_buf,
             uploads: Mutex::new(Uploads::default()),
+            rgba8: Mutex::new(Vec::new()),
             upload_budget: std::sync::atomic::AtomicUsize::new(UPLOAD_BUDGET),
             upload_full_warned: Default::default(),
             pool: Default::default(),
@@ -968,7 +981,10 @@ impl GpuContext {
             return None;
         }
         self.transfers.count(true, img.data.len() * 16);
-        let g = self.image(img.width, img.height);
+        // A texture from the pool's shared free list (#3333): no open encoder can still read it, and
+        // the copy below runs before anything recorded after this call. A frame of footage used to
+        // allocate (and free) a texture of its own every frame.
+        let (g, _) = self.pooled(img.width, img.height, UPLOAD_OWNER);
         self.queue.write_texture(
             wgpu::TexelCopyTextureInfo { texture: &g.texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
             bytemuck::cast_slice(&img.data),
@@ -1032,6 +1048,9 @@ impl GpuContext {
         if let Ok(mut u) = self.uploads.lock() {
             u.map.clear();
             u.bytes = 0;
+        }
+        if let Ok(mut v) = self.rgba8.lock() {
+            v.clear();
         }
         if let Ok(mut p) = self.pool.lock() {
             p.clear();
@@ -1409,6 +1428,53 @@ impl<'g> Enc<'g> {
             bytes.push(0);
         }
         self.g.buffer_init(Some("data"), &bytes, wgpu::BufferUsages::STORAGE)
+    }
+
+    /// `img` as straight-alpha RGBA8 bytes (`Image::to_rgba8` of its download), converted on the
+    /// GPU: a quarter of the bytes cross back and the CPU converts nothing. `None` where readback
+    /// is impossible.
+    pub fn read_rgba8(&mut self, img: &GpuImage) -> Option<Vec<u8>> {
+        let g = self.g;
+        let kept = g.rgba8.lock().ok().and_then(|mut v| v.iter().position(|t| (t.width(), t.height()) == (img.width, img.height)).map(|i| v.swap_remove(i)));
+        let tex = kept.unwrap_or_else(|| {
+            g.device.create_texture(&wgpu::TextureDescriptor {
+                label: Some("rgba8 frame"),
+                size: wgpu::Extent3d { width: img.width, height: img.height, depth_or_array_layers: 1 },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8Unorm,
+                usage: wgpu::TextureUsages::STORAGE_BINDING | wgpu::TextureUsages::COPY_SRC,
+                view_formats: &[],
+            })
+        });
+        let src = img.texture.create_view(&Default::default());
+        let dst = tex.create_view(&Default::default());
+        let bg = g.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &g.display_bgl,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&src) },
+                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&dst) },
+            ],
+        });
+        {
+            let enc = self.encoder();
+            let mut pass = enc.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("rgba8"), timestamp_writes: None });
+            pass.set_pipeline(&g.display_straight);
+            pass.set_bind_group(0, &bg, &[]);
+            pass.dispatch_workgroups(img.width.div_ceil(16), img.height.div_ceil(16), 1);
+        }
+        let bytes = self.read_texture(&tex, img.width, img.height, 4);
+        // Read back, so the GPU is done with it: the next frame may write it. A few, for the
+        // frames in flight at once.
+        if bytes.is_some()
+            && let Ok(mut v) = g.rgba8.lock()
+            && v.len() < 8
+        {
+            v.push(tex);
+        }
+        bytes
     }
 
     /// Convert to the viewer's premultiplied RGBA8 texture (egui-wgpu's native texture format),

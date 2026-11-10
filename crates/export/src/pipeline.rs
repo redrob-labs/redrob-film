@@ -113,6 +113,8 @@ pub(crate) struct Pipeline {
     /// The registered frame renderers (GPU compositors) when the setting allows and factories
     /// provide them; pooled because `frame` runs on several export threads at once.
     renderer: Option<RendererPool>,
+    /// The renderers' work done before one is taken ([`FrameRenderer::ahead`]).
+    ahead: Option<crate::AheadFn>,
     pub seq: ItemId,
     /// Output frame rate (frame `f` is at `rate.tick_of(f)`).
     pub rate: FrameRate,
@@ -190,10 +192,13 @@ impl Pipeline {
                     break;
                 }
             }
-            RendererPool::new(list)
+            let ahead = list.first().and_then(|r| r.ahead());
+            RendererPool::new(list).map(|p| (p, ahead))
         };
+        let (renderer, ahead) = renderer.map_or((None, None), |(p, a)| (Some(p), a));
         Ok(Pipeline {
             renderer,
+            ahead,
             seq_rate: q.settings.frame_rate,
             start_tc: q.start_timecode,
             drop_frame: q.settings.drop_frame,
@@ -227,10 +232,14 @@ impl Pipeline {
         let pool = self.renderer.as_ref().filter(|_| !redrob_film_render::plan::is_cpu_frame(&self.project, self.seq, t));
         let gpu = match pool {
             Some(pool) => {
+                let ahead = self.ahead.map(|f| f(&self.project, self.seq, t, self.opts, sources));
                 let asked = web_time::Instant::now();
                 pool.with(|r| {
                     crate::note_lock_wait(asked.elapsed());
-                    r.render(&self.project, self.seq, t, self.opts, sources)
+                    match ahead {
+                        Some(frame) => r.render_ahead(frame),
+                        None => r.render(&self.project, self.seq, t, self.opts, sources),
+                    }
                 })
                 .flatten()
             }
