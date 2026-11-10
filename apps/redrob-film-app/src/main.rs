@@ -485,6 +485,14 @@ impl redrob_film_export::FrameRenderer for GpuFrameRenderer {
     ) -> Option<redrob_film_render::Image> {
         self.0.render(project, seq, t, opts, sources)
     }
+
+    fn ahead(&self) -> Option<redrob_film_export::AheadFn> {
+        Some(redrob_film_gpu::ExportRenderer::plan_ahead)
+    }
+
+    fn render_ahead(&mut self, frame: Box<dyn std::any::Any + Send>) -> Option<redrob_film_render::Image> {
+        self.0.render_ahead(frame)
+    }
 }
 
 fn register_gpu_frame_renderer() {

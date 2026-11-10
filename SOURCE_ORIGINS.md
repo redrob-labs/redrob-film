@@ -10,15 +10,17 @@ Redrob Film's code came from two MIT OR Apache-2.0 projects and is no longer syn
 | Effects editor (`editors/effects/`) | [EffectCraft](https://github.com/storytold/effectcraft) | commit `0311bdc34d0dc10c2d18ff7875b4f52d483e5e27` |
 
 From those commits on, the code is developed here; nothing is pulled from or merged with the
-original repositories. The one exception is a port, listed below, taken by hand onto our tree.
+original repositories. The exceptions are the ports listed below, taken by hand onto our tree.
 
 ## Ports taken later
 
 | Part | Came from | Upstream changes |
 |---|---|---|
 | After Effects project reader and importer (`editors/effects/crates/aep/`, `file.importAep`, the Effects editor's import prompt `panels/aep_losses.rs`, `editors/effects/docs/aep-format.md`, `editors/effects/docs/aep-import.md`) | [EffectCraft](https://github.com/storytold/effectcraft) `crates/aep/src` at commit `93cce09f3cc248d10360dd8a6dd86d658ce3747e` | #2558 (`bb78d55825adc879ae522c18ac57c4ce5690318d`, the reader and importer), #3134 (`3768ff40a300758e9055ab87bfaaeea6d4bd774e`, effect values stored as default-state records), #2594 (`ce9eaec65015a5508c72af0e2351cd02612c9450`, only its small changes to the shared container and import files; its export module is not ported), #3119 (`ab3674cc2b48d312f55d2966f311b016e56cb5ca`, five more effect mappings), #3136 (`93cce09f3cc248d10360dd8a6dd86d658ce3747e`, the After Effects version in the report) |
+| GPU readbacks that copy the mapped rows once and wait only for their own submission (`editors/effects/crates/gpu/src/context.rs` `read_mapped`, `read_texture_with`; `readback.rs` `rows`), and the measured choice of compositor per job, applied to a placed composition (`crates/handoff/src/lib.rs` `CompSource::compositor`, `pick_compositor`) | [EffectCraft](https://github.com/storytold/effectcraft) | #3335 (`4649c27ef97ea649845243500eac1c109c3d4dfc`, its GPU readback part and `pick_renderer`; its Render Queue pipelining, shared caches and the engine and UI changes are not ported) |
+| Footage layers drawn on the GPU from the decoded picture, without a layer-cache copy, and uploads into pooled textures (`editors/effects/crates/render/src/lib.rs` `footage_picture`; `gpu/src/walk.rs` `draw_picture`; `gpu/src/context.rs` `upload_image`) | [EffectCraft](https://github.com/storytold/effectcraft) | #3333 (`2320255c8b685898d1b0fdad3f06a03a6e74f8b9`, without its shared picture cache, staging uploads and effect-input path; extended to 8 and 16 bpc, quantised on the GPU) |
 
-Left out of that port: upstream's `.aep` export (#2594, `crates/aep/src/export`), its test corpus,
+Left out of the After Effects port: upstream's `.aep` export (#2594, `crates/aep/src/export`), its test corpus,
 fixture generator and `xtask aep-corpus`, the developer examples (`aepdump`, `stubicc`) and the
 integration tests that need the corpus. Upstream's document-path policy (`doc_path`) is not in this
 tree, so `file.importAep` finds stored footage paths the way `file.importProject` does. Upstream's

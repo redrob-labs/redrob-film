@@ -214,6 +214,20 @@ impl Gpu {
         Enc::new(&self.ctx).read_texture_async(&f.texture, f.width, f.height, 4, done);
     }
 
+    /// [`Gpu::render`] as straight-alpha RGBA8 (`Image::to_rgba8` of its frame), converted on the
+    /// GPU before the readback: what an export needs, at a quarter of the readback and with no
+    /// conversion on the CPU. `(width, height, bytes)`; `None` = not handled (render on the CPU).
+    pub fn render_rgba8(&self, r: &Renderer, comp: ItemId, t: Tick) -> Option<(u32, u32, Vec<u8>)> {
+        self.ctx.check_health().ok()?;
+        if !self.ctx.can_readback() || self.ctx.deferred.is_some() {
+            return None;
+        }
+        let mut e = Enc::new(&self.ctx);
+        let img = walk::render(&mut e, r, comp, t)?;
+        let bytes = e.read_rgba8(&img)?;
+        Some((img.width, img.height, bytes))
+    }
+
     /// Render a frame on the GPU and read it back (`None` = not handled).
     pub fn render(&self, r: &Renderer, comp: ItemId, t: Tick) -> Option<Image> {
         self.ctx.check_health().ok()?;

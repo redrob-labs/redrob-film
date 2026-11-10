@@ -275,6 +275,49 @@ fn blend_scene(depth: BitDepth, mode: BlendMode) -> Scene {
     s
 }
 
+/// A footage layer drawn from its decoded picture (`walk::draw_picture`, quantised on the GPU)
+/// gives the same frame as from its layer-cache copy, quantised on the CPU, at every depth, and
+/// keeps no copy of the frame in the layer cache.
+#[test]
+fn footage_pictures_draw_the_frame_of_the_layer_copy() {
+    let Some(g) = gpu() else { return };
+    for depth in [BitDepth::Bpc8, BitDepth::Bpc16, BitDepth::Bpc32] {
+        let s = blend_scene(depth, BlendMode::Screen);
+        let cache = redrob_effects_render::LayerCache::new(64 << 20);
+        let render = |pictures: bool| {
+            crate::walk::PICTURES.store(pictures, std::sync::atomic::Ordering::Relaxed);
+            let mut r = Renderer::new(&s.p, &Pattern, RenderOpts { backend: Backend::Gpu, ..opts() });
+            r.accel = Some(g);
+            r.cache = Some(&cache);
+            let img = g.render(&r, s.cid, Tick::ZERO);
+            crate::walk::PICTURES.store(true, std::sync::atomic::Ordering::Relaxed);
+            img.expect("the GPU renders the frame")
+        };
+        let on = render(true);
+        assert_eq!(cache.stats().entries, 0, "{depth:?}: a picture layer kept a copy in the layer cache");
+        let off = render(false);
+        let d = diff(&off, &on, 0.0);
+        assert_eq!(d.over, 0, "{depth:?}: {} of {} pixels differ (max {}); worst {:?}", d.over, d.total, d.max, d.worst);
+    }
+}
+
+/// `Gpu::render_rgba8` (converted on the GPU) gives the bytes `Image::to_rgba8` makes of the
+/// frame `Gpu::render` reads back, within one step of rounding (a division on the GPU).
+#[test]
+fn rgba8_frames_match_the_cpu_conversion() {
+    let Some(g) = gpu() else { return };
+    let s = blend_scene(BitDepth::Bpc32, BlendMode::Add);
+    let mut r = Renderer::new(&s.p, &Pattern, RenderOpts { backend: Backend::Gpu, ..opts() });
+    r.accel = Some(g);
+    let want = g.render(&r, s.cid, Tick::ZERO).expect("the GPU renders the frame");
+    let (w, h, got) = g.render_rgba8(&r, s.cid, Tick::ZERO).expect("the GPU renders the RGBA8 frame");
+    assert_eq!((w, h), (want.width, want.height));
+    let want = want.to_rgba8();
+    assert_eq!(got.len(), want.len());
+    let off: Vec<_> = got.iter().zip(&want).enumerate().filter(|(_, (a, b))| a.abs_diff(**b) > 1).collect();
+    assert!(off.is_empty(), "{} of {} bytes differ by more than 1, first {:?}", off.len(), got.len(), off.first());
+}
+
 #[test]
 fn all_blend_modes_at_every_bit_depth() {
     for depth in [BitDepth::Bpc8, BitDepth::Bpc16, BitDepth::Bpc32] {

@@ -18,6 +18,26 @@ fn display(@builtin(global_invocation_id) gid: vec3<u32>) {
     textureStore(dout, p, q);
 }
 
+// An export frame: premultiplied f32 → straight-alpha RGBA8, as `Image::to_rgba8` (colour divided
+// by alpha, each value (v · 255 + 0.5) truncated), so a frame leaves the GPU as 4 bytes a pixel
+// instead of 16 and needs no conversion on the CPU.
+@compute @workgroup_size(16, 16)
+fn straight(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let dims = vec2<i32>(textureDimensions(dout));
+    let p = vec2<i32>(gid.xy);
+    if (p.x >= dims.x || p.y >= dims.y) {
+        return;
+    }
+    let s = textureLoad(dsrc, p, 0);
+    let a = clamp(s.w, 0.0, 1.0);
+    var inv = 0.0;
+    if (a > 0.0) {
+        inv = 1.0 / s.w;
+    }
+    let q = floor(vec4<f32>(clamp(s.xyz * inv, vec3<f32>(0.0), vec3<f32>(1.0)), a) * 255.0 + 0.5) / 255.0;
+    textureStore(dout, p, q);
+}
+
 // The display texture's next mip level (`dsrc` = the level above, `dout` = this one): each texel
 // the mean of the 2 × 2 premultiplied texels it covers, as ui-egui's fitted CPU textures average
 // (#417). A level one texel wide or high repeats its edge.
