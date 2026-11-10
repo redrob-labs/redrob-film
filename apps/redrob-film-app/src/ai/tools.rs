@@ -10,24 +10,11 @@
 //! Tool ids are commands, so the agent discovers them the same way as every editor command: no
 //! second tool catalogue to keep in step.
 
-use serde_json::{Value, json};
+use serde_json::Value;
 
 use crate::shell::Mode;
 
-/// `mode.switch {mode: "edit"|"effects"}`: show the other editor.
-pub const SWITCH_MODE: &str = "mode.switch";
-/// `mode.sendSelectionToEffects {}`: the Edit selection (or in/out range) becomes a composition.
-pub const SEND_SELECTION_TO_EFFECTS: &str = "mode.sendSelectionToEffects";
-/// `mode.placeCompositionOnTimeline {}`: the active composition becomes a clip at the playhead.
-pub const PLACE_COMPOSITION_ON_TIMELINE: &str = "mode.placeCompositionOnTimeline";
-/// `mode.status {}`: which mode is active, which editors exist, what the hand-offs could do.
-pub const STATUS: &str = "mode.status";
-/// `effects.run {id, params?}`: run an Effects engine command (editors/effects/crates/engine/
-/// src/commands/*.rs; `effects.run {id: "command.list"}` lists them) on the Effects session.
-pub const EFFECTS_RUN: &str = "effects.run";
-
-/// Every shell command id.
-pub const ALL: [&str; 5] = [SWITCH_MODE, SEND_SELECTION_TO_EFFECTS, PLACE_COMPOSITION_ON_TIMELINE, STATUS, EFFECTS_RUN];
+pub use redrob_film_handoff::{ALL, EFFECTS_RUN, PLACE_COMPOSITION_ON_TIMELINE, SEND_SELECTION_TO_EFFECTS, STATUS, SWITCH_MODE};
 
 /// Whether `id` is one of the shell's commands (answered before the Edit editor sees it).
 pub fn is_shell_command(id: &str) -> bool {
@@ -52,33 +39,10 @@ pub struct Capabilities {
     pub can_place_composition: bool,
 }
 
-/// The shell's entries for `command.list`, shaped like the engine's (crates/engine/src/
-/// commands.rs L2908: id, label, menu, shortcut, shortcuts, defaultShortcut, params, enabled).
+/// The shell's entries for `command.list` (shared with the headless MCP server:
+/// [`redrob_film_handoff::catalogue`]).
 pub fn catalogue(caps: Capabilities) -> Vec<Value> {
-    let entry = |id: &str, label: &str, params: &str, enabled: bool| {
-        json!({
-            "id": id,
-            "label": label,
-            "menu": ["Mode"],
-            "shortcut": Value::Null,
-            "shortcuts": [],
-            "defaultShortcut": Value::Null,
-            "params": params,
-            "enabled": enabled,
-        })
-    };
-    vec![
-        entry(SWITCH_MODE, "Switch Mode", r#"{"mode":"edit"|"effects"}"#, true),
-        entry(SEND_SELECTION_TO_EFFECTS, "Send Selection to Effects", r#"{"name":str? (the new composition's name)}"#, caps.can_send_selection),
-        entry(
-            PLACE_COMPOSITION_ON_TIMELINE,
-            "Place Composition on Timeline",
-            r#"{"track":"V1"|id?,"insert":bool? (default false: overwrite at the playhead)}"#,
-            caps.can_place_composition,
-        ),
-        entry(STATUS, "Mode Status", "{}", true),
-        entry(EFFECTS_RUN, "Run Effects Command", r#"{"id":str (an Effects command id; "command.list" lists them),"params":object?}"#, true),
-    ]
+    redrob_film_handoff::catalogue(caps.can_send_selection, caps.can_place_composition)
 }
 
 /// `command.list` with the shell's commands appended (the engine's list first, unchanged).
@@ -100,6 +64,8 @@ pub fn command_of(method: &str, params: &Value) -> Option<String> {
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod tests {
+    use serde_json::json;
+
     use super::*;
 
     #[test]

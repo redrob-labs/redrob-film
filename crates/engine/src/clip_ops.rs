@@ -222,7 +222,15 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             },
         ),
         spec("clip.fitToFrame", "Fit to frame", &["Clip", "Video Options"], None, r#"{"clips":[id]?}"#, has_selection, |s, p| fit_fill(s, p, false)),
-        spec("clip.fillFrame", "Fill frame", &["Clip", "Video Options"], None, r#"{"clips":[id]?}"#, has_selection, |s, p| fit_fill(s, p, true)),
+        spec(
+            "clip.fillFrame",
+            "Fill frame",
+            &["Clip", "Video Options"],
+            None,
+            r#"{"clips":[id]?,"ignoreBars":bool=true (crop black bars baked into the footage),"focusX":0..1=0.5,"focusY":0..1=0.5 (point of the picture kept in the middle)}"#,
+            has_selection,
+            |s, p| fit_fill(s, p, true),
+        ),
         spec("clip.breakoutToMono", "Breakout to Mono", &["Clip", "Audio Options"], None, r#"{"items":[id]?}"#, has_audio_items, breakout_to_mono),
         spec("clip.extractAudio", "Extract Audio", &["Clip", "Audio Options"], None, r#"{"items":[id]?,"dir":str?}"#, has_extractable, extract_audio),
         spec("clip.replaceFromSource", "From Source Monitor", &["Clip", "Replace With Clip"], None, r#"{"clips":[id]?}"#, can_replace_from_source, |s, p| {
@@ -1526,19 +1534,67 @@ fn set_interpolation(s: &mut Session, p: &Value, m: TimeInterpolation) -> Result
     Ok(json!({"mode": m.name(), "clips": clips.len()}))
 }
 
+/// Black bars baked into a clip's footage, as fractions (top, bottom, left, right) of the source
+/// picture: the median over a few frames across the clip's source range that are not all dark (a
+/// fade would read as one big bar). A row or column is bar while at most 2 % of its pixels are
+/// brighter than near-black; each side is capped at 40 %.
+fn baked_in_bars(s: &Session, item: ItemId, source_in: Tick, span: Tick) -> (f64, f64, f64, f64) {
+    let provider = s.media.full_res_provider(s.project.clone(), s.services.clone());
+    let Some(src) = redrob_film_render::SourceProvider::source(&provider, item) else { return (0.0, 0.0, 0.0, 0.0) };
+    let mut found: Vec<(f64, f64, f64, f64)> = Vec::new();
+    for i in 0..7 {
+        let t = Tick(source_in.0 + (span.0 as f64 * (i as f64 + 0.5) / 7.0) as i64);
+        let Ok(f) = src.video_frame(redrob_film_media::FrameRequest { time: t, scale: 0.25 }) else { continue };
+        let (w, h) = (f.width as usize, f.height as usize);
+        let luma = f.luma8();
+        if w == 0 || h == 0 || luma.len() < w * h {
+            continue;
+        }
+        let lit = |x: usize, y: usize| luma[y * w + x] > 24;
+        let row_bar = |y: usize| (0..w).filter(|&x| lit(x, y)).count() * 50 <= w;
+        let col_bar = |x: usize| (0..h).filter(|&y| lit(x, y)).count() * 50 <= h;
+        let top = (0..h).take_while(|&y| row_bar(y)).count();
+        if top == h {
+            continue;
+        }
+        let bottom = (0..h).rev().take_while(|&y| row_bar(y)).count();
+        let left = (0..w).take_while(|&x| col_bar(x)).count();
+        let right = (0..w).rev().take_while(|&x| col_bar(x)).count();
+        found.push((top as f64 / h as f64, bottom as f64 / h as f64, left as f64 / w as f64, right as f64 / w as f64));
+    }
+    let median = |pick: fn(&(f64, f64, f64, f64)) -> f64| {
+        let mut v: Vec<f64> = found.iter().map(pick).collect();
+        v.sort_by(f64::total_cmp);
+        let m = v.get(v.len() / 2).copied().unwrap_or(0.0);
+        // a hair of dark edge is not letterboxing
+        if m < 0.01 { 0.0 } else { m.min(0.4) }
+    };
+    (median(|b| b.0), median(|b| b.1), median(|b| b.2), median(|b| b.3))
+}
+
 /// Fit to frame (the whole clip visible) / Fill frame (the frame covered): sets Motion ▸ Scale
-/// and centres the clip.
+/// and centres the clip. Fill frame also crops black bars baked into the footage (`ignoreBars`,
+/// default on: a letterboxed 16:9 file cropped to 9:16 otherwise keeps its bars), and `focusX` /
+/// `focusY` (0..1 across the picture, default 0.5) keep that point of the picture in the middle of
+/// the frame as far as the frame stays covered - for a subject off centre in a vertical crop.
 fn fit_fill(s: &mut Session, p: &Value, fill: bool) -> Result<Value> {
     let clips = video_clips(s, p);
+    let ignore_bars = fill && p.get("ignoreBars").and_then(Value::as_bool).unwrap_or(true);
+    let focus =
+        (p.get("focusX").and_then(Value::as_f64).unwrap_or(0.5).clamp(0.0, 1.0), p.get("focusY").and_then(Value::as_f64).unwrap_or(0.5).clamp(0.0, 1.0));
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let (fw, fh) = (q.settings.width as f64, q.settings.height as f64);
     let frame_par = q.settings.par;
-    // (clip, storage size for the anchor, size at the display aspect in sequence pixels for the scale)
-    let sizes: Vec<(ClipId, (u32, u32), (f64, f64))> = clips
+    // (clip, storage size for the anchor, size at the display aspect in sequence pixels for the
+    // scale, baked-in bars)
+    #[allow(clippy::type_complexity)]
+    let sizes: Vec<(ClipId, (u32, u32), (f64, f64), (f64, f64, f64, f64))> = clips
         .iter()
         .filter_map(|c| {
             let (_, i) = q.find_item(*c)?;
-            Some((*c, redrob_film_render::source_size(&s.project, i.item)?, s.project.conformed_source_size(i.item, frame_par)?))
+            let span = Tick((i.duration.0 as f64 * i.speed.abs().max(f64::EPSILON)) as i64);
+            let bars = if ignore_bars { baked_in_bars(s, i.item, i.source_in, span) } else { (0.0, 0.0, 0.0, 0.0) };
+            Some((*c, redrob_film_render::source_size(&s.project, i.item)?, s.project.conformed_source_size(i.item, frame_par)?, bars))
         })
         .collect();
     if sizes.is_empty() {
@@ -1547,17 +1603,29 @@ fn fit_fill(s: &mut Session, p: &Value, fill: bool) -> Result<Value> {
     let label = if fill { "Fill Frame" } else { "Fit to Frame" };
     let out = s.edit_sequence(label, |q, _, _| {
         let mut out = Vec::new();
-        for (c, (w, h), (dw, dh)) in &sizes {
+        for (c, (w, h), (dw, dh), (bt, bb, bl, br)) in &sizes {
             let Some((_, it)) = q.find_item_mut(*c) else { continue };
-            let (sx, sy) = (fw / dw.max(1.0), fh / dh.max(1.0));
-            let pct = (if fill { sx.max(sy) } else { sx.min(sy) }) * 100.0;
+            // the picture inside the bars, in display pixels at 100 %
+            let (aw, ah) = (dw * (1.0 - bl - br), dh * (1.0 - bt - bb));
+            let (sx, sy) = (fw / aw.max(1.0), fh / ah.max(1.0));
+            let k = if fill { sx.max(sy) } else { sx.min(sy) };
+            let pct = k * 100.0;
+            // anchor on the focus point of that picture; position it at the frame centre, moved
+            // just enough that the picture still covers the frame
+            let (fx, fy) = if fill { focus } else { (0.5, 0.5) };
+            let anchor = (*w as f64 * (bl + fx * (1.0 - bl - br)), *h as f64 * (bt + fy * (1.0 - bt - bb)));
+            let place = |centre: f64, frame: f64, size: f64, f: f64| {
+                let (lo, hi) = (frame - (1.0 - f) * size * k, f * size * k);
+                if fill && lo <= hi { centre.clamp(lo, hi) } else { centre }
+            };
+            let pos = (place(fw / 2.0, fw, aw, fx), place(fh / 2.0, fh, ah, fy));
             it.scale_to_frame = false;
             let Some(m) = it.effect_mut("motion") else { continue };
             for (k, v) in [
                 ("scale", ParamValue::Float(pct)),
                 ("uniform_scale", ParamValue::Bool(true)),
-                ("position", ParamValue::Vec2(redrob_film_geom::Vec2::new(fw / 2.0, fh / 2.0))),
-                ("anchor", ParamValue::Vec2(redrob_film_geom::Vec2::new(*w as f64 / 2.0, *h as f64 / 2.0))),
+                ("position", ParamValue::Vec2(redrob_film_geom::Vec2::new(pos.0, pos.1))),
+                ("anchor", ParamValue::Vec2(redrob_film_geom::Vec2::new(anchor.0, anchor.1))),
             ] {
                 match m.param_mut(k) {
                     Some(prm) => {
@@ -1569,7 +1637,7 @@ fn fit_fill(s: &mut Session, p: &Value, fill: bool) -> Result<Value> {
                     }
                 }
             }
-            out.push(json!({"clip": c.0, "scale": pct}));
+            out.push(json!({"clip": c.0, "scale": pct, "bars": {"top": bt, "bottom": bb, "left": bl, "right": br}}));
         }
         Ok(out)
     })?;

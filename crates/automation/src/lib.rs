@@ -10,9 +10,13 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+pub mod beats;
 pub mod bridge;
 pub mod long_job;
+pub mod review;
+pub mod scene;
 pub mod server;
+pub mod sfx;
 
 pub use bridge::BridgeClient;
 pub use server::FilmMcp;

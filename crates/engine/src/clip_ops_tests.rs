@@ -543,6 +543,41 @@ fn fit_and_fill_frame() {
     assert!(s.execute("clip.fitToFrame", json!({})).is_err());
 }
 
+/// Fill frame on letterboxed footage in a vertical sequence crops the baked-in bars instead of
+/// keeping them, and `focusX` moves the crop toward the subject while the frame stays covered.
+#[test]
+fn fill_frame_crops_baked_in_letterbox_in_a_vertical_sequence() {
+    let dir = tmp_dir("fill-bars");
+    let path = dir.join("letterboxed.png");
+    // 1920x1080 with 130 px black bars top and bottom: an 820 px tall picture
+    let img = image::RgbaImage::from_fn(1920, 1080, |_, y| if (130..950).contains(&y) { image::Rgba([200, 60, 40, 255]) } else { image::Rgba([0, 0, 0, 255]) });
+    img.save(&path).unwrap();
+    let mut s = Session::default();
+    let r = s.execute("file.import", json!({"paths": [path.to_string_lossy()]})).unwrap();
+    let item = r["items"][0].as_u64().unwrap();
+    s.execute("file.newSequence", json!({"name": "vertical", "width": 1080, "height": 1920})).unwrap();
+    let r = s.execute("timeline.place", json!({"item": item, "track": "V1", "seconds": 0.0})).unwrap();
+    let c = r["clips"][0].as_u64().unwrap();
+    select(&mut s, &[c]);
+
+    // without the bars: a plain fill scales the full 1080 px height to 1920 px
+    s.execute("clip.fillFrame", json!({"ignoreBars": false})).unwrap();
+    assert!((f64_param(&clip(&s, c), "motion", "scale") - 1920.0 / 1080.0 * 100.0).abs() < 1e-6);
+
+    // by default the 820 px picture fills the 1920 px height, so no bar shows
+    let r = s.execute("clip.fillFrame", json!({})).unwrap();
+    let scale = f64_param(&clip(&s, c), "motion", "scale");
+    assert!((scale - 1920.0 / 820.0 * 100.0).abs() < 1.5, "{scale} {r}");
+    let bars = &r["clips"][0]["bars"];
+    assert!((bars["top"].as_f64().unwrap() - 130.0 / 1080.0).abs() < 0.01, "{r}");
+
+    // a subject at the left: the crop moves left, but never past the picture's edge
+    s.execute("clip.fillFrame", json!({"focusX": 0.0})).unwrap();
+    let pos = clip(&s, c).effect("motion").unwrap().param("position").unwrap().value.as_vec2().unwrap();
+    assert!((pos.x - 0.0).abs() < 1e-6, "the picture's left edge sits on the frame's left edge: {pos:?}");
+    assert!((pos.y - 960.0).abs() < 1e-6);
+}
+
 #[test]
 fn extract_audio_writes_a_wav_and_imports_it() {
     let mut s = demo();

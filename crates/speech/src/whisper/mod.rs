@@ -303,10 +303,46 @@ impl Transcriber for Whisper {
                 let mut aprompt = prompt.clone();
                 aprompt.push(self.tok.no_timestamps);
                 let times = align::align(&mut m, &xa, &aprompt, &text, self.tok.eot, &self.alignment_heads, seg_frames).map_err(merr)?;
+                // The segment (between its pair of timestamp tokens) each text token was decoded
+                // in. DTW alone lets a line's first word start at the window's start when the
+                // speech begins seconds in (music or silence before it), so words are kept inside
+                // their segment, as the reference implementation does.
+                let mut seg_of: Vec<(usize, usize)> = Vec::with_capacity(text.len());
+                {
+                    let ts_frame = |t: u32| (t - self.tok.timestamp_begin) as usize * FRAMES_PER_TS;
+                    let mut start = 0usize;
+                    let mut pending = 0usize;
+                    let mut opened = false;
+                    for &t in &toks[..upto] {
+                        if self.tok.is_timestamp(t) {
+                            if opened {
+                                let end = ts_frame(t).max(start);
+                                for _ in 0..pending {
+                                    seg_of.push((start, end));
+                                }
+                                pending = 0;
+                                opened = false;
+                            } else {
+                                start = ts_frame(t);
+                                opened = true;
+                            }
+                        } else if t < self.tok.eot {
+                            pending += 1;
+                        }
+                    }
+                    for _ in 0..pending {
+                        seg_of.push((start, seg_frames));
+                    }
+                }
                 let offset = seek * SAMPLES_PER_FRAME;
                 let limit = (seek + advance) * SAMPLES_PER_FRAME;
                 for (wtext, r) in tokenizer::group_words(&self.tok, &text) {
-                    let (s, e) = (times[r.start].0, times[r.end - 1].1);
+                    let (mut s, mut e) = (times[r.start].0, times[r.end - 1].1);
+                    if seg_of.len() == text.len() {
+                        let (lo, hi) = (seg_of[r.start].0, seg_of[r.end - 1].1.max(seg_of[r.start].0));
+                        s = s.clamp(lo, hi);
+                        e = e.clamp(s, hi.max(s));
+                    }
                     let a = (offset + s * SAMPLES_PER_FRAME).min(limit);
                     let b = (offset + e * SAMPLES_PER_FRAME).min(limit).max(a);
                     words.push(Word::new(wtext, sample_tick(a as i64), sample_tick(b as i64)));

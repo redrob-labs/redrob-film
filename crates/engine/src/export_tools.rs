@@ -182,7 +182,14 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         Some(name) => Some(s.export_presets.find(name).ok_or_else(|| bad(cmd, format!("no export preset named `{name}` (see export.presets.list)")))?),
         None => None,
     };
-    let mut settings = preset.as_ref().map(|x| x.settings.clone()).unwrap_or_default();
+    // Without a preset, an export may still use the GPU compositor and the hardware encoder (both
+    // fall back to the CPU path), as every built-in preset does; `settings` or the flat
+    // `hardwareEncoding` / `gpuRendering` parameters turn them off.
+    let mut settings = preset.as_ref().map(|x| x.settings.clone()).unwrap_or_else(|| ExportSettings {
+        hardware_encoding: HardwareEncoding::Auto,
+        gpu_rendering: GpuRendering::Auto,
+        ..Default::default()
+    });
     if preset.is_none()
         && let Some(f) = str_p(p, "format")
     {
