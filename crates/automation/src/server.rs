@@ -1441,6 +1441,94 @@ fn render_scale(max_side: u32, w: u32, h: u32) -> f32 {
 mod tests {
     use super::*;
 
+    /// What each part of a scene costs on the Effects GPU compositor and on the CPU, one scene per
+    /// ingredient (`FX_BENCH_MEDIA=<a 1080p movie> cargo test -p redrob-film-automation --release
+    /// effects_scene_ingredients -- --ignored --nocapture`).
+    #[tokio::test]
+    #[ignore]
+    async fn effects_scene_ingredients() {
+        use std::time::Instant;
+        let Ok(path) = std::env::var("FX_BENCH_MEDIA") else { return };
+        let gpu = redrob_effects_gpu::Gpu::headless();
+        let cases = [
+            (
+                "footage",
+                json!({"layers": [{"type": "bar", "y": 0.5, "width": 2, "height": 2}], "look": {"darken": 0, "vignette": 0, "grain": 0, "kenBurns": 0}}),
+            ),
+            (
+                "+ ken burns",
+                json!({"layers": [{"type": "bar", "y": 0.5, "width": 2, "height": 2}], "look": {"darken": 0, "vignette": 0, "grain": 0, "kenBurns": 7}}),
+            ),
+            (
+                "+ wash",
+                json!({"layers": [{"type": "bar", "y": 0.5, "width": 2, "height": 2}], "look": {"darken": 0.3, "vignette": 0, "grain": 0, "kenBurns": 7}}),
+            ),
+            (
+                "+ vignette",
+                json!({"layers": [{"type": "bar", "y": 0.5, "width": 2, "height": 2}], "look": {"darken": 0.3, "vignette": 55, "grain": 0, "kenBurns": 7}}),
+            ),
+            (
+                "+ grain",
+                json!({"layers": [{"type": "bar", "y": 0.5, "width": 2, "height": 2}], "look": {"darken": 0.3, "vignette": 55, "grain": 4, "kenBurns": 7}}),
+            ),
+            (
+                "+ body text",
+                json!({"layers": [{"text": "잃어버린 친구를 찾아", "role": "body"}], "look": {"darken": 0.3, "vignette": 55, "grain": 4, "kenBurns": 7}}),
+            ),
+            (
+                "+ hero (glow)",
+                json!({"layers": [{"text": "SINTEL", "role": "hero", "enter": "trackingIn"}, {"text": "잃어버린 친구를 찾아", "role": "body"}], "look": {"darken": 0.3, "vignette": 55, "grain": 4, "kenBurns": 7}}),
+            ),
+        ];
+        // twice: a laptop GPU idles down between short bursts, so the first pass also measures it
+        // waking up
+        for (name, spec) in cases.iter().chain(cases.iter()).cloned() {
+            let mut s = Session::default();
+            let item = s.execute("file.import", json!({"paths": [path.clone()]})).unwrap()["items"][0].as_u64().unwrap();
+            s.execute("file.newSequence", json!({"name": "b", "width": 1080, "height": 1920, "fps": 30})).unwrap();
+            let tk = |x: f64| redrob_film_time::Tick::from_seconds_f64(x).0;
+            let clip = s.execute("timeline.place", json!({"item": item, "track": "V1", "time": 0, "sourceIn": tk(1.8), "duration": tk(3.0)})).unwrap()["clips"]
+                [0]
+            .as_u64()
+            .unwrap();
+            s.execute("clip.fillFrame", json!({"clips": [clip]})).unwrap();
+            s.execute("timeline.select", json!({"clips": [clip]})).unwrap();
+            let m = FilmMcp::headless(s);
+            let mut spec = spec;
+            spec["footage"] = json!("selection");
+            spec["name"] = json!("S");
+            let p: SceneParams = serde_json::from_value(spec).unwrap();
+            assert_ne!(m.scene_build(Parameters(p)).await.unwrap().is_error, Some(true));
+            let fx = m.effects.lock().unwrap();
+            let fx = fx.as_ref().unwrap();
+            let comp = fx.active_comp_id().unwrap();
+            // frames past the entrances, as most of a scene is
+            let times: Vec<redrob_effects_time::Tick> = (40..70).map(|f| redrob_effects_time::Tick::from_seconds_f64(f as f64 / 30.0)).collect();
+            let run = |accel: Option<&dyn redrob_effects_render::Accelerator>| {
+                let cache = redrob_effects_render::LayerCache::new(256 << 20);
+                let backend = if accel.is_some() { redrob_effects_render::Backend::Gpu } else { redrob_effects_render::Backend::Cpu };
+                let t0 = Instant::now();
+                for t in &times {
+                    let mut r = redrob_effects_render::Renderer::new(
+                        &fx.project,
+                        fx.footage.as_ref(),
+                        redrob_effects_render::RenderOpts { backend, ..Default::default() },
+                    );
+                    r.accel = accel;
+                    r.cache = Some(&cache);
+                    let _ = r.comp_frame(comp, *t);
+                }
+                t0.elapsed().as_secs_f64() * 1000.0 / times.len() as f64
+            };
+            let cpu = run(None);
+            let g = gpu.as_ref().map(|g| {
+                run(Some(g));
+                run(Some(g))
+            });
+            println!("{name:16} cpu {cpu:6.1}  gpu {} ms/frame", g.map_or("-".into(), |g| format!("{g:6.1}")));
+        }
+    }
+
     /// Where an Effects scene's frame time goes (`FX_BENCH_MEDIA=<a 1080p movie> cargo test -p
     /// redrob-film-automation --release effects_scene_frame_cost -- --ignored --nocapture`).
     #[tokio::test]
@@ -1514,14 +1602,14 @@ mod tests {
         if let Some(gpu) = redrob_effects_gpu::Gpu::headless() {
             let gcache = redrob_effects_render::LayerCache::new(1 << 30);
             let prof = std::sync::Mutex::new(Vec::new());
-            for round in ["gpu first", "gpu again"] {
+            for round in ["gpu nocache", "gpu nocache2", "gpu cache 1", "gpu cache 2"] {
                 prof.lock().unwrap().clear();
                 let t0 = Instant::now();
                 for t in &times {
                     let opts = redrob_effects_render::RenderOpts { backend: redrob_effects_render::Backend::Gpu, ..Default::default() };
                     let mut r = redrob_effects_render::Renderer::new(&fx.project, fx.footage.as_ref(), opts);
                     r.accel = Some(&gpu);
-                    r.cache = Some(&gcache);
+                    r.cache = round.contains(" cache").then_some(&gcache);
                     r.profile = Some(&prof);
                     let _ = r.comp_frame(comp, *t);
                 }
