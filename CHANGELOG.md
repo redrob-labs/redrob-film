@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9.1 -- 2026-11-11
+
+### Fixed
+
+- An export with an Effects scene on the timeline no longer stops for good: the second export of a
+  session on a Windows PC could hang with no CPU use.
+
+### Changed
+
+- Effects scenes export about twice as fast: an 8.8 s 1080×1920 edit with a scene took 12 s instead
+  of 21.6 s on a Windows RTX 4060 laptop. Scenes render on the GPU, each picks the faster of the GPU
+  and the CPU on its first frames, and frames read their sources before they wait for the GPU.
+
 ## 0.9.0 -- 2026-11-10
 
 ### Added

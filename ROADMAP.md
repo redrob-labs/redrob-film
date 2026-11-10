@@ -2,6 +2,10 @@
 
 ## Changes
 
+## 0.9.1
+
+- **Effects scenes export reliably and fast.** No hang, about twice as fast on a Windows laptop.
+
 ## 0.9.0
 
 An AI agent can make a finished 9:16 short, and check it before anyone sees it.
