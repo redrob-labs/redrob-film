@@ -4,7 +4,7 @@ members = ["crates/*", "apps/*", "xtask", "editors/effects/crates/*"]
 default-members = ["crates/*", "apps/*", "xtask"]
 
 [workspace.package]
-version = "0.8.0"
+version = "0.9.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.95"
@@ -54,6 +54,7 @@ redrob-film-format = { path = "crates/format" }
 redrob-film-engine = { path = "crates/engine" }
 redrob-film-ui-egui = { path = "crates/ui-egui" }
 redrob-film-automation = { path = "crates/automation" }
+redrob-film-handoff = { path = "crates/handoff" }
 redrob-film-platform = { path = "crates/platform" }
 redrob-film-testkit = { path = "crates/testkit" }
 

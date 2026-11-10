@@ -10,7 +10,13 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+redrob-film-audio-dsp = { workspace = true }
 redrob-film-engine = { workspace = true }
+redrob-film-handoff = { workspace = true }
+redrob-film-project = { workspace = true }
+redrob-film-text = { workspace = true }
+redrob-effects-engine = { workspace = true }
+redrob-effects-host = { workspace = true }
 redrob-film-time = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
