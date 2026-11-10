@@ -147,6 +147,11 @@ impl LayerCache {
         Some((st.clone(), salted(*salt)))
     }
 
+    /// Whether a buffer is kept in memory under `key` (a peek: no hit, no miss, no disk read).
+    pub(crate) fn holds(&self, key: u64) -> bool {
+        self.inner.lock().is_ok_and(|g| g.map.contains_key(&key))
+    }
+
     pub fn get(&self, key: u64) -> Option<Arc<Buf>> {
         let mut g = self.inner.lock().ok()?;
         g.clock += 1;

@@ -937,7 +937,24 @@ pub trait FrameRenderer: Send {
         opts: redrob_film_render::RenderOptions,
         sources: &dyn SourceProvider,
     ) -> Option<redrob_film_render::Image>;
+
+    /// The part of a frame that needs no renderer (planning it, reading its source frames,
+    /// converting them for upload), done before a pooled renderer is taken: every export thread
+    /// does it at once, not a few frames at a time inside the pool. A frame of a placed Effects
+    /// composition renders the whole scene while it reads its sources; inside the pool, 4
+    /// renderers kept 16 threads waiting. `None`: [`FrameRenderer::render`] does all of it.
+    fn ahead(&self) -> Option<AheadFn> {
+        None
+    }
+
+    /// Render a frame [`FrameRenderer::ahead`] prepared (`None` = the CPU renders it).
+    fn render_ahead(&mut self, _frame: Box<dyn std::any::Any + Send>) -> Option<redrob_film_render::Image> {
+        None
+    }
 }
+
+/// See [`FrameRenderer::ahead`].
+pub type AheadFn = fn(&Project, ItemId, Tick, redrob_film_render::RenderOptions, &dyn SourceProvider) -> Box<dyn std::any::Any + Send>;
 
 /// Builds the frame renderer for one export, or `None` when this host cannot (no adapter).
 pub type FrameRendererFactory = fn() -> Option<Box<dyn FrameRenderer>>;

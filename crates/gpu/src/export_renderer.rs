@@ -97,6 +97,12 @@ pub struct ExportRenderer {
     compositor: GpuCompositor,
 }
 
+/// A frame planned and prepared ahead of its renderer ([`ExportRenderer::plan_ahead`]).
+struct Ahead {
+    plan: FramePlan,
+    prep: Option<crate::PreparedPlan>,
+}
+
 impl ExportRenderer {
     /// The off-screen device, or `None` when this host has no usable adapter or this build no
     /// wgpu backend.
@@ -141,7 +147,21 @@ impl ExportRenderer {
     /// One frame as `render_sequence` would return it (premultiplied linear-light RGBA at the
     /// render size), or `None` when this frame must go to the CPU renderer.
     pub fn render(&mut self, project: &Project, seq: ItemId, t: Tick, opts: RenderOptions, sources: &dyn SourceProvider) -> Option<Image> {
+        self.render_ahead(Self::plan_ahead(project, seq, t, opts, sources))
+    }
+
+    /// The renderer-free part of [`ExportRenderer::render`]: the frame's plan (its source frames
+    /// read) and its layers converted for upload. Any thread, no GPU
+    /// (`redrob_film_export::FrameRenderer::ahead`).
+    pub fn plan_ahead(project: &Project, seq: ItemId, t: Tick, opts: RenderOptions, sources: &dyn SourceProvider) -> Box<dyn std::any::Any + Send> {
         let plan = plan_frame(project, seq, t, opts, sources);
+        let prep = matches!(plan, FramePlan::Layers { .. }).then(|| prepare(&plan));
+        Box::new(Ahead { plan, prep })
+    }
+
+    /// Composite a frame [`ExportRenderer::plan_ahead`] prepared.
+    pub fn render_ahead(&mut self, frame: Box<dyn std::any::Any + Send>) -> Option<Image> {
+        let Ahead { plan, prep } = *frame.downcast::<Ahead>().ok()?;
         match &plan {
             // Already the CPU image: return it unchanged instead of rendering it twice.
             FramePlan::Image(img) => Some(img.clone()),
@@ -149,8 +169,7 @@ impl ExportRenderer {
                 if device_failed() {
                     return None;
                 }
-                let prep = prepare(&plan);
-                let (w, h, px) = self.compositor.render_export_prepared(&plan, Some(&prep))?;
+                let (w, h, px) = self.compositor.render_export_prepared(&plan, prep.as_ref())?;
                 // an error reported while this frame was drawn leaves its pixels untrusted
                 if device_failed() {
                     return None;

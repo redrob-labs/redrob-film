@@ -5536,10 +5536,15 @@ dependencies = [
  "base64 0.22.1",
  "image",
  "redrob-effects-engine",
+ "redrob-effects-gpu",
  "redrob-effects-host",
+ "redrob-effects-project",
+ "redrob-effects-render",
+ "redrob-effects-time",
  "redrob-film-audio-dsp",
  "redrob-film-engine",
  "redrob-film-handoff",
+ "redrob-film-media",
  "redrob-film-project",
  "redrob-film-text",
  "redrob-film-time",
@@ -5826,8 +5831,10 @@ dependencies = [
 name = "redrob-film-handoff"
 version = "0.9.0"
 dependencies = [
+ "rayon",
  "redrob-effects-color",
  "redrob-effects-engine",
+ "redrob-effects-gpu",
  "redrob-effects-project",
  "redrob-effects-render",
  "redrob-effects-time",

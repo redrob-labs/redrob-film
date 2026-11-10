@@ -578,6 +578,13 @@ impl Default for RenderOpts {
     }
 }
 
+/// A footage layer's source as the decoded picture itself ([`Renderer::footage_picture`]).
+#[derive(Clone, Debug)]
+pub struct FootagePicture {
+    pub img: Arc<Image>,
+    pub scale: f64,
+}
+
 pub struct Renderer<'a> {
     pub project: &'a Project,
     pub footage: &'a dyn FootageSource,
@@ -1319,6 +1326,49 @@ impl<'a> Renderer<'a> {
             LayerSource::Shape => layer.props.sub("contents").map(|c| self.authored(shapes::render(ctx, layer, c, self.raster_scale(ctx, layer)))),
             _ => None,
         }
+    }
+
+    /// The decoded footage picture a layer's masked source is made of, with no copy: a footage
+    /// layer (not continuously rasterised vector footage) without masks, motion-blur sub-frames or
+    /// frame blending, whose frame needs no colour conversion and no resampling and is served by
+    /// the footage source as it is (no separate fields, Invert Alpha or Interpret As Linear
+    /// Light). Its buffer is this picture at offset `[0, 0]` and `scale`, quantised to the
+    /// project's depth (`pipe().levels`, which an accelerator does itself). `None`: the layer's
+    /// buffer is made the usual way, also when the layer cache already holds it. Upstream
+    /// EffectCraft #3333 (2320255c), which takes 32 bpc projects only; here 8 and 16 bpc too.
+    pub fn footage_picture(&self, ctx: &EvalCtx, layer: &Layer) -> Option<FootagePicture> {
+        let LayerSource::Footage { item } = &layer.source else { return None };
+        if layer.masks().is_some_and(|m| !m.children.is_empty()) || frame_blend_mode(ctx, layer) != FrameBlend::Off || self.content_times(ctx, layer).is_some()
+        {
+            return None;
+        }
+        let ItemKind::Footage(f) = &self.project.item(*item)?.kind else { return None };
+        if !f.has_video || (layer.switches.collapse && is_vector_footage(f)) {
+            return None;
+        }
+        let proxy = self.proxy_for(*item);
+        let pf = proxy.unwrap_or(f);
+        if self.pipe.media_in(pf).is_some() || pf.fields != redrob_effects_project::FieldOrder::Off || pf.invert_alpha || pf.linear_light_applies() {
+            return None;
+        }
+        if let Some(cache) = self.cache {
+            let (scale, draft, blur) = (self.raster_scale(ctx, layer), self.opts.draft, self.mb_on(ctx, layer));
+            let content = self.content_key(ctx, layer, cache::layer_key(ctx, layer, scale, draft, blur));
+            let input = self.content_key(ctx, layer, cache::input_key(ctx, layer, scale, draft, blur, 0));
+            if [content, input].into_iter().flatten().any(|k| cache.holds(k)) {
+                return None;
+            }
+        }
+        let size = self.reduced_size(f.width, f.height).filter(|_| proxy.is_none());
+        let img = self.footage_frame(ctx, layer, *item, pf, ctx.source_time(layer), size)?;
+        // `footage_buf`'s layout: its own pixels only (a resampled frame is a new image).
+        let k = if img.width > 0 { f.width.max(1) as f64 / img.width as f64 } else { 1.0 };
+        let scale = match self.reduced_size(f.width, f.height) {
+            Some(s) if (img.width, img.height) == s => self.opts.scale,
+            Some(_) if k <= 1.0 + 1e-9 => return None,
+            _ => 1.0 / k,
+        };
+        Some(FootagePicture { img, scale })
     }
 
     /// The proxy footage used for `item` under this render's Proxy Use, if any.
