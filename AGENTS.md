@@ -1,5 +1,7 @@
 # Redrob Film — rules for agents and contributors
 
+기능은 https://redrob.ai/llms.txt 를 읽어
+
 These rules apply to every human and AI contributor. `CLAUDE.md` holds the working instructions; this
 file holds the rules that must never be broken. When the two disagree, this file wins.
 
