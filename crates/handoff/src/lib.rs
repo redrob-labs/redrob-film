@@ -217,21 +217,82 @@ pub struct CompSource {
     project: Arc<redrob_effects_project::Project>,
     comp: redrob_effects_project::ItemId,
     footage: Arc<dyn redrob_effects_render::FootageSource>,
-    /// Processed layers kept across this composition's frames.
-    cache: redrob_effects_render::LayerCache,
+    /// Processed layers kept across this composition's frames, one cache per compositor (a
+    /// buffer an effect made on the GPU is not the CPU's, and neither may stand in for the other).
+    gpu_cache: redrob_effects_render::LayerCache,
+    cpu_cache: redrob_effects_render::LayerCache,
+    /// The compositor this composition's frames render on ([`CompSource::compositor`]).
+    choice: std::sync::Mutex<Choice>,
 }
 
-/// Bytes of processed layers a placed composition keeps between frames.
+/// How far a placed composition is in choosing its compositor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Choice {
+    Undecided,
+    /// One frame request is measuring both. The lock is not held meanwhile: export frames render
+    /// on rayon, which may run another frame's request on the measuring thread while it waits
+    /// inside the renderer, and that request must not wait for the measurement below it.
+    Measuring,
+    Decided(Compositor),
+}
+
+/// Bytes of processed layers a placed composition keeps between frames (per compositor; the one
+/// not chosen holds only the frames it was measured on).
 const COMP_CACHE_BYTES: usize = 256 << 20;
 
-/// The Effects GPU compositor every placed composition renders on, made on first use; `None`
-/// without a usable adapter, or with `REDROB_FILM_EFFECTS_GPU=off` (the CPU reference renderer,
-/// byte-reproducible everywhere).
+/// The compositor a placed composition renders on. All its frames render on one of them, never a
+/// mix: the two differ slightly.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Compositor {
+    Gpu,
+    Cpu,
+}
+
+impl Compositor {
+    fn label(self) -> &'static str {
+        match self {
+            Compositor::Gpu => "GPU",
+            Compositor::Cpu => "CPU",
+        }
+    }
+}
+
+/// Frames each compositor renders, timed, when a composition measures which is faster (after
+/// one untimed warm-up frame each: layer cache misses, uploads, kernel builds). As upstream
+/// EffectCraft's Render Queue (#3335, 4649c27e).
+const PROBE_FRAMES: i64 = 2;
+/// Compositions shorter than this many frames render on the GPU without measuring: the frames
+/// the slower compositor renders for the measurement would cost more than they could save.
+const PROBE_MIN_FRAMES: i64 = 12;
+
+/// The faster compositor from measured milliseconds per frame (`None`: not measured, or the GPU
+/// stopped). The CPU wins only when clearly faster (`AutoPick::MARGIN`): ties and noise stay on
+/// the GPU. Upstream EffectCraft's `pick_renderer` (#3335).
+fn pick_compositor(gpu_ms: Option<f64>, cpu_ms: Option<f64>) -> Compositor {
+    match (gpu_ms, cpu_ms) {
+        (Some(g), Some(c)) if g.is_finite() && c.is_finite() && c < g * redrob_effects_render::AutoPick::MARGIN => Compositor::Cpu,
+        (None, Some(_)) => Compositor::Cpu,
+        _ => Compositor::Gpu,
+    }
+}
+
+/// `REDROB_FILM_EFFECTS_GPU`: `off`/`cpu` (the CPU reference renderer, byte-reproducible
+/// everywhere), `on`/`gpu` (the GPU without measuring) or unset/`auto` (measure each composition).
+fn effects_gpu_env() -> Option<Compositor> {
+    let v = std::env::var("REDROB_FILM_EFFECTS_GPU").ok()?;
+    match v.trim().to_ascii_lowercase().as_str() {
+        "off" | "0" | "false" | "cpu" => Some(Compositor::Cpu),
+        "on" | "1" | "true" | "gpu" => Some(Compositor::Gpu),
+        _ => None,
+    }
+}
+
+/// The Effects GPU compositor placed compositions may render on, made on first use; `None`
+/// without a usable adapter, or with `REDROB_FILM_EFFECTS_GPU=off`.
 fn effects_gpu() -> Option<&'static redrob_effects_gpu::Gpu> {
     static GPU: std::sync::OnceLock<Option<redrob_effects_gpu::Gpu>> = std::sync::OnceLock::new();
     GPU.get_or_init(|| {
-        let off = std::env::var("REDROB_FILM_EFFECTS_GPU").is_ok_and(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "off" | "0" | "false" | "cpu"));
-        if off {
+        if effects_gpu_env() == Some(Compositor::Cpu) {
             return None;
         }
         match redrob_effects_gpu::Gpu::try_headless() {
@@ -248,6 +309,26 @@ fn effects_gpu() -> Option<&'static redrob_effects_gpu::Gpu> {
     .as_ref()
 }
 
+/// The thread pool placed compositions render their frames on, apart from the global rayon pool
+/// that export frames run on. Export frames take one of a few pooled GPU renderers and wait when
+/// all are busy; a frame of a placed composition renders inside one of them. Rendered on the global
+/// pool, the renderer's parallel work let a waiting worker pick up another export frame, which then
+/// waited for a renderer beneath the one its own thread held: with every renderer held that way the
+/// export stopped for good (seen on the Windows PC with a scene on the GPU). On this pool, reached
+/// from a thread that blocks without taking work, nothing beneath a composition frame is an export
+/// frame. `None` if the pool can't be made (the frame renders where it was asked for).
+fn effects_pool() -> Option<&'static rayon::ThreadPool> {
+    static POOL: std::sync::OnceLock<Option<rayon::ThreadPool>> = std::sync::OnceLock::new();
+    POOL.get_or_init(|| {
+        rayon::ThreadPoolBuilder::new()
+            .thread_name(|i| format!("effects-{i}"))
+            .build()
+            .map_err(|e| eprintln!("effects: no thread pool of its own ({e}); compositions render on the export's threads"))
+            .ok()
+    })
+    .as_ref()
+}
+
 impl CompSource {
     pub fn new(
         name: &str,
@@ -257,7 +338,95 @@ impl CompSource {
     ) -> Result<Self, String> {
         let c = project.comp(comp).ok_or_else(|| format!("no composition #{}", comp.0))?;
         let info = comp_media_info(name, c)?;
-        Ok(Self { info, project, comp, footage, cache: redrob_effects_render::LayerCache::new(COMP_CACHE_BYTES) })
+        Ok(Self {
+            info,
+            project,
+            comp,
+            footage,
+            gpu_cache: redrob_effects_render::LayerCache::new(COMP_CACHE_BYTES),
+            cpu_cache: redrob_effects_render::LayerCache::new(COMP_CACHE_BYTES),
+            choice: std::sync::Mutex::new(Choice::Undecided),
+        })
+    }
+
+    /// A frame at comp time `t` and `scale` on compositor `on`, with that compositor's layer cache,
+    /// rendered on [`effects_pool`] from a thread of its own (see there).
+    fn render(&self, on: Compositor, t: i64, scale: f64) -> redrob_effects_render::Image {
+        let Some(pool) = effects_pool() else { return self.render_here(on, t, scale) };
+        let frame = std::thread::scope(|s| {
+            std::thread::Builder::new().name("effects-frame".into()).spawn_scoped(s, || pool.install(|| self.render_here(on, t, scale))).map(|h| h.join())
+        });
+        match frame {
+            Ok(Ok(image)) => image,
+            Ok(Err(panic)) => std::panic::resume_unwind(panic),
+            // No thread to hop to: render here (as before the pool).
+            Err(_) => self.render_here(on, t, scale),
+        }
+    }
+
+    fn render_here(&self, on: Compositor, t: i64, scale: f64) -> redrob_effects_render::Image {
+        let gpu = effects_gpu().filter(|_| on == Compositor::Gpu);
+        let backend = if gpu.is_some() { redrob_effects_render::Backend::Gpu } else { redrob_effects_render::Backend::Cpu };
+        let opts = redrob_effects_render::RenderOpts { scale, backend, ..Default::default() };
+        let mut r = redrob_effects_render::Renderer::new(&self.project, self.footage.as_ref(), opts);
+        r.cache = Some(if gpu.is_some() { &self.gpu_cache } else { &self.cpu_cache });
+        r.accel = gpu.map(|g| g as &dyn redrob_effects_render::Accelerator);
+        r.comp_frame(self.comp, redrob_effects_time::Tick(t))
+    }
+
+    /// The compositor this composition renders on: the CPU without a GPU, the one
+    /// `REDROB_FILM_EFFECTS_GPU` names, else the faster of the two measured on the first frame
+    /// requested and the next [`PROBE_FRAMES`] (upstream EffectCraft #3335). A footage-only scene
+    /// renders faster on the CPU (the GPU pays uploads and readbacks every frame); Glow and other
+    /// heavy effects faster on the GPU. Frames requested while another request measures render on
+    /// the GPU (so a CPU choice leaves those few frames from the GPU's compositor).
+    fn compositor(&self, t: i64, scale: f64, frame: i64, last: i64) -> Compositor {
+        let Some(gpu) = effects_gpu() else { return Compositor::Cpu };
+        if let Some(c) = effects_gpu_env() {
+            return c;
+        }
+        {
+            let mut slot = self.choice.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            match *slot {
+                Choice::Decided(c) => return c,
+                Choice::Measuring => return Compositor::Gpu,
+                Choice::Undecided => *slot = Choice::Measuring,
+            }
+        }
+        let frames = if frame > 0 { last / frame + 1 } else { 0 };
+        let c = if frames < PROBE_MIN_FRAMES {
+            Compositor::Gpu
+        } else {
+            let timed = |on: Compositor| {
+                let _warm = self.render(on, t, scale);
+                let t0 = std::time::Instant::now();
+                for i in 1..=PROBE_FRAMES {
+                    let at = t + i * frame;
+                    // Near the end the measured frames are the ones before `t` instead.
+                    let at = if at > last { t - i * frame } else { at };
+                    let _ = self.render(on, at.clamp(0, last), scale);
+                }
+                t0.elapsed().as_secs_f64() * 1e3 / PROBE_FRAMES as f64
+            };
+            let gpu_ms = timed(Compositor::Gpu);
+            let cpu_ms = timed(Compositor::Cpu);
+            // A GPU that stopped meanwhile rendered its frames on the CPU: it is no choice.
+            let gpu_ms = gpu.context().check_health().is_ok().then_some(gpu_ms);
+            let c = pick_compositor(gpu_ms, Some(cpu_ms));
+            let name = &self.info.name;
+            match gpu_ms {
+                Some(g) => eprintln!("effects: \"{name}\" renders on the {} (measured {g:.0} ms a frame on the GPU, {cpu_ms:.0} ms on the CPU)", c.label()),
+                None => eprintln!("effects: \"{name}\" renders on the CPU (the GPU stopped)"),
+            }
+            // The cache of the compositor not chosen holds only the measured frames.
+            match c {
+                Compositor::Gpu => self.cpu_cache.clear(),
+                Compositor::Cpu => self.gpu_cache.clear(),
+            }
+            c
+        };
+        *self.choice.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = Choice::Decided(c);
+        c
     }
 }
 
@@ -272,18 +441,13 @@ impl MediaSource for CompSource {
         let last = self.info.duration.0.saturating_sub(v.frame_rate.frame_duration().0).max(0);
         let t = req.time.0.clamp(0, last);
         let scale = if req.scale.is_finite() { f64::from(req.scale.clamp(0.1, 1.0)) } else { 1.0 };
-        // On the Effects GPU compositor when the machine has one (its kernels cover Glow, CC
-        // Vignette, Noise and the rest of what a scene uses; anything it declines renders on the
-        // CPU). A scene over 1080×1920 footage spent 178 ms a frame on the CPU, 74 of them in
-        // the hero title's Glow. The layer cache keeps still layers (washes, settled titles)
-        // between frames, which also spares their upload to the GPU.
-        let gpu = effects_gpu();
-        let backend = if gpu.is_some() { redrob_effects_render::Backend::Gpu } else { redrob_effects_render::Backend::Cpu };
-        let opts = redrob_effects_render::RenderOpts { scale, backend, ..Default::default() };
-        let mut r = redrob_effects_render::Renderer::new(&self.project, self.footage.as_ref(), opts);
-        r.cache = Some(&self.cache);
-        r.accel = gpu.map(|g| g as &dyn redrob_effects_render::Accelerator);
-        let image = r.comp_frame(self.comp, redrob_effects_time::Tick(t));
+        // On the Effects GPU compositor or the CPU one, whichever this composition renders
+        // faster on (see `compositor`). A scene over 1080×1920 footage spent 178 ms a frame on
+        // the CPU, 74 of them in the hero title's Glow; footage alone renders faster on the CPU.
+        // The layer cache keeps still layers (washes, settled titles) between frames, which also
+        // spares their upload to the GPU.
+        let on = self.compositor(t, scale, v.frame_rate.frame_duration().0, last);
+        let image = self.render(on, t, scale);
         let (w, h) = (image.width, image.height);
         let data = image.to_rgba8();
         let expected = (w as usize).checked_mul(h as usize).and_then(|n| n.checked_mul(4));
@@ -718,6 +882,18 @@ mod tests {
         assert!(comp_media_info("x", &empty).is_err());
         let zero_len = redrob_effects_project::Comp::new(16, 16, rate, redrob_effects_time::Tick(0));
         assert!(comp_media_info("x", &zero_len).is_err());
+    }
+
+    #[test]
+    fn the_cpu_renders_a_composition_only_when_clearly_faster() {
+        assert_eq!(pick_compositor(Some(150.0), Some(40.0)), Compositor::Cpu);
+        assert_eq!(pick_compositor(Some(250.0), Some(520.0)), Compositor::Gpu);
+        // Ties and noise stay on the GPU.
+        assert_eq!(pick_compositor(Some(100.0), Some(90.0)), Compositor::Gpu);
+        // A GPU that stopped is no choice; nothing measured stays on the GPU.
+        assert_eq!(pick_compositor(None, Some(500.0)), Compositor::Cpu);
+        assert_eq!(pick_compositor(None, None), Compositor::Gpu);
+        assert_eq!(pick_compositor(Some(f64::NAN), Some(1.0)), Compositor::Gpu);
     }
 
     #[test]

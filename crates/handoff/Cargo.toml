@@ -21,6 +21,7 @@ redrob-effects-gpu = { workspace = true }
 redrob-effects-project = { workspace = true }
 redrob-effects-render = { workspace = true }
 redrob-effects-time = { workspace = true }
+rayon = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]

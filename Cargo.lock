@@ -5831,6 +5831,7 @@ dependencies = [
 name = "redrob-film-handoff"
 version = "0.9.0"
 dependencies = [
+ "rayon",
  "redrob-effects-color",
  "redrob-effects-engine",
  "redrob-effects-gpu",
