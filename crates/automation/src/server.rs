@@ -1441,6 +1441,130 @@ fn render_scale(max_side: u32, w: u32, h: u32) -> f32 {
 mod tests {
     use super::*;
 
+    /// Where an Effects scene's frame time goes (`FX_BENCH_MEDIA=<a 1080p movie> cargo test -p
+    /// redrob-film-automation --release effects_scene_frame_cost -- --ignored --nocapture`).
+    #[tokio::test]
+    #[ignore]
+    async fn effects_scene_frame_cost() {
+        use std::time::Instant;
+        let Ok(path) = std::env::var("FX_BENCH_MEDIA") else { return };
+        let mut s = Session::default();
+        let item = s.execute("file.import", json!({"paths": [path]})).unwrap()["items"][0].as_u64().unwrap();
+        s.execute("file.newSequence", json!({"name": "b", "width": 1080, "height": 1920, "fps": 30})).unwrap();
+        let tk = |x: f64| redrob_film_time::Tick::from_seconds_f64(x).0;
+        let clip = s
+            .execute("timeline.place", json!({"item": item, "track": "V1", "audioTrack": "A1", "time": 0, "sourceIn": tk(1.8), "duration": tk(3.0)}))
+            .unwrap()["clips"][0]
+            .as_u64()
+            .unwrap();
+        s.execute("clip.fillFrame", json!({"clips": [clip]})).unwrap();
+        s.execute("timeline.select", json!({"clips": [clip]})).unwrap();
+        let m = FilmMcp::headless(s);
+        let p: SceneParams = serde_json::from_value(json!({"footage": "selection", "place": true, "name": "S",
+            "layers": [{"text": "SINTEL", "role": "hero", "enter": "trackingIn"}, {"text": "잃어버린 친구를 찾아", "role": "body"}],
+            "look": {"darken": 0.3, "vignette": 55, "grain": 4, "kenBurns": 7}}))
+        .unwrap();
+        assert_ne!(m.scene_build(Parameters(p)).await.unwrap().is_error, Some(true));
+        let fx = m.effects.lock().unwrap();
+        let fx = fx.as_ref().unwrap();
+        let comp = fx.active_comp_id().unwrap();
+        let times: Vec<redrob_effects_time::Tick> = (10..40).map(|f| redrob_effects_time::Tick::from_seconds_f64(f as f64 / 30.0)).collect();
+        // the footage alone
+        let footage = fx
+            .project
+            .items
+            .values()
+            .find_map(|it| match &it.kind {
+                redrob_effects_project::ItemKind::Footage(f) if f.has_video => Some((it.id, f.clone())),
+                _ => None,
+            })
+            .unwrap();
+        let t0 = Instant::now();
+        for t in &times {
+            let _ = fx.footage.frame(footage.0, &footage.1, *t);
+        }
+        println!("footage decode   {:6.1} ms/frame", t0.elapsed().as_secs_f64() * 1000.0 / times.len() as f64);
+        // the comp, as CompSource renders it now (no cache), then with a layer cache
+        let run = |cache: Option<&redrob_effects_render::LayerCache>, prof: Option<&std::sync::Mutex<Vec<redrob_effects_render::LayerTiming>>>| {
+            let t0 = Instant::now();
+            for t in &times {
+                let mut r = redrob_effects_render::Renderer::new(&fx.project, fx.footage.as_ref(), Default::default());
+                r.cache = cache;
+                r.profile = prof;
+                let _ = r.comp_frame(comp, *t);
+            }
+            t0.elapsed().as_secs_f64() * 1000.0 / times.len() as f64
+        };
+        println!("comp, no cache   {:6.1} ms/frame", run(None, None));
+        let cache = redrob_effects_render::LayerCache::new(1 << 30);
+        run(Some(&cache), None);
+        println!("comp, warm cache {:6.1} ms/frame", run(Some(&cache), None));
+        let prof = std::sync::Mutex::new(Vec::new());
+        run(None, Some(&prof));
+        let mut per: std::collections::BTreeMap<String, (f64, f64)> = Default::default();
+        for l in prof.lock().unwrap().iter() {
+            let e = per.entry(l.layer.clone()).or_default();
+            e.0 += l.process_ms;
+            e.1 += l.composite_ms;
+        }
+        for (k, (p, c)) in per {
+            println!("  layer {k:24} process {:6.1}  composite {:6.1} ms/frame", p / times.len() as f64, c / times.len() as f64);
+        }
+        // the comp on the Effects GPU compositor, when the machine has one
+        if let Some(gpu) = redrob_effects_gpu::Gpu::headless() {
+            let gcache = redrob_effects_render::LayerCache::new(1 << 30);
+            let prof = std::sync::Mutex::new(Vec::new());
+            for round in ["gpu first", "gpu again"] {
+                prof.lock().unwrap().clear();
+                let t0 = Instant::now();
+                for t in &times {
+                    let opts = redrob_effects_render::RenderOpts { backend: redrob_effects_render::Backend::Gpu, ..Default::default() };
+                    let mut r = redrob_effects_render::Renderer::new(&fx.project, fx.footage.as_ref(), opts);
+                    r.accel = Some(&gpu);
+                    r.cache = Some(&gcache);
+                    r.profile = Some(&prof);
+                    let _ = r.comp_frame(comp, *t);
+                }
+                println!("comp, {round} {:6.1} ms/frame", t0.elapsed().as_secs_f64() * 1000.0 / times.len() as f64);
+            }
+            let mut per: std::collections::BTreeMap<String, (f64, f64, Vec<String>)> = Default::default();
+            for l in prof.lock().unwrap().iter() {
+                let e = per.entry(l.layer.clone()).or_default();
+                e.0 += l.process_ms;
+                e.1 += l.composite_ms;
+                for (fx_id, ms) in &l.effects {
+                    e.2.push(format!("{fx_id} {ms:.1}"));
+                }
+            }
+            for (k, (p, c, fx_list)) in per {
+                println!(
+                    "  gpu layer {k:20} process {:6.1}  composite {:6.1}  {:?}",
+                    p / times.len() as f64,
+                    c / times.len() as f64,
+                    fx_list.iter().take(3).collect::<Vec<_>>()
+                );
+            }
+        }
+        // the placed composition, as an export reads it (GPU when there is one, layer cache)
+        let Backend::Headless(edit) = &*m.backend else { return };
+        let edit = edit.lock().unwrap();
+        let placed = edit
+            .project
+            .items
+            .values()
+            .find(|it| matches!(&it.kind, redrob_film_project::ItemKind::Media(md) if matches!(&md.media, redrob_film_project::MediaRef::File { path } if path.starts_with("effects://"))))
+            .map(|it| it.id)
+            .unwrap();
+        let src = edit.source(placed).unwrap();
+        for round in ["first", "again"] {
+            let t0 = Instant::now();
+            for t in &times {
+                let _ = src.video_frame(redrob_film_media::FrameRequest::full(redrob_film_time::Tick(t.0))).unwrap();
+            }
+            println!("placed comp {round:5} {:6.1} ms/frame", t0.elapsed().as_secs_f64() * 1000.0 / times.len() as f64);
+        }
+    }
+
     #[test]
     fn render_scale_zero_means_no_limit() {
         assert_eq!(render_scale(0, 1920, 1080), 1.0);

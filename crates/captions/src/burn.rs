@@ -235,7 +235,34 @@ pub fn track_overlay(track: &CaptionTrack, t: Tick, w: usize, h: usize) -> Optio
         return None;
     }
     let c = track.caption_at(t)?;
-    render_caption(c, &track.style, w, h)
+    cached_caption(c, &track.style, w, h)
+}
+
+/// Rendered captions, by what they look like. A caption shows for seconds, so an export burns the
+/// same one into dozens of frames, and laying it out and dilating its outline (radius² taps per
+/// pixel) cost ~40 ms a frame at 1080×1920 with a 4 px outline. Only the text, cue settings,
+/// style and frame size decide the pixels, so they are the key.
+fn cached_caption(c: &Caption, style: &CaptionStyle, w: usize, h: usize) -> Option<Overlay> {
+    use std::collections::HashMap;
+    use std::hash::{Hash, Hasher};
+    use std::sync::{Mutex, OnceLock};
+    /// Distinct captions kept; a sequence shows one per track at a time, so a few suffice.
+    const KEEP: usize = 32;
+    static CACHE: OnceLock<Mutex<HashMap<u64, Option<std::sync::Arc<Overlay>>>>> = OnceLock::new();
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    (&c.text, &c.settings, format!("{style:?}"), w, h).hash(&mut hasher);
+    let key = hasher.finish();
+    let cache = CACHE.get_or_init(Default::default);
+    if let Some(hit) = cache.lock().unwrap_or_else(|e| e.into_inner()).get(&key) {
+        return hit.as_deref().cloned();
+    }
+    let made = render_caption(c, style, w, h).map(std::sync::Arc::new);
+    let mut map = cache.lock().unwrap_or_else(|e| e.into_inner());
+    if map.len() >= KEEP {
+        map.clear();
+    }
+    map.insert(key, made.clone());
+    made.as_deref().cloned()
 }
 
 /// Overlays of every visible caption track of a sequence at `t`, bottom track first.

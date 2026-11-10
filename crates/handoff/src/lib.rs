@@ -217,6 +217,35 @@ pub struct CompSource {
     project: Arc<redrob_effects_project::Project>,
     comp: redrob_effects_project::ItemId,
     footage: Arc<dyn redrob_effects_render::FootageSource>,
+    /// Processed layers kept across this composition's frames.
+    cache: redrob_effects_render::LayerCache,
+}
+
+/// Bytes of processed layers a placed composition keeps between frames.
+const COMP_CACHE_BYTES: usize = 256 << 20;
+
+/// The Effects GPU compositor every placed composition renders on, made on first use; `None`
+/// without a usable adapter, or with `REDROB_FILM_EFFECTS_GPU=off` (the CPU reference renderer,
+/// byte-reproducible everywhere).
+fn effects_gpu() -> Option<&'static redrob_effects_gpu::Gpu> {
+    static GPU: std::sync::OnceLock<Option<redrob_effects_gpu::Gpu>> = std::sync::OnceLock::new();
+    GPU.get_or_init(|| {
+        let off = std::env::var("REDROB_FILM_EFFECTS_GPU").is_ok_and(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "off" | "0" | "false" | "cpu"));
+        if off {
+            return None;
+        }
+        match redrob_effects_gpu::Gpu::try_headless() {
+            Ok(g) => {
+                eprintln!("effects: compositions render on {}", redrob_effects_render::Accelerator::name(&g));
+                Some(g)
+            }
+            Err(e) => {
+                eprintln!("effects: compositions render on the CPU (no GPU: {e})");
+                None
+            }
+        }
+    })
+    .as_ref()
 }
 
 impl CompSource {
@@ -228,7 +257,7 @@ impl CompSource {
     ) -> Result<Self, String> {
         let c = project.comp(comp).ok_or_else(|| format!("no composition #{}", comp.0))?;
         let info = comp_media_info(name, c)?;
-        Ok(Self { info, project, comp, footage })
+        Ok(Self { info, project, comp, footage, cache: redrob_effects_render::LayerCache::new(COMP_CACHE_BYTES) })
     }
 }
 
@@ -243,8 +272,18 @@ impl MediaSource for CompSource {
         let last = self.info.duration.0.saturating_sub(v.frame_rate.frame_duration().0).max(0);
         let t = req.time.0.clamp(0, last);
         let scale = if req.scale.is_finite() { f64::from(req.scale.clamp(0.1, 1.0)) } else { 1.0 };
-        let opts = redrob_effects_render::RenderOpts { scale, ..Default::default() };
-        let image = redrob_effects_render::Renderer::new(&self.project, self.footage.as_ref(), opts).comp_frame(self.comp, redrob_effects_time::Tick(t));
+        // On the Effects GPU compositor when the machine has one (its kernels cover Glow, CC
+        // Vignette, Noise and the rest of what a scene uses; anything it declines renders on the
+        // CPU). A scene over 1080×1920 footage spent 178 ms a frame on the CPU, 74 of them in
+        // the hero title's Glow. The layer cache keeps still layers (washes, settled titles)
+        // between frames, which also spares their upload to the GPU.
+        let gpu = effects_gpu();
+        let backend = if gpu.is_some() { redrob_effects_render::Backend::Gpu } else { redrob_effects_render::Backend::Cpu };
+        let opts = redrob_effects_render::RenderOpts { scale, backend, ..Default::default() };
+        let mut r = redrob_effects_render::Renderer::new(&self.project, self.footage.as_ref(), opts);
+        r.cache = Some(&self.cache);
+        r.accel = gpu.map(|g| g as &dyn redrob_effects_render::Accelerator);
+        let image = r.comp_frame(self.comp, redrob_effects_time::Tick(t));
         let (w, h) = (image.width, image.height);
         let data = image.to_rgba8();
         let expected = (w as usize).checked_mul(h as usize).and_then(|n| n.checked_mul(4));

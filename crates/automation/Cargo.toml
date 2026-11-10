@@ -26,3 +26,8 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std", "syn
 base64 = "0.22"
 schemars = "1"
 image = { version = "0.25", default-features = false, features = ["png"] }
+redrob-effects-project = { workspace = true }
+redrob-effects-render = { workspace = true }
+redrob-effects-time = { workspace = true }
+redrob-film-media = { workspace = true }
+redrob-effects-gpu = { workspace = true }
